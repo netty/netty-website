@@ -1,5 +1,5 @@
 #!/bin/bash -e
-cd "`dirname "$0"`"
+cd "`dirname "$0"`/.."
 mkdir -p 'wiki'
 
 echo 'Retrieving the wiki page lists ..'

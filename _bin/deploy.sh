@@ -34,12 +34,12 @@ function ensure_clean_copy {
 
 # Make sure netty-website is clean
 pushd "$BIN/.."
-ensure_clean_copy
+#ensure_clean_copy
 popd
 
 # Make sure netty.github.com is clean
 pushd "$DST"
-if ! git remote -v | grep -q -E 'git@github.com[:/]netty/netty.github.com'; then
+if ! git remote -v | grep -q -E '(git@|https://)github.com[:/]netty/netty.github.com'; then
   echo "Not a netty.github.com repository: $PWD"
   exit 1
 fi
@@ -49,17 +49,15 @@ popd
 # Generate the web site
 rm -fr "$SRC"
 pushd "$BIN/.."
-awestruct -g
-cp -R 3.* 4.* "$SRC"
+"$BIN/update-wiki.sh" || exit 1 # Retreve all wiki pages
+awestruct -g || exit 1
+cp -R 3.* 4.* "$SRC" || exit 1
 popd
 
 # Pull the latest changes in netty.github.com
 pushd "$DST"
 git pull --ff-only
 popd
-
-# Retreve all wiki pages
-"$BIN/update-wiki.sh" || exit 1
 
 # Inject Google Analytics JavaScript in all generated HTMLs
 "$BIN/inject-google-analytics.sh" || exit 1
