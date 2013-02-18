@@ -1,0 +1,2252 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+      <title>The Netty Project 4.x User Guide</title>
+      <meta name="generator" content="DocBook XSL 2.0 Stylesheets V2.0.3" />
+      <link rel="stylesheet" type="text/css"
+            href="http://docbook.github.com/release/2.0.3/base/css/default.css" /><script type="text/javascript"
+              src="http://docbook.github.com/release/2.0.3/base/js/dbmodnizr.js"></script></head>
+   <body>
+      <article id="R.1" class="book">
+         <header class="book-titlepage">
+            <h1>The Netty Project 4.x User Guide</h1>
+            <h2>The Proven Approach to Rapid Network Application Development</h2>
+         </header>
+         <hr />
+         <div class="toc">
+            <p><b>Table of Contents</b></p>
+            <ul class="toc">
+               <li><span><a href="#preface">1. Preface</a></span><ul class="toc">
+                     <li><span><a href="#preface.2">1. The Problem</a></span></li>
+                     <li><span><a href="#preface.3">2. The Solution</a></span></li>
+                  </ul>
+               </li>
+               <li><span><a href="#start">1. Getting Started</a></span><ul class="toc">
+                     <li><span><a href="#start.4">1. Before Getting Started</a></span></li>
+                     <li><span><a href="#start.5">2. Writing a Discard Server</a></span></li>
+                     <li><span><a href="#start.6">3. Looking into the Received Data</a></span></li>
+                     <li><span><a href="#start.7">4. Writing an Echo Server</a></span></li>
+                     <li><span><a href="#start.8">5. Writing a Time Server</a></span></li>
+                     <li><span><a href="#start.9">6. Writing a Time Client</a></span></li>
+                     <li><span><a href="#start.10">7. 
+                              Dealing with a Stream-based Transport
+                              </a></span><ul class="toc">
+                           <li><span><a href="#start.10.2">7.1. 
+                                    One Small Caveat of Socket Buffer
+                                    </a></span></li>
+                           <li><span><a href="#start.10.3">7.2. 
+                                    The First Solution
+                                    </a></span></li>
+                           <li><span><a href="#start.10.4">7.3. 
+                                    The Second Solution
+                                    </a></span></li>
+                        </ul>
+                     </li>
+                     <li><span><a href="#start.pojo">8. 
+                              Speaking in POJO instead of ByteBuf
+                              </a></span></li>
+                     <li><span><a href="#start.12">9. 
+                              Shutting Down Your Application
+                              </a></span></li>
+                     <li><span><a href="#start.13">10. 
+                              Summary
+                              </a></span></li>
+                  </ul>
+               </li>
+               <li><span><a href="#architecture">2. Architectural Overview</a></span><ul class="toc">
+                     <li><span><a href="#architecture.5">1. Rich Buffer Data Structure</a></span><ul class="toc">
+                           <li><span><a href="#architecture.5.4">1.1. Combining and Slicing ChannelBuffers</a></span></li>
+                        </ul>
+                     </li>
+                     <li><span><a href="#architecture.6">2. Universal Asynchronous I/O API</a></span></li>
+                     <li><span><a href="#architecture.7">3. Event Model based on the Interceptor Chain Pattern</a></span></li>
+                     <li><span><a href="#architecture.8">4. Advanced Components for More Rapid Development</a></span><ul class="toc">
+                           <li><span><a href="#architecture.8.3">4.1. Codec framework</a></span></li>
+                           <li><span><a href="#architecture.8.4">4.2. SSL / TLS Support</a></span></li>
+                           <li><span><a href="#architecture.8.5">4.3. HTTP Implementation</a></span></li>
+                           <li><span><a href="#architecture.8.6">4.4. WebSockets Implementation</a></span></li>
+                           <li><span><a href="#architecture.8.7">4.5. Google Protocol Buffer Integration</a></span></li>
+                        </ul>
+                     </li>
+                     <li><span><a href="#architecture.9">5. Summary</a></span></li>
+                  </ul>
+               </li>
+               <li><span><a href="#faq">2. Frequently Asked Questions</a></span><ul class="toc">
+                     <li><span><a href="#faq.3">1. When can I write outbound data?</a></span></li>
+                     <li><span><a href="#faq.4">2. How do I incorporate my blocking application code with the non-blocking <code class="classname">NioEventLoopGroup</code>?</a></span></li>
+                     <li><span><a href="#faq.5">3. Do I need to synchronize my handler code given that events can happen at the same
+                              time?</a></span></li>
+                     <li><span><a href="#faq.6">4. How do I pass data between handlers in the same Channel?</a></span></li>
+                  </ul>
+               </li>
+            </ul>
+         </div>
+         <article id="preface" class="preface">
+            <header class="preface-titlepage">
+               <h2>Preface</h2>
+            </header>
+            <div class="toc">
+               <p><b>Table of Contents</b></p>
+               <ul class="toc">
+                  <li><span><a href="#preface.2">1. The Problem</a></span></li>
+                  <li><span><a href="#preface.3">2. The Solution</a></span></li>
+               </ul>
+            </div>
+            <section id="preface.2" class="section">
+               <div class="section-titlepage">
+                  <h3>1. The Problem</h3>
+               </div>
+               <p>
+                  Nowadays we use general purpose applications or libraries to communicate
+                  with each other.  For example, we often use an HTTP client library to
+                  retrieve information from a web server and to invoke a remote procedure
+                  call via web services.
+                  
+               </p>
+               <p>
+                  However, a general purpose protocol or its implementation sometimes 
+                  does not scale very well.  It is like we don't use a general purpose
+                  HTTP server to exchange huge files, e-mail messages, and near-realtime
+                  messages such as financial information and multiplayer game data.
+                  What's required is a highly optimized protocol implementation which is
+                  dedicated to a special purpose.  For example, you might want to
+                  implement an HTTP server which is optimized for AJAX-based chat
+                  application, media streaming, or large file transfer.  You could even
+                  want to design and implement a whole new protocol which is precisely
+                  tailored to your need.
+                  
+               </p>
+               <p>
+                  Another inevitable case is when you have to deal with a legacy
+                  proprietary protocol to ensure the interoperability with an old system.
+                  What matters in this case is how quickly we can implement that protocol
+                  while not sacrificing the stability and performance of the resulting
+                  application.
+                  
+               </p>
+            </section>
+            <section id="preface.3" class="section">
+               <div class="section-titlepage">
+                  <h3>2. The Solution</h3>
+               </div>
+               <p>
+                  <em class="firstterm"><a href="http://netty.io/">The Netty project</a></em> is
+                  an effort to provide an asynchronous event-driven network application
+                  framework and tooling for the rapid development of maintainable
+                  high-performance · high-scalability protocol servers and clients.
+                  
+               </p>
+               <p>
+                  In other words, Netty is a NIO client server framework which enables
+                  quick and easy development of network applications such as protocol
+                  servers and clients.  It greatly simplifies and streamlines network
+                  programming such as TCP and UDP socket server development.
+                  
+               </p>
+               <p>
+                  'Quick and easy' does not mean that a resulting application will suffer
+                  from a maintainability or a performance issue.  Netty has been designed
+                  carefully with the experiences earned from the implementation of a lot
+                  of protocols such as FTP, SMTP, HTTP, and various binary and text-based
+                  legacy protocols.  As a result, Netty has succeeded to find a way to
+                  achieve ease of development, performance, stability, and flexibility
+                  without a compromise.
+                  
+               </p>
+               <p>
+                  Some users might already have found other network application
+                  framework that claims to have the same advantage, and you might want
+                  to ask what makes Netty so different from them.  The answer is the
+                  philosophy where it is built on.  Netty is designed to give you the most
+                  comfortable experience both in terms of the API and the implementation
+                  from the day one.  It is not something tangible but you will realize that
+                  this philosophy will make your life much easier as you read this guide
+                  and play with Netty. 
+                  
+               </p>
+            </section>
+         </article>
+         <article id="start" class="chapter">
+            <header class="chapter-titlepage">
+               <h2>Chapter 1. Getting Started</h2>
+            </header>
+            <div class="toc">
+               <p><b>Table of Contents</b></p>
+               <ul class="toc">
+                  <li><span><a href="#start.4">1. Before Getting Started</a></span></li>
+                  <li><span><a href="#start.5">2. Writing a Discard Server</a></span></li>
+                  <li><span><a href="#start.6">3. Looking into the Received Data</a></span></li>
+                  <li><span><a href="#start.7">4. Writing an Echo Server</a></span></li>
+                  <li><span><a href="#start.8">5. Writing a Time Server</a></span></li>
+                  <li><span><a href="#start.9">6. Writing a Time Client</a></span></li>
+                  <li><span><a href="#start.10">7. 
+                           Dealing with a Stream-based Transport
+                           </a></span><ul class="toc">
+                        <li><span><a href="#start.10.2">7.1. 
+                                 One Small Caveat of Socket Buffer
+                                 </a></span></li>
+                        <li><span><a href="#start.10.3">7.2. 
+                                 The First Solution
+                                 </a></span></li>
+                        <li><span><a href="#start.10.4">7.3. 
+                                 The Second Solution
+                                 </a></span></li>
+                     </ul>
+                  </li>
+                  <li><span><a href="#start.pojo">8. 
+                           Speaking in POJO instead of ByteBuf
+                           </a></span></li>
+                  <li><span><a href="#start.12">9. 
+                           Shutting Down Your Application
+                           </a></span></li>
+                  <li><span><a href="#start.13">10. 
+                           Summary
+                           </a></span></li>
+               </ul>
+            </div>
+            <p>
+               This chapter tours around the core constructs of Netty with simple
+               examples to let you get started quickly.  You will be able to write a
+               client and a server on top of Netty right away when you are at the
+               end of this chapter.
+               
+            </p>
+            <p>
+               If you prefer top-down approach in learning something, you might want to
+               start from <a href="#architecture">Chapter 2, <i>Architectural Overview</i></a> and get back here.
+               
+            </p>
+            <section id="start.4" class="section">
+               <div class="section-titlepage">
+                  <h3>1. Before Getting Started</h3>
+               </div>
+               <p>
+                  The minimum requirements to run the examples which are introduced in
+                  this chapter are only two; the latest version of Netty and JDK 1.6 or
+                  above.  The latest version of Netty is available in
+                  <a href="http://netty.io/Main/Downloads">the project download page</a>.  To download
+                  the right version of JDK, please refer to your preferred JDK vendor's web
+                  site.
+                  
+               </p>
+               <p>
+                  As you read, you might have more questions about the classes introduced
+                  in this chapter.  Please refer to the API reference whenever you want to
+                  know more about them.  All class names in this document are linked to the
+                  online API reference for your convenience.  Also, please don't hesitate to
+                  <a href="http://netty.io/Main/Get+Involved">contact the Netty project community</a> and
+                  let us know if there's any incorrect information, errors in grammar and
+                  typo, and if you have a good idea to improve the documentation.
+                  
+               </p>
+            </section>
+            <section id="start.5" class="section">
+               <div class="section-titlepage">
+                  <h3>2. Writing a Discard Server</h3>
+               </div>
+               <p>
+                  The most simplistic protocol in the world is not 'Hello, World!' but 
+                  <a href="http://tools.ietf.org/html/rfc863">DISCARD</a>.  It's
+                  a protocol which discards any received data without any response.
+                  
+               </p>
+               <p>
+                  To implement the DISCARD protocol, the only thing you need to do is
+                  to ignore all received data.  Let us start straight from the handler
+                  implementation, which handles I/O events generated by Netty.
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package org.jboss.netty.example.discard;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class DiscardServerHandler extends <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundByteHandlerAdapter.html"><code class="classname">ChannelInboundByteHandlerAdapter</code></a> {<a name="example.discard.co1" id="example.discard.co1"></a><img src="http://docbook.github.com/release/2.0.3/base/img/1.png" alt="1" border="0" />
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    public void inboundBufferUpdate(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {<a name="example.discard.co2" id="example.discard.co2"></a><img src="http://docbook.github.com/release/2.0.3/base/img/2.png" alt="2" border="0" />
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        in.clear();
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public void exceptionCaught(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Throwable cause) {<a name="example.discard.co3" id="example.discard.co3"></a><img src="http://docbook.github.com/release/2.0.3/base/img/3.png" alt="3" border="0" />
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>        cause.printStackTrace();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard.co1"><img src="http://docbook.github.com/release/2.0.3/base/img/1.png" alt="1" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <code class="classname">DiscardServerHandler</code> extends
+                              , which is an implementation of
+                              .   provides various event
+                              handler methods that you can override.  For now, it is just enough
+                              to extend <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundByteHandlerAdapter.html"><code class="classname">ChannelInboundByteHandlerAdapter</code></a> rather than to implement
+                              the handler interfaces by yourself.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard.co2"><img src="http://docbook.github.com/release/2.0.3/base/img/2.png" alt="2" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              We override the <code class="methodname">inboundBuffer</code> event
+                              handler method here.  This method is called with a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>,
+                              which contains the received data, whenever new data is received
+                              from a client.  In this example, we just discard the received data
+                              by calling clear() on the <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> to implement the DISCARD protocol.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard.co3"><img src="http://docbook.github.com/release/2.0.3/base/img/3.png" alt="3" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <code class="methodname">exceptionCaught</code> event handler method is
+                              called with a Throwable when an exception was raised by
+                              Netty due to I/O error or by a handler implementation due to the
+                              exception thrown while processing events.  In most cases, the
+                              caught exception should be logged and its associated channel
+                              should be closed here, although the implementation of this method
+                              can be different depending on what you want to do to deal with an
+                              exceptional situation.  For example, you might want to send a
+                              response message with an error code before closing the connection.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  So far so good.  We have implemented the first half of the DISCARD server.
+                  What's left now is to write the <code class="methodname">main</code> method
+                  which starts the server with the <code class="classname">DiscardServerHandler</code>.
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package org.jboss.netty.example.discard;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>import java.net.InetSocketAddress;
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>import java.util.concurrent.Executors;
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>public class DiscardServer {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    public static void main(String[] args) throws Exception {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a> bootstrap =
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>            new <a name="example.discard2.co1" id="example.discard2.co1"></a><img src="http://docbook.github.com/release/2.0.3/base/img/4.png" alt="4" border="0" />();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        try {
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>            bootstrap.group(new <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a>(), new <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a><a name="example.discard2.co2" id="example.discard2.co2"></a><img src="http://docbook.github.com/release/2.0.3/base/img/5.png" alt="5" border="0" />();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                      .channel(<a name="example.discard2.co3" id="example.discard2.co3"></a><img src="http://docbook.github.com/release/2.0.3/base/img/6.png" alt="6" border="0" />)
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>                      .childHandler(new <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInitializer.html"><code class="classname">ChannelInitializer</code></a>&lt;SocketChannel&gt;() {<a name="example.discard2.co4" id="example.discard2.co4"></a><img src="http://docbook.github.com/release/2.0.3/base/img/7.png" alt="7" border="0" />
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                         @Override
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>                         public void initChannel(SocketChannel channel) throws Exception {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                             channel.pipeline().addLast(new DiscardServerHandler());
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>                         }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                      })
+<span class="linenumber"> 20</span><span class="linenumber-separator"> </span>                      .setChildOption(.TCP_NO_DELAY, true)<a name="example.discard2.co5" id="example.discard2.co5"></a><img src="http://docbook.github.com/release/2.0.3/base/img/8.png" alt="8" border="0" />
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                      .setChildOption(.KEEP_ALIVE, true)
+<span class="linenumber"> 22</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            ChannelFuture future = bootstrap.bind(new InetSocketAddress(8080)).sync();<a name="example.discard2.co6" id="example.discard2.co6"></a><img src="http://docbook.github.com/release/2.0.3/base/img/9.png" alt="9" border="0" />
+<span class="linenumber"> 24</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            future.channel().closeFuture().sync();
+<span class="linenumber"> 26</span><span class="linenumber-separator"> </span>        } finally {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            b.shutdown();
+<span class="linenumber"> 28</span><span class="linenumber-separator"> </span>        }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 30</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard2.co1"><img src="http://docbook.github.com/release/2.0.3/base/img/4.png" alt="4" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a> is a helper class that sets up a server. You can
+                              set up the server using a <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> directly.  However, please note
+                              that this is a tedious process and you do not need to do that in most
+                              cases.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard2.co2"><img src="http://docbook.github.com/release/2.0.3/base/img/5.png" alt="5" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a> processes all I/O requests and
+                              performs I/O.  Netty provides various <a href="http://static.netty.io/4.0/api/io/netty/channel/EventLoopGroup.html"><code class="interfacename">EventLoopGroup</code></a> implementations
+                              for different kind of transports.  We are implementing a server-side
+                              application in this example, and therefore two 
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a> will be used.  The first is used to handle the accept
+                              of new connections and the second will serve the IO of them. 
+                              The used <a href="http://static.netty.io/4.0/api/io/netty/channel/EventLoopGroup.html"><code class="interfacename">EventLoopGroup</code></a> implementation is resposible to manage its used
+                              threads. How many Threads are used and how they are mapped to the created
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s depends on the implementation and may be even configurable 
+                              via the constructor. Please refer to the apidocs.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard2.co3"><img src="http://docbook.github.com/release/2.0.3/base/img/6.png" alt="6" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Here, we specify to use the  which will be used
+                              to instance a new  that will accept new connections.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard2.co4"><img src="http://docbook.github.com/release/2.0.3/base/img/7.png" alt="7" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Here, we configure the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInitializer.html"><code class="classname">ChannelInitializer</code></a>.  Whenever a new
+                              connection is accepted by the server, it will be called. Most of the times
+                              you want to add <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a>s to the pipeline of the accepted connection.
+                              In this example we add the <code class="classname">DiscardServerHandler</code>.  As the
+                              application gets complicated, it is likely that you will add more
+                              handlers to the pipeline and extract this anonymous class into a top
+                              level class eventually.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard2.co5"><img src="http://docbook.github.com/release/2.0.3/base/img/8.png" alt="8" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              You can also set the parameters which are specific to the <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>
+                              implementation.  We are writing a TCP/IP server, so we are allowed
+                              to set the socket options such as <code class="literal">tcpNoDelay</code> and
+                              <code class="literal">keepAlive</code>.  Please refer to the apidocs of 
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelOption.html"><code class="classname">ChannelOption</code></a> and the specific <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelConfig.html"><code class="interfacename">ChannelConfig</code></a> implementations to
+                              get an overview about the supported <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelOption.html"><code class="classname">ChannelOption</code></a>s.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.discard2.co6"><img src="http://docbook.github.com/release/2.0.3/base/img/9.png" alt="9" border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              We are ready to go now.  What's left is to bind to the port and to
+                              start the server.  Here, we bind to the port <code class="literal">8080</code>
+                              of all NICs (network interface cards) in the machine.  You can now
+                              call the <code class="methodname">bind</code> method as many times as
+                              you want (with different bind addresses.) 
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  Congratulations!  You've just finished your first server on top of Netty.
+                  
+               </p>
+            </section>
+            <section id="start.6" class="section">
+               <div class="section-titlepage">
+                  <h3>3. Looking into the Received Data</h3>
+               </div>
+               <p>
+                  Now that we have written our first server, we need to test if it really
+                  works.  The easiest way to test it is to use the <strong class="command">telnet</strong>
+                  command.  For example, you could enter "<strong class="command">telnet localhost
+                     8080</strong>" in the command line and type something.
+                  
+               </p>
+               <p>
+                  However, can we say that the server is working fine?  We cannot really
+                  know that because it is a discard server.  You will not get any response
+                  at all.  To prove it is really working, let us modify the server to print
+                  what it has received.
+                  
+               </p>
+               <p>
+                  We already know that <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> is filled whenever data is
+                  received and the <code class="methodname">inboundBufferUpdated</code> handler method
+                  will be invoked.  Let us put some code into the
+                  <code class="methodname">inboundBufferUpdated</code> method of the
+                  <code class="classname">DiscardServerHandler</code>: 
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>@Override
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>public void inboundBufferUpdated(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    while(in.readable()) {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>        System.out.println((char) buf.readByte());
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        System.out.flush();
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    in.clear();
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  If you run the <strong class="command">telnet</strong> command again, you will see the
+                  server prints what has received.
+                  
+               </p>
+               <p>
+                  The full source code of the discard server is located in the
+                  <code class="literal">org.jboss.netty.example.discard</code> package of the
+                  distribution.
+                  
+               </p>
+            </section>
+            <section id="start.7" class="section">
+               <div class="section-titlepage">
+                  <h3>4. Writing an Echo Server</h3>
+               </div>
+               <p>
+                  So far, we have been consuming data without responding at all.  A server,
+                  however, is usually supposed to respond to a request.  Let us learn how to
+                  write a response message to a client by implementing the 
+                  <a href="http://tools.ietf.org/html/rfc862">ECHO</a> protocol,
+                  where any received data is sent back. 
+                  
+               </p>
+               <p>
+                  The only difference from the discard server we have implemented in the
+                  previous sections is that it sends the received data back instead of
+                  printing the received data out to the console.  Therefore, it is enough
+                  again to modify the <code class="methodname">inboundBufferUpdated</code> method:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>@Override
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>public void inboundBufferUpdated(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a><a name="example.echo.co1" id="example.echo.co1"></a><img src="http://docbook.github.com/release/2.0.3/base/img/10.png" alt="10"
+                          border="0" />  out = ctx.nextOutboundByteBuffer();
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>    out.writeBytes(in);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    ctx.flush();
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.echo.co1"><img src="http://docbook.github.com/release/2.0.3/base/img/10.png" alt="10"
+                                      border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              A <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> object has a reference to the next outbound <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>
+                              in the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a> We can get the <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> and call the
+                              <code class="methodname">writeBytes</code> method with the inbound <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> as 
+                              parameter. This will transfer the content of the inbound <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> to the
+                              outbound <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>. All we need to do now is call the <code class="methodname">flush</code>
+                              method on the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> to notify that there is some data to
+                              flush out (send) to the remote peer.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  If you run the <strong class="command">telnet</strong> command again, you will see the
+                  server sends back whatever you have sent to it.
+                  
+               </p>
+               <p>
+                  The full source code of the echo server is located in the
+                  <code class="literal">io.netty.example.echo</code> package of the
+                  distribution.
+                  
+               </p>
+            </section>
+            <section id="start.8" class="section">
+               <div class="section-titlepage">
+                  <h3>5. Writing a Time Server</h3>
+               </div>
+               <p>
+                  The protocol to implement in this section is the
+                  <a href="http://tools.ietf.org/html/rfc868">TIME</a> protocol.
+                  It is different from the previous examples in that it sends a message,
+                  which contains a 32-bit integer, without receiving any requests and 
+                  loses the connection once the message is sent.  In this example, you
+                  will learn how to construct and send a message, and to close the
+                  connection on completion.
+                  
+               </p>
+               <p>
+                  Because we are going to ignore any received data but to send a message
+                  as soon as a connection is established, we cannot use the
+                  <code class="methodname">inboundBufferUpdated</code> method this time.  Instead,
+                  we should override the <code class="methodname">channelActive</code> method.
+                  The following is the implementation:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeServerHandler extends  {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    public void channelActive(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx) {<a name="example.time.co1" id="example.time.co1"></a><img src="http://docbook.github.com/release/2.0.3/base/img/11.png" alt="11"
+                          border="0" />
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> time = ctx.alloc().buffer(4);<a name="example.time.co2" id="example.time.co2"></a><img src="http://docbook.github.com/release/2.0.3/base/img/12.png" alt="12"
+                          border="0" />
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        time.writeInt((int) (System.currentTimeMillis() / 1000L + 2208988800L));
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>        
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> f = ctx.write(time);<a name="example.time.co3" id="example.time.co3"></a><img src="http://docbook.github.com/release/2.0.3/base/img/13.png" alt="13"
+                          border="0" />
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>        
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        f.addListener(new <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFutureListener.html"><code class="interfacename">ChannelFutureListener</code></a>() {<a name="example.time.co4" id="example.time.co4"></a><img src="http://docbook.github.com/release/2.0.3/base/img/14.png" alt="14"
+                          border="0" />
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>            public void operationComplete(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> future) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> ch = future.channel();
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>                ch.close();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            }
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>        });
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 20</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber"> 22</span><span class="linenumber-separator"> </span>    public void exceptionCaught(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Throwable cause) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        cause.printStackTrace();
+<span class="linenumber"> 24</span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 26</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time.co1"><img src="http://docbook.github.com/release/2.0.3/base/img/11.png" alt="11"
+                                      border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              As explained, <code class="methodname">channelActive</code> method will
+                              be invoked when a connection is established.  Let us write the 32-bit
+                              integer that represents the current time in seconds here.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time.co2"><img src="http://docbook.github.com/release/2.0.3/base/img/12.png" alt="12"
+                                      border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              To send a new message, we need to allocate a new buffer which will
+                              contain the message.  We are going to write a 32-bit integer, and
+                              therefore we need a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> whose capacity is
+                              <code class="literal">4</code> bytes.  The  is
+                              used to allocate a new buffer. For more
+                              information, please refer to the API reference.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time.co3"><img src="http://docbook.github.com/release/2.0.3/base/img/13.png" alt="13"
+                                      border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              As usual, we write the constructed message.
+                              
+                           </p>
+                           <p>
+                              But wait, where's the <code class="methodname">flip</code>?  Didn't we used
+                              to call <code class="methodname">ByteBuffer.flip()</code> before sending a
+                              message in NIO?  <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> does not have such a method because
+                              it has two pointers; one for read operations and the other for write
+                              operations.  The writer index increases when you write something to
+                              a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> while the reader index does not change.  The reader
+                              index and the writer index represents where the message starts and
+                              ends respectively.
+                              
+                           </p>
+                           <p>
+                              In contrast, NIO buffer does not provide a clean way to figure out
+                              where the message content starts and ends without calling the
+                              <code class="methodname">flip</code> method.  You will be in trouble when
+                              you forget to flip the buffer because nothing or incorrect data will
+                              be sent.  Such an error does not happen in Netty because we have
+                              different pointer for different operation types.  You will find it
+                              makes your life much easier as you get used to it -- a life without
+                              flipping out!
+                              
+                           </p>
+                           <p>
+                              Another point to note is that the <code class="methodname">write</code>
+                              method returns a <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a>.  A <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> represents an
+                              I/O operation which has not yet occurred.  It means, any requested
+                              operation might not have been performed yet because all operations
+                              are asynchronous in Netty.  For example, the following code might
+                              close the connection even before a message is sent:
+                              
+                           </p>
+                           <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span><a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx = ...;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>ctx.write(message);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>ctx.close();</pre></div>
+                           <p>
+                              Therefore, you need to call the <code class="methodname">close</code>
+                              method after the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a>, which was returned by the
+                              <code class="methodname">write</code> method, notifies you when the write
+                              operation has been done.  Please note that, <code class="methodname">close</code>
+                              also might not close the connection immediately, and it returns a
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a>.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time.co4"><img src="http://docbook.github.com/release/2.0.3/base/img/14.png" alt="14"
+                                      border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              How do we get notified when the write request is finished then?
+                              This is as simple as adding a <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFutureListener.html"><code class="interfacename">ChannelFutureListener</code></a> to the returned
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a>.  Here, we created a new anonymous <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFutureListener.html"><code class="interfacename">ChannelFutureListener</code></a>
+                              which closes the <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> when the operation is done.
+                              
+                           </p>
+                           <p>
+                              Alternatively, you could simplify the code using a pre-defined
+                              listener:
+                              
+                              <div class="programlisting"><pre>f.addListener(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFutureListener.html"><code class="interfacename">ChannelFutureListener</code></a>.CLOSE);</pre></div>
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  To test if our time server works as expected, you can use the UNIX <strong class="command">rdate</strong> command:
+                  
+                  <div class="programlisting"><pre>$ rdate -o &lt;port&gt; -p &lt;host&gt;</pre></div>
+                  where port is the port number you specified in the <code class="methodname">main()</code> method and host is usually <code class="literal">localhost</code>.
+                  
+               </p>
+            </section>
+            <section id="start.9" class="section">
+               <div class="section-titlepage">
+                  <h3>6. Writing a Time Client</h3>
+               </div>
+               <p>
+                  Unlike DISCARD and ECHO servers, we need a client for the TIME protocol
+                  because a human cannot translate a 32-bit binary data into a date on a
+                  calendar.  In this section, we discuss how to make sure the server works
+                  correctly and learn how to write a client with Netty.
+                  
+               </p>
+               <p>
+                  The biggest and only difference between a server and a client in Netty
+                  is that different <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a> aisrequired.  Please
+                  take a look at the following code:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>import java.net.InetSocketAddress;
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>import java.util.concurrent.Executors;
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>public class TimeClient {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    public static void main(String[] args) throws Exception {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        String host = args[0];
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>        int port = Integer.parseInt(args[1]);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a> bootstrap = new <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a><a name="example.time2.co1" id="example.time2.co1"></a><img src="http://docbook.github.com/release/2.0.3/base/img/15.png" alt="15"
+                          border="0" />();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        bootstrap.group(new <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a><a name="example.time2.co2" id="example.time2.co2"></a>(16)();
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>        bootstrap.setHandler(new <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInitializer.html"><code class="classname">ChannelInitializer</code></a>&lt;Channel&gt;() {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            public void initChannel(Channel channel) {
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>                channel.pipeline().addLast(new TimeClientHandler());
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            }
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>        });
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        
+<span class="linenumber"> 20</span><span class="linenumber-separator"> </span>        bootstrap.setChildOption(.TCP_NO_DELAY, true);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        bootstrap.setChildOption(KEEP_ALIVE, true);
+<span class="linenumber"> 22</span><span class="linenumber-separator"> </span>        bootstrap.connect<a name="example.time2.co3" id="example.time2.co3"></a>(17)(new InetSocketAddress(host, port));
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 24</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time2.co1"><img src="http://docbook.github.com/release/2.0.3/base/img/15.png" alt="15"
+                                      border="0" /></a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a> is a client-side counterpart of <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a>.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time2.co2">(16)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Only one <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a> used.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time2.co3">(17)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              We should call the <code class="methodname">connect</code> method instead of
+                              the <code class="methodname">bind</code> method.  
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  As you can see, it is not really different from the server side startup.
+                  What about the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a> implementation?  It should receive a
+                  32-bit integer from the server, translate it into a human readable format,
+                  print the translated time, and close the connection:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>import java.util.Date;
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeClientHandler extends  {
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    public void inboundBufferUpdated(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        long currentTimeMillis = in.readInt() * 1000L;
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>        System.out.println(new Date(currentTimeMillis));
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public void exceptionCaught(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Throwable cause) {
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>        cause.printStackTrace();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  It looks very simple and does not look any different from the server side
+                  example.  However, this handler sometimes will refuse to work raising an
+                  <code class="exceptionname">IndexOutOfBoundsException</code>.  We discuss why
+                  this happens in the next section.
+                  
+               </p>
+            </section>
+            <section id="start.10" class="section">
+               <div class="section-titlepage">
+                  <h3>7. 
+                     Dealing with a Stream-based Transport
+                     
+                  </h3>
+               </div>
+               <section id="start.10.2" class="section">
+                  <div class="section-titlepage">
+                     <h4>7.1. 
+                        One Small Caveat of Socket Buffer
+                        
+                     </h4>
+                  </div>
+                  <p>
+                     In a stream-based transport such as TCP/IP, received data is stored
+                     into a socket receive buffer.  Unfortunately, the buffer of a
+                     stream-based transport is not a queue of packets but a queue of bytes.
+                     It means, even if you sent two messages as two independent packets, an
+                     operating system will not treat them as two messages but as just a
+                     bunch of bytes.  Therefore, there is no guarantee that what you read
+                     is exactly what your remote peer wrote.  For example, let us assume
+                     that the TCP/IP stack of an operating system has received three packets:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>+-----+-----+-----+
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>| ABC | DEF | GHI |
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>+-----+-----+-----+</pre></div>
+                  <p>
+                     Because of this general property of a stream-based protocol, there's
+                     high chance of reading them in the following fragmented form in your
+                     application:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>+----+-------+---+---+
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>| AB | CDEFG | H | I |
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>+----+-------+---+---+</pre></div>
+                  <p>
+                     Therefore, a receiving part, regardless it is server-side or
+                     client-side, should defrag the received data into one or more meaningful
+                     <em class="firstterm">frames</em> that could be easily understood by the
+                     application logic.  In case of the example above, the received data
+                     should be framed like the following:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>+-----+-----+-----+
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>| ABC | DEF | GHI |
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>+-----+-----+-----+</pre></div>
+               </section>
+               <section id="start.10.3" class="section">
+                  <div class="section-titlepage">
+                     <h4>7.2. 
+                        The First Solution
+                        
+                     </h4>
+                  </div>
+                  <p>
+                     Now let us get back to the TIME client example.  We have the same
+                     problem here.  A 32-bit integer is a very small amount of data, and it
+                     is not likely to be fragmented often.  However, the problem is that it
+                     <em>can</em> be fragmented, and the possibility of
+                     fragmentation will increase as the traffic increases.
+                     
+                  </p>
+                  <p>
+                     The simplistic solution is to create an internal cumulative buffer and
+                     wait until all 4 bytes are received into the internal buffer.  The
+                     following is the modified <code class="classname">TimeClientHandler</code>
+                     implementation that fixes the problem:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>import java.util.Date;
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeClientHandler extends <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundByteHandlerAdapter.html"><code class="classname">ChannelInboundByteHandlerAdapter</code></a> {
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    public void inboundBufferUpdated(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {        
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        if (in.readableBytes() &gt;= 4) {<a name="example.time3.co1" id="example.time3.co1"></a>(18)
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>            long currentTimeMillis = buf.readInt() * 1000L;
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            System.out.println(new Date(currentTimeMillis));
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>            e.getChannel().close();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        }
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public void exceptionCaught(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Throwable cause) {
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>        cause.printStackTrace();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber"> 20</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+                  <div class="calloutlist">
+                     <table border="0" summary="Callout list">
+                        <tr class="callout-row">
+                           <td class="callout-bug" valign="baseline" align="left">
+                              <p class="callout"><a href="#example.time3.co1">(18)</a>  
+                              </p>
+                           </td>
+                           <td class="callout-body" valign="baseline" align="left">
+                              <p>
+                                 The handler checks if <code class="varname">in</code> has enough
+                                 data, 4 bytes in this example, and proceed to the actual business
+                                 logic.  Otherwise, Netty will call the
+                                 <code class="methodname">inboundBufferUpdated</code> method again when more
+                                 data arrives.
+                                 
+                              </p>
+                           </td>
+                        </tr>
+                     </table>
+                  </div>
+               </section>
+               <section id="start.10.4" class="section">
+                  <div class="section-titlepage">
+                     <h4>7.3. 
+                        The Second Solution
+                        
+                     </h4>
+                  </div>
+                  <p>
+                     Although the first solution has resolved the problem with the TIME
+                     client, the modified handler does not look that clean.  Imagine a more
+                     complicated protocol which is composed of multiple fields such as a
+                     variable length field.  Your <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a> implementation will
+                     become unmaintainable very quickly.
+                     
+                  </p>
+                  <p>
+                     As you may have noticed, you can add more than one <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a> to
+                     a <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a>, and therefore, you can split one monolithic
+                     <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a> into multiple modular ones to reduce the complexity of
+                     your application.  For example, you could split
+                     <code class="classname">TimeClientHandler</code> into two handlers:
+                     
+                     <div class="itemizedlist">
+                        <ul>
+                           <li>
+                              <p>
+                                 <code class="classname">TimeDecoder</code> which deals with the
+                                 fragmentation issue, and
+                                 
+                              </p>
+                           </li>
+                           <li>
+                              <p>
+                                 the initial simple version of <code class="classname">TimeClientHandler</code>.
+                                 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </p>
+                  <p>
+                     Fortunately, Netty provides an extensible class which helps you write
+                     the first one out of the box:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeDecoder extends <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ByteToMessageDecoder.html"><code class="classname">ByteToMessageDecoder</code></a><a name="example.time4.co1" id="example.time4.co1"></a>(19) {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    protected Object decode(
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in)<a name="example.time4.co2" id="example.time4.co2"></a>(20) {
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>            
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        if (buffer.readableBytes() &lt; 4) {
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>            return null; <a name="example.time4.co3" id="example.time4.co3"></a>(21)
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        }
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>        
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        return buffer.readBytes(4);<a name="example.time4.co4" id="example.time4.co4"></a>(22)
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+                  <div class="calloutlist">
+                     <table border="0" summary="Callout list">
+                        <tr class="callout-row">
+                           <td class="callout-bug" valign="baseline" align="left">
+                              <p class="callout"><a href="#example.time4.co1">(19)</a>  
+                              </p>
+                           </td>
+                           <td class="callout-body" valign="baseline" align="left">
+                              <p>
+                                 <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ByteToMessageDecoder.html"><code class="classname">ByteToMessageDecoder</code></a> is an implementation of <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a> which
+                                 makes it easy to which deals with the fragmentation issue.
+                                 
+                              </p>
+                           </td>
+                        </tr>
+                        <tr class="callout-row">
+                           <td class="callout-bug" valign="baseline" align="left">
+                              <p class="callout"><a href="#example.time4.co2">(20)</a>  
+                              </p>
+                           </td>
+                           <td class="callout-body" valign="baseline" align="left">
+                              <p>
+                                 calls <code class="methodname">decode</code> method with
+                                 the inbound buffer whenever new data is received.
+                                 
+                              </p>
+                           </td>
+                        </tr>
+                        <tr class="callout-row">
+                           <td class="callout-bug" valign="baseline" align="left">
+                              <p class="callout"><a href="#example.time4.co3">(21)</a>  
+                              </p>
+                           </td>
+                           <td class="callout-body" valign="baseline" align="left">
+                              <p>
+                                 If <code class="literal">null</code> is returned, it means there's not 
+                                 enough data yet.  <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ByteToMessageDecoder.html"><code class="classname">ByteToMessageDecoder</code></a> will call again when there is a
+                                 sufficient amount of data.
+                                 
+                              </p>
+                           </td>
+                        </tr>
+                        <tr class="callout-row">
+                           <td class="callout-bug" valign="baseline" align="left">
+                              <p class="callout"><a href="#example.time4.co4">(22)</a>  
+                              </p>
+                           </td>
+                           <td class="callout-body" valign="baseline" align="left">
+                              <p>
+                                 If non-<code class="literal">null</code> is returned, it means the
+                                 <code class="methodname">decode</code> method has decoded a message
+                                 successfully.  <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ByteToMessageDecoder.html"><code class="classname">ByteToMessageDecoder</code></a> will discard the read part of its
+                                 internal cumulative buffer.  Please remember that you don't need
+                                 to decode multiple messages.  <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ByteToMessageDecoder.html"><code class="classname">ByteToMessageDecoder</code></a> will keep calling
+                                 the <code class="methodname">decoder</code> method until it returns
+                                 <code class="literal">null</code>.
+                                 
+                              </p>
+                           </td>
+                        </tr>
+                     </table>
+                  </div>
+                  <p>
+                     Now our TimeClientHandler will always receive <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>s which are exact 4 bytes in size
+                     and so contain the full data. Because of this we need to change the TimeClientHandler
+                     to
+                     extend <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundMessageHandlerAdapter.html"><code class="classname">ChannelInboundMessageHandlerAdapter</code></a>:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>import java.util.Date;
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeClientHandler extends <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundMessageHandlerAdapter.html"><code class="classname">ChannelInboundMessageHandlerAdapter</code></a>&lt;ByteBuf&gt; {
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    public void messageReceived(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> msg)<a name="example.time5.co1" id="example.time5.co1"></a>(23) {  
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            long currentTimeMillis = buf.readInt() * 1000L; 
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>            System.out.println(new Date(currentTimeMillis));
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            ctx.close();     
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public void exceptionCaught(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Throwable cause) {
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>        cause.printStackTrace();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+                  <div class="calloutlist">
+                     <table border="0" summary="Callout list">
+                        <tr class="callout-row">
+                           <td class="callout-bug" valign="baseline" align="left">
+                              <p class="callout"><a href="#example.time5.co1">(23)</a>  
+                              </p>
+                           </td>
+                           <td class="callout-body" valign="baseline" align="left">
+                              <p>
+                                 <code class="methodname">messageReceived</code> will be called with a new <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> msg
+                                 for every received full data now.
+                                 
+                              </p>
+                           </td>
+                        </tr>
+                     </table>
+                  </div>
+                  <p>
+                     Now that we have another handler to insert into the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a>,
+                     we should modify the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInitializer.html"><code class="classname">ChannelInitializer</code></a> implementation in the
+                     <code class="classname">TimeClient</code>:
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>        bootstrap.setHandler(new <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInitializer.html"><code class="classname">ChannelInitializer</code></a>&lt;Channel&gt;() {
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>            public void initChannel(Channel channel) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                channel.pipeline().addLast(new TimeDecoder(), new TimeClientHandler());
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>            }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        });</pre></div>
+                  <p>
+                     If you are an adventurous person, you might want to try the
+                     <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ReplayingDecoder.html"><code class="classname">ReplayingDecoder</code></a> which simplifies the decoder even more.  You will
+                     need to consult the API reference for more information though.
+                     
+                  </p>
+                  <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeDecoder extends <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ReplayingDecoder.html"><code class="classname">ReplayingDecoder</code></a>&lt;Void&gt; {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    protected Object decode(
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>            
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        return in.readBytes(4);
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+                  <p>
+                     Additionally, Netty provides out-of-the-box decoders which enables
+                     you to implement most protocols very easily and helps you avoid from
+                     ending up with a monolithic unmaintainable handler implementation.
+                     Please refer to the following packages for more detailed examples:
+                     
+                     <div class="itemizedlist">
+                        <ul>
+                           <li>
+                              <p>
+                                 <code class="literal">io.netty.example.factorial</code> for
+                                 a binary protocol, and
+                                 
+                              </p>
+                           </li>
+                           <li>
+                              <p>
+                                 <code class="literal">io.netty.example.telnet</code> for
+                                 a text line-based protocol.
+                                 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </p>
+               </section>
+            </section>
+            <section id="start.pojo" class="section">
+               <div class="section-titlepage">
+                  <h3>8. 
+                     Speaking in POJO instead of ByteBuf
+                     
+                  </h3>
+               </div>
+               <p>
+                  All the examples we have reviewed so far used a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> as a
+                  primary data structure of a protocol message.  In this section, we will
+                  improve the TIME protocol client and server example to use a 
+                  <a href="http://en.wikipedia.org/wiki/POJO">POJO</a> instead of a
+                  <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>.
+                  
+               </p>
+               <p>
+                  The advantage of using a POJO in your <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> is obvious;
+                  your handler becomes more maintainable and reusable by separating the
+                  code which extracts information from <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> out from the
+                  handler.  In the TIME client and server examples, we read only one
+                  32-bit integer and it is not a major issue to use <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> directly.
+                  However, you will find it is necessary to make the separation as you
+                  implement a real world protocol.
+                  
+               </p>
+               <p>
+                  First, let us define a new type called <code class="classname">UnixTime</code>.
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>import java.util.Date;
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class UnixTime {
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    private final int value;
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    public UnixTime(int value) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        this.value = value;
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>    public int getValue() {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        return value;
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public String toString() {
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>        return new Date(value * 1000L).toString();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 20</span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  We can now revise the <code class="classname">TimeDecoder</code> to return
+                  a <code class="classname">UnixTime</code> instead of a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>. 
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>@Override
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>protected Object decode(
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>    if (in.readableBytes() &lt; 4) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        return null;
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    return new UnixTime(int.readInt());<a name="example.time6.co1" id="example.time6.co1"></a>(24)
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time6.co1">(24)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ByteToMessageDecoder.html"><code class="classname">ByteToMessageDecoder</code></a> and <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/ReplayingDecoder.html"><code class="classname">ReplayingDecoder</code></a> allow you to return an object
+                              of any type.  If they were restricted to return only a
+                              <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>, we would have to insert another <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a>
+                              which transforms a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> into a
+                              <code class="classname">UnixTime</code>.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  With the updated decoder, the <code class="classname">TimeClientHandler</code>
+                  does not use <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> anymore so we need to change it to receive UnixTime
+                  messages name.
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>public class TimeClientHandler extends <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundMessageHandlerAdapter.html"><code class="classname">ChannelInboundMessageHandlerAdapter</code></a>&lt;UnixTime&gt; {
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>    public void messageReceived(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Unixtime m) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        System.out.println(m);
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>    public void exceptionCaught(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Throwable cause) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        cause.printStackTrace();
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>        ctx.close();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  Much simpler and elegant, right?  The same technique can be applied on
+                  the server side.  Let us update the
+                  <code class="classname">TimeServerHandler</code> first this time:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>@Override
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>public void channelActive(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    UnixTime time = new UnixTime(System.currentTimeMillis() / 1000);
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>    <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> f = ctx.write(time);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    f.addListener(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFutureListener.html"><code class="interfacename">ChannelFutureListener</code></a>.CLOSE);
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  Now, the only missing piece is an encoder, which is an implementation of
+                  <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a> that translates a <code class="classname">UnixTime</code> back
+                  into bytes that can be written to the outbound <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>.  It's much simpler 
+                  than writing a decoder because there's no need to deal with packet fragmentation
+                  and assembly when encoding a message.
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>    
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeEncoder extends <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/MessageToByteEncoder.html"><code class="classname">MessageToByteEncoder</code></a>&lt;UnixTime&gt; {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    protected void encode(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, UnixTime<a name="example.time7.co1" id="example.time7.co1"></a>(25) msg, ByteBuf out) {        
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        out.writeInt(m.getValue());<a name="example.time7.co2" id="example.time7.co2"></a>(26)
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time7.co1">(25)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              An encoder overrides the <code class="methodname">encode</code>.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time7.co2">(26)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              All needs to get done is to encode the message to bytes and write
+                              it to the outbound <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a>, like shown here.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  The last task left is to insert a <code class="classname">TimeEncoder</code>
+                  into the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a> on the server side, and it is left as a
+                  trivial exercise.
+                  
+               </p>
+            </section>
+            <section id="start.12" class="section">
+               <div class="section-titlepage">
+                  <h3>9. 
+                     Shutting Down Your Application
+                     
+                  </h3>
+               </div>
+               <p>
+                  If you ran the <code class="classname">TimeClient</code>, you must have noticed
+                  that the application doesn't exit but just keep running doing nothing.
+                  Looking from the full stack trace, you will also find a couple I/O threads
+                  are running.  To shut down the I/O threads and let the application exit
+                  gracefully, you need to release the resources allocated by <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a>
+                  or <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a>.
+                  
+               </p>
+               <p>
+                  The shutdown process of a typical network application is composed of the
+                  following three steps:
+                  
+                  <div class="orderedlist">
+                     <ol style="list-style: decimal;">
+                        <li>
+                           <p>
+                              Close all server sockets if there are any,
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              Close all non-server sockets (i.e. client sockets and accepted
+                              sockets) if there are any, and
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              Release all resources used by <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a> or <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a>.
+                              
+                           </p>
+                        </li>
+                     </ol>
+                  </div>
+                  
+               </p>
+               <p>
+                  To apply the three steps above to the <code class="classname">TimeClient</code>,
+                  <code class="methodname">TimeClient.main()</code> could shut itself down
+                  gracefully by closing the only one client connection and releasing all
+                  resources used by <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a>:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package io.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeClient {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>    public static void main(String[] args) throws Exception {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a> bootstrap = ...;
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> future<a name="example.time8.co1" id="example.time8.co1"></a>(27) = bootstrap.connect(...);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        future.sync();<a name="example.time8.co2" id="example.time8.co2"></a>(28)
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>        future.getChannel().getCloseFuture().sync();<a name="example.time8.co3" id="example.time8.co3"></a>(29)
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        bootstap.shutdown();<a name="example.time8.co4" id="example.time8.co4"></a>(30)
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time8.co1">(27)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              The <code class="methodname">connect</code> method of <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a>
+                              returns a <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> which notifies when a connection attempt
+                              succeeds or fails.  It also has a reference to the <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> which
+                              is associated with the connection attempt.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time8.co2">(28)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Wait for the returned <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a> to determine if the connection
+                              attempt was successful or not. If failed it will throw a Exception.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time8.co3">(29)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Now that the connection attempt is over, we need to wait until the
+                              connection is closed by waiting for the <code class="varname">closeFuture</code>
+                              of the <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>.  Every <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> has its own <code class="varname">closeFuture</code>
+                              so that you are notified and can perform a certain action on closure.
+                              
+                           </p>
+                           <p>
+                              Even if the connection attempt has failed the <code class="varname">closeFuture</code>
+                              will be notified because the <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> will be closed automatically
+                              when the connection attempt fails.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time8.co4">(30)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              All connections have been closed at this point.  The only task left
+                              is to release the resources being used by <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/Bootstrap.html"><code class="classname">Bootstrap</code></a>.  It is as
+                              simple as calling its <code class="methodname">shutdown()</code>
+                              method.  All resources including the NIO <code class="classname">Selector</code>s
+                              and thread pools will be shut down and terminated automatically.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  Shutting down a client was pretty easy, but how about shutting down a
+                  server?  You need to unbind from the port and close all open accepted
+                  connections.  To do this, you need a data structure that keeps track of
+                  the list of active connections, and it's not a trivial task.  Fortunately,
+                  there is a solution, <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a>.
+                  
+               </p>
+               <p>
+                  <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> is a special extension of Java collections API which
+                  represents a set of open <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s.  If a <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> is added to a
+                  <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> and the added <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> is closed, the closed <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>
+                  is removed from its <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> automatically.  You can also perform
+                  an operation on all <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s in the same group.  For instance, you can
+                  close all <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s in a <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> when you shut down your server.
+                  
+               </p>
+               <p>
+                  To keep track of open sockets, you need to modify the
+                  <code class="classname">TimeServerHandler</code> to add a new open <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> to
+                  the global <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a>, <code class="varname">TimeServer.allChannels</code>:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>@Override
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>public void channelActive(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    TimeServer.allChannels.add(ctx.channel();<a name="example.time9.co1" id="example.time9.co1"></a>(31)
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time9.co1">(31)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Yes, <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> is thread-safe.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+               <p>
+                  Now that the list of all active <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s are maintained automatically,
+                  shutting down a server is as easy as shutting down a client:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>package org.jboss.netty.example.time;
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>public class TimeServer {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    static final <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> allChannels = new <a href="http://static.netty.io/4.0/api/io/netty/channel/group/DefaultChannelGroup.html"><code class="classname">DefaultChannelGroup</code></a>("time-server"<a name="example.time10.co1" id="example.time10.co1"></a>(32));
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public static void main(String[] args) throws Exception {
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a> bootstrap = ...;
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> channel<a name="example.time10.co2" id="example.time10.co2"></a>(33) = bootstrap.bind(...);
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>        allChannels.add(channel);<a name="example.time10.co3" id="example.time10.co3"></a>(34)
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        waitForShutdownCommand();<a name="example.time10.co4" id="example.time10.co4"></a>(35)
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>        <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroupFuture.html"><code class="interfacename">ChannelGroupFuture</code></a> future = allChannels.close();<a name="example.time10.co5" id="example.time10.co5"></a>(36)
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        future.sync();
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>        bootstreap.releaseExternalResources();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>}</pre></div>
+               <div class="calloutlist">
+                  <table border="0" summary="Callout list">
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time10.co1">(32)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/group/DefaultChannelGroup.html"><code class="classname">DefaultChannelGroup</code></a> requires the name of the group as a constructor
+                              parameter.  The group name is solely used to distinguish one group
+                              from others.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time10.co2">(33)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              The <code class="methodname">bind</code> method of <a href="http://static.netty.io/4.0/api/io/netty/bootstrap/ServerBootstrap.html"><code class="classname">ServerBootstrap</code></a>
+                              returns a server side <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> which is bound to the specified
+                              local address.  Calling the <code class="methodname">close()</code> method
+                              of the returned <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> will make the <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> unbind from the
+                              bound local address.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time10.co3">(34)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              Any type of <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s can be added to a <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a> regardless if
+                              it is either server side, client-side, or accepted.  Therefore,
+                              you can close the bound <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> along with the accepted <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s
+                              in one shot when the server shuts down.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time10.co4">(35)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              <code class="methodname">waitForShutdownCommand()</code> is an imaginary
+                              method that waits for the shutdown signal.  You could wait for a
+                              message from a privileged client or the JVM shutdown hook.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                     <tr class="callout-row">
+                        <td class="callout-bug" valign="baseline" align="left">
+                           <p class="callout"><a href="#example.time10.co5">(36)</a>  
+                           </p>
+                        </td>
+                        <td class="callout-body" valign="baseline" align="left">
+                           <p>
+                              You can perform the same operation on all channels in the same 
+                              <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroup.html"><code class="interfacename">ChannelGroup</code></a>.  In this case, we close all channels, which means
+                              the bound server-side <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a> will be unbound and all accepted
+                              connections will be closed asynchronously.  To notify when all
+                              connections were closed successfully, it returns a <a href="http://static.netty.io/4.0/api/io/netty/channel/group/ChannelGroupFuture.html"><code class="interfacename">ChannelGroupFuture</code></a>
+                              which has a similar role with <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelFuture.html"><code class="interfacename">ChannelFuture</code></a>.
+                              
+                           </p>
+                        </td>
+                     </tr>
+                  </table>
+               </div>
+            </section>
+            <section id="start.13" class="section">
+               <div class="section-titlepage">
+                  <h3>10. 
+                     Summary
+                     
+                  </h3>
+               </div>
+               <p>
+                  In this chapter, we had a quick tour of Netty with a demonstration on how
+                  to write a fully working network application on top of Netty.  
+                  
+               </p>
+               <p>      
+                  There is more detailed information about Netty in the upcoming chapters. We
+                  also encourage you to review the Netty examples in the 
+                  <a href="https://github.com/netty/netty/tree/master/example/src/main/java/io/netty/example">io.netty.example</a>
+                  package.
+                  
+               </p>
+               <p>      
+                  Please also note that the
+                  <a href="http://netty.io/Main/Get+Involved">community</a> is always waiting for your
+                  questions and ideas to help you and keep improving Netty based on your
+                  feed back.
+                  
+               </p>
+            </section>
+         </article>
+         <article id="architecture" class="chapter">
+            <header class="chapter-titlepage">
+               <h2>Chapter 2. Architectural Overview</h2>
+            </header>
+            <div class="toc">
+               <p><b>Table of Contents</b></p>
+               <ul class="toc">
+                  <li><span><a href="#architecture.5">1. Rich Buffer Data Structure</a></span><ul class="toc">
+                        <li><span><a href="#architecture.5.4">1.1. Combining and Slicing ChannelBuffers</a></span></li>
+                     </ul>
+                  </li>
+                  <li><span><a href="#architecture.6">2. Universal Asynchronous I/O API</a></span></li>
+                  <li><span><a href="#architecture.7">3. Event Model based on the Interceptor Chain Pattern</a></span></li>
+                  <li><span><a href="#architecture.8">4. Advanced Components for More Rapid Development</a></span><ul class="toc">
+                        <li><span><a href="#architecture.8.3">4.1. Codec framework</a></span></li>
+                        <li><span><a href="#architecture.8.4">4.2. SSL / TLS Support</a></span></li>
+                        <li><span><a href="#architecture.8.5">4.3. HTTP Implementation</a></span></li>
+                        <li><span><a href="#architecture.8.6">4.4. WebSockets Implementation</a></span></li>
+                        <li><span><a href="#architecture.8.7">4.5. Google Protocol Buffer Integration</a></span></li>
+                     </ul>
+                  </li>
+                  <li><span><a href="#architecture.9">5. Summary</a></span></li>
+               </ul>
+            </div>
+            <div id="architecture.2" class="mediaobject centerimg"><img src="images/architecture.png" align="middle" width="296"
+                    alt="The Architecture Diagram of Netty" /></div>
+            <p>
+               In this chapter, we will examine what core functionalities are provided in
+               Netty and how they constitute a complete network application development
+               stack on top of the core.  Please keep this diagram in mind as you read this
+               chapter.
+               
+            </p>
+            <p>
+               Also keep in mind that a lot of the detailed documentation is in the javadoc.
+               Please click on links to class names and package names.
+               
+            </p>
+            <section id="architecture.5" class="section">
+               <div class="section-titlepage">
+                  <h3>1. Rich Buffer Data Structure</h3>
+               </div>
+               <p>
+                  Netty uses its own buffer API instead of NIO <code class="classname">ByteBuffer</code>
+                  to represent a sequence of bytes. This approach has significant advantages
+                  over using <code class="classname">ByteBuffer</code>.  Netty's new buffer type,
+                  <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> has been designed from the ground up to address the problems
+                  of <code class="classname">ByteBuffer</code> and to meet the daily needs of
+                  network application developers.  To list a few cool features:
+                  
+                  <div class="itemizedlist">
+                     <ul>
+                        <li>
+                           <p>
+                              You can define your own buffer type if necessary.
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              Transparent zero copy is achieved by a built-in composite buffer type.
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              A dynamic buffer type is provided out-of-the-box, whose capacity is
+                              expanded on demand, just like <code class="classname">StringBuffer</code>.
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              There's no need to call <code class="methodname">flip()</code> anymore.
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              It is often faster than <code class="classname">ByteBuffer</code>.
+                              
+                           </p>
+                        </li>
+                     </ul>
+                  </div>
+                  
+               </p>
+               <p>
+                  For more information, please refer to the
+                  <a href="http://static.netty.io/4.0/api/io/netty/buffer/package-summary.html#package_description"><code class="literal">io.netty.buffer</code> package description</a>.
+                  
+               </p>
+               <section id="architecture.5.4" class="section">
+                  <div class="section-titlepage">
+                     <h4>1.1. Combining and Slicing ChannelBuffers</h4>
+                  </div>
+                  <p>
+                     When transfering data between communication layers, data often needs to be combined
+                     or sliced.
+                     For example, if a payload is split over multiple packages, it often needs to be be
+                     combined 
+                     for decoding.
+                     
+                  </p>
+                  <p>
+                     Traditionally, data from the multiple packages are combined by copying them into a
+                     new 
+                     byte buffer. 
+                     
+                  </p>
+                  <p>
+                     Netty supports a zero-copy approach where by a <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> "points" to the required
+                     buffers hence eliminating the need to perform a copy.
+                     
+                  </p>
+                  <div id="architecture.5.4.5" class="mediaobject centerimg"><img src="images/combine-slice-buffer.png" align="middle" width="498.5"
+                          alt="Combining and Slicing ByteBufs" /></div>
+               </section>
+            </section>
+            <section id="architecture.6" class="section">
+               <div class="section-titlepage">
+                  <h3>2. Universal Asynchronous I/O API</h3>
+               </div>
+               <p>
+                  Traditional I/O APIs in Java provide different types and methods for
+                  different transport types.  For example,
+                  <code class="classname">java.net.Socket</code> and
+                  <code class="classname">java.net.DatagramSocket</code> do not have any common
+                  super type and therefore they have very different ways to perform socket
+                  I/O.
+                  
+               </p>
+               <p>
+                  This mismatch makes porting a network application from one transport to
+                  another tedious and difficult.  The lack of portability between
+                  transports becomes a problem when you need to support additional
+                  transports, as this often entails rewriting the network layer of the
+                  application.  Logically, many protocols can run on more than one
+                  transport such as TCP/IP, UDP/IP, SCTP, and serial port communication.
+                  
+               </p>
+               <p>
+                  To make matters worse, Java's New I/O (NIO) API introduced
+                  incompatibilities with the old blocking I/O (OIO) API and will continue
+                  to do so in the next release, NIO.2 (AIO).  Because all these APIs are
+                  different from each other in design and performance characteristics, you
+                  are often forced to determine which API your application will depend on
+                  before you even begin the implementation phase.
+                  
+               </p>
+               <p>
+                  For instance, you might want to start with OIO because the number of
+                  clients you are going to serve will be very small and writing a socket
+                  server using OIO is much easier than using NIO.  However, you are going
+                  to be in trouble when your business grows exponentially and your server
+                  needs to serve tens of thousands of clients simultaneously.  You could
+                  start with NIO, but doing so may hinder rapid development by greatly
+                  increasing development time due to the complexity of the NIO Selector
+                  API.
+                  
+               </p>
+               <p>
+                  Netty has a universal asynchronous I/O interface called a <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>, which
+                  abstracts away all operations required for point-to-point communication.
+                  That is, once you wrote your application on one Netty transport, your
+                  application can run on other Netty transports.  Netty provides a number
+                  of essential transports via one universal API:
+                  
+                  <div class="itemizedlist">
+                     <ul>
+                        <li>
+                           <p>
+                              NIO-based TCP/IP transport
+                              (See <code class="literal">io.netty.channel.socket.nio</code>),
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>
+                              OIO-based TCP/IP transport
+                              (See <code class="literal">io.netty.channel.socket.oio</code>),
+                              
+                           </p>
+                        </li>
+                        <li>
+                           <p>OIO-based UDP/IP transport, and</p>
+                        </li>
+                        <li>
+                           <p>
+                              Local transport (See <code class="literal">io.netty.channel.local</code>).
+                              
+                           </p>
+                        </li>
+                     </ul>
+                  </div>
+                  Switching from one transport to another usually takes just a couple
+                  lines of changes such as choosing a different <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a>
+                  implementation.
+                  
+               </p>
+               <p>
+                  Also, you are even able to take advantage of new transports which aren't
+                  yet written (such as serial port communication transport), again
+                  by replacing just a couple lines of constructor calls.  Moreover, you can
+                  write your own transport by extending the core API.
+                  
+               </p>
+            </section>
+            <section id="architecture.7" class="section">
+               <div class="section-titlepage">
+                  <h3>3. Event Model based on the Interceptor Chain Pattern</h3>
+               </div>
+               <p>
+                  A well-defined and extensible event model is a must for an event-driven
+                  application.  Netty has a well-defined event model focused on I/O.  It
+                  also allows you to implement your own event type without breaking the
+                  existing code because each event type is distinguished from another by
+                  a strict type hierarchy.  This is another differentiator against other
+                  frameworks.  Many NIO frameworks have no or a very limited notion of an
+                  event model. If they offer extension at all, they often break the
+                  existing code when you try to add custom event types
+                  
+               </p>
+               <p>
+                  An IO operation is handled by a list of <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandler.html"><code class="interfacename">ChannelHandler</code></a>s in a
+                  <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a>. The pipeline implements an advanced form of the
+                  <a href="http://java.sun.com/blueprints/corej2eepatterns/Patterns/InterceptingFilter.html">Intercepting Filter</a>
+                  pattern to give a user full control over how an event is handled and how
+                  the handlers in the pipeline interact with each other.  For example,
+                  you can define what to do when data is read from a socket:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>public class MyReadHandler implements <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelInboundByteHandlerAdapter.html"><code class="classname">ChannelInboundByteHandlerAdapter</code></a> {
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public void messageReceived(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, <a href="http://static.netty.io/4.0/api/io/netty/buffer/ByteBuf.html"><code class="interfacename">ByteBuf</code></a> in) {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>        // Do something with the received message.
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  You can also define what to do when a handler receives a write request:
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>public class MyWriteHandler implements <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelOutboundMessageHandlerAdapter.html"><code class="classname">ChannelOutboundMessageHandlerAdapter</code></a>&lt;Message;&gt; {
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>    @Override
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public void flush(<a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelHandlerContext.html"><code class="interfacename">ChannelHandlerContext</code></a> ctx, Message msg) {
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>        // Do something with the message to be written.
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        // And forward the event to the next handler if needed
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>        ctx.flush(); 
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    }
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>}</pre></div>
+               <p>
+                  For more information on the event model, please refer to the
+                  API documentation of <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a>.
+                  
+               </p>
+            </section>
+            <section id="architecture.8" class="section">
+               <div class="section-titlepage">
+                  <h3>4. Advanced Components for More Rapid Development</h3>
+               </div>
+               <p>
+                  On top of the core components mentioned above, that already enable the
+                  implementation of all types of network applications, Netty provides a set
+                  of advanced features to accelerate the page of development even more.
+                  
+               </p>
+               <section id="architecture.8.3" class="section">
+                  <div class="section-titlepage">
+                     <h4>4.1. Codec framework</h4>
+                  </div>
+                  <p>
+                     As demonstrated in <a href="#start.pojo">Section 8, “
+                        Speaking in POJO instead of ByteBuf
+                        ”</a>, it is always a good
+                     idea to separate a protocol codec from business logic. However, there
+                     are some complications when implementing this idea from scratch.  You
+                     have to deal with the fragmentation of messages. Some protocols are
+                     multi-layered (i.e. built on top of other lower level protocols). Some
+                     are too complicated to be implemented in a single state machine.
+                     
+                  </p>
+                  <p>
+                     Consequently, a good network application framework should provide an
+                     extensible, reusable, unit-testable, and multi-layered codec framework
+                     that generates maintainable user codecs.
+                     
+                  </p>
+                  <p>
+                     Netty provides a number of basic and advanced codecs to address most
+                     issues you will encounter when you write a protocol codec regardless
+                     if it is simple or not, binary or text - simply whatever.
+                     
+                  </p>
+               </section>
+               <section id="architecture.8.4" class="section">
+                  <div class="section-titlepage">
+                     <h4>4.2. SSL / TLS Support</h4>
+                  </div>
+                  <p>
+                     Unlike old blocking I/O, it is a non-trivial task to support SSL in NIO.
+                     You can't simply wrap a stream to encrypt or decrypt data but you have
+                     to use <code class="classname">javax.net.ssl.SSLEngine</code>.
+                     <code class="classname">SSLEngine</code> is a state machine which is as complex
+                     as SSL itself.  You have to manage all possible states such as cipher
+                     suite and encryption key negotiation (or re-negotiation), certificate
+                     exchange, and validation.  Moreover, <code class="classname">SSLEngine</code> is
+                     not even completely thread-safe, as one would expect.
+                     
+                  </p>
+                  <p>
+                     In Netty, <a href="http://static.netty.io/4.0/api/io/netty/handler/ssl/SslHandler.html"><code class="classname">SslHandler</code></a> takes care of all the gory details and pitfalls
+                     of <code class="classname">SSLEngine</code>.  All you need to do is to configure
+                     the <a href="http://static.netty.io/4.0/api/io/netty/handler/ssl/SslHandler.html"><code class="classname">SslHandler</code></a> and insert it into your <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a>.  It also
+                     allows you to implement advanced features like
+                     <a href="http://en.wikipedia.org/wiki/Starttls">StartTLS</a>
+                     very easily.
+                     
+                  </p>
+               </section>
+               <section id="architecture.8.5" class="section">
+                  <div class="section-titlepage">
+                     <h4>4.3. HTTP Implementation</h4>
+                  </div>
+                  <p>
+                     HTTP is definitely the most popular protocol in the Internet. There are
+                     already a number of HTTP implementations such as a Servlet container.
+                     Then why does Netty have HTTP on top of its core?
+                     
+                  </p>
+                  <p>
+                     Netty's HTTP support is very different from the existing HTTP libraries.
+                     It gives you complete control over how HTTP messages are exchanged at a
+                     low level.  Because it is basically the combination of an HTTP codec and
+                     HTTP message classes, there is no restriction such as an enforced thread
+                     model.  That is, you can write your own HTTP client or server that works
+                     exactly the way you want.  You have full control over everything that's
+                     in the HTTP specification, including the thread model, connection life
+                     cycle, and chunked encoding.
+                     
+                  </p>
+                  <p>
+                     Thanks to its highly customizable nature, you can write a very efficient
+                     HTTP server such as:
+                     
+                     <div class="itemizedlist">
+                        <ul>
+                           <li>
+                              <p>
+                                 Chat server that requires persistent connections and server push
+                                 technology (e.g. <a href="http://en.wikipedia.org/wiki/Comet_%28programming%29">Comet</a>)
+                                 
+                              </p>
+                           </li>
+                           <li>
+                              <p>
+                                 Media streaming server that needs to keep the connection open
+                                 until the whole media is streamed (e.g. 2 hours of video)
+                                 
+                              </p>
+                           </li>
+                           <li>
+                              <p>
+                                 File server that allows the uploading of large files without
+                                 memory pressure (e.g. uploading 1GB per request)
+                                 
+                              </p>
+                           </li>
+                           <li>
+                              <p>
+                                 Scalable mash-up client that connects to tens of thousands of 3rd
+                                 party web services asynchronously
+                                 
+                              </p>
+                           </li>
+                        </ul>
+                     </div>
+                     
+                  </p>
+               </section>
+               <section id="architecture.8.6" class="section">
+                  <div class="section-titlepage">
+                     <h4>4.4. WebSockets Implementation</h4>
+                  </div>
+                  <p>
+                     <a href="http://en.wikipedia.org/wiki/WebSockets">WebSockets</a> allows for a bi-directional, 
+                     full-duplex communications channels, over a single Transmission Control Protocol (TCP)
+                     socket. 
+                     It is designed to allow streaming of data between a web browser and a web server.
+                     
+                  </p>
+                  <p>
+                     The WebSocket protocol has been standardized by the IETF as <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a>. 
+                     
+                  </p>
+                  <p>
+                     Netty implementes RFC 6455 and a number of older versions of the specification. Please
+                     refer to the 
+                     <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/http/websocketx/package-summary#package_description">
+                        org.jboss.netty.handler.codec.http.websocketx</a> package and associated 
+                     <a href="http://static.netty.io/4.0/xref/io/netty/example/http/websocketx/server/package-summary.html">examples</a>.
+                     
+                  </p>
+               </section>
+               <section id="architecture.8.7" class="section">
+                  <div class="section-titlepage">
+                     <h4>4.5. Google Protocol Buffer Integration</h4>
+                  </div>
+                  <p>
+                     <a href="http://code.google.com/apis/protocolbuffers/docs/overview.html">Google Protocol Buffers</a>
+                     are an ideal solution for the rapid implementation of a highly efficient
+                     binary protocols that evolve over time.  With <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/protobuf/ProtobufEncoder.html"><code class="classname">ProtobufEncoder</code></a> and
+                     <a href="http://static.netty.io/4.0/api/io/netty/handler/codec/protobuf/ProtobufDecoder.html"><code class="classname">ProtobufDecoder</code></a>, you can turn the message classes generated by the
+                     Google Protocol Buffers Compiler (protoc) into Netty codec.  Please take
+                     a look into the
+                     <a href="http://static.netty.io/4.0/xref/io/netty/example/localtime/package-summary.html">'LocalTime' example</a>
+                     that shows how easily you can create a high-performing binary protocol
+                     client and server from the
+                     <a href="http://anonsvn.jboss.org/repos/netty/trunk/src/main/java/org/jboss/netty/example/localtime/LocalTimeProtocol.proto">sample protocol definition</a>.
+                     
+                  </p>
+               </section>
+            </section>
+            <section id="architecture.9" class="section">
+               <div class="section-titlepage">
+                  <h3>5. Summary</h3>
+               </div>
+               <p>
+                  In this chapter, we reviewed the overall architecture of Netty from the
+                  feature standpoint.  Netty has a simple, yet powerful architecture.
+                  It is composed of three components - buffer, channel, and event model -
+                  and all advanced features are built on top of the three core components.
+                  Once you understood how these three work together, it should not be
+                  difficult to understand the more advanced features which were covered
+                  briefly in this chapter.
+                  
+               </p>
+               <p>
+                  You might still have unanswered questions about what the overall
+                  architecture looks like exactly and how each of the features work
+                  together.  If so, it is a good idea to
+                  <a href="http://netty.io/Main/Get+Involved">talk to us</a> to improve this guide.
+                  
+               </p>
+            </section>
+         </article>
+         <article id="faq" class="preface">
+            <header class="preface-titlepage">
+               <h2>Frequently Asked Questions</h2>
+            </header>
+            <div class="toc">
+               <p><b>Table of Contents</b></p>
+               <ul class="toc">
+                  <li><span><a href="#faq.3">1. When can I write outbound data?</a></span></li>
+                  <li><span><a href="#faq.4">2. How do I incorporate my blocking application code with the non-blocking <code class="classname">NioEventLoopGroup</code>?</a></span></li>
+                  <li><span><a href="#faq.5">3. Do I need to synchronize my handler code given that events can happen at the same
+                           time?</a></span></li>
+                  <li><span><a href="#faq.6">4. How do I pass data between handlers in the same Channel?</a></span></li>
+               </ul>
+            </div>
+            <p>
+               This FAQ is a summary of question and answers from <a href="http://stackoverflow.com/questions/tagged/netty?sort=faq">
+                  StackOverflow</a>.
+               
+            </p>
+            <section id="faq.3" class="section">
+               <div class="section-titlepage">
+                  <h3>1. When can I write outbound data?</h3>
+               </div>
+               <p>
+                  As long as you have the reference to the Channel (or ChannelHandlerContext), you can
+                  call Channel.write() 
+                  (or ChannelHandlerContext.write()) from anywhere, any thread.
+                  
+               </p>
+               <p>
+                  See <a href="http://stackoverflow.com/questions/3222134/how-does-downstream-events-work-in-jbosss-netty">
+                     discussion</a>.
+                  
+               </p>
+            </section>
+            <section id="faq.4" class="section">
+               <div class="section-titlepage">
+                  <h3>2. How do I incorporate my blocking application code with the non-blocking <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a>?
+                  </h3>
+               </div>
+               <p>
+                  <a href="http://static.netty.io/4.0/api/io/netty/channel/nio/NioEventLoopGroup.html"><code class="classname">NioEventLoopGroup</code></a> contains n Threads that handle the IO of all the registered <a href="http://static.netty.io/4.0/api/io/netty/channel/Channel.html"><code class="interfacename">Channel</code></a>s.
+                  
+               </p>
+               <p>
+                  If your applicaiton's handler blocks such as (reading from a database) or is CPU intensive,
+                  the worker thread 
+                  pool maybe exhausted and performance will degrade.
+                  
+               </p>
+               <p>
+                  We recommend that you implement your blocking application code in another thread pool.
+                  You can do this by adding
+                  your handler with an extra <a href="http://static.netty.io/4.0/api/io/netty/channel/EventExecutor.html"><code class="interfacename">EventExecutor</code></a> to the <a href="http://static.netty.io/4.0/api/io/netty/channel/ChannelPipeline.html"><code class="interfacename">ChannelPipeline</code></a>.
+                  
+               </p>
+               <div class="programlisting"><pre><span class="linenumber">  1</span><span class="linenumber-separator"> </span>public static void main(String[] args) throws Exception {
+<span class="linenumber">  2</span><span class="linenumber-separator"> </span>        final EventExecutor executor = new DefaultEventExecutor(8);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber">  4</span><span class="linenumber-separator"> </span>        ServerBootstrap bootstrap = new ServerBootstrap();
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        bootstrap.group(new NioEventLoopGroup(), new NioEventLoopGroup());
+<span class="linenumber">  6</span><span class="linenumber-separator"> </span>        bootstrap.childHandler(new ChannelInitializer&lt;Channel&gt;() {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>            @Override
+<span class="linenumber">  8</span><span class="linenumber-separator"> </span>            public void initChannel(Channel channel) {
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                ChannelPipeline pipeline = channel.pipeline();
+<span class="linenumber"> 10</span><span class="linenumber-separator"> </span>                pipeline.addLast("decoder", new HttpRequestDecoder());
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
+<span class="linenumber"> 12</span><span class="linenumber-separator"> </span>                pipeline.addLast("encoder", new HttpResponseEncoder());
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
+<span class="linenumber"> 14</span><span class="linenumber-separator"> </span>                
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                // MyHandler contains code that blocks so add it with the
+<span class="linenumber"> 16</span><span class="linenumber-separator"> </span>                // EventExecutor to the pipeline.
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>                pipeline.addLast(executor, "handler", new MyHandler());        
+<span class="linenumber"> 18</span><span class="linenumber-separator"> </span>            }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        });
+<span class="linenumber"> 20</span><span class="linenumber-separator"> </span>        ...
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 22</span><span class="linenumber-separator"> </span>        sb.bind(socketAddress);
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>        
+<span class="linenumber"> 24</span><span class="linenumber-separator"> </span>        // Other code
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>
+<span class="linenumber"> 26</span><span class="linenumber-separator"> </span>    }
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    
+<span class="linenumber"> 28</span><span class="linenumber-separator"> </span>    
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>    public class MyHandler extends SimpleChannelUpstreamHandler {
+<span class="linenumber"> 30</span><span class="linenumber-separator"> </span>        // Your blocking application code
+<span class="linenumber">   </span><span class="linenumber-separator"> </span>}</pre></div>
+            </section>
+            <section id="faq.5" class="section">
+               <div class="section-titlepage">
+                  <h3>3. Do I need to synchronize my handler code given that events can happen at the same
+                     time?
+                  </h3>
+               </div>
+               <p>
+                  To make it short, NO! Netty will take care to make sure all your ChannelHandlers will
+                  be executed 
+                  by only one Thread at the same time.
+                  
+               </p>
+            </section>
+            <section id="faq.6" class="section">
+               <div class="section-titlepage">
+                  <h3>4. How do I pass data between handlers in the same Channel?</h3>
+               </div>
+               <p>
+                  Use Channel.attr(..).set(...) to store the reference. Please refer to the apidocs
+                  for more informations. 
+                  
+               </p>
+            </section>
+         </article>
+      </article>
+   </body>
+</html>
