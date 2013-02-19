@@ -10,7 +10,7 @@ echo The wiki contains `wc -l 'wiki/_pages'` pages.
 {
   echo '---'
   echo 'layout: base'
-  echo "title: 'Docs: All documents'"
+  echo "title: 'All documents'"
   echo '---'
   echo
   echo '%h1 All documentation pages'
