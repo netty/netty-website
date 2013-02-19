@@ -50,7 +50,7 @@ popd
 rm -fr "$SRC"
 pushd "$BIN/.."
 "$BIN/update-wiki.sh" || exit 1 # Retreve all wiki pages
-awestruct -g || exit 1
+awestruct --generate --force || exit 1
 cp -R 3.* 4.* "$SRC" || exit 1
 popd
 
