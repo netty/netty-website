@@ -42,6 +42,7 @@ cat 'wiki/_pages' | while read -r LINE; do
       echo
       echo ':plain'
       {
+        echo '# encoding: UTF-8'
         echo "require 'nokogiri'"
         echo '@doc = Nokogiri::HTML::DocumentFragment.parse <<-EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'
         curl -s "https://github.com$WIKI_URI"
