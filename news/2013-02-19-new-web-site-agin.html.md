@@ -19,5 +19,3 @@ Does this mean we went completely backward and our documentation is unmodifiable
 
 I hope you like the new web site.  Please let us know what you think about it and what would make it better.
 
-#{site.base_url}
-
