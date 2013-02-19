@@ -15,7 +15,7 @@ Although the WYSIWYG editing experice provided by XWiki was extraordinarily supe
 
 Consequently, I rebuilt our web site using [Awestruct](http://awestruct.org/) again.  This time, it was much easier to build the web site because I was already familiar with Awestruct and thanks to great toolkits like [Twitter Bootstrap](http://twitter.github.com/bootstrap/) and [Font Awesome](http://fortawesome.github.com/Font-Awesome/).
 
-Does this mean we went completely backward and our documentation is unmodifiable?  Not at all.  If you browse [the documentation page](#{site.base_url}/docs/index.html), you will find that all documentation pages are periodically auto-generated from [the Github Wiki](https://github.com/netty/netty/wiki).  You can just visit the wiki to submit your changes and they will be deployed automatically.  As usual, your contribution to our documentation will make us very excited, even if it is such a tiny thing such as fixing typos and grammar.
+Does this mean we went completely backward and our documentation is unmodifiable?  Not at all.  If you browse [the documentation page](#{site.base_url}/docs/index.html), you will find that all documentation pages are periodically auto-generated from [the Github Wiki](https://github.com/netty/netty/wiki).  You can just visit the wiki to submit your changes and they will be deployed automatically.  As usual, your contribution to our documentation will make us very excited, even if it is such a tiny thing as fixing typos and grammar.
 
 I hope you like the new web site.  Please let us know what you think about it and what would make it better.
 
