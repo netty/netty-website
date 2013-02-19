@@ -34,8 +34,7 @@ cat 'wiki/_pages' | while read -r LINE; do
     {
       echo '---'
       echo 'layout: wiki'
-      echo "title: 'Docs: $WIKI_TITLE'"
-      echo "simple_title: '$WIKI_TITLE'"
+      echo "title: '$WIKI_TITLE'"
       echo "github_name: '$WIKI_GITHUB_NAME'"
       echo "retrieval_date: '`date '+%d-%b-%Y'`'"
       echo '---'
@@ -46,6 +45,7 @@ cat 'wiki/_pages' | while read -r LINE; do
         echo "require 'nokogiri'"
         echo '@doc = Nokogiri::HTML::DocumentFragment.parse <<-EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'
         curl -s "https://github.com$WIKI_URI"
+        echo
         echo 'EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'
         echo 'print @doc.at_css "div#wiki-content"'
 
@@ -62,9 +62,7 @@ cat 'wiki/_pages' | while read -r LINE; do
         | perl -pi -e 's/^/  /g' \
         | perl -pi -e 's/<a [^>]*absent[^>]*>(((?!<\/a>).)*)<\/a>/<span class="broken-link">$1<\/span>/gi' \
         | perl -pi -e 's#/netty/netty/wiki/(Home)?"#index.html"#gi' \
-        | perl -pi -e 's#/netty/netty/wiki/([^"]+)#\L$1.html#g' \
-        | perl -pi -e 's/\\/\\\\/g' \
-        | perl -pi -e "s/'/\\\\'/g"
+        | perl -pi -e 's#/netty/netty/wiki/([^"]+)#\L$1.html#g'
       echo
     } > "wiki/$WIKI_FILE.html.haml"
 

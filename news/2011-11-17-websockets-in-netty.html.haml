@@ -1,0 +1,87 @@
+---
+layout: news-item
+title: 'WebSockets in Netty'
+author: trustin
+disqus_identifier: 7216694065147753452
+---
+
+:plain
+  <div class="entry-content">
+  <h3 id="HWhatareWebSockets3F"><span>What are WebSockets?</span></h3>
+  <p>Current web browser communications protocol is limited to the HTTP request and response paradigm - i.e. the browser requests and the server responds.</p>
+  <p>What if we want to use a different communications paradigm? For example, what if we want to perform 2 way communications where the server sends a request and the browser responds? A common use case would be the server notifies the client that an event has occurred.</p>
+  <p>This is where <span class="wikiexternallink"><a href="http://en.wikipedia.org/wiki/WebSocket">WebSockets</a></span> come into play. WebSocket is a technology providing for bi-directional, full-duplex communications channels, over a single Transmission Control Protocol (TCP) socket. In addition, because WebSockets can co-exist with other HTTP traffic over port 80 and 443, firewalls will not have to be re-configured.</p>
+  <p>WebSocket is part of the <span class="wikiexternallink"><a href="http://dev.w3.org/html5/websockets/">W3C</a></span> drive towards HTML 5.</p>
+  <h3 id="HVersionConfusion"><span>Version Confusion</span></h3>
+  <p>WebSockets is an evolving standard.</p>
+  <p>Just have a look at the different <span class="wikiexternallink"><a href="http://en.wikipedia.org/wiki/Comparison_of_WebSocket_implementations">implementations</a></span> and the different versions each support. There have been numerous version of the WebSocket standards under different names.</p>
+  <p>So far, browsers have converged on 2 versions.</p>
+  <ul>
+  <li>
+  <span class="wikiexternallink"><a href="http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-76">Hixie-76</a></span>/<span class="wikiexternallink"><a href="http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00">HyBi-00</a></span><ul>
+  <li>Safari 5+, Chrome 4-13 and Firefox 4 supports this standard.</li>
+  <li>There are two names for this version because the Hixie-76 documentation is used as input into the new HiBi IETF working group.</li>
+  <li>A flaw in this standard was discovered in the handshaking which requires exchange of binary data in the HTTP body. This did not work across some proxy servers.</li>
+  </ul>
+  </li>
+  <li>
+  <span class="wikiexternallink"><a href="http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-10">HyBi-10</a></span><ul>
+  <li>Chrome 14-15, Firefox 7 and IE 10 Developer Preview supports this standard.</li>
+  <li>Handshaking is performed in HTTP request and response headers</li>
+  <li>Uses wire protocol version 8. You will see “Sec-WebSocket-Version: 8” in the HTTP header.</li>
+  </ul>
+  </li>
+  </ul>
+  <p>Hybi-00 and Hybi-10 both represents versions of the specification document. The version of the wire protocol are actually 0 and 8 respectively.</p>
+  <p>Typically, the wire protocol (sequence of bits and bytes sent over the network) does not change between different versions of the specification document. As such, the wire protocol version is set by the version of the specification document at which the change was made to the wire protocol. So version 8 of the wire protocol was specified in <span class="wikiexternallink"><a href="http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-08">Hybi-08</a></span>.</p>
+  <p>What changes are made between different versions of the specification document? Corrections of typos, clarification of concepts and adjustments in handshaking. The latest version is <span class="wikiexternallink"><a href="http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-17">Hybi-17</a></span> (with a wire protocol version of 13).</p>
+  <h3 id="HNettyWebSocketSupport"><span>Netty WebSocket Support</span></h3>
+  <p><strong>Netty 3.2.6</strong> supports Hixie-75 and 76 but <strong>NOT</strong> Hybi-10. Refer to the org.jboss.netty.handler.codec.http.websocket package and associated examples.</p>
+  <p><strong>Netty 4.0</strong> (unreleased) will support both Hixie-75 and 76 <strong>AND </strong>Hybi-10. The code is now in the Netty master branch (see <span class="wikiexternallink"><a href="https://github.com/netty/netty/pull/26">pull request #26</a></span>).</p>
+  <p>Points about this implementation:</p>
+  <ol>
+  <li>The existing org.jboss.netty.handler.codec.http.websocket package remains unchanged. There are quite a few frameworks using this package so we will just leave well enough alone.</li>
+  <li>The new code for web socket support has been placed in the org.jboss.netty.handler.codec.http.<strong>websocketx</strong> package. The “x” is intended to represent multiple versions.</li>
+  <li>The websocketx package supports both WebSocket versions (“Hixie-75/76/Hybi-00” and “Hybi-10”)</li>
+  <li>The websocketx supports both client and server.</li>
+  <li>Exmaples - refer to package-info.java in each package for instructions.<ul>
+  <li>org.jboss.netty.example.http.websocketx.autobahn - echo server used for running AutoBahn tests</li>
+  <li>org.jboss.netty.example.http.websocketx.client - web socket client implementation</li>
+  <li>org.jboss.netty.example.http.websocketx.server - web socket server implementation that echo the text you send it in upper case</li>
+  <li>org.jboss.netty.example.http.websocketx.sslserver - example of how to use SSL with the web socket server</li>
+  </ul>
+  </li>
+  <li>Frames<ul>
+  <li>Data is sent between client and server in frames.</li>
+  <li>The old websocket package implements only the DefaultWebSocketFrame. Text, binary and closing frames are encapsulated into this single class.</li>
+  <li>The new websocketx package implements frames as a different class: TextWebSocketFrame, BinaryWebSocketFrame, CloseWebSocketFrame, PingWebSocketFrame and PongWebSocketFrame. I felt that this made the code easier to read and understand.</li>
+  </ul>
+  </li>
+  <li>Encoders and Decoders<ul>
+  <li>Hixie-75/76/Hybi-00 is implemented as WebSocket00FrameDecoder and WebSocket00FrameEncoder.</li>
+  <li>Hybi-10 is implemented as WebSocket08FrameDecoder and WebSocket08FrameEncoder. The version #8 is used because the wire protocol #8 is used in conjunction with the specification document version #10.</li>
+  </ul>
+  </li>
+  <li>Server Handshake<ul>
+  <li>Implements the handshaking protocol on the server side.</li>
+  <li>Hixie-75/76/Hybi-00 is implemented in WebSocketServerHandshaker00</li>
+  <li>Hybi-10 is implemented in WebSocketServerHandshaker10</li>
+  <li>WebSocketServerHandshakerFactory picks the correct handshaker to use based on the handshaking request sent by the client.</li>
+  <li>See org.jboss.netty.example.http.websocketx.server.WebSocketServer for an example.</li>
+  </ul>
+  </li>
+  <li>Client Handshake<ul>
+  <li>Implements the handshaking protocol on the client side.</li>
+  <li>Hixie-75/76/Hybi-00 is implemented in WebSocketClientHandshaker00</li>
+  <li>Hybi-10 is implemented in WebSocketClientHandshaker10</li>
+  <li>WebSocketClientHandshakerFactory picks the correct handshaker to use based on the version of the specification passed in as a parameter.</li>
+  <li>See org.jboss.netty.example.http.websocketx.client.App for an example.</li>
+  </ul>
+  </li>
+  <li>This implementation has passed the <span class="wikiexternallink"><a href="http://www.tavendo.de/autobahn/testsuite.html">AutoBahn</a></span> Server Tests V 0.4.2 </li>
+  </ol>
+  <h3 id="HThankYou"><span>Thank You</span></h3>
+  <p>This implementation uses code from <span class="wikiexternallink"><a href="https://github.com/joewalnes/webbit">Webbit</a></span> (for which Aslak Hellesøy has written hybi-10 support) and from <span class="wikiexternallink"><a href="https://github.com/cgbystrom/netty-tools">cgbystrom</a></span> (for web socket clients).</p>
+  <h3 id="HNext"><span>Next</span></h3>
+  <p>It is my understanding that Chrome 16 will support Hybi-17. I’ll be looking to add Netty support for this web socket version shortly.</p>
+  </div>
