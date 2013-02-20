@@ -43,12 +43,44 @@ cat 'wiki/_pages' | while read -r LINE; do
       {
         echo '# encoding: UTF-8'
         echo "require 'nokogiri'"
+        echo "require 'htmlentities'"
         echo '@doc = Nokogiri::HTML::DocumentFragment.parse <<-EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'
-        curl -s "https://github.com$WIKI_URI"
+        curl -s "https://github.com$WIKI_URI" || exit 1
         echo
         echo 'EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'
-        echo 'print @doc.at_css "div#wiki-content"'
 
+        # Generate TOC
+        echo '
+          headings = @doc.css("h2,h3,h4")
+          if headings.size() > 1
+            coder = HTMLEntities.new
+            toc_idx = 0;
+            toc_level = 2;
+            print "<div class=\"wiki-toc well pull-right\">"
+            print "<ul class=\"nav nav-list\">"
+            print "<li class=\"nav-header\">Table of Contents"
+            for h in headings
+              section_id = "wiki-" + h.name + "-" + toc_idx.to_s
+              toc_idx = toc_idx + 1
+              h["id"] = section_id
+              new_toc_level = h.name[1].ord - 48
+              toc_text = coder.encode(h.inner_text)
+              if new_toc_level == toc_level
+                print "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+              elsif new_toc_level == toc_level + 1
+                toc_level = new_toc_level
+                print "<ul class=\"nav nav-list\"><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+              elsif new_toc_level == toc_level - 1
+                toc_level = new_toc_level
+                print "</li></ul></li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+              end
+            end
+            print "</li></ul>"
+            print "</div>"
+          end
+        '
+
+        echo 'print @doc.at_css "div#wiki-body"'
         # Perl regex soup below:
         # 1. DOS to UNIX
         # 2. Indentation
@@ -62,7 +94,8 @@ cat 'wiki/_pages' | while read -r LINE; do
         | perl -pi -e 's/^/  /g' \
         | perl -pi -e 's/<a [^>]*absent[^>]*>(((?!<\/a>).)*)<\/a>/<span class="broken-link">$1<\/span>/gi' \
         | perl -pi -e 's#/netty/netty/wiki/(Home)?"#index.html"#gi' \
-        | perl -pi -e 's#/netty/netty/wiki/([^"]+)#\L$1.html#g'
+        | perl -pi -e 's#/netty/netty/wiki/([^"]+)#\L$1.html#g' \
+        || exit 1
       echo
     } > "wiki/$WIKI_FILE.html.haml"
 
