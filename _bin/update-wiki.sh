@@ -54,11 +54,12 @@ cat 'wiki/_pages' | while read -r LINE; do
           headings = @doc.css("h2,h3,h4")
           if headings.size() > 1
             coder = HTMLEntities.new
-            toc_idx = 0;
-            toc_level = 2;
-            print "<div class=\"wiki-toc well pull-right\">"
-            print "<ul class=\"nav nav-list\">"
-            print "<li class=\"nav-header\">Table of Contents"
+            toc_idx = 0
+            toc_level = 2
+            first = true
+            puts "<div class=\"wiki-toc well pull-right\">"
+            puts "<ul class=\"nav nav-list\">"
+            puts "<li class=\"nav-header\">Table of Contents"
             for h in headings
               section_id = "wiki-" + h.name + "-" + toc_idx.to_s
               toc_idx = toc_idx + 1
@@ -66,17 +67,26 @@ cat 'wiki/_pages' | while read -r LINE; do
               new_toc_level = h.name[1].ord - 48
               toc_text = coder.encode(h.inner_text)
               if new_toc_level == toc_level
-                print "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+                puts "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+                first = false
               elsif new_toc_level == toc_level + 1
+                if first # first heading is not h2 but h3
+                  puts "</li><li>"
+                end
                 toc_level = new_toc_level
-                print "<ul class=\"nav nav-list\"><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
-              elsif new_toc_level == toc_level - 1
+                puts "<ul class=\"nav nav-list\"><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+                first = false;
+              elsif !first and new_toc_level == toc_level - 1
                 toc_level = new_toc_level
-                print "</li></ul></li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+                puts "</li></ul></li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+                first = false;
               end
             end
-            print "</li></ul>"
-            print "</div>"
+            while toc_level >= 2
+              toc_level = toc_level - 1
+              puts "</li></ul>"
+            end
+            puts "</div>"
           end
         '
 
