@@ -52,7 +52,7 @@ cat 'wiki/_pages' | while read -r LINE; do
         # Generate TOC
         echo '
           headings = @doc.css("h2,h3,h4")
-          if headings.size() > 1
+          if headings.size() > 1 and @doc.css("#wiki-notoc").size() == 0
             coder = HTMLEntities.new
             toc_idx = 0
             toc_level = 2
@@ -87,6 +87,13 @@ cat 'wiki/_pages' | while read -r LINE; do
               puts "</li></ul>"
             end
             puts "</div>"
+          end
+        '
+
+        # Enable tab switching
+        echo '
+          for e in @doc.css("ul.nav-tabs li a")
+            e["data-toggle"] = "tab"
           end
         '
 
