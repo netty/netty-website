@@ -31,8 +31,8 @@
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ReferenceCounted;
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.Unpooled;
 <a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.Channel.Unsafe;
-<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.InternalLogger;
-<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.InternalLoggerFactory;
+<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLogger;
+<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLoggerFactory;
 <a class="jxr_linenumber" name="26" href="#26">26</a>  
 <a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> java.net.SocketAddress;
 <a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayList;
@@ -53,7 +53,7 @@
 <a class="jxr_linenumber" name="43" href="#43">43</a>  <em class="jxr_javadoccomment"> */</em>
 <a class="jxr_linenumber" name="44" href="#44">44</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">DefaultChannelPipeline</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> {
 <a class="jxr_linenumber" name="45" href="#45">45</a>  
-<a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/internal/InternalLogger.html">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DefaultChannelPipeline.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/internal/logging/InternalLogger.html">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DefaultChannelPipeline.<strong class="jxr_keyword">class</strong>);
 <a class="jxr_linenumber" name="47" href="#47">47</a>  
 <a class="jxr_linenumber" name="48" href="#48">48</a>      <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> channel;
 <a class="jxr_linenumber" name="49" href="#49">49</a>  
@@ -68,8 +68,8 @@
 <a class="jxr_linenumber" name="58" href="#58">58</a>      <strong class="jxr_keyword">final</strong> Map&lt;EventExecutorGroup, EventExecutor&gt; childExecutors =
 <a class="jxr_linenumber" name="59" href="#59">59</a>              <strong class="jxr_keyword">new</strong> IdentityHashMap&lt;EventExecutorGroup, EventExecutor&gt;();
 <a class="jxr_linenumber" name="60" href="#60">60</a>  
-<a class="jxr_linenumber" name="61" href="#61">61</a>      <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">boolean</strong> inboundBufferFreed;
-<a class="jxr_linenumber" name="62" href="#62">62</a>      <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">boolean</strong> outboundBufferFreed;
+<a class="jxr_linenumber" name="61" href="#61">61</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> inboundShutdown;
+<a class="jxr_linenumber" name="62" href="#62">62</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> outboundShutdown;
 <a class="jxr_linenumber" name="63" href="#63">63</a>  
 <a class="jxr_linenumber" name="64" href="#64">64</a>      <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">DefaultChannelPipeline</a>(<a href="../../../io/netty/channel/Channel.html">Channel</a> channel) {
 <a class="jxr_linenumber" name="65" href="#65">65</a>          <strong class="jxr_keyword">if</strong> (channel == <strong class="jxr_keyword">null</strong>) {
@@ -855,509 +855,521 @@
 <a class="jxr_linenumber" name="845" href="#845">845</a>         <strong class="jxr_keyword">return</strong> tail.nextOutboundByteBuffer();
 <a class="jxr_linenumber" name="846" href="#846">846</a>     }
 <a class="jxr_linenumber" name="847" href="#847">847</a> 
-<a class="jxr_linenumber" name="848" href="#848">848</a>     @Override
-<a class="jxr_linenumber" name="849" href="#849">849</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelRegistered() {
-<a class="jxr_linenumber" name="850" href="#850">850</a>         head.fireChannelRegistered();
-<a class="jxr_linenumber" name="851" href="#851">851</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="852" href="#852">852</a>     }
-<a class="jxr_linenumber" name="853" href="#853">853</a> 
-<a class="jxr_linenumber" name="854" href="#854">854</a>     @Override
-<a class="jxr_linenumber" name="855" href="#855">855</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelUnregistered() {
-<a class="jxr_linenumber" name="856" href="#856">856</a>         head.fireChannelUnregistered();
-<a class="jxr_linenumber" name="857" href="#857">857</a> 
-<a class="jxr_linenumber" name="858" href="#858">858</a>         <em class="jxr_comment">// Free all buffers if channel is closed and unregistered.</em>
-<a class="jxr_linenumber" name="859" href="#859">859</a>         <strong class="jxr_keyword">if</strong> (!channel.isOpen()) {
-<a class="jxr_linenumber" name="860" href="#860">860</a>             head.invokeFreeInboundBuffer();
-<a class="jxr_linenumber" name="861" href="#861">861</a>         }
-<a class="jxr_linenumber" name="862" href="#862">862</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="863" href="#863">863</a>     }
-<a class="jxr_linenumber" name="864" href="#864">864</a> 
-<a class="jxr_linenumber" name="865" href="#865">865</a>     @Override
-<a class="jxr_linenumber" name="866" href="#866">866</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelActive() {
-<a class="jxr_linenumber" name="867" href="#867">867</a>         firedChannelActive = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="868" href="#868">868</a>         head.fireChannelActive();
+<a class="jxr_linenumber" name="848" href="#848">848</a>     <strong class="jxr_keyword">boolean</strong> isInboundShutdown() {
+<a class="jxr_linenumber" name="849" href="#849">849</a>         <strong class="jxr_keyword">return</strong> inboundShutdown;
+<a class="jxr_linenumber" name="850" href="#850">850</a>     }
+<a class="jxr_linenumber" name="851" href="#851">851</a> 
+<a class="jxr_linenumber" name="852" href="#852">852</a>     <strong class="jxr_keyword">boolean</strong> isOutboundShutdown() {
+<a class="jxr_linenumber" name="853" href="#853">853</a>         <strong class="jxr_keyword">return</strong> outboundShutdown;
+<a class="jxr_linenumber" name="854" href="#854">854</a>     }
+<a class="jxr_linenumber" name="855" href="#855">855</a> 
+<a class="jxr_linenumber" name="856" href="#856">856</a>     <strong class="jxr_keyword">void</strong> shutdownInbound() {
+<a class="jxr_linenumber" name="857" href="#857">857</a>         inboundShutdown = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="858" href="#858">858</a>     }
+<a class="jxr_linenumber" name="859" href="#859">859</a> 
+<a class="jxr_linenumber" name="860" href="#860">860</a>     <strong class="jxr_keyword">void</strong> shutdownOutbound() {
+<a class="jxr_linenumber" name="861" href="#861">861</a>         outboundShutdown = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="862" href="#862">862</a>     }
+<a class="jxr_linenumber" name="863" href="#863">863</a> 
+<a class="jxr_linenumber" name="864" href="#864">864</a>     @Override
+<a class="jxr_linenumber" name="865" href="#865">865</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelRegistered() {
+<a class="jxr_linenumber" name="866" href="#866">866</a>         head.fireChannelRegistered();
+<a class="jxr_linenumber" name="867" href="#867">867</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="868" href="#868">868</a>     }
 <a class="jxr_linenumber" name="869" href="#869">869</a> 
-<a class="jxr_linenumber" name="870" href="#870">870</a>         <strong class="jxr_keyword">if</strong> (channel.config().isAutoRead()) {
-<a class="jxr_linenumber" name="871" href="#871">871</a>             channel.read();
-<a class="jxr_linenumber" name="872" href="#872">872</a>         }
+<a class="jxr_linenumber" name="870" href="#870">870</a>     @Override
+<a class="jxr_linenumber" name="871" href="#871">871</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelUnregistered() {
+<a class="jxr_linenumber" name="872" href="#872">872</a>         head.fireChannelUnregistered();
 <a class="jxr_linenumber" name="873" href="#873">873</a> 
-<a class="jxr_linenumber" name="874" href="#874">874</a>         <strong class="jxr_keyword">if</strong> (fireInboundBufferUpdatedOnActivation) {
-<a class="jxr_linenumber" name="875" href="#875">875</a>             fireInboundBufferUpdatedOnActivation = false;
-<a class="jxr_linenumber" name="876" href="#876">876</a>             head.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="874" href="#874">874</a>         <em class="jxr_comment">// Free all buffers if channel is closed and unregistered.</em>
+<a class="jxr_linenumber" name="875" href="#875">875</a>         <strong class="jxr_keyword">if</strong> (!channel.isOpen()) {
+<a class="jxr_linenumber" name="876" href="#876">876</a>             head.invokeFreeInboundBuffer();
 <a class="jxr_linenumber" name="877" href="#877">877</a>         }
 <a class="jxr_linenumber" name="878" href="#878">878</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
 <a class="jxr_linenumber" name="879" href="#879">879</a>     }
 <a class="jxr_linenumber" name="880" href="#880">880</a> 
 <a class="jxr_linenumber" name="881" href="#881">881</a>     @Override
-<a class="jxr_linenumber" name="882" href="#882">882</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelInactive() {
-<a class="jxr_linenumber" name="883" href="#883">883</a>         <em class="jxr_comment">// Some implementations such as EmbeddedChannel can trigger inboundBufferUpdated()</em>
-<a class="jxr_linenumber" name="884" href="#884">884</a>         <em class="jxr_comment">// after deactivation, so it's safe not to revert the firedChannelActive flag here.</em>
-<a class="jxr_linenumber" name="885" href="#885">885</a>         <em class="jxr_comment">// Also, all known transports never get re-activated.</em>
-<a class="jxr_linenumber" name="886" href="#886">886</a>         <em class="jxr_comment">//firedChannelActive = false;</em>
-<a class="jxr_linenumber" name="887" href="#887">887</a>         head.fireChannelInactive();
-<a class="jxr_linenumber" name="888" href="#888">888</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="889" href="#889">889</a>     }
-<a class="jxr_linenumber" name="890" href="#890">890</a> 
-<a class="jxr_linenumber" name="891" href="#891">891</a>     @Override
-<a class="jxr_linenumber" name="892" href="#892">892</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireExceptionCaught(Throwable cause) {
-<a class="jxr_linenumber" name="893" href="#893">893</a>         head.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="882" href="#882">882</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelActive() {
+<a class="jxr_linenumber" name="883" href="#883">883</a>         firedChannelActive = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="884" href="#884">884</a>         head.fireChannelActive();
+<a class="jxr_linenumber" name="885" href="#885">885</a> 
+<a class="jxr_linenumber" name="886" href="#886">886</a>         <strong class="jxr_keyword">if</strong> (channel.config().isAutoRead()) {
+<a class="jxr_linenumber" name="887" href="#887">887</a>             channel.read();
+<a class="jxr_linenumber" name="888" href="#888">888</a>         }
+<a class="jxr_linenumber" name="889" href="#889">889</a> 
+<a class="jxr_linenumber" name="890" href="#890">890</a>         <strong class="jxr_keyword">if</strong> (fireInboundBufferUpdatedOnActivation) {
+<a class="jxr_linenumber" name="891" href="#891">891</a>             fireInboundBufferUpdatedOnActivation = false;
+<a class="jxr_linenumber" name="892" href="#892">892</a>             head.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="893" href="#893">893</a>         }
 <a class="jxr_linenumber" name="894" href="#894">894</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
 <a class="jxr_linenumber" name="895" href="#895">895</a>     }
 <a class="jxr_linenumber" name="896" href="#896">896</a> 
 <a class="jxr_linenumber" name="897" href="#897">897</a>     @Override
-<a class="jxr_linenumber" name="898" href="#898">898</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireUserEventTriggered(Object event) {
-<a class="jxr_linenumber" name="899" href="#899">899</a>         head.fireUserEventTriggered(event);
-<a class="jxr_linenumber" name="900" href="#900">900</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="901" href="#901">901</a>     }
-<a class="jxr_linenumber" name="902" href="#902">902</a> 
-<a class="jxr_linenumber" name="903" href="#903">903</a>     @Override
-<a class="jxr_linenumber" name="904" href="#904">904</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireInboundBufferUpdated() {
-<a class="jxr_linenumber" name="905" href="#905">905</a>         <strong class="jxr_keyword">if</strong> (!firedChannelActive) {
-<a class="jxr_linenumber" name="906" href="#906">906</a>             fireInboundBufferUpdatedOnActivation = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="907" href="#907">907</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="908" href="#908">908</a>         }
-<a class="jxr_linenumber" name="909" href="#909">909</a>         head.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="898" href="#898">898</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelInactive() {
+<a class="jxr_linenumber" name="899" href="#899">899</a>         <em class="jxr_comment">// Some implementations such as EmbeddedChannel can trigger inboundBufferUpdated()</em>
+<a class="jxr_linenumber" name="900" href="#900">900</a>         <em class="jxr_comment">// after deactivation, so it's safe not to revert the firedChannelActive flag here.</em>
+<a class="jxr_linenumber" name="901" href="#901">901</a>         <em class="jxr_comment">// Also, all known transports never get re-activated.</em>
+<a class="jxr_linenumber" name="902" href="#902">902</a>         <em class="jxr_comment">//firedChannelActive = false;</em>
+<a class="jxr_linenumber" name="903" href="#903">903</a>         head.fireChannelInactive();
+<a class="jxr_linenumber" name="904" href="#904">904</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="905" href="#905">905</a>     }
+<a class="jxr_linenumber" name="906" href="#906">906</a> 
+<a class="jxr_linenumber" name="907" href="#907">907</a>     @Override
+<a class="jxr_linenumber" name="908" href="#908">908</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireExceptionCaught(Throwable cause) {
+<a class="jxr_linenumber" name="909" href="#909">909</a>         head.fireExceptionCaught(cause);
 <a class="jxr_linenumber" name="910" href="#910">910</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
 <a class="jxr_linenumber" name="911" href="#911">911</a>     }
 <a class="jxr_linenumber" name="912" href="#912">912</a> 
 <a class="jxr_linenumber" name="913" href="#913">913</a>     @Override
-<a class="jxr_linenumber" name="914" href="#914">914</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelReadSuspended() {
-<a class="jxr_linenumber" name="915" href="#915">915</a>         head.fireChannelReadSuspended();
-<a class="jxr_linenumber" name="916" href="#916">916</a>         <strong class="jxr_keyword">if</strong> (channel.config().isAutoRead()) {
-<a class="jxr_linenumber" name="917" href="#917">917</a>             read();
-<a class="jxr_linenumber" name="918" href="#918">918</a>         }
-<a class="jxr_linenumber" name="919" href="#919">919</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="920" href="#920">920</a>     }
-<a class="jxr_linenumber" name="921" href="#921">921</a> 
-<a class="jxr_linenumber" name="922" href="#922">922</a>     @Override
-<a class="jxr_linenumber" name="923" href="#923">923</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> bind(SocketAddress localAddress) {
-<a class="jxr_linenumber" name="924" href="#924">924</a>         <strong class="jxr_keyword">return</strong> tail.bind(localAddress);
-<a class="jxr_linenumber" name="925" href="#925">925</a>     }
-<a class="jxr_linenumber" name="926" href="#926">926</a> 
-<a class="jxr_linenumber" name="927" href="#927">927</a>     @Override
-<a class="jxr_linenumber" name="928" href="#928">928</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress) {
-<a class="jxr_linenumber" name="929" href="#929">929</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress);
-<a class="jxr_linenumber" name="930" href="#930">930</a>     }
-<a class="jxr_linenumber" name="931" href="#931">931</a> 
-<a class="jxr_linenumber" name="932" href="#932">932</a>     @Override
-<a class="jxr_linenumber" name="933" href="#933">933</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress, SocketAddress localAddress) {
-<a class="jxr_linenumber" name="934" href="#934">934</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress, localAddress);
-<a class="jxr_linenumber" name="935" href="#935">935</a>     }
-<a class="jxr_linenumber" name="936" href="#936">936</a> 
-<a class="jxr_linenumber" name="937" href="#937">937</a>     @Override
-<a class="jxr_linenumber" name="938" href="#938">938</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> disconnect() {
-<a class="jxr_linenumber" name="939" href="#939">939</a>         <strong class="jxr_keyword">return</strong> tail.disconnect();
-<a class="jxr_linenumber" name="940" href="#940">940</a>     }
-<a class="jxr_linenumber" name="941" href="#941">941</a> 
-<a class="jxr_linenumber" name="942" href="#942">942</a>     @Override
-<a class="jxr_linenumber" name="943" href="#943">943</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> close() {
-<a class="jxr_linenumber" name="944" href="#944">944</a>         <strong class="jxr_keyword">return</strong> tail.close();
-<a class="jxr_linenumber" name="945" href="#945">945</a>     }
-<a class="jxr_linenumber" name="946" href="#946">946</a> 
-<a class="jxr_linenumber" name="947" href="#947">947</a>     @Override
-<a class="jxr_linenumber" name="948" href="#948">948</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> deregister() {
-<a class="jxr_linenumber" name="949" href="#949">949</a>         <strong class="jxr_keyword">return</strong> tail.deregister();
-<a class="jxr_linenumber" name="950" href="#950">950</a>     }
-<a class="jxr_linenumber" name="951" href="#951">951</a> 
-<a class="jxr_linenumber" name="952" href="#952">952</a>     @Override
-<a class="jxr_linenumber" name="953" href="#953">953</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> flush() {
-<a class="jxr_linenumber" name="954" href="#954">954</a>         <strong class="jxr_keyword">return</strong> tail.flush();
-<a class="jxr_linenumber" name="955" href="#955">955</a>     }
-<a class="jxr_linenumber" name="956" href="#956">956</a> 
-<a class="jxr_linenumber" name="957" href="#957">957</a>     @Override
-<a class="jxr_linenumber" name="958" href="#958">958</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> write(Object message) {
-<a class="jxr_linenumber" name="959" href="#959">959</a>         <strong class="jxr_keyword">return</strong> tail.write(message);
-<a class="jxr_linenumber" name="960" href="#960">960</a>     }
-<a class="jxr_linenumber" name="961" href="#961">961</a> 
-<a class="jxr_linenumber" name="962" href="#962">962</a>     @Override
-<a class="jxr_linenumber" name="963" href="#963">963</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> bind(SocketAddress localAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="964" href="#964">964</a>         <strong class="jxr_keyword">return</strong> tail.bind(localAddress, promise);
-<a class="jxr_linenumber" name="965" href="#965">965</a>     }
-<a class="jxr_linenumber" name="966" href="#966">966</a> 
-<a class="jxr_linenumber" name="967" href="#967">967</a>     @Override
-<a class="jxr_linenumber" name="968" href="#968">968</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="969" href="#969">969</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress, promise);
-<a class="jxr_linenumber" name="970" href="#970">970</a>     }
-<a class="jxr_linenumber" name="971" href="#971">971</a> 
-<a class="jxr_linenumber" name="972" href="#972">972</a>     @Override
-<a class="jxr_linenumber" name="973" href="#973">973</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress, SocketAddress localAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="974" href="#974">974</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress, localAddress, promise);
-<a class="jxr_linenumber" name="975" href="#975">975</a>     }
-<a class="jxr_linenumber" name="976" href="#976">976</a> 
-<a class="jxr_linenumber" name="977" href="#977">977</a>     @Override
-<a class="jxr_linenumber" name="978" href="#978">978</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> disconnect(<a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="979" href="#979">979</a>         <strong class="jxr_keyword">return</strong> tail.disconnect(promise);
-<a class="jxr_linenumber" name="980" href="#980">980</a>     }
-<a class="jxr_linenumber" name="981" href="#981">981</a> 
-<a class="jxr_linenumber" name="982" href="#982">982</a>     @Override
-<a class="jxr_linenumber" name="983" href="#983">983</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> close(<a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="984" href="#984">984</a>         <strong class="jxr_keyword">return</strong> tail.close(promise);
-<a class="jxr_linenumber" name="985" href="#985">985</a>     }
-<a class="jxr_linenumber" name="986" href="#986">986</a> 
-<a class="jxr_linenumber" name="987" href="#987">987</a>     @Override
-<a class="jxr_linenumber" name="988" href="#988">988</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> deregister(<strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="989" href="#989">989</a>         <strong class="jxr_keyword">return</strong> tail.deregister(promise);
-<a class="jxr_linenumber" name="990" href="#990">990</a>     }
-<a class="jxr_linenumber" name="991" href="#991">991</a> 
-<a class="jxr_linenumber" name="992" href="#992">992</a>     @Override
-<a class="jxr_linenumber" name="993" href="#993">993</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read() {
-<a class="jxr_linenumber" name="994" href="#994">994</a>         tail.read();
-<a class="jxr_linenumber" name="995" href="#995">995</a>     }
-<a class="jxr_linenumber" name="996" href="#996">996</a> 
-<a class="jxr_linenumber" name="997" href="#997">997</a>     @Override
-<a class="jxr_linenumber" name="998" href="#998">998</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> flush(<a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="999" href="#999">999</a>         <strong class="jxr_keyword">return</strong> tail.flush(promise);
-<a class="jxr_linenumber" name="1000" href="#1000">1000</a>     }
-<a class="jxr_linenumber" name="1001" href="#1001">1001</a> 
-<a class="jxr_linenumber" name="1002" href="#1002">1002</a>     @Override
-<a class="jxr_linenumber" name="1003" href="#1003">1003</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> sendFile(<a href="../../../io/netty/channel/FileRegion.html">FileRegion</a> region) {
-<a class="jxr_linenumber" name="1004" href="#1004">1004</a>         <strong class="jxr_keyword">return</strong> tail.sendFile(region);
-<a class="jxr_linenumber" name="1005" href="#1005">1005</a>     }
-<a class="jxr_linenumber" name="1006" href="#1006">1006</a> 
-<a class="jxr_linenumber" name="1007" href="#1007">1007</a>     @Override
-<a class="jxr_linenumber" name="1008" href="#1008">1008</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> sendFile(<a href="../../../io/netty/channel/FileRegion.html">FileRegion</a> region, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="1009" href="#1009">1009</a>         <strong class="jxr_keyword">return</strong> tail.sendFile(region, promise);
-<a class="jxr_linenumber" name="1010" href="#1010">1010</a>     }
-<a class="jxr_linenumber" name="1011" href="#1011">1011</a> 
-<a class="jxr_linenumber" name="1012" href="#1012">1012</a>     @Override
-<a class="jxr_linenumber" name="1013" href="#1013">1013</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> write(Object message, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="1014" href="#1014">1014</a>         <strong class="jxr_keyword">return</strong> tail.write(message, promise);
-<a class="jxr_linenumber" name="1015" href="#1015">1015</a>     }
-<a class="jxr_linenumber" name="1016" href="#1016">1016</a> 
-<a class="jxr_linenumber" name="1017" href="#1017">1017</a>     <strong class="jxr_keyword">void</strong> notifyHandlerException(Throwable cause) {
-<a class="jxr_linenumber" name="1018" href="#1018">1018</a>         <strong class="jxr_keyword">if</strong> (!(cause instanceof ChannelPipelineException)) {
-<a class="jxr_linenumber" name="1019" href="#1019">1019</a>             cause = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/ChannelPipelineException.html">ChannelPipelineException</a>(cause);
-<a class="jxr_linenumber" name="1020" href="#1020">1020</a>         }
-<a class="jxr_linenumber" name="1021" href="#1021">1021</a> 
-<a class="jxr_linenumber" name="1022" href="#1022">1022</a>         <strong class="jxr_keyword">if</strong> (inExceptionCaught(cause)) {
-<a class="jxr_linenumber" name="1023" href="#1023">1023</a>             <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
-<a class="jxr_linenumber" name="1024" href="#1024">1024</a>                 logger.warn(
-<a class="jxr_linenumber" name="1025" href="#1025">1025</a>                         <span class="jxr_string">"An exception was thrown by a user handler "</span> +
-<a class="jxr_linenumber" name="1026" href="#1026">1026</a>                         <span class="jxr_string">"while handling an exceptionCaught event"</span>, cause);
-<a class="jxr_linenumber" name="1027" href="#1027">1027</a>             }
-<a class="jxr_linenumber" name="1028" href="#1028">1028</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="1029" href="#1029">1029</a>         }
-<a class="jxr_linenumber" name="1030" href="#1030">1030</a> 
-<a class="jxr_linenumber" name="1031" href="#1031">1031</a>         fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="1032" href="#1032">1032</a>     }
-<a class="jxr_linenumber" name="1033" href="#1033">1033</a> 
-<a class="jxr_linenumber" name="1034" href="#1034">1034</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> inExceptionCaught(Throwable cause) {
-<a class="jxr_linenumber" name="1035" href="#1035">1035</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="1036" href="#1036">1036</a>             <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1037" href="#1037">1037</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="1038" href="#1038">1038</a>             }
-<a class="jxr_linenumber" name="1039" href="#1039">1039</a> 
-<a class="jxr_linenumber" name="1040" href="#1040">1040</a>             StackTraceElement[] trace = cause.getStackTrace();
-<a class="jxr_linenumber" name="1041" href="#1041">1041</a>             <strong class="jxr_keyword">if</strong> (trace != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                 <strong class="jxr_keyword">for</strong> (StackTraceElement t : trace) {
-<a class="jxr_linenumber" name="1043" href="#1043">1043</a>                     <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"exceptionCaught"</span>.equals(t.getMethodName())) {
-<a class="jxr_linenumber" name="1044" href="#1044">1044</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1045" href="#1045">1045</a>                     }
-<a class="jxr_linenumber" name="1046" href="#1046">1046</a>                 }
-<a class="jxr_linenumber" name="1047" href="#1047">1047</a>             }
-<a class="jxr_linenumber" name="1048" href="#1048">1048</a> 
-<a class="jxr_linenumber" name="1049" href="#1049">1049</a>             cause = cause.getCause();
-<a class="jxr_linenumber" name="1050" href="#1050">1050</a>         }
-<a class="jxr_linenumber" name="1051" href="#1051">1051</a>     }
-<a class="jxr_linenumber" name="1052" href="#1052">1052</a> 
-<a class="jxr_linenumber" name="1053" href="#1053">1053</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> checkDuplicateName(String name) {
-<a class="jxr_linenumber" name="1054" href="#1054">1054</a>         <strong class="jxr_keyword">if</strong> (name2ctx.containsKey(name)) {
-<a class="jxr_linenumber" name="1055" href="#1055">1055</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Duplicate handler name: "</span> + name);
-<a class="jxr_linenumber" name="1056" href="#1056">1056</a>         }
-<a class="jxr_linenumber" name="1057" href="#1057">1057</a>     }
-<a class="jxr_linenumber" name="1058" href="#1058">1058</a> 
-<a class="jxr_linenumber" name="1059" href="#1059">1059</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> getContextOrDie(String name) {
-<a class="jxr_linenumber" name="1060" href="#1060">1060</a>         <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> ctx = (DefaultChannelHandlerContext) context(name);
-<a class="jxr_linenumber" name="1061" href="#1061">1061</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1062" href="#1062">1062</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NoSuchElementException(name);
-<a class="jxr_linenumber" name="1063" href="#1063">1063</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1064" href="#1064">1064</a>             <strong class="jxr_keyword">return</strong> ctx;
-<a class="jxr_linenumber" name="1065" href="#1065">1065</a>         }
-<a class="jxr_linenumber" name="1066" href="#1066">1066</a>     }
-<a class="jxr_linenumber" name="1067" href="#1067">1067</a> 
-<a class="jxr_linenumber" name="1068" href="#1068">1068</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> getContextOrDie(<a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler) {
-<a class="jxr_linenumber" name="1069" href="#1069">1069</a>         <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> ctx = (DefaultChannelHandlerContext) context(handler);
-<a class="jxr_linenumber" name="1070" href="#1070">1070</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1071" href="#1071">1071</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NoSuchElementException(handler.getClass().getName());
-<a class="jxr_linenumber" name="1072" href="#1072">1072</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1073" href="#1073">1073</a>             <strong class="jxr_keyword">return</strong> ctx;
-<a class="jxr_linenumber" name="1074" href="#1074">1074</a>         }
-<a class="jxr_linenumber" name="1075" href="#1075">1075</a>     }
-<a class="jxr_linenumber" name="1076" href="#1076">1076</a> 
-<a class="jxr_linenumber" name="1077" href="#1077">1077</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> getContextOrDie(Class&lt;? <strong class="jxr_keyword">extends</strong> ChannelHandler&gt; handlerType) {
-<a class="jxr_linenumber" name="1078" href="#1078">1078</a>         <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> ctx = (DefaultChannelHandlerContext) context(handlerType);
-<a class="jxr_linenumber" name="1079" href="#1079">1079</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1080" href="#1080">1080</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NoSuchElementException(handlerType.getName());
-<a class="jxr_linenumber" name="1081" href="#1081">1081</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1082" href="#1082">1082</a>             <strong class="jxr_keyword">return</strong> ctx;
-<a class="jxr_linenumber" name="1083" href="#1083">1083</a>         }
-<a class="jxr_linenumber" name="1084" href="#1084">1084</a>     }
-<a class="jxr_linenumber" name="1085" href="#1085">1085</a> 
-<a class="jxr_linenumber" name="1086" href="#1086">1086</a>     <em class="jxr_comment">// A special catch-all handler that handles both bytes and messages.</em>
-<a class="jxr_linenumber" name="1087" href="#1087">1087</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">TailHandler</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/channel/ChannelInboundHandler.html">ChannelInboundHandler</a> {
-<a class="jxr_linenumber" name="1088" href="#1088">1088</a> 
-<a class="jxr_linenumber" name="1089" href="#1089">1089</a>         <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> byteSink = Unpooled.buffer(0);
-<a class="jxr_linenumber" name="1090" href="#1090">1090</a>         <strong class="jxr_keyword">final</strong> MessageBuf&lt;Object&gt; msgSink = Unpooled.messageBuffer(0);
-<a class="jxr_linenumber" name="1091" href="#1091">1091</a> 
-<a class="jxr_linenumber" name="1092" href="#1092">1092</a>         @Override
-<a class="jxr_linenumber" name="1093" href="#1093">1093</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelRegistered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1094" href="#1094">1094</a> 
-<a class="jxr_linenumber" name="1095" href="#1095">1095</a>         @Override
-<a class="jxr_linenumber" name="1096" href="#1096">1096</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelUnregistered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1097" href="#1097">1097</a> 
-<a class="jxr_linenumber" name="1098" href="#1098">1098</a>         @Override
-<a class="jxr_linenumber" name="1099" href="#1099">1099</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1100" href="#1100">1100</a> 
-<a class="jxr_linenumber" name="1101" href="#1101">1101</a>         @Override
-<a class="jxr_linenumber" name="1102" href="#1102">1102</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1103" href="#1103">1103</a> 
-<a class="jxr_linenumber" name="1104" href="#1104">1104</a>         @Override
-<a class="jxr_linenumber" name="1105" href="#1105">1105</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadSuspended(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1106" href="#1106">1106</a> 
-<a class="jxr_linenumber" name="1107" href="#1107">1107</a>         @Override
-<a class="jxr_linenumber" name="1108" href="#1108">1108</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1109" href="#1109">1109</a> 
-<a class="jxr_linenumber" name="1110" href="#1110">1110</a>         @Override
-<a class="jxr_linenumber" name="1111" href="#1111">1111</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1112" href="#1112">1112</a> 
-<a class="jxr_linenumber" name="1113" href="#1113">1113</a>         @Override
-<a class="jxr_linenumber" name="1114" href="#1114">1114</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1115" href="#1115">1115</a> 
-<a class="jxr_linenumber" name="1116" href="#1116">1116</a>         @Override
-<a class="jxr_linenumber" name="1117" href="#1117">1117</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1118" href="#1118">1118</a> 
-<a class="jxr_linenumber" name="1119" href="#1119">1119</a>         @Override
-<a class="jxr_linenumber" name="1120" href="#1120">1120</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="1121" href="#1121">1121</a> 
-<a class="jxr_linenumber" name="1122" href="#1122">1122</a>         @Override
-<a class="jxr_linenumber" name="1123" href="#1123">1123</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1124" href="#1124">1124</a>             logger.warn(
-<a class="jxr_linenumber" name="1125" href="#1125">1125</a>                     <span class="jxr_string">"An exceptionCaught() event was fired, and it reached at the end of the pipeline. "</span> +
-<a class="jxr_linenumber" name="1126" href="#1126">1126</a>                             <span class="jxr_string">"It usually means the last handler in the pipeline did not handle the exception."</span>, cause);
-<a class="jxr_linenumber" name="1127" href="#1127">1127</a>         }
+<a class="jxr_linenumber" name="914" href="#914">914</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireUserEventTriggered(Object event) {
+<a class="jxr_linenumber" name="915" href="#915">915</a>         head.fireUserEventTriggered(event);
+<a class="jxr_linenumber" name="916" href="#916">916</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="917" href="#917">917</a>     }
+<a class="jxr_linenumber" name="918" href="#918">918</a> 
+<a class="jxr_linenumber" name="919" href="#919">919</a>     @Override
+<a class="jxr_linenumber" name="920" href="#920">920</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireInboundBufferUpdated() {
+<a class="jxr_linenumber" name="921" href="#921">921</a>         <strong class="jxr_keyword">if</strong> (!firedChannelActive) {
+<a class="jxr_linenumber" name="922" href="#922">922</a>             fireInboundBufferUpdatedOnActivation = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="923" href="#923">923</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="924" href="#924">924</a>         }
+<a class="jxr_linenumber" name="925" href="#925">925</a>         head.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="926" href="#926">926</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="927" href="#927">927</a>     }
+<a class="jxr_linenumber" name="928" href="#928">928</a> 
+<a class="jxr_linenumber" name="929" href="#929">929</a>     @Override
+<a class="jxr_linenumber" name="930" href="#930">930</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> fireChannelReadSuspended() {
+<a class="jxr_linenumber" name="931" href="#931">931</a>         head.fireChannelReadSuspended();
+<a class="jxr_linenumber" name="932" href="#932">932</a>         <strong class="jxr_keyword">if</strong> (channel.config().isAutoRead()) {
+<a class="jxr_linenumber" name="933" href="#933">933</a>             read();
+<a class="jxr_linenumber" name="934" href="#934">934</a>         }
+<a class="jxr_linenumber" name="935" href="#935">935</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="936" href="#936">936</a>     }
+<a class="jxr_linenumber" name="937" href="#937">937</a> 
+<a class="jxr_linenumber" name="938" href="#938">938</a>     @Override
+<a class="jxr_linenumber" name="939" href="#939">939</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> bind(SocketAddress localAddress) {
+<a class="jxr_linenumber" name="940" href="#940">940</a>         <strong class="jxr_keyword">return</strong> tail.bind(localAddress);
+<a class="jxr_linenumber" name="941" href="#941">941</a>     }
+<a class="jxr_linenumber" name="942" href="#942">942</a> 
+<a class="jxr_linenumber" name="943" href="#943">943</a>     @Override
+<a class="jxr_linenumber" name="944" href="#944">944</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress) {
+<a class="jxr_linenumber" name="945" href="#945">945</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress);
+<a class="jxr_linenumber" name="946" href="#946">946</a>     }
+<a class="jxr_linenumber" name="947" href="#947">947</a> 
+<a class="jxr_linenumber" name="948" href="#948">948</a>     @Override
+<a class="jxr_linenumber" name="949" href="#949">949</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress, SocketAddress localAddress) {
+<a class="jxr_linenumber" name="950" href="#950">950</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress, localAddress);
+<a class="jxr_linenumber" name="951" href="#951">951</a>     }
+<a class="jxr_linenumber" name="952" href="#952">952</a> 
+<a class="jxr_linenumber" name="953" href="#953">953</a>     @Override
+<a class="jxr_linenumber" name="954" href="#954">954</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> disconnect() {
+<a class="jxr_linenumber" name="955" href="#955">955</a>         <strong class="jxr_keyword">return</strong> tail.disconnect();
+<a class="jxr_linenumber" name="956" href="#956">956</a>     }
+<a class="jxr_linenumber" name="957" href="#957">957</a> 
+<a class="jxr_linenumber" name="958" href="#958">958</a>     @Override
+<a class="jxr_linenumber" name="959" href="#959">959</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> close() {
+<a class="jxr_linenumber" name="960" href="#960">960</a>         <strong class="jxr_keyword">return</strong> tail.close();
+<a class="jxr_linenumber" name="961" href="#961">961</a>     }
+<a class="jxr_linenumber" name="962" href="#962">962</a> 
+<a class="jxr_linenumber" name="963" href="#963">963</a>     @Override
+<a class="jxr_linenumber" name="964" href="#964">964</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> deregister() {
+<a class="jxr_linenumber" name="965" href="#965">965</a>         <strong class="jxr_keyword">return</strong> tail.deregister();
+<a class="jxr_linenumber" name="966" href="#966">966</a>     }
+<a class="jxr_linenumber" name="967" href="#967">967</a> 
+<a class="jxr_linenumber" name="968" href="#968">968</a>     @Override
+<a class="jxr_linenumber" name="969" href="#969">969</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> flush() {
+<a class="jxr_linenumber" name="970" href="#970">970</a>         <strong class="jxr_keyword">return</strong> tail.flush();
+<a class="jxr_linenumber" name="971" href="#971">971</a>     }
+<a class="jxr_linenumber" name="972" href="#972">972</a> 
+<a class="jxr_linenumber" name="973" href="#973">973</a>     @Override
+<a class="jxr_linenumber" name="974" href="#974">974</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> write(Object message) {
+<a class="jxr_linenumber" name="975" href="#975">975</a>         <strong class="jxr_keyword">return</strong> tail.write(message);
+<a class="jxr_linenumber" name="976" href="#976">976</a>     }
+<a class="jxr_linenumber" name="977" href="#977">977</a> 
+<a class="jxr_linenumber" name="978" href="#978">978</a>     @Override
+<a class="jxr_linenumber" name="979" href="#979">979</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> bind(SocketAddress localAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="980" href="#980">980</a>         <strong class="jxr_keyword">return</strong> tail.bind(localAddress, promise);
+<a class="jxr_linenumber" name="981" href="#981">981</a>     }
+<a class="jxr_linenumber" name="982" href="#982">982</a> 
+<a class="jxr_linenumber" name="983" href="#983">983</a>     @Override
+<a class="jxr_linenumber" name="984" href="#984">984</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="985" href="#985">985</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress, promise);
+<a class="jxr_linenumber" name="986" href="#986">986</a>     }
+<a class="jxr_linenumber" name="987" href="#987">987</a> 
+<a class="jxr_linenumber" name="988" href="#988">988</a>     @Override
+<a class="jxr_linenumber" name="989" href="#989">989</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> connect(SocketAddress remoteAddress, SocketAddress localAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="990" href="#990">990</a>         <strong class="jxr_keyword">return</strong> tail.connect(remoteAddress, localAddress, promise);
+<a class="jxr_linenumber" name="991" href="#991">991</a>     }
+<a class="jxr_linenumber" name="992" href="#992">992</a> 
+<a class="jxr_linenumber" name="993" href="#993">993</a>     @Override
+<a class="jxr_linenumber" name="994" href="#994">994</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> disconnect(<a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="995" href="#995">995</a>         <strong class="jxr_keyword">return</strong> tail.disconnect(promise);
+<a class="jxr_linenumber" name="996" href="#996">996</a>     }
+<a class="jxr_linenumber" name="997" href="#997">997</a> 
+<a class="jxr_linenumber" name="998" href="#998">998</a>     @Override
+<a class="jxr_linenumber" name="999" href="#999">999</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> close(<a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1000" href="#1000">1000</a>         <strong class="jxr_keyword">return</strong> tail.close(promise);
+<a class="jxr_linenumber" name="1001" href="#1001">1001</a>     }
+<a class="jxr_linenumber" name="1002" href="#1002">1002</a> 
+<a class="jxr_linenumber" name="1003" href="#1003">1003</a>     @Override
+<a class="jxr_linenumber" name="1004" href="#1004">1004</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> deregister(<strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1005" href="#1005">1005</a>         <strong class="jxr_keyword">return</strong> tail.deregister(promise);
+<a class="jxr_linenumber" name="1006" href="#1006">1006</a>     }
+<a class="jxr_linenumber" name="1007" href="#1007">1007</a> 
+<a class="jxr_linenumber" name="1008" href="#1008">1008</a>     @Override
+<a class="jxr_linenumber" name="1009" href="#1009">1009</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read() {
+<a class="jxr_linenumber" name="1010" href="#1010">1010</a>         tail.read();
+<a class="jxr_linenumber" name="1011" href="#1011">1011</a>     }
+<a class="jxr_linenumber" name="1012" href="#1012">1012</a> 
+<a class="jxr_linenumber" name="1013" href="#1013">1013</a>     @Override
+<a class="jxr_linenumber" name="1014" href="#1014">1014</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> flush(<a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1015" href="#1015">1015</a>         <strong class="jxr_keyword">return</strong> tail.flush(promise);
+<a class="jxr_linenumber" name="1016" href="#1016">1016</a>     }
+<a class="jxr_linenumber" name="1017" href="#1017">1017</a> 
+<a class="jxr_linenumber" name="1018" href="#1018">1018</a>     @Override
+<a class="jxr_linenumber" name="1019" href="#1019">1019</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> sendFile(<a href="../../../io/netty/channel/FileRegion.html">FileRegion</a> region) {
+<a class="jxr_linenumber" name="1020" href="#1020">1020</a>         <strong class="jxr_keyword">return</strong> tail.sendFile(region);
+<a class="jxr_linenumber" name="1021" href="#1021">1021</a>     }
+<a class="jxr_linenumber" name="1022" href="#1022">1022</a> 
+<a class="jxr_linenumber" name="1023" href="#1023">1023</a>     @Override
+<a class="jxr_linenumber" name="1024" href="#1024">1024</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> sendFile(<a href="../../../io/netty/channel/FileRegion.html">FileRegion</a> region, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1025" href="#1025">1025</a>         <strong class="jxr_keyword">return</strong> tail.sendFile(region, promise);
+<a class="jxr_linenumber" name="1026" href="#1026">1026</a>     }
+<a class="jxr_linenumber" name="1027" href="#1027">1027</a> 
+<a class="jxr_linenumber" name="1028" href="#1028">1028</a>     @Override
+<a class="jxr_linenumber" name="1029" href="#1029">1029</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> write(Object message, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1030" href="#1030">1030</a>         <strong class="jxr_keyword">return</strong> tail.write(message, promise);
+<a class="jxr_linenumber" name="1031" href="#1031">1031</a>     }
+<a class="jxr_linenumber" name="1032" href="#1032">1032</a> 
+<a class="jxr_linenumber" name="1033" href="#1033">1033</a>     <strong class="jxr_keyword">void</strong> notifyHandlerException(Throwable cause) {
+<a class="jxr_linenumber" name="1034" href="#1034">1034</a>         <strong class="jxr_keyword">if</strong> (!(cause instanceof ChannelPipelineException)) {
+<a class="jxr_linenumber" name="1035" href="#1035">1035</a>             cause = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/ChannelPipelineException.html">ChannelPipelineException</a>(cause);
+<a class="jxr_linenumber" name="1036" href="#1036">1036</a>         }
+<a class="jxr_linenumber" name="1037" href="#1037">1037</a> 
+<a class="jxr_linenumber" name="1038" href="#1038">1038</a>         <strong class="jxr_keyword">if</strong> (inExceptionCaught(cause)) {
+<a class="jxr_linenumber" name="1039" href="#1039">1039</a>             <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
+<a class="jxr_linenumber" name="1040" href="#1040">1040</a>                 logger.warn(
+<a class="jxr_linenumber" name="1041" href="#1041">1041</a>                         <span class="jxr_string">"An exception was thrown by a user handler "</span> +
+<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                         <span class="jxr_string">"while handling an exceptionCaught event"</span>, cause);
+<a class="jxr_linenumber" name="1043" href="#1043">1043</a>             }
+<a class="jxr_linenumber" name="1044" href="#1044">1044</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="1045" href="#1045">1045</a>         }
+<a class="jxr_linenumber" name="1046" href="#1046">1046</a> 
+<a class="jxr_linenumber" name="1047" href="#1047">1047</a>         fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="1048" href="#1048">1048</a>     }
+<a class="jxr_linenumber" name="1049" href="#1049">1049</a> 
+<a class="jxr_linenumber" name="1050" href="#1050">1050</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> inExceptionCaught(Throwable cause) {
+<a class="jxr_linenumber" name="1051" href="#1051">1051</a>         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="1052" href="#1052">1052</a>             <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1053" href="#1053">1053</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="1054" href="#1054">1054</a>             }
+<a class="jxr_linenumber" name="1055" href="#1055">1055</a> 
+<a class="jxr_linenumber" name="1056" href="#1056">1056</a>             StackTraceElement[] trace = cause.getStackTrace();
+<a class="jxr_linenumber" name="1057" href="#1057">1057</a>             <strong class="jxr_keyword">if</strong> (trace != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1058" href="#1058">1058</a>                 <strong class="jxr_keyword">for</strong> (StackTraceElement t : trace) {
+<a class="jxr_linenumber" name="1059" href="#1059">1059</a>                     <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"exceptionCaught"</span>.equals(t.getMethodName())) {
+<a class="jxr_linenumber" name="1060" href="#1060">1060</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1061" href="#1061">1061</a>                     }
+<a class="jxr_linenumber" name="1062" href="#1062">1062</a>                 }
+<a class="jxr_linenumber" name="1063" href="#1063">1063</a>             }
+<a class="jxr_linenumber" name="1064" href="#1064">1064</a> 
+<a class="jxr_linenumber" name="1065" href="#1065">1065</a>             cause = cause.getCause();
+<a class="jxr_linenumber" name="1066" href="#1066">1066</a>         }
+<a class="jxr_linenumber" name="1067" href="#1067">1067</a>     }
+<a class="jxr_linenumber" name="1068" href="#1068">1068</a> 
+<a class="jxr_linenumber" name="1069" href="#1069">1069</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> checkDuplicateName(String name) {
+<a class="jxr_linenumber" name="1070" href="#1070">1070</a>         <strong class="jxr_keyword">if</strong> (name2ctx.containsKey(name)) {
+<a class="jxr_linenumber" name="1071" href="#1071">1071</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Duplicate handler name: "</span> + name);
+<a class="jxr_linenumber" name="1072" href="#1072">1072</a>         }
+<a class="jxr_linenumber" name="1073" href="#1073">1073</a>     }
+<a class="jxr_linenumber" name="1074" href="#1074">1074</a> 
+<a class="jxr_linenumber" name="1075" href="#1075">1075</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> getContextOrDie(String name) {
+<a class="jxr_linenumber" name="1076" href="#1076">1076</a>         <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> ctx = (DefaultChannelHandlerContext) context(name);
+<a class="jxr_linenumber" name="1077" href="#1077">1077</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1078" href="#1078">1078</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NoSuchElementException(name);
+<a class="jxr_linenumber" name="1079" href="#1079">1079</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1080" href="#1080">1080</a>             <strong class="jxr_keyword">return</strong> ctx;
+<a class="jxr_linenumber" name="1081" href="#1081">1081</a>         }
+<a class="jxr_linenumber" name="1082" href="#1082">1082</a>     }
+<a class="jxr_linenumber" name="1083" href="#1083">1083</a> 
+<a class="jxr_linenumber" name="1084" href="#1084">1084</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> getContextOrDie(<a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler) {
+<a class="jxr_linenumber" name="1085" href="#1085">1085</a>         <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> ctx = (DefaultChannelHandlerContext) context(handler);
+<a class="jxr_linenumber" name="1086" href="#1086">1086</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1087" href="#1087">1087</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NoSuchElementException(handler.getClass().getName());
+<a class="jxr_linenumber" name="1088" href="#1088">1088</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1089" href="#1089">1089</a>             <strong class="jxr_keyword">return</strong> ctx;
+<a class="jxr_linenumber" name="1090" href="#1090">1090</a>         }
+<a class="jxr_linenumber" name="1091" href="#1091">1091</a>     }
+<a class="jxr_linenumber" name="1092" href="#1092">1092</a> 
+<a class="jxr_linenumber" name="1093" href="#1093">1093</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> getContextOrDie(Class&lt;? <strong class="jxr_keyword">extends</strong> ChannelHandler&gt; handlerType) {
+<a class="jxr_linenumber" name="1094" href="#1094">1094</a>         <a href="../../../io/netty/channel/DefaultChannelHandlerContext.html">DefaultChannelHandlerContext</a> ctx = (DefaultChannelHandlerContext) context(handlerType);
+<a class="jxr_linenumber" name="1095" href="#1095">1095</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1096" href="#1096">1096</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NoSuchElementException(handlerType.getName());
+<a class="jxr_linenumber" name="1097" href="#1097">1097</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1098" href="#1098">1098</a>             <strong class="jxr_keyword">return</strong> ctx;
+<a class="jxr_linenumber" name="1099" href="#1099">1099</a>         }
+<a class="jxr_linenumber" name="1100" href="#1100">1100</a>     }
+<a class="jxr_linenumber" name="1101" href="#1101">1101</a> 
+<a class="jxr_linenumber" name="1102" href="#1102">1102</a>     <em class="jxr_comment">// A special catch-all handler that handles both bytes and messages.</em>
+<a class="jxr_linenumber" name="1103" href="#1103">1103</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">TailHandler</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/channel/ChannelInboundHandler.html">ChannelInboundHandler</a> {
+<a class="jxr_linenumber" name="1104" href="#1104">1104</a> 
+<a class="jxr_linenumber" name="1105" href="#1105">1105</a>         <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> byteSink = Unpooled.buffer(0);
+<a class="jxr_linenumber" name="1106" href="#1106">1106</a>         <strong class="jxr_keyword">final</strong> MessageBuf&lt;Object&gt; msgSink = Unpooled.messageBuffer(0);
+<a class="jxr_linenumber" name="1107" href="#1107">1107</a> 
+<a class="jxr_linenumber" name="1108" href="#1108">1108</a>         @Override
+<a class="jxr_linenumber" name="1109" href="#1109">1109</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelRegistered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1110" href="#1110">1110</a> 
+<a class="jxr_linenumber" name="1111" href="#1111">1111</a>         @Override
+<a class="jxr_linenumber" name="1112" href="#1112">1112</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelUnregistered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1113" href="#1113">1113</a> 
+<a class="jxr_linenumber" name="1114" href="#1114">1114</a>         @Override
+<a class="jxr_linenumber" name="1115" href="#1115">1115</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1116" href="#1116">1116</a> 
+<a class="jxr_linenumber" name="1117" href="#1117">1117</a>         @Override
+<a class="jxr_linenumber" name="1118" href="#1118">1118</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1119" href="#1119">1119</a> 
+<a class="jxr_linenumber" name="1120" href="#1120">1120</a>         @Override
+<a class="jxr_linenumber" name="1121" href="#1121">1121</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadSuspended(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1122" href="#1122">1122</a> 
+<a class="jxr_linenumber" name="1123" href="#1123">1123</a>         @Override
+<a class="jxr_linenumber" name="1124" href="#1124">1124</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1125" href="#1125">1125</a> 
+<a class="jxr_linenumber" name="1126" href="#1126">1126</a>         @Override
+<a class="jxr_linenumber" name="1127" href="#1127">1127</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
 <a class="jxr_linenumber" name="1128" href="#1128">1128</a> 
 <a class="jxr_linenumber" name="1129" href="#1129">1129</a>         @Override
-<a class="jxr_linenumber" name="1130" href="#1130">1130</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/buffer/Buf.html">Buf</a> newInboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1131" href="#1131">1131</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
-<a class="jxr_linenumber" name="1132" href="#1132">1132</a>         }
-<a class="jxr_linenumber" name="1133" href="#1133">1133</a> 
-<a class="jxr_linenumber" name="1134" href="#1134">1134</a>         @Override
-<a class="jxr_linenumber" name="1135" href="#1135">1135</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> freeInboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1136" href="#1136">1136</a>             byteSink.release();
-<a class="jxr_linenumber" name="1137" href="#1137">1137</a>             msgSink.release();
-<a class="jxr_linenumber" name="1138" href="#1138">1138</a>         }
-<a class="jxr_linenumber" name="1139" href="#1139">1139</a> 
-<a class="jxr_linenumber" name="1140" href="#1140">1140</a>         @Override
-<a class="jxr_linenumber" name="1141" href="#1141">1141</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> inboundBufferUpdated(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1142" href="#1142">1142</a>             <strong class="jxr_keyword">int</strong> byteSinkSize = byteSink.readableBytes();
-<a class="jxr_linenumber" name="1143" href="#1143">1143</a>             <strong class="jxr_keyword">if</strong> (byteSinkSize != 0) {
-<a class="jxr_linenumber" name="1144" href="#1144">1144</a>                 byteSink.clear();
-<a class="jxr_linenumber" name="1145" href="#1145">1145</a>                 logger.warn(
-<a class="jxr_linenumber" name="1146" href="#1146">1146</a>                         <span class="jxr_string">"Discarded {} inbound byte(s) that reached at the end of the pipeline. "</span> +
-<a class="jxr_linenumber" name="1147" href="#1147">1147</a>                         <span class="jxr_string">"Please check your pipeline configuration."</span>, byteSinkSize);
-<a class="jxr_linenumber" name="1148" href="#1148">1148</a>             }
+<a class="jxr_linenumber" name="1130" href="#1130">1130</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1131" href="#1131">1131</a> 
+<a class="jxr_linenumber" name="1132" href="#1132">1132</a>         @Override
+<a class="jxr_linenumber" name="1133" href="#1133">1133</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1134" href="#1134">1134</a> 
+<a class="jxr_linenumber" name="1135" href="#1135">1135</a>         @Override
+<a class="jxr_linenumber" name="1136" href="#1136">1136</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="1137" href="#1137">1137</a> 
+<a class="jxr_linenumber" name="1138" href="#1138">1138</a>         @Override
+<a class="jxr_linenumber" name="1139" href="#1139">1139</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1140" href="#1140">1140</a>             logger.warn(
+<a class="jxr_linenumber" name="1141" href="#1141">1141</a>                     <span class="jxr_string">"An exceptionCaught() event was fired, and it reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1142" href="#1142">1142</a>                             <span class="jxr_string">"It usually means the last handler in the pipeline did not handle the exception."</span>, cause);
+<a class="jxr_linenumber" name="1143" href="#1143">1143</a>         }
+<a class="jxr_linenumber" name="1144" href="#1144">1144</a> 
+<a class="jxr_linenumber" name="1145" href="#1145">1145</a>         @Override
+<a class="jxr_linenumber" name="1146" href="#1146">1146</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/buffer/Buf.html">Buf</a> newInboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1147" href="#1147">1147</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
+<a class="jxr_linenumber" name="1148" href="#1148">1148</a>         }
 <a class="jxr_linenumber" name="1149" href="#1149">1149</a> 
-<a class="jxr_linenumber" name="1150" href="#1150">1150</a>             <strong class="jxr_keyword">int</strong> msgSinkSize = msgSink.size();
-<a class="jxr_linenumber" name="1151" href="#1151">1151</a>             <strong class="jxr_keyword">if</strong> (msgSinkSize != 0) {
-<a class="jxr_linenumber" name="1152" href="#1152">1152</a>                 MessageBuf&lt;Object&gt; in = msgSink;
-<a class="jxr_linenumber" name="1153" href="#1153">1153</a>                 <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="1154" href="#1154">1154</a>                     Object m = in.poll();
-<a class="jxr_linenumber" name="1155" href="#1155">1155</a>                     <strong class="jxr_keyword">if</strong> (m == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1156" href="#1156">1156</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1157" href="#1157">1157</a>                     }
-<a class="jxr_linenumber" name="1158" href="#1158">1158</a> 
-<a class="jxr_linenumber" name="1159" href="#1159">1159</a>                     <strong class="jxr_keyword">if</strong> (m instanceof ReferenceCounted) {
-<a class="jxr_linenumber" name="1160" href="#1160">1160</a>                         ((<a href="../../../io/netty/buffer/ReferenceCounted.html">ReferenceCounted</a>) m).release();
-<a class="jxr_linenumber" name="1161" href="#1161">1161</a>                     }
-<a class="jxr_linenumber" name="1162" href="#1162">1162</a>                 }
-<a class="jxr_linenumber" name="1163" href="#1163">1163</a>                 logger.warn(
-<a class="jxr_linenumber" name="1164" href="#1164">1164</a>                         <span class="jxr_string">"Discarded {} inbound message(s) that reached at the end of the pipeline. "</span> +
-<a class="jxr_linenumber" name="1165" href="#1165">1165</a>                         <span class="jxr_string">"Please check your pipeline configuration."</span>, msgSinkSize);
-<a class="jxr_linenumber" name="1166" href="#1166">1166</a>             }
-<a class="jxr_linenumber" name="1167" href="#1167">1167</a>         }
-<a class="jxr_linenumber" name="1168" href="#1168">1168</a>     }
-<a class="jxr_linenumber" name="1169" href="#1169">1169</a> 
-<a class="jxr_linenumber" name="1170" href="#1170">1170</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/channel/ChannelOutboundHandler.html">ChannelOutboundHandler</a> {
-<a class="jxr_linenumber" name="1171" href="#1171">1171</a> 
-<a class="jxr_linenumber" name="1172" href="#1172">1172</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe;
-<a class="jxr_linenumber" name="1173" href="#1173">1173</a>         <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> byteSink;
-<a class="jxr_linenumber" name="1174" href="#1174">1174</a>         MessageBuf&lt;Object&gt; msgSink;
-<a class="jxr_linenumber" name="1175" href="#1175">1175</a> 
-<a class="jxr_linenumber" name="1176" href="#1176">1176</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a>(<a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe) {
-<a class="jxr_linenumber" name="1177" href="#1177">1177</a>             <strong class="jxr_keyword">this</strong>.unsafe = unsafe;
-<a class="jxr_linenumber" name="1178" href="#1178">1178</a>         }
-<a class="jxr_linenumber" name="1179" href="#1179">1179</a> 
-<a class="jxr_linenumber" name="1180" href="#1180">1180</a>         <strong class="jxr_keyword">void</strong> init(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="1181" href="#1181">1181</a>             <strong class="jxr_keyword">switch</strong> (ctx.channel().metadata().bufferType()) {
-<a class="jxr_linenumber" name="1182" href="#1182">1182</a>             <strong class="jxr_keyword">case</strong> BYTE:
-<a class="jxr_linenumber" name="1183" href="#1183">1183</a>                 byteSink = ctx.alloc().ioBuffer();
-<a class="jxr_linenumber" name="1184" href="#1184">1184</a>                 msgSink = Unpooled.messageBuffer(0);
-<a class="jxr_linenumber" name="1185" href="#1185">1185</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1186" href="#1186">1186</a>             <strong class="jxr_keyword">case</strong> MESSAGE:
-<a class="jxr_linenumber" name="1187" href="#1187">1187</a>                 byteSink = Unpooled.buffer(0);
-<a class="jxr_linenumber" name="1188" href="#1188">1188</a>                 msgSink = Unpooled.messageBuffer();
-<a class="jxr_linenumber" name="1189" href="#1189">1189</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1190" href="#1190">1190</a>             <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="1191" href="#1191">1191</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
-<a class="jxr_linenumber" name="1192" href="#1192">1192</a>             }
-<a class="jxr_linenumber" name="1193" href="#1193">1193</a>         }
+<a class="jxr_linenumber" name="1150" href="#1150">1150</a>         @Override
+<a class="jxr_linenumber" name="1151" href="#1151">1151</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> freeInboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1152" href="#1152">1152</a>             byteSink.release();
+<a class="jxr_linenumber" name="1153" href="#1153">1153</a>             msgSink.release();
+<a class="jxr_linenumber" name="1154" href="#1154">1154</a>         }
+<a class="jxr_linenumber" name="1155" href="#1155">1155</a> 
+<a class="jxr_linenumber" name="1156" href="#1156">1156</a>         @Override
+<a class="jxr_linenumber" name="1157" href="#1157">1157</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> inboundBufferUpdated(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1158" href="#1158">1158</a>             <strong class="jxr_keyword">int</strong> byteSinkSize = byteSink.readableBytes();
+<a class="jxr_linenumber" name="1159" href="#1159">1159</a>             <strong class="jxr_keyword">if</strong> (byteSinkSize != 0) {
+<a class="jxr_linenumber" name="1160" href="#1160">1160</a>                 byteSink.clear();
+<a class="jxr_linenumber" name="1161" href="#1161">1161</a>                 logger.warn(
+<a class="jxr_linenumber" name="1162" href="#1162">1162</a>                         <span class="jxr_string">"Discarded {} inbound byte(s) that reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1163" href="#1163">1163</a>                         <span class="jxr_string">"Please check your pipeline configuration."</span>, byteSinkSize);
+<a class="jxr_linenumber" name="1164" href="#1164">1164</a>             }
+<a class="jxr_linenumber" name="1165" href="#1165">1165</a> 
+<a class="jxr_linenumber" name="1166" href="#1166">1166</a>             <strong class="jxr_keyword">int</strong> msgSinkSize = msgSink.size();
+<a class="jxr_linenumber" name="1167" href="#1167">1167</a>             <strong class="jxr_keyword">if</strong> (msgSinkSize != 0) {
+<a class="jxr_linenumber" name="1168" href="#1168">1168</a>                 MessageBuf&lt;Object&gt; in = msgSink;
+<a class="jxr_linenumber" name="1169" href="#1169">1169</a>                 <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="1170" href="#1170">1170</a>                     Object m = in.poll();
+<a class="jxr_linenumber" name="1171" href="#1171">1171</a>                     <strong class="jxr_keyword">if</strong> (m == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1172" href="#1172">1172</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1173" href="#1173">1173</a>                     }
+<a class="jxr_linenumber" name="1174" href="#1174">1174</a> 
+<a class="jxr_linenumber" name="1175" href="#1175">1175</a>                     <strong class="jxr_keyword">if</strong> (m instanceof ReferenceCounted) {
+<a class="jxr_linenumber" name="1176" href="#1176">1176</a>                         ((<a href="../../../io/netty/buffer/ReferenceCounted.html">ReferenceCounted</a>) m).release();
+<a class="jxr_linenumber" name="1177" href="#1177">1177</a>                     }
+<a class="jxr_linenumber" name="1178" href="#1178">1178</a>                     logger.debug(
+<a class="jxr_linenumber" name="1179" href="#1179">1179</a>                             <span class="jxr_string">"Discarded inbound message {} that reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1180" href="#1180">1180</a>                                     <span class="jxr_string">"Please check your pipeline configuration."</span>, m);
+<a class="jxr_linenumber" name="1181" href="#1181">1181</a>                 }
+<a class="jxr_linenumber" name="1182" href="#1182">1182</a>                 logger.warn(
+<a class="jxr_linenumber" name="1183" href="#1183">1183</a>                         <span class="jxr_string">"Discarded {} inbound message(s) that reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1184" href="#1184">1184</a>                         <span class="jxr_string">"Please check your pipeline configuration."</span>, msgSinkSize);
+<a class="jxr_linenumber" name="1185" href="#1185">1185</a>             }
+<a class="jxr_linenumber" name="1186" href="#1186">1186</a>         }
+<a class="jxr_linenumber" name="1187" href="#1187">1187</a>     }
+<a class="jxr_linenumber" name="1188" href="#1188">1188</a> 
+<a class="jxr_linenumber" name="1189" href="#1189">1189</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/channel/ChannelOutboundHandler.html">ChannelOutboundHandler</a> {
+<a class="jxr_linenumber" name="1190" href="#1190">1190</a> 
+<a class="jxr_linenumber" name="1191" href="#1191">1191</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe;
+<a class="jxr_linenumber" name="1192" href="#1192">1192</a>         <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> byteSink;
+<a class="jxr_linenumber" name="1193" href="#1193">1193</a>         MessageBuf&lt;Object&gt; msgSink;
 <a class="jxr_linenumber" name="1194" href="#1194">1194</a> 
-<a class="jxr_linenumber" name="1195" href="#1195">1195</a>         @Override
-<a class="jxr_linenumber" name="1196" href="#1196">1196</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> beforeAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1197" href="#1197">1197</a>             <em class="jxr_comment">// NOOP</em>
-<a class="jxr_linenumber" name="1198" href="#1198">1198</a>         }
-<a class="jxr_linenumber" name="1199" href="#1199">1199</a> 
-<a class="jxr_linenumber" name="1200" href="#1200">1200</a>         @Override
-<a class="jxr_linenumber" name="1201" href="#1201">1201</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> afterAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1202" href="#1202">1202</a>             <em class="jxr_comment">// NOOP</em>
-<a class="jxr_linenumber" name="1203" href="#1203">1203</a>         }
-<a class="jxr_linenumber" name="1204" href="#1204">1204</a> 
-<a class="jxr_linenumber" name="1205" href="#1205">1205</a>         @Override
-<a class="jxr_linenumber" name="1206" href="#1206">1206</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> beforeRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1207" href="#1207">1207</a>             <em class="jxr_comment">// NOOP</em>
-<a class="jxr_linenumber" name="1208" href="#1208">1208</a>         }
-<a class="jxr_linenumber" name="1209" href="#1209">1209</a> 
-<a class="jxr_linenumber" name="1210" href="#1210">1210</a>         @Override
-<a class="jxr_linenumber" name="1211" href="#1211">1211</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> afterRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1212" href="#1212">1212</a>             <em class="jxr_comment">// NOOP</em>
-<a class="jxr_linenumber" name="1213" href="#1213">1213</a>         }
-<a class="jxr_linenumber" name="1214" href="#1214">1214</a> 
-<a class="jxr_linenumber" name="1215" href="#1215">1215</a>         @Override
-<a class="jxr_linenumber" name="1216" href="#1216">1216</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> bind(
-<a class="jxr_linenumber" name="1217" href="#1217">1217</a>                 <a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, SocketAddress localAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise)
-<a class="jxr_linenumber" name="1218" href="#1218">1218</a>                 <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1219" href="#1219">1219</a>             unsafe.bind(localAddress, promise);
-<a class="jxr_linenumber" name="1220" href="#1220">1220</a>         }
-<a class="jxr_linenumber" name="1221" href="#1221">1221</a> 
-<a class="jxr_linenumber" name="1222" href="#1222">1222</a>         @Override
-<a class="jxr_linenumber" name="1223" href="#1223">1223</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> connect(
-<a class="jxr_linenumber" name="1224" href="#1224">1224</a>                 <a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx,
-<a class="jxr_linenumber" name="1225" href="#1225">1225</a>                 SocketAddress remoteAddress, SocketAddress localAddress,
-<a class="jxr_linenumber" name="1226" href="#1226">1226</a>                 <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1227" href="#1227">1227</a>             unsafe.connect(remoteAddress, localAddress, promise);
-<a class="jxr_linenumber" name="1228" href="#1228">1228</a>         }
-<a class="jxr_linenumber" name="1229" href="#1229">1229</a> 
-<a class="jxr_linenumber" name="1230" href="#1230">1230</a>         @Override
-<a class="jxr_linenumber" name="1231" href="#1231">1231</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> disconnect(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1232" href="#1232">1232</a>             unsafe.disconnect(promise);
-<a class="jxr_linenumber" name="1233" href="#1233">1233</a>         }
-<a class="jxr_linenumber" name="1234" href="#1234">1234</a> 
-<a class="jxr_linenumber" name="1235" href="#1235">1235</a>         @Override
-<a class="jxr_linenumber" name="1236" href="#1236">1236</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> close(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1237" href="#1237">1237</a>             unsafe.close(promise);
-<a class="jxr_linenumber" name="1238" href="#1238">1238</a>         }
-<a class="jxr_linenumber" name="1239" href="#1239">1239</a> 
-<a class="jxr_linenumber" name="1240" href="#1240">1240</a>         @Override
-<a class="jxr_linenumber" name="1241" href="#1241">1241</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> deregister(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1242" href="#1242">1242</a>             unsafe.deregister(promise);
-<a class="jxr_linenumber" name="1243" href="#1243">1243</a>         }
-<a class="jxr_linenumber" name="1244" href="#1244">1244</a> 
-<a class="jxr_linenumber" name="1245" href="#1245">1245</a>         @Override
-<a class="jxr_linenumber" name="1246" href="#1246">1246</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> read(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="1247" href="#1247">1247</a>             unsafe.beginRead();
-<a class="jxr_linenumber" name="1248" href="#1248">1248</a>         }
-<a class="jxr_linenumber" name="1249" href="#1249">1249</a> 
-<a class="jxr_linenumber" name="1250" href="#1250">1250</a>         @Override
-<a class="jxr_linenumber" name="1251" href="#1251">1251</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1252" href="#1252">1252</a>             ctx.fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="1253" href="#1253">1253</a>         }
-<a class="jxr_linenumber" name="1254" href="#1254">1254</a> 
-<a class="jxr_linenumber" name="1255" href="#1255">1255</a>         @Override
-<a class="jxr_linenumber" name="1256" href="#1256">1256</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1257" href="#1257">1257</a>             ctx.fireUserEventTriggered(evt);
-<a class="jxr_linenumber" name="1258" href="#1258">1258</a>         }
-<a class="jxr_linenumber" name="1259" href="#1259">1259</a> 
-<a class="jxr_linenumber" name="1260" href="#1260">1260</a>         @Override
-<a class="jxr_linenumber" name="1261" href="#1261">1261</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> sendFile(
-<a class="jxr_linenumber" name="1262" href="#1262">1262</a>                 <a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/FileRegion.html">FileRegion</a> region, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1263" href="#1263">1263</a>             unsafe.sendFile(region, promise);
-<a class="jxr_linenumber" name="1264" href="#1264">1264</a>         }
-<a class="jxr_linenumber" name="1265" href="#1265">1265</a> 
-<a class="jxr_linenumber" name="1266" href="#1266">1266</a>         @Override
-<a class="jxr_linenumber" name="1267" href="#1267">1267</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/buffer/Buf.html">Buf</a> newOutboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1268" href="#1268">1268</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
-<a class="jxr_linenumber" name="1269" href="#1269">1269</a>         }
-<a class="jxr_linenumber" name="1270" href="#1270">1270</a> 
-<a class="jxr_linenumber" name="1271" href="#1271">1271</a>         @Override
-<a class="jxr_linenumber" name="1272" href="#1272">1272</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> freeOutboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1273" href="#1273">1273</a>             msgSink.release();
-<a class="jxr_linenumber" name="1274" href="#1274">1274</a>             byteSink.release();
-<a class="jxr_linenumber" name="1275" href="#1275">1275</a>         }
-<a class="jxr_linenumber" name="1276" href="#1276">1276</a>     }
-<a class="jxr_linenumber" name="1277" href="#1277">1277</a> 
-<a class="jxr_linenumber" name="1278" href="#1278">1278</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">ByteHeadHandler</a> <strong class="jxr_keyword">extends</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a> {
-<a class="jxr_linenumber" name="1279" href="#1279">1279</a> 
-<a class="jxr_linenumber" name="1280" href="#1280">1280</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">ByteHeadHandler</a>(<a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe) {
-<a class="jxr_linenumber" name="1281" href="#1281">1281</a>             <strong class="jxr_keyword">super</strong>(unsafe);
-<a class="jxr_linenumber" name="1282" href="#1282">1282</a>         }
-<a class="jxr_linenumber" name="1283" href="#1283">1283</a> 
-<a class="jxr_linenumber" name="1284" href="#1284">1284</a>         @Override
-<a class="jxr_linenumber" name="1285" href="#1285">1285</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> flush(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1286" href="#1286">1286</a>             <strong class="jxr_keyword">int</strong> discardedMessages = 0;
-<a class="jxr_linenumber" name="1287" href="#1287">1287</a>             MessageBuf&lt;Object&gt; in = msgSink;
-<a class="jxr_linenumber" name="1288" href="#1288">1288</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="1289" href="#1289">1289</a>                 Object m = in.poll();
-<a class="jxr_linenumber" name="1290" href="#1290">1290</a>                 <strong class="jxr_keyword">if</strong> (m == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1291" href="#1291">1291</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1292" href="#1292">1292</a>                 }
-<a class="jxr_linenumber" name="1293" href="#1293">1293</a> 
-<a class="jxr_linenumber" name="1294" href="#1294">1294</a>                 <strong class="jxr_keyword">if</strong> (m instanceof ByteBuf) {
-<a class="jxr_linenumber" name="1295" href="#1295">1295</a>                     <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> src = (ByteBuf) m;
-<a class="jxr_linenumber" name="1296" href="#1296">1296</a>                     byteSink.writeBytes(src, src.readerIndex(), src.readableBytes());
-<a class="jxr_linenumber" name="1297" href="#1297">1297</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1298" href="#1298">1298</a>                     discardedMessages ++;
-<a class="jxr_linenumber" name="1299" href="#1299">1299</a>                 }
-<a class="jxr_linenumber" name="1300" href="#1300">1300</a> 
-<a class="jxr_linenumber" name="1301" href="#1301">1301</a>                 <strong class="jxr_keyword">if</strong> (m instanceof ReferenceCounted) {
-<a class="jxr_linenumber" name="1302" href="#1302">1302</a>                     ((<a href="../../../io/netty/buffer/ReferenceCounted.html">ReferenceCounted</a>) m).release();
-<a class="jxr_linenumber" name="1303" href="#1303">1303</a>                 }
-<a class="jxr_linenumber" name="1304" href="#1304">1304</a>             }
-<a class="jxr_linenumber" name="1305" href="#1305">1305</a> 
-<a class="jxr_linenumber" name="1306" href="#1306">1306</a>             <strong class="jxr_keyword">if</strong> (discardedMessages != 0) {
-<a class="jxr_linenumber" name="1307" href="#1307">1307</a>                 logger.warn(
-<a class="jxr_linenumber" name="1308" href="#1308">1308</a>                         <span class="jxr_string">"Discarded {} outbound message(s) that reached at the end of the pipeline. "</span> +
-<a class="jxr_linenumber" name="1309" href="#1309">1309</a>                         <span class="jxr_string">"Please check your pipeline configuration."</span>, discardedMessages);
-<a class="jxr_linenumber" name="1310" href="#1310">1310</a>             }
-<a class="jxr_linenumber" name="1311" href="#1311">1311</a> 
-<a class="jxr_linenumber" name="1312" href="#1312">1312</a>             unsafe.flush(promise);
-<a class="jxr_linenumber" name="1313" href="#1313">1313</a>         }
-<a class="jxr_linenumber" name="1314" href="#1314">1314</a>     }
-<a class="jxr_linenumber" name="1315" href="#1315">1315</a> 
-<a class="jxr_linenumber" name="1316" href="#1316">1316</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">MessageHeadHandler</a> <strong class="jxr_keyword">extends</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a> {
-<a class="jxr_linenumber" name="1317" href="#1317">1317</a> 
-<a class="jxr_linenumber" name="1318" href="#1318">1318</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">MessageHeadHandler</a>(<a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe) {
-<a class="jxr_linenumber" name="1319" href="#1319">1319</a>             <strong class="jxr_keyword">super</strong>(unsafe);
-<a class="jxr_linenumber" name="1320" href="#1320">1320</a>         }
-<a class="jxr_linenumber" name="1321" href="#1321">1321</a> 
-<a class="jxr_linenumber" name="1322" href="#1322">1322</a>         @Override
-<a class="jxr_linenumber" name="1323" href="#1323">1323</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> flush(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1324" href="#1324">1324</a>             <strong class="jxr_keyword">int</strong> byteSinkSize = byteSink.readableBytes();
-<a class="jxr_linenumber" name="1325" href="#1325">1325</a>             <strong class="jxr_keyword">if</strong> (byteSinkSize != 0) {
-<a class="jxr_linenumber" name="1326" href="#1326">1326</a>                 byteSink.clear();
-<a class="jxr_linenumber" name="1327" href="#1327">1327</a>                 logger.warn(
-<a class="jxr_linenumber" name="1328" href="#1328">1328</a>                         <span class="jxr_string">"Discarded {} outbound byte(s) that reached at the end of the pipeline. "</span> +
-<a class="jxr_linenumber" name="1329" href="#1329">1329</a>                                 <span class="jxr_string">"Please check your pipeline configuration."</span>, byteSinkSize);
-<a class="jxr_linenumber" name="1330" href="#1330">1330</a>             }
-<a class="jxr_linenumber" name="1331" href="#1331">1331</a>             unsafe.flush(promise);
-<a class="jxr_linenumber" name="1332" href="#1332">1332</a>         }
-<a class="jxr_linenumber" name="1333" href="#1333">1333</a>     }
-<a class="jxr_linenumber" name="1334" href="#1334">1334</a> 
-<a class="jxr_linenumber" name="1335" href="#1335">1335</a>     @Override
-<a class="jxr_linenumber" name="1336" href="#1336">1336</a>     <strong class="jxr_keyword">public</strong> Iterator&lt;Map.Entry&lt;String, ChannelHandler&gt;&gt; iterator() {
-<a class="jxr_linenumber" name="1337" href="#1337">1337</a>         <strong class="jxr_keyword">return</strong> toMap().entrySet().iterator();
-<a class="jxr_linenumber" name="1338" href="#1338">1338</a>     }
-<a class="jxr_linenumber" name="1339" href="#1339">1339</a> }
+<a class="jxr_linenumber" name="1195" href="#1195">1195</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a>(<a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe) {
+<a class="jxr_linenumber" name="1196" href="#1196">1196</a>             <strong class="jxr_keyword">this</strong>.unsafe = unsafe;
+<a class="jxr_linenumber" name="1197" href="#1197">1197</a>         }
+<a class="jxr_linenumber" name="1198" href="#1198">1198</a> 
+<a class="jxr_linenumber" name="1199" href="#1199">1199</a>         <strong class="jxr_keyword">void</strong> init(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="1200" href="#1200">1200</a>             <strong class="jxr_keyword">switch</strong> (ctx.channel().metadata().bufferType()) {
+<a class="jxr_linenumber" name="1201" href="#1201">1201</a>             <strong class="jxr_keyword">case</strong> BYTE:
+<a class="jxr_linenumber" name="1202" href="#1202">1202</a>                 byteSink = ctx.alloc().ioBuffer();
+<a class="jxr_linenumber" name="1203" href="#1203">1203</a>                 msgSink = Unpooled.messageBuffer(0);
+<a class="jxr_linenumber" name="1204" href="#1204">1204</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1205" href="#1205">1205</a>             <strong class="jxr_keyword">case</strong> MESSAGE:
+<a class="jxr_linenumber" name="1206" href="#1206">1206</a>                 byteSink = Unpooled.buffer(0);
+<a class="jxr_linenumber" name="1207" href="#1207">1207</a>                 msgSink = Unpooled.messageBuffer();
+<a class="jxr_linenumber" name="1208" href="#1208">1208</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1209" href="#1209">1209</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="1210" href="#1210">1210</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
+<a class="jxr_linenumber" name="1211" href="#1211">1211</a>             }
+<a class="jxr_linenumber" name="1212" href="#1212">1212</a>         }
+<a class="jxr_linenumber" name="1213" href="#1213">1213</a> 
+<a class="jxr_linenumber" name="1214" href="#1214">1214</a>         @Override
+<a class="jxr_linenumber" name="1215" href="#1215">1215</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> beforeAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1216" href="#1216">1216</a>             <em class="jxr_comment">// NOOP</em>
+<a class="jxr_linenumber" name="1217" href="#1217">1217</a>         }
+<a class="jxr_linenumber" name="1218" href="#1218">1218</a> 
+<a class="jxr_linenumber" name="1219" href="#1219">1219</a>         @Override
+<a class="jxr_linenumber" name="1220" href="#1220">1220</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> afterAdd(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1221" href="#1221">1221</a>             <em class="jxr_comment">// NOOP</em>
+<a class="jxr_linenumber" name="1222" href="#1222">1222</a>         }
+<a class="jxr_linenumber" name="1223" href="#1223">1223</a> 
+<a class="jxr_linenumber" name="1224" href="#1224">1224</a>         @Override
+<a class="jxr_linenumber" name="1225" href="#1225">1225</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> beforeRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1226" href="#1226">1226</a>             <em class="jxr_comment">// NOOP</em>
+<a class="jxr_linenumber" name="1227" href="#1227">1227</a>         }
+<a class="jxr_linenumber" name="1228" href="#1228">1228</a> 
+<a class="jxr_linenumber" name="1229" href="#1229">1229</a>         @Override
+<a class="jxr_linenumber" name="1230" href="#1230">1230</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> afterRemove(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1231" href="#1231">1231</a>             <em class="jxr_comment">// NOOP</em>
+<a class="jxr_linenumber" name="1232" href="#1232">1232</a>         }
+<a class="jxr_linenumber" name="1233" href="#1233">1233</a> 
+<a class="jxr_linenumber" name="1234" href="#1234">1234</a>         @Override
+<a class="jxr_linenumber" name="1235" href="#1235">1235</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> bind(
+<a class="jxr_linenumber" name="1236" href="#1236">1236</a>                 <a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, SocketAddress localAddress, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise)
+<a class="jxr_linenumber" name="1237" href="#1237">1237</a>                 <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1238" href="#1238">1238</a>             unsafe.bind(localAddress, promise);
+<a class="jxr_linenumber" name="1239" href="#1239">1239</a>         }
+<a class="jxr_linenumber" name="1240" href="#1240">1240</a> 
+<a class="jxr_linenumber" name="1241" href="#1241">1241</a>         @Override
+<a class="jxr_linenumber" name="1242" href="#1242">1242</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> connect(
+<a class="jxr_linenumber" name="1243" href="#1243">1243</a>                 <a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx,
+<a class="jxr_linenumber" name="1244" href="#1244">1244</a>                 SocketAddress remoteAddress, SocketAddress localAddress,
+<a class="jxr_linenumber" name="1245" href="#1245">1245</a>                 <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1246" href="#1246">1246</a>             unsafe.connect(remoteAddress, localAddress, promise);
+<a class="jxr_linenumber" name="1247" href="#1247">1247</a>         }
+<a class="jxr_linenumber" name="1248" href="#1248">1248</a> 
+<a class="jxr_linenumber" name="1249" href="#1249">1249</a>         @Override
+<a class="jxr_linenumber" name="1250" href="#1250">1250</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> disconnect(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1251" href="#1251">1251</a>             unsafe.disconnect(promise);
+<a class="jxr_linenumber" name="1252" href="#1252">1252</a>         }
+<a class="jxr_linenumber" name="1253" href="#1253">1253</a> 
+<a class="jxr_linenumber" name="1254" href="#1254">1254</a>         @Override
+<a class="jxr_linenumber" name="1255" href="#1255">1255</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> close(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1256" href="#1256">1256</a>             unsafe.close(promise);
+<a class="jxr_linenumber" name="1257" href="#1257">1257</a>         }
+<a class="jxr_linenumber" name="1258" href="#1258">1258</a> 
+<a class="jxr_linenumber" name="1259" href="#1259">1259</a>         @Override
+<a class="jxr_linenumber" name="1260" href="#1260">1260</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> deregister(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1261" href="#1261">1261</a>             unsafe.deregister(promise);
+<a class="jxr_linenumber" name="1262" href="#1262">1262</a>         }
+<a class="jxr_linenumber" name="1263" href="#1263">1263</a> 
+<a class="jxr_linenumber" name="1264" href="#1264">1264</a>         @Override
+<a class="jxr_linenumber" name="1265" href="#1265">1265</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> read(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="1266" href="#1266">1266</a>             unsafe.beginRead();
+<a class="jxr_linenumber" name="1267" href="#1267">1267</a>         }
+<a class="jxr_linenumber" name="1268" href="#1268">1268</a> 
+<a class="jxr_linenumber" name="1269" href="#1269">1269</a>         @Override
+<a class="jxr_linenumber" name="1270" href="#1270">1270</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1271" href="#1271">1271</a>             ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="1272" href="#1272">1272</a>         }
+<a class="jxr_linenumber" name="1273" href="#1273">1273</a> 
+<a class="jxr_linenumber" name="1274" href="#1274">1274</a>         @Override
+<a class="jxr_linenumber" name="1275" href="#1275">1275</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1276" href="#1276">1276</a>             ctx.fireUserEventTriggered(evt);
+<a class="jxr_linenumber" name="1277" href="#1277">1277</a>         }
+<a class="jxr_linenumber" name="1278" href="#1278">1278</a> 
+<a class="jxr_linenumber" name="1279" href="#1279">1279</a>         @Override
+<a class="jxr_linenumber" name="1280" href="#1280">1280</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> sendFile(
+<a class="jxr_linenumber" name="1281" href="#1281">1281</a>                 <a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/FileRegion.html">FileRegion</a> region, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1282" href="#1282">1282</a>             unsafe.sendFile(region, promise);
+<a class="jxr_linenumber" name="1283" href="#1283">1283</a>         }
+<a class="jxr_linenumber" name="1284" href="#1284">1284</a> 
+<a class="jxr_linenumber" name="1285" href="#1285">1285</a>         @Override
+<a class="jxr_linenumber" name="1286" href="#1286">1286</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/buffer/Buf.html">Buf</a> newOutboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1287" href="#1287">1287</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
+<a class="jxr_linenumber" name="1288" href="#1288">1288</a>         }
+<a class="jxr_linenumber" name="1289" href="#1289">1289</a> 
+<a class="jxr_linenumber" name="1290" href="#1290">1290</a>         @Override
+<a class="jxr_linenumber" name="1291" href="#1291">1291</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> freeOutboundBuffer(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1292" href="#1292">1292</a>             msgSink.release();
+<a class="jxr_linenumber" name="1293" href="#1293">1293</a>             byteSink.release();
+<a class="jxr_linenumber" name="1294" href="#1294">1294</a>         }
+<a class="jxr_linenumber" name="1295" href="#1295">1295</a>     }
+<a class="jxr_linenumber" name="1296" href="#1296">1296</a> 
+<a class="jxr_linenumber" name="1297" href="#1297">1297</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">ByteHeadHandler</a> <strong class="jxr_keyword">extends</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a> {
+<a class="jxr_linenumber" name="1298" href="#1298">1298</a> 
+<a class="jxr_linenumber" name="1299" href="#1299">1299</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">ByteHeadHandler</a>(<a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe) {
+<a class="jxr_linenumber" name="1300" href="#1300">1300</a>             <strong class="jxr_keyword">super</strong>(unsafe);
+<a class="jxr_linenumber" name="1301" href="#1301">1301</a>         }
+<a class="jxr_linenumber" name="1302" href="#1302">1302</a> 
+<a class="jxr_linenumber" name="1303" href="#1303">1303</a>         @Override
+<a class="jxr_linenumber" name="1304" href="#1304">1304</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> flush(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1305" href="#1305">1305</a>             <strong class="jxr_keyword">int</strong> discardedMessages = 0;
+<a class="jxr_linenumber" name="1306" href="#1306">1306</a>             MessageBuf&lt;Object&gt; in = msgSink;
+<a class="jxr_linenumber" name="1307" href="#1307">1307</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="1308" href="#1308">1308</a>                 Object m = in.poll();
+<a class="jxr_linenumber" name="1309" href="#1309">1309</a>                 <strong class="jxr_keyword">if</strong> (m == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1310" href="#1310">1310</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1311" href="#1311">1311</a>                 }
+<a class="jxr_linenumber" name="1312" href="#1312">1312</a> 
+<a class="jxr_linenumber" name="1313" href="#1313">1313</a>                 <strong class="jxr_keyword">if</strong> (m instanceof ByteBuf) {
+<a class="jxr_linenumber" name="1314" href="#1314">1314</a>                     <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> src = (ByteBuf) m;
+<a class="jxr_linenumber" name="1315" href="#1315">1315</a>                     byteSink.writeBytes(src, src.readerIndex(), src.readableBytes());
+<a class="jxr_linenumber" name="1316" href="#1316">1316</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1317" href="#1317">1317</a>                     logger.debug(
+<a class="jxr_linenumber" name="1318" href="#1318">1318</a>                             <span class="jxr_string">"Discarded outbound message {} that reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1319" href="#1319">1319</a>                                     <span class="jxr_string">"Please check your pipeline configuration."</span>, m);
+<a class="jxr_linenumber" name="1320" href="#1320">1320</a>                     discardedMessages ++;
+<a class="jxr_linenumber" name="1321" href="#1321">1321</a>                 }
+<a class="jxr_linenumber" name="1322" href="#1322">1322</a> 
+<a class="jxr_linenumber" name="1323" href="#1323">1323</a>                 <strong class="jxr_keyword">if</strong> (m instanceof ReferenceCounted) {
+<a class="jxr_linenumber" name="1324" href="#1324">1324</a>                     ((<a href="../../../io/netty/buffer/ReferenceCounted.html">ReferenceCounted</a>) m).release();
+<a class="jxr_linenumber" name="1325" href="#1325">1325</a>                 }
+<a class="jxr_linenumber" name="1326" href="#1326">1326</a>             }
+<a class="jxr_linenumber" name="1327" href="#1327">1327</a> 
+<a class="jxr_linenumber" name="1328" href="#1328">1328</a>             <strong class="jxr_keyword">if</strong> (discardedMessages != 0) {
+<a class="jxr_linenumber" name="1329" href="#1329">1329</a>                 logger.warn(
+<a class="jxr_linenumber" name="1330" href="#1330">1330</a>                         <span class="jxr_string">"Discarded {} outbound message(s) that reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1331" href="#1331">1331</a>                         <span class="jxr_string">"Please check your pipeline configuration."</span>, discardedMessages);
+<a class="jxr_linenumber" name="1332" href="#1332">1332</a>             }
+<a class="jxr_linenumber" name="1333" href="#1333">1333</a> 
+<a class="jxr_linenumber" name="1334" href="#1334">1334</a>             unsafe.flush(promise);
+<a class="jxr_linenumber" name="1335" href="#1335">1335</a>         }
+<a class="jxr_linenumber" name="1336" href="#1336">1336</a>     }
+<a class="jxr_linenumber" name="1337" href="#1337">1337</a> 
+<a class="jxr_linenumber" name="1338" href="#1338">1338</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">MessageHeadHandler</a> <strong class="jxr_keyword">extends</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">HeadHandler</a> {
+<a class="jxr_linenumber" name="1339" href="#1339">1339</a> 
+<a class="jxr_linenumber" name="1340" href="#1340">1340</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/channel/DefaultChannelPipeline.html">MessageHeadHandler</a>(<a href="../../../io/netty/channel/ChannelFuture.html">Unsafe</a> unsafe) {
+<a class="jxr_linenumber" name="1341" href="#1341">1341</a>             <strong class="jxr_keyword">super</strong>(unsafe);
+<a class="jxr_linenumber" name="1342" href="#1342">1342</a>         }
+<a class="jxr_linenumber" name="1343" href="#1343">1343</a> 
+<a class="jxr_linenumber" name="1344" href="#1344">1344</a>         @Override
+<a class="jxr_linenumber" name="1345" href="#1345">1345</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> flush(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1346" href="#1346">1346</a>             <strong class="jxr_keyword">int</strong> byteSinkSize = byteSink.readableBytes();
+<a class="jxr_linenumber" name="1347" href="#1347">1347</a>             <strong class="jxr_keyword">if</strong> (byteSinkSize != 0) {
+<a class="jxr_linenumber" name="1348" href="#1348">1348</a>                 byteSink.clear();
+<a class="jxr_linenumber" name="1349" href="#1349">1349</a>                 logger.warn(
+<a class="jxr_linenumber" name="1350" href="#1350">1350</a>                         <span class="jxr_string">"Discarded {} outbound byte(s) that reached at the end of the pipeline. "</span> +
+<a class="jxr_linenumber" name="1351" href="#1351">1351</a>                                 <span class="jxr_string">"Please check your pipeline configuration."</span>, byteSinkSize);
+<a class="jxr_linenumber" name="1352" href="#1352">1352</a>             }
+<a class="jxr_linenumber" name="1353" href="#1353">1353</a>             unsafe.flush(promise);
+<a class="jxr_linenumber" name="1354" href="#1354">1354</a>         }
+<a class="jxr_linenumber" name="1355" href="#1355">1355</a>     }
+<a class="jxr_linenumber" name="1356" href="#1356">1356</a> 
+<a class="jxr_linenumber" name="1357" href="#1357">1357</a>     @Override
+<a class="jxr_linenumber" name="1358" href="#1358">1358</a>     <strong class="jxr_keyword">public</strong> Iterator&lt;Map.Entry&lt;String, ChannelHandler&gt;&gt; iterator() {
+<a class="jxr_linenumber" name="1359" href="#1359">1359</a>         <strong class="jxr_keyword">return</strong> toMap().entrySet().iterator();
+<a class="jxr_linenumber" name="1360" href="#1360">1360</a>     }
+<a class="jxr_linenumber" name="1361" href="#1361">1361</a> }
 </pre>
-<hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div>
-<script type="text/javascript">
-var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
-<script type="text/javascript">
-try {
-var pageTracker = _gat._getTracker('UA-95307-5');
-pageTracker._trackPageview();
-} catch(err) {}</script>
-</body>
+<hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
 
