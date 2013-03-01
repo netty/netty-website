@@ -5,9 +5,9 @@ To contribute to the project documentation, simply fork this repository and issu
 
 ### Step 1. Installing Awestruct
 
-Your system must have a working Ruby installation because Awestruct is written in Ruby.  You can install Awestruct using the `gem` command:
+Your system must have a working Ruby installation (1.9+) because Awestruct is written in Ruby.  You can install Awestruct using the `gem` command:
 
-    $ gem install awestruct disqus htmlentities rb-fsevent -- --with-cflags=-w
+    $ gem install awestruct disqus nokogiri htmlentities rb-fsevent therubyracer -- --with-cflags=-w
 
 
 ### Step 2. Fork netty-website Repository
