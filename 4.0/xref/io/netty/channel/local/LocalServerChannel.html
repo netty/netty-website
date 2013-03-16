@@ -32,8 +32,8 @@
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.DefaultChannelConfig;
 <a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.EventLoop;
 <a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ServerChannel;
-<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.SingleThreadEventExecutor;
-<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.SingleThreadEventLoop;
+<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.SingleThreadEventLoop;
+<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.util.concurrent.SingleThreadEventExecutor;
 <a class="jxr_linenumber" name="27" href="#27">27</a>  
 <a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> java.net.SocketAddress;
 <a class="jxr_linenumber" name="29" href="#29">29</a>  
@@ -107,7 +107,7 @@
 <a class="jxr_linenumber" name="97" href="#97">97</a>  
 <a class="jxr_linenumber" name="98" href="#98">98</a>      @Override
 <a class="jxr_linenumber" name="99" href="#99">99</a>      <strong class="jxr_keyword">protected</strong> Runnable doRegister() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="100" href="#100">100</a>         ((<a href="../../../../io/netty/channel/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).addShutdownHook(shutdownHook);
+<a class="jxr_linenumber" name="100" href="#100">100</a>         ((<a href="../../../../io/netty/util/concurrent/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).addShutdownHook(shutdownHook);
 <a class="jxr_linenumber" name="101" href="#101">101</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="102" href="#102">102</a>     }
 <a class="jxr_linenumber" name="103" href="#103">103</a> 
@@ -136,52 +136,53 @@
 <a class="jxr_linenumber" name="126" href="#126">126</a>     }
 <a class="jxr_linenumber" name="127" href="#127">127</a> 
 <a class="jxr_linenumber" name="128" href="#128">128</a>     @Override
-<a class="jxr_linenumber" name="129" href="#129">129</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doDeregister() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="130" href="#130">130</a>         ((<a href="../../../../io/netty/channel/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).removeShutdownHook(shutdownHook);
-<a class="jxr_linenumber" name="131" href="#131">131</a>     }
-<a class="jxr_linenumber" name="132" href="#132">132</a> 
-<a class="jxr_linenumber" name="133" href="#133">133</a>     @Override
-<a class="jxr_linenumber" name="134" href="#134">134</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doBeginRead() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">if</strong> (acceptInProgress) {
-<a class="jxr_linenumber" name="136" href="#136">136</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="137" href="#137">137</a>         }
-<a class="jxr_linenumber" name="138" href="#138">138</a> 
-<a class="jxr_linenumber" name="139" href="#139">139</a>         <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
-<a class="jxr_linenumber" name="140" href="#140">140</a>         MessageBuf&lt;Object&gt; buf = pipeline.inboundMessageBuffer();
-<a class="jxr_linenumber" name="141" href="#141">141</a>         <strong class="jxr_keyword">if</strong> (buf.isEmpty()) {
-<a class="jxr_linenumber" name="142" href="#142">142</a>             acceptInProgress = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="143" href="#143">143</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="144" href="#144">144</a>         }
-<a class="jxr_linenumber" name="145" href="#145">145</a> 
-<a class="jxr_linenumber" name="146" href="#146">146</a>         pipeline.fireInboundBufferUpdated();
-<a class="jxr_linenumber" name="147" href="#147">147</a>         pipeline.fireChannelReadSuspended();
-<a class="jxr_linenumber" name="148" href="#148">148</a>     }
-<a class="jxr_linenumber" name="149" href="#149">149</a> 
-<a class="jxr_linenumber" name="150" href="#150">150</a>     <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> serve(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> peer) {
-<a class="jxr_linenumber" name="151" href="#151">151</a>         <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> child = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a>(<strong class="jxr_keyword">this</strong>, peer);
-<a class="jxr_linenumber" name="152" href="#152">152</a>         serve0(child);
-<a class="jxr_linenumber" name="153" href="#153">153</a>         <strong class="jxr_keyword">return</strong> child;
-<a class="jxr_linenumber" name="154" href="#154">154</a>     }
-<a class="jxr_linenumber" name="155" href="#155">155</a> 
-<a class="jxr_linenumber" name="156" href="#156">156</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> serve0(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> child) {
-<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">if</strong> (eventLoop().inEventLoop()) {
-<a class="jxr_linenumber" name="158" href="#158">158</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
-<a class="jxr_linenumber" name="159" href="#159">159</a>             pipeline.inboundMessageBuffer().add(child);
-<a class="jxr_linenumber" name="160" href="#160">160</a>             <strong class="jxr_keyword">if</strong> (acceptInProgress) {
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 acceptInProgress = false;
-<a class="jxr_linenumber" name="162" href="#162">162</a>                 pipeline.fireInboundBufferUpdated();
-<a class="jxr_linenumber" name="163" href="#163">163</a>                 pipeline.fireChannelReadSuspended();
-<a class="jxr_linenumber" name="164" href="#164">164</a>             }
-<a class="jxr_linenumber" name="165" href="#165">165</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="166" href="#166">166</a>             eventLoop().execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="167" href="#167">167</a>                 @Override
-<a class="jxr_linenumber" name="168" href="#168">168</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="169" href="#169">169</a>                     serve0(child);
-<a class="jxr_linenumber" name="170" href="#170">170</a>                 }
-<a class="jxr_linenumber" name="171" href="#171">171</a>             });
-<a class="jxr_linenumber" name="172" href="#172">172</a>         }
-<a class="jxr_linenumber" name="173" href="#173">173</a>     }
-<a class="jxr_linenumber" name="174" href="#174">174</a> }
+<a class="jxr_linenumber" name="129" href="#129">129</a>     <strong class="jxr_keyword">protected</strong> Runnable doDeregister() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="130" href="#130">130</a>         ((<a href="../../../../io/netty/util/concurrent/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).removeShutdownHook(shutdownHook);
+<a class="jxr_linenumber" name="131" href="#131">131</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="132" href="#132">132</a>     }
+<a class="jxr_linenumber" name="133" href="#133">133</a> 
+<a class="jxr_linenumber" name="134" href="#134">134</a>     @Override
+<a class="jxr_linenumber" name="135" href="#135">135</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doBeginRead() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="136" href="#136">136</a>         <strong class="jxr_keyword">if</strong> (acceptInProgress) {
+<a class="jxr_linenumber" name="137" href="#137">137</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="138" href="#138">138</a>         }
+<a class="jxr_linenumber" name="139" href="#139">139</a> 
+<a class="jxr_linenumber" name="140" href="#140">140</a>         <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
+<a class="jxr_linenumber" name="141" href="#141">141</a>         MessageBuf&lt;Object&gt; buf = pipeline.inboundMessageBuffer();
+<a class="jxr_linenumber" name="142" href="#142">142</a>         <strong class="jxr_keyword">if</strong> (buf.isEmpty()) {
+<a class="jxr_linenumber" name="143" href="#143">143</a>             acceptInProgress = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="144" href="#144">144</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="145" href="#145">145</a>         }
+<a class="jxr_linenumber" name="146" href="#146">146</a> 
+<a class="jxr_linenumber" name="147" href="#147">147</a>         pipeline.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="148" href="#148">148</a>         pipeline.fireChannelReadSuspended();
+<a class="jxr_linenumber" name="149" href="#149">149</a>     }
+<a class="jxr_linenumber" name="150" href="#150">150</a> 
+<a class="jxr_linenumber" name="151" href="#151">151</a>     <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> serve(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> peer) {
+<a class="jxr_linenumber" name="152" href="#152">152</a>         <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> child = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a>(<strong class="jxr_keyword">this</strong>, peer);
+<a class="jxr_linenumber" name="153" href="#153">153</a>         serve0(child);
+<a class="jxr_linenumber" name="154" href="#154">154</a>         <strong class="jxr_keyword">return</strong> child;
+<a class="jxr_linenumber" name="155" href="#155">155</a>     }
+<a class="jxr_linenumber" name="156" href="#156">156</a> 
+<a class="jxr_linenumber" name="157" href="#157">157</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> serve0(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> child) {
+<a class="jxr_linenumber" name="158" href="#158">158</a>         <strong class="jxr_keyword">if</strong> (eventLoop().inEventLoop()) {
+<a class="jxr_linenumber" name="159" href="#159">159</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
+<a class="jxr_linenumber" name="160" href="#160">160</a>             pipeline.inboundMessageBuffer().add(child);
+<a class="jxr_linenumber" name="161" href="#161">161</a>             <strong class="jxr_keyword">if</strong> (acceptInProgress) {
+<a class="jxr_linenumber" name="162" href="#162">162</a>                 acceptInProgress = false;
+<a class="jxr_linenumber" name="163" href="#163">163</a>                 pipeline.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="164" href="#164">164</a>                 pipeline.fireChannelReadSuspended();
+<a class="jxr_linenumber" name="165" href="#165">165</a>             }
+<a class="jxr_linenumber" name="166" href="#166">166</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="167" href="#167">167</a>             eventLoop().execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="168" href="#168">168</a>                 @Override
+<a class="jxr_linenumber" name="169" href="#169">169</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="170" href="#170">170</a>                     serve0(child);
+<a class="jxr_linenumber" name="171" href="#171">171</a>                 }
+<a class="jxr_linenumber" name="172" href="#172">172</a>             });
+<a class="jxr_linenumber" name="173" href="#173">173</a>         }
+<a class="jxr_linenumber" name="174" href="#174">174</a>     }
+<a class="jxr_linenumber" name="175" href="#175">175</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

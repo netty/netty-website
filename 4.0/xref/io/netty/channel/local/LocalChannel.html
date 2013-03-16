@@ -36,8 +36,8 @@
 <a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelPromise;
 <a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.DefaultChannelConfig;
 <a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.EventLoop;
-<a class="jxr_linenumber" name="29" href="#29">29</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.SingleThreadEventExecutor;
-<a class="jxr_linenumber" name="30" href="#30">30</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.SingleThreadEventLoop;
+<a class="jxr_linenumber" name="29" href="#29">29</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.SingleThreadEventLoop;
+<a class="jxr_linenumber" name="30" href="#30">30</a>  <strong class="jxr_keyword">import</strong> io.netty.util.concurrent.SingleThreadEventExecutor;
 <a class="jxr_linenumber" name="31" href="#31">31</a>  
 <a class="jxr_linenumber" name="32" href="#32">32</a>  <strong class="jxr_keyword">import</strong> java.net.SocketAddress;
 <a class="jxr_linenumber" name="33" href="#33">33</a>  <strong class="jxr_keyword">import</strong> java.nio.channels.AlreadyConnectedException;
@@ -169,7 +169,7 @@
 <a class="jxr_linenumber" name="159" href="#159">159</a>             postRegisterTask = <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="160" href="#160">160</a>         }
 <a class="jxr_linenumber" name="161" href="#161">161</a> 
-<a class="jxr_linenumber" name="162" href="#162">162</a>         ((<a href="../../../../io/netty/channel/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).addShutdownHook(shutdownHook);
+<a class="jxr_linenumber" name="162" href="#162">162</a>         ((<a href="../../../../io/netty/util/concurrent/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).addShutdownHook(shutdownHook);
 <a class="jxr_linenumber" name="163" href="#163">163</a> 
 <a class="jxr_linenumber" name="164" href="#164">164</a>         <strong class="jxr_keyword">return</strong> postRegisterTask;
 <a class="jxr_linenumber" name="165" href="#165">165</a>     }
@@ -211,138 +211,139 @@
 <a class="jxr_linenumber" name="201" href="#201">201</a>     }
 <a class="jxr_linenumber" name="202" href="#202">202</a> 
 <a class="jxr_linenumber" name="203" href="#203">203</a>     @Override
-<a class="jxr_linenumber" name="204" href="#204">204</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doDeregister() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="204" href="#204">204</a>     <strong class="jxr_keyword">protected</strong> Runnable doDeregister() <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="205" href="#205">205</a>         <strong class="jxr_keyword">if</strong> (isOpen()) {
 <a class="jxr_linenumber" name="206" href="#206">206</a>             unsafe().close(unsafe().voidFuture());
 <a class="jxr_linenumber" name="207" href="#207">207</a>         }
-<a class="jxr_linenumber" name="208" href="#208">208</a>         ((<a href="../../../../io/netty/channel/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).removeShutdownHook(shutdownHook);
-<a class="jxr_linenumber" name="209" href="#209">209</a>     }
-<a class="jxr_linenumber" name="210" href="#210">210</a> 
-<a class="jxr_linenumber" name="211" href="#211">211</a>     @Override
-<a class="jxr_linenumber" name="212" href="#212">212</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doBeginRead() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="213" href="#213">213</a>         <strong class="jxr_keyword">if</strong> (readInProgress) {
-<a class="jxr_linenumber" name="214" href="#214">214</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="215" href="#215">215</a>         }
-<a class="jxr_linenumber" name="216" href="#216">216</a> 
-<a class="jxr_linenumber" name="217" href="#217">217</a>         <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
-<a class="jxr_linenumber" name="218" href="#218">218</a>         MessageBuf&lt;Object&gt; buf = pipeline.inboundMessageBuffer();
-<a class="jxr_linenumber" name="219" href="#219">219</a>         <strong class="jxr_keyword">if</strong> (buf.isEmpty()) {
-<a class="jxr_linenumber" name="220" href="#220">220</a>             readInProgress = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="221" href="#221">221</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="222" href="#222">222</a>         }
-<a class="jxr_linenumber" name="223" href="#223">223</a> 
-<a class="jxr_linenumber" name="224" href="#224">224</a>         pipeline.fireInboundBufferUpdated();
-<a class="jxr_linenumber" name="225" href="#225">225</a>         pipeline.fireChannelReadSuspended();
-<a class="jxr_linenumber" name="226" href="#226">226</a>     }
-<a class="jxr_linenumber" name="227" href="#227">227</a> 
-<a class="jxr_linenumber" name="228" href="#228">228</a>     @Override
-<a class="jxr_linenumber" name="229" href="#229">229</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doFlushMessageBuffer(MessageBuf&lt;Object&gt; buf) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="230" href="#230">230</a>         <strong class="jxr_keyword">if</strong> (state &lt; 2) {
-<a class="jxr_linenumber" name="231" href="#231">231</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NotYetConnectedException();
-<a class="jxr_linenumber" name="232" href="#232">232</a>         }
-<a class="jxr_linenumber" name="233" href="#233">233</a>         <strong class="jxr_keyword">if</strong> (state &gt; 2) {
-<a class="jxr_linenumber" name="234" href="#234">234</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ClosedChannelException();
-<a class="jxr_linenumber" name="235" href="#235">235</a>         }
-<a class="jxr_linenumber" name="236" href="#236">236</a> 
-<a class="jxr_linenumber" name="237" href="#237">237</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> peer = <strong class="jxr_keyword">this</strong>.peer;
-<a class="jxr_linenumber" name="238" href="#238">238</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> peerPipeline = peer.pipeline();
-<a class="jxr_linenumber" name="239" href="#239">239</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/EventLoop.html">EventLoop</a> peerLoop = peer.eventLoop();
-<a class="jxr_linenumber" name="240" href="#240">240</a> 
-<a class="jxr_linenumber" name="241" href="#241">241</a>         <strong class="jxr_keyword">if</strong> (peerLoop == eventLoop()) {
-<a class="jxr_linenumber" name="242" href="#242">242</a>             buf.drainTo(peerPipeline.inboundMessageBuffer());
-<a class="jxr_linenumber" name="243" href="#243">243</a>             finishPeerRead(peer, peerPipeline);
-<a class="jxr_linenumber" name="244" href="#244">244</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="245" href="#245">245</a>             <strong class="jxr_keyword">final</strong> Object[] msgs = buf.toArray();
-<a class="jxr_linenumber" name="246" href="#246">246</a>             buf.clear();
-<a class="jxr_linenumber" name="247" href="#247">247</a>             peerLoop.execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="248" href="#248">248</a>                 @Override
-<a class="jxr_linenumber" name="249" href="#249">249</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="250" href="#250">250</a>                     MessageBuf&lt;Object&gt; buf = peerPipeline.inboundMessageBuffer();
-<a class="jxr_linenumber" name="251" href="#251">251</a>                     Collections.addAll(buf, msgs);
-<a class="jxr_linenumber" name="252" href="#252">252</a>                     finishPeerRead(peer, peerPipeline);
-<a class="jxr_linenumber" name="253" href="#253">253</a>                 }
-<a class="jxr_linenumber" name="254" href="#254">254</a>             });
-<a class="jxr_linenumber" name="255" href="#255">255</a>         }
-<a class="jxr_linenumber" name="256" href="#256">256</a>     }
-<a class="jxr_linenumber" name="257" href="#257">257</a> 
-<a class="jxr_linenumber" name="258" href="#258">258</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> finishPeerRead(<a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> peer, <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> peerPipeline) {
-<a class="jxr_linenumber" name="259" href="#259">259</a>         <strong class="jxr_keyword">if</strong> (peer.readInProgress) {
-<a class="jxr_linenumber" name="260" href="#260">260</a>             peer.readInProgress = false;
-<a class="jxr_linenumber" name="261" href="#261">261</a>             peerPipeline.fireInboundBufferUpdated();
-<a class="jxr_linenumber" name="262" href="#262">262</a>             peerPipeline.fireChannelReadSuspended();
-<a class="jxr_linenumber" name="263" href="#263">263</a>         }
-<a class="jxr_linenumber" name="264" href="#264">264</a>     }
-<a class="jxr_linenumber" name="265" href="#265">265</a> 
-<a class="jxr_linenumber" name="266" href="#266">266</a>     @Override
-<a class="jxr_linenumber" name="267" href="#267">267</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isFlushPending() {
-<a class="jxr_linenumber" name="268" href="#268">268</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="269" href="#269">269</a>     }
-<a class="jxr_linenumber" name="270" href="#270">270</a> 
-<a class="jxr_linenumber" name="271" href="#271">271</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalUnsafe</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/AbstractChannel.html">AbstractUnsafe</a> {
-<a class="jxr_linenumber" name="272" href="#272">272</a> 
-<a class="jxr_linenumber" name="273" href="#273">273</a>         @Override
-<a class="jxr_linenumber" name="274" href="#274">274</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(<strong class="jxr_keyword">final</strong> SocketAddress remoteAddress,
-<a class="jxr_linenumber" name="275" href="#275">275</a>                 SocketAddress localAddress, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="276" href="#276">276</a>             <strong class="jxr_keyword">if</strong> (eventLoop().inEventLoop()) {
-<a class="jxr_linenumber" name="277" href="#277">277</a>                 <strong class="jxr_keyword">if</strong> (!ensureOpen(promise)) {
-<a class="jxr_linenumber" name="278" href="#278">278</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="279" href="#279">279</a>                 }
-<a class="jxr_linenumber" name="280" href="#280">280</a> 
-<a class="jxr_linenumber" name="281" href="#281">281</a>                 <strong class="jxr_keyword">if</strong> (state == 2) {
-<a class="jxr_linenumber" name="282" href="#282">282</a>                     Exception cause = <strong class="jxr_keyword">new</strong> AlreadyConnectedException();
-<a class="jxr_linenumber" name="283" href="#283">283</a>                     promise.setFailure(cause);
-<a class="jxr_linenumber" name="284" href="#284">284</a>                     pipeline().fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="285" href="#285">285</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="286" href="#286">286</a>                 }
-<a class="jxr_linenumber" name="287" href="#287">287</a> 
-<a class="jxr_linenumber" name="288" href="#288">288</a>                 <strong class="jxr_keyword">if</strong> (connectPromise != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="289" href="#289">289</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ConnectionPendingException();
-<a class="jxr_linenumber" name="290" href="#290">290</a>                 }
-<a class="jxr_linenumber" name="291" href="#291">291</a> 
-<a class="jxr_linenumber" name="292" href="#292">292</a>                 connectPromise = promise;
-<a class="jxr_linenumber" name="293" href="#293">293</a> 
-<a class="jxr_linenumber" name="294" href="#294">294</a>                 <strong class="jxr_keyword">if</strong> (state != 1) {
-<a class="jxr_linenumber" name="295" href="#295">295</a>                     <em class="jxr_comment">// Not bound yet and no localAddress specified - get one.</em>
-<a class="jxr_linenumber" name="296" href="#296">296</a>                     <strong class="jxr_keyword">if</strong> (localAddress == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="297" href="#297">297</a>                         localAddress = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/local/LocalAddress.html">LocalAddress</a>(LocalChannel.<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="298" href="#298">298</a>                     }
-<a class="jxr_linenumber" name="299" href="#299">299</a>                 }
-<a class="jxr_linenumber" name="300" href="#300">300</a> 
-<a class="jxr_linenumber" name="301" href="#301">301</a>                 <strong class="jxr_keyword">if</strong> (localAddress != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="302" href="#302">302</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="303" href="#303">303</a>                         doBind(localAddress);
-<a class="jxr_linenumber" name="304" href="#304">304</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="305" href="#305">305</a>                         promise.setFailure(t);
-<a class="jxr_linenumber" name="306" href="#306">306</a>                         pipeline().fireExceptionCaught(t);
-<a class="jxr_linenumber" name="307" href="#307">307</a>                         close(voidFuture());
-<a class="jxr_linenumber" name="308" href="#308">308</a>                         <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="309" href="#309">309</a>                     }
-<a class="jxr_linenumber" name="310" href="#310">310</a>                 }
-<a class="jxr_linenumber" name="311" href="#311">311</a> 
-<a class="jxr_linenumber" name="312" href="#312">312</a>                 <a href="../../../../io/netty/channel/Channel.html">Channel</a> boundChannel = LocalChannelRegistry.get(remoteAddress);
-<a class="jxr_linenumber" name="313" href="#313">313</a>                 <strong class="jxr_keyword">if</strong> (!(boundChannel instanceof LocalServerChannel)) {
-<a class="jxr_linenumber" name="314" href="#314">314</a>                     Exception cause =
-<a class="jxr_linenumber" name="315" href="#315">315</a>                             <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelException.html">ChannelException</a>(<span class="jxr_string">"connection refused"</span>);
-<a class="jxr_linenumber" name="316" href="#316">316</a>                     promise.setFailure(cause);
-<a class="jxr_linenumber" name="317" href="#317">317</a>                     pipeline().fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="318" href="#318">318</a>                     close(voidFuture());
-<a class="jxr_linenumber" name="319" href="#319">319</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="320" href="#320">320</a>                 }
-<a class="jxr_linenumber" name="321" href="#321">321</a> 
-<a class="jxr_linenumber" name="322" href="#322">322</a>                 <a href="../../../../io/netty/channel/local/LocalServerChannel.html">LocalServerChannel</a> serverChannel = (LocalServerChannel) boundChannel;
-<a class="jxr_linenumber" name="323" href="#323">323</a>                 peer = serverChannel.serve(LocalChannel.<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="324" href="#324">324</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="325" href="#325">325</a>                 <strong class="jxr_keyword">final</strong> SocketAddress localAddress0 = localAddress;
-<a class="jxr_linenumber" name="326" href="#326">326</a>                 eventLoop().execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="327" href="#327">327</a>                     @Override
-<a class="jxr_linenumber" name="328" href="#328">328</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="329" href="#329">329</a>                         connect(remoteAddress, localAddress0, promise);
-<a class="jxr_linenumber" name="330" href="#330">330</a>                     }
-<a class="jxr_linenumber" name="331" href="#331">331</a>                 });
-<a class="jxr_linenumber" name="332" href="#332">332</a>             }
-<a class="jxr_linenumber" name="333" href="#333">333</a>         }
-<a class="jxr_linenumber" name="334" href="#334">334</a>     }
-<a class="jxr_linenumber" name="335" href="#335">335</a> }
+<a class="jxr_linenumber" name="208" href="#208">208</a>         ((<a href="../../../../io/netty/util/concurrent/SingleThreadEventExecutor.html">SingleThreadEventExecutor</a>) eventLoop()).removeShutdownHook(shutdownHook);
+<a class="jxr_linenumber" name="209" href="#209">209</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="210" href="#210">210</a>     }
+<a class="jxr_linenumber" name="211" href="#211">211</a> 
+<a class="jxr_linenumber" name="212" href="#212">212</a>     @Override
+<a class="jxr_linenumber" name="213" href="#213">213</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doBeginRead() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="214" href="#214">214</a>         <strong class="jxr_keyword">if</strong> (readInProgress) {
+<a class="jxr_linenumber" name="215" href="#215">215</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="216" href="#216">216</a>         }
+<a class="jxr_linenumber" name="217" href="#217">217</a> 
+<a class="jxr_linenumber" name="218" href="#218">218</a>         <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
+<a class="jxr_linenumber" name="219" href="#219">219</a>         MessageBuf&lt;Object&gt; buf = pipeline.inboundMessageBuffer();
+<a class="jxr_linenumber" name="220" href="#220">220</a>         <strong class="jxr_keyword">if</strong> (buf.isEmpty()) {
+<a class="jxr_linenumber" name="221" href="#221">221</a>             readInProgress = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="222" href="#222">222</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="223" href="#223">223</a>         }
+<a class="jxr_linenumber" name="224" href="#224">224</a> 
+<a class="jxr_linenumber" name="225" href="#225">225</a>         pipeline.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="226" href="#226">226</a>         pipeline.fireChannelReadSuspended();
+<a class="jxr_linenumber" name="227" href="#227">227</a>     }
+<a class="jxr_linenumber" name="228" href="#228">228</a> 
+<a class="jxr_linenumber" name="229" href="#229">229</a>     @Override
+<a class="jxr_linenumber" name="230" href="#230">230</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doFlushMessageBuffer(MessageBuf&lt;Object&gt; buf) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="231" href="#231">231</a>         <strong class="jxr_keyword">if</strong> (state &lt; 2) {
+<a class="jxr_linenumber" name="232" href="#232">232</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NotYetConnectedException();
+<a class="jxr_linenumber" name="233" href="#233">233</a>         }
+<a class="jxr_linenumber" name="234" href="#234">234</a>         <strong class="jxr_keyword">if</strong> (state &gt; 2) {
+<a class="jxr_linenumber" name="235" href="#235">235</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ClosedChannelException();
+<a class="jxr_linenumber" name="236" href="#236">236</a>         }
+<a class="jxr_linenumber" name="237" href="#237">237</a> 
+<a class="jxr_linenumber" name="238" href="#238">238</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> peer = <strong class="jxr_keyword">this</strong>.peer;
+<a class="jxr_linenumber" name="239" href="#239">239</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> peerPipeline = peer.pipeline();
+<a class="jxr_linenumber" name="240" href="#240">240</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/EventLoop.html">EventLoop</a> peerLoop = peer.eventLoop();
+<a class="jxr_linenumber" name="241" href="#241">241</a> 
+<a class="jxr_linenumber" name="242" href="#242">242</a>         <strong class="jxr_keyword">if</strong> (peerLoop == eventLoop()) {
+<a class="jxr_linenumber" name="243" href="#243">243</a>             buf.drainTo(peerPipeline.inboundMessageBuffer());
+<a class="jxr_linenumber" name="244" href="#244">244</a>             finishPeerRead(peer, peerPipeline);
+<a class="jxr_linenumber" name="245" href="#245">245</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="246" href="#246">246</a>             <strong class="jxr_keyword">final</strong> Object[] msgs = buf.toArray();
+<a class="jxr_linenumber" name="247" href="#247">247</a>             buf.clear();
+<a class="jxr_linenumber" name="248" href="#248">248</a>             peerLoop.execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="249" href="#249">249</a>                 @Override
+<a class="jxr_linenumber" name="250" href="#250">250</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="251" href="#251">251</a>                     MessageBuf&lt;Object&gt; buf = peerPipeline.inboundMessageBuffer();
+<a class="jxr_linenumber" name="252" href="#252">252</a>                     Collections.addAll(buf, msgs);
+<a class="jxr_linenumber" name="253" href="#253">253</a>                     finishPeerRead(peer, peerPipeline);
+<a class="jxr_linenumber" name="254" href="#254">254</a>                 }
+<a class="jxr_linenumber" name="255" href="#255">255</a>             });
+<a class="jxr_linenumber" name="256" href="#256">256</a>         }
+<a class="jxr_linenumber" name="257" href="#257">257</a>     }
+<a class="jxr_linenumber" name="258" href="#258">258</a> 
+<a class="jxr_linenumber" name="259" href="#259">259</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> finishPeerRead(<a href="../../../../io/netty/channel/local/LocalChannel.html">LocalChannel</a> peer, <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> peerPipeline) {
+<a class="jxr_linenumber" name="260" href="#260">260</a>         <strong class="jxr_keyword">if</strong> (peer.readInProgress) {
+<a class="jxr_linenumber" name="261" href="#261">261</a>             peer.readInProgress = false;
+<a class="jxr_linenumber" name="262" href="#262">262</a>             peerPipeline.fireInboundBufferUpdated();
+<a class="jxr_linenumber" name="263" href="#263">263</a>             peerPipeline.fireChannelReadSuspended();
+<a class="jxr_linenumber" name="264" href="#264">264</a>         }
+<a class="jxr_linenumber" name="265" href="#265">265</a>     }
+<a class="jxr_linenumber" name="266" href="#266">266</a> 
+<a class="jxr_linenumber" name="267" href="#267">267</a>     @Override
+<a class="jxr_linenumber" name="268" href="#268">268</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isFlushPending() {
+<a class="jxr_linenumber" name="269" href="#269">269</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="270" href="#270">270</a>     }
+<a class="jxr_linenumber" name="271" href="#271">271</a> 
+<a class="jxr_linenumber" name="272" href="#272">272</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/local/LocalChannel.html">LocalUnsafe</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/AbstractChannel.html">AbstractUnsafe</a> {
+<a class="jxr_linenumber" name="273" href="#273">273</a> 
+<a class="jxr_linenumber" name="274" href="#274">274</a>         @Override
+<a class="jxr_linenumber" name="275" href="#275">275</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(<strong class="jxr_keyword">final</strong> SocketAddress remoteAddress,
+<a class="jxr_linenumber" name="276" href="#276">276</a>                 SocketAddress localAddress, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="277" href="#277">277</a>             <strong class="jxr_keyword">if</strong> (eventLoop().inEventLoop()) {
+<a class="jxr_linenumber" name="278" href="#278">278</a>                 <strong class="jxr_keyword">if</strong> (!ensureOpen(promise)) {
+<a class="jxr_linenumber" name="279" href="#279">279</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="280" href="#280">280</a>                 }
+<a class="jxr_linenumber" name="281" href="#281">281</a> 
+<a class="jxr_linenumber" name="282" href="#282">282</a>                 <strong class="jxr_keyword">if</strong> (state == 2) {
+<a class="jxr_linenumber" name="283" href="#283">283</a>                     Exception cause = <strong class="jxr_keyword">new</strong> AlreadyConnectedException();
+<a class="jxr_linenumber" name="284" href="#284">284</a>                     promise.setFailure(cause);
+<a class="jxr_linenumber" name="285" href="#285">285</a>                     pipeline().fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="286" href="#286">286</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="287" href="#287">287</a>                 }
+<a class="jxr_linenumber" name="288" href="#288">288</a> 
+<a class="jxr_linenumber" name="289" href="#289">289</a>                 <strong class="jxr_keyword">if</strong> (connectPromise != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="290" href="#290">290</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ConnectionPendingException();
+<a class="jxr_linenumber" name="291" href="#291">291</a>                 }
+<a class="jxr_linenumber" name="292" href="#292">292</a> 
+<a class="jxr_linenumber" name="293" href="#293">293</a>                 connectPromise = promise;
+<a class="jxr_linenumber" name="294" href="#294">294</a> 
+<a class="jxr_linenumber" name="295" href="#295">295</a>                 <strong class="jxr_keyword">if</strong> (state != 1) {
+<a class="jxr_linenumber" name="296" href="#296">296</a>                     <em class="jxr_comment">// Not bound yet and no localAddress specified - get one.</em>
+<a class="jxr_linenumber" name="297" href="#297">297</a>                     <strong class="jxr_keyword">if</strong> (localAddress == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="298" href="#298">298</a>                         localAddress = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/local/LocalAddress.html">LocalAddress</a>(LocalChannel.<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="299" href="#299">299</a>                     }
+<a class="jxr_linenumber" name="300" href="#300">300</a>                 }
+<a class="jxr_linenumber" name="301" href="#301">301</a> 
+<a class="jxr_linenumber" name="302" href="#302">302</a>                 <strong class="jxr_keyword">if</strong> (localAddress != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="303" href="#303">303</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="304" href="#304">304</a>                         doBind(localAddress);
+<a class="jxr_linenumber" name="305" href="#305">305</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="306" href="#306">306</a>                         promise.setFailure(t);
+<a class="jxr_linenumber" name="307" href="#307">307</a>                         pipeline().fireExceptionCaught(t);
+<a class="jxr_linenumber" name="308" href="#308">308</a>                         close(voidFuture());
+<a class="jxr_linenumber" name="309" href="#309">309</a>                         <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="310" href="#310">310</a>                     }
+<a class="jxr_linenumber" name="311" href="#311">311</a>                 }
+<a class="jxr_linenumber" name="312" href="#312">312</a> 
+<a class="jxr_linenumber" name="313" href="#313">313</a>                 <a href="../../../../io/netty/channel/Channel.html">Channel</a> boundChannel = LocalChannelRegistry.get(remoteAddress);
+<a class="jxr_linenumber" name="314" href="#314">314</a>                 <strong class="jxr_keyword">if</strong> (!(boundChannel instanceof LocalServerChannel)) {
+<a class="jxr_linenumber" name="315" href="#315">315</a>                     Exception cause =
+<a class="jxr_linenumber" name="316" href="#316">316</a>                             <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelException.html">ChannelException</a>(<span class="jxr_string">"connection refused"</span>);
+<a class="jxr_linenumber" name="317" href="#317">317</a>                     promise.setFailure(cause);
+<a class="jxr_linenumber" name="318" href="#318">318</a>                     pipeline().fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="319" href="#319">319</a>                     close(voidFuture());
+<a class="jxr_linenumber" name="320" href="#320">320</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="321" href="#321">321</a>                 }
+<a class="jxr_linenumber" name="322" href="#322">322</a> 
+<a class="jxr_linenumber" name="323" href="#323">323</a>                 <a href="../../../../io/netty/channel/local/LocalServerChannel.html">LocalServerChannel</a> serverChannel = (LocalServerChannel) boundChannel;
+<a class="jxr_linenumber" name="324" href="#324">324</a>                 peer = serverChannel.serve(LocalChannel.<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="325" href="#325">325</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="326" href="#326">326</a>                 <strong class="jxr_keyword">final</strong> SocketAddress localAddress0 = localAddress;
+<a class="jxr_linenumber" name="327" href="#327">327</a>                 eventLoop().execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="328" href="#328">328</a>                     @Override
+<a class="jxr_linenumber" name="329" href="#329">329</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="330" href="#330">330</a>                         connect(remoteAddress, localAddress0, promise);
+<a class="jxr_linenumber" name="331" href="#331">331</a>                     }
+<a class="jxr_linenumber" name="332" href="#332">332</a>                 });
+<a class="jxr_linenumber" name="333" href="#333">333</a>             }
+<a class="jxr_linenumber" name="334" href="#334">334</a>         }
+<a class="jxr_linenumber" name="335" href="#335">335</a>     }
+<a class="jxr_linenumber" name="336" href="#336">336</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

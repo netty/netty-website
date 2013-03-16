@@ -142,75 +142,71 @@
 <a class="jxr_linenumber" name="132" href="#132">132</a>             <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="133" href="#133">133</a>         }
 <a class="jxr_linenumber" name="134" href="#134">134</a> 
-<a class="jxr_linenumber" name="135" href="#135">135</a>         buf.append(<span class="jxr_string">".. WITH A "</span>);
-<a class="jxr_linenumber" name="136" href="#136">136</a>         <strong class="jxr_keyword">if</strong> (result.isPartialFailure()) {
-<a class="jxr_linenumber" name="137" href="#137">137</a>             buf.append(<span class="jxr_string">"PARTIAL "</span>);
-<a class="jxr_linenumber" name="138" href="#138">138</a>         }
-<a class="jxr_linenumber" name="139" href="#139">139</a>         buf.append(<span class="jxr_string">"DECODER FAILURE: "</span>);
-<a class="jxr_linenumber" name="140" href="#140">140</a>         buf.append(result.cause());
-<a class="jxr_linenumber" name="141" href="#141">141</a>         buf.append(<span class="jxr_string">"\r\n"</span>);
-<a class="jxr_linenumber" name="142" href="#142">142</a>     }
-<a class="jxr_linenumber" name="143" href="#143">143</a> 
-<a class="jxr_linenumber" name="144" href="#144">144</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeResponse(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/HttpObject.html">HttpObject</a> currentObj) {
-<a class="jxr_linenumber" name="145" href="#145">145</a>         <em class="jxr_comment">// Decide whether to close the connection or not.</em>
-<a class="jxr_linenumber" name="146" href="#146">146</a>         <strong class="jxr_keyword">boolean</strong> keepAlive = isKeepAlive(request);
-<a class="jxr_linenumber" name="147" href="#147">147</a>         <em class="jxr_comment">// Build the response object.</em>
-<a class="jxr_linenumber" name="148" href="#148">148</a>         <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> response = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html">DefaultFullHttpResponse</a>(
-<a class="jxr_linenumber" name="149" href="#149">149</a>                 HTTP_1_1, currentObj.getDecoderResult().isSuccess()? OK : BAD_REQUEST,
-<a class="jxr_linenumber" name="150" href="#150">150</a>                 Unpooled.copiedBuffer(buf.toString(), CharsetUtil.UTF_8));
-<a class="jxr_linenumber" name="151" href="#151">151</a> 
-<a class="jxr_linenumber" name="152" href="#152">152</a>         response.headers().set(CONTENT_TYPE, <span class="jxr_string">"text/plain; charset=UTF-8"</span>);
-<a class="jxr_linenumber" name="153" href="#153">153</a> 
-<a class="jxr_linenumber" name="154" href="#154">154</a>         <strong class="jxr_keyword">if</strong> (keepAlive) {
-<a class="jxr_linenumber" name="155" href="#155">155</a>             <em class="jxr_comment">// Add 'Content-Length' header only for a keep-alive connection.</em>
-<a class="jxr_linenumber" name="156" href="#156">156</a>             response.headers().set(CONTENT_LENGTH, response.data().readableBytes());
-<a class="jxr_linenumber" name="157" href="#157">157</a>             <em class="jxr_comment">// Add keep alive header as per:</em>
-<a class="jxr_linenumber" name="158" href="#158">158</a>             <em class="jxr_comment">// - http://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection</em>
-<a class="jxr_linenumber" name="159" href="#159">159</a>             response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-<a class="jxr_linenumber" name="160" href="#160">160</a>         }
-<a class="jxr_linenumber" name="161" href="#161">161</a> 
-<a class="jxr_linenumber" name="162" href="#162">162</a>         <em class="jxr_comment">// Encode the cookie.</em>
-<a class="jxr_linenumber" name="163" href="#163">163</a>         String cookieString = request.headers().get(COOKIE);
-<a class="jxr_linenumber" name="164" href="#164">164</a>         <strong class="jxr_keyword">if</strong> (cookieString != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="165" href="#165">165</a>             Set&lt;Cookie&gt; cookies = CookieDecoder.decode(cookieString);
-<a class="jxr_linenumber" name="166" href="#166">166</a>             <strong class="jxr_keyword">if</strong> (!cookies.isEmpty()) {
-<a class="jxr_linenumber" name="167" href="#167">167</a>                 <em class="jxr_comment">// Reset the cookies if necessary.</em>
-<a class="jxr_linenumber" name="168" href="#168">168</a>                 <strong class="jxr_keyword">for</strong> (Cookie cookie: cookies) {
-<a class="jxr_linenumber" name="169" href="#169">169</a>                     response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(cookie));
-<a class="jxr_linenumber" name="170" href="#170">170</a>                 }
-<a class="jxr_linenumber" name="171" href="#171">171</a>             }
-<a class="jxr_linenumber" name="172" href="#172">172</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="173" href="#173">173</a>             <em class="jxr_comment">// Browser sent no cookie.  Add some.</em>
-<a class="jxr_linenumber" name="174" href="#174">174</a>             response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(<span class="jxr_string">"key1"</span>, <span class="jxr_string">"value1"</span>));
-<a class="jxr_linenumber" name="175" href="#175">175</a>             response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(<span class="jxr_string">"key2"</span>, <span class="jxr_string">"value2"</span>));
-<a class="jxr_linenumber" name="176" href="#176">176</a>         }
-<a class="jxr_linenumber" name="177" href="#177">177</a> 
-<a class="jxr_linenumber" name="178" href="#178">178</a>         <em class="jxr_comment">// Write the response.</em>
-<a class="jxr_linenumber" name="179" href="#179">179</a>         ctx.nextOutboundMessageBuffer().add(response);
-<a class="jxr_linenumber" name="180" href="#180">180</a> 
-<a class="jxr_linenumber" name="181" href="#181">181</a>         <em class="jxr_comment">// Close the non-keep-alive connection after the write operation is done.</em>
-<a class="jxr_linenumber" name="182" href="#182">182</a>         <strong class="jxr_keyword">if</strong> (!keepAlive) {
-<a class="jxr_linenumber" name="183" href="#183">183</a>             ctx.flush().addListener(ChannelFutureListener.CLOSE);
-<a class="jxr_linenumber" name="184" href="#184">184</a>         }
-<a class="jxr_linenumber" name="185" href="#185">185</a>     }
-<a class="jxr_linenumber" name="186" href="#186">186</a> 
-<a class="jxr_linenumber" name="187" href="#187">187</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> send100Continue(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="188" href="#188">188</a>         <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> response = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultHttpResponse.html">DefaultHttpResponse</a>(HTTP_1_1, CONTINUE);
-<a class="jxr_linenumber" name="189" href="#189">189</a>         ctx.nextOutboundMessageBuffer().add(response);
-<a class="jxr_linenumber" name="190" href="#190">190</a>     }
-<a class="jxr_linenumber" name="191" href="#191">191</a> 
-<a class="jxr_linenumber" name="192" href="#192">192</a>     @Override
-<a class="jxr_linenumber" name="193" href="#193">193</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> endMessageReceived(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="194" href="#194">194</a>         ctx.flush();
-<a class="jxr_linenumber" name="195" href="#195">195</a>     }
-<a class="jxr_linenumber" name="196" href="#196">196</a> 
-<a class="jxr_linenumber" name="197" href="#197">197</a>     @Override
-<a class="jxr_linenumber" name="198" href="#198">198</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(
-<a class="jxr_linenumber" name="199" href="#199">199</a>             <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="200" href="#200">200</a>         cause.printStackTrace();
-<a class="jxr_linenumber" name="201" href="#201">201</a>         ctx.close();
-<a class="jxr_linenumber" name="202" href="#202">202</a>     }
-<a class="jxr_linenumber" name="203" href="#203">203</a> }
+<a class="jxr_linenumber" name="135" href="#135">135</a>         buf.append(<span class="jxr_string">".. WITH DECODER FAILURE: "</span>);
+<a class="jxr_linenumber" name="136" href="#136">136</a>         buf.append(result.cause());
+<a class="jxr_linenumber" name="137" href="#137">137</a>         buf.append(<span class="jxr_string">"\r\n"</span>);
+<a class="jxr_linenumber" name="138" href="#138">138</a>     }
+<a class="jxr_linenumber" name="139" href="#139">139</a> 
+<a class="jxr_linenumber" name="140" href="#140">140</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeResponse(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/HttpObject.html">HttpObject</a> currentObj) {
+<a class="jxr_linenumber" name="141" href="#141">141</a>         <em class="jxr_comment">// Decide whether to close the connection or not.</em>
+<a class="jxr_linenumber" name="142" href="#142">142</a>         <strong class="jxr_keyword">boolean</strong> keepAlive = isKeepAlive(request);
+<a class="jxr_linenumber" name="143" href="#143">143</a>         <em class="jxr_comment">// Build the response object.</em>
+<a class="jxr_linenumber" name="144" href="#144">144</a>         <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> response = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html">DefaultFullHttpResponse</a>(
+<a class="jxr_linenumber" name="145" href="#145">145</a>                 HTTP_1_1, currentObj.getDecoderResult().isSuccess()? OK : BAD_REQUEST,
+<a class="jxr_linenumber" name="146" href="#146">146</a>                 Unpooled.copiedBuffer(buf.toString(), CharsetUtil.UTF_8));
+<a class="jxr_linenumber" name="147" href="#147">147</a> 
+<a class="jxr_linenumber" name="148" href="#148">148</a>         response.headers().set(CONTENT_TYPE, <span class="jxr_string">"text/plain; charset=UTF-8"</span>);
+<a class="jxr_linenumber" name="149" href="#149">149</a> 
+<a class="jxr_linenumber" name="150" href="#150">150</a>         <strong class="jxr_keyword">if</strong> (keepAlive) {
+<a class="jxr_linenumber" name="151" href="#151">151</a>             <em class="jxr_comment">// Add 'Content-Length' header only for a keep-alive connection.</em>
+<a class="jxr_linenumber" name="152" href="#152">152</a>             response.headers().set(CONTENT_LENGTH, response.data().readableBytes());
+<a class="jxr_linenumber" name="153" href="#153">153</a>             <em class="jxr_comment">// Add keep alive header as per:</em>
+<a class="jxr_linenumber" name="154" href="#154">154</a>             <em class="jxr_comment">// - http://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection</em>
+<a class="jxr_linenumber" name="155" href="#155">155</a>             response.headers().set(CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+<a class="jxr_linenumber" name="156" href="#156">156</a>         }
+<a class="jxr_linenumber" name="157" href="#157">157</a> 
+<a class="jxr_linenumber" name="158" href="#158">158</a>         <em class="jxr_comment">// Encode the cookie.</em>
+<a class="jxr_linenumber" name="159" href="#159">159</a>         String cookieString = request.headers().get(COOKIE);
+<a class="jxr_linenumber" name="160" href="#160">160</a>         <strong class="jxr_keyword">if</strong> (cookieString != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="161" href="#161">161</a>             Set&lt;Cookie&gt; cookies = CookieDecoder.decode(cookieString);
+<a class="jxr_linenumber" name="162" href="#162">162</a>             <strong class="jxr_keyword">if</strong> (!cookies.isEmpty()) {
+<a class="jxr_linenumber" name="163" href="#163">163</a>                 <em class="jxr_comment">// Reset the cookies if necessary.</em>
+<a class="jxr_linenumber" name="164" href="#164">164</a>                 <strong class="jxr_keyword">for</strong> (Cookie cookie: cookies) {
+<a class="jxr_linenumber" name="165" href="#165">165</a>                     response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(cookie));
+<a class="jxr_linenumber" name="166" href="#166">166</a>                 }
+<a class="jxr_linenumber" name="167" href="#167">167</a>             }
+<a class="jxr_linenumber" name="168" href="#168">168</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="169" href="#169">169</a>             <em class="jxr_comment">// Browser sent no cookie.  Add some.</em>
+<a class="jxr_linenumber" name="170" href="#170">170</a>             response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(<span class="jxr_string">"key1"</span>, <span class="jxr_string">"value1"</span>));
+<a class="jxr_linenumber" name="171" href="#171">171</a>             response.headers().add(SET_COOKIE, ServerCookieEncoder.encode(<span class="jxr_string">"key2"</span>, <span class="jxr_string">"value2"</span>));
+<a class="jxr_linenumber" name="172" href="#172">172</a>         }
+<a class="jxr_linenumber" name="173" href="#173">173</a> 
+<a class="jxr_linenumber" name="174" href="#174">174</a>         <em class="jxr_comment">// Write the response.</em>
+<a class="jxr_linenumber" name="175" href="#175">175</a>         ctx.nextOutboundMessageBuffer().add(response);
+<a class="jxr_linenumber" name="176" href="#176">176</a> 
+<a class="jxr_linenumber" name="177" href="#177">177</a>         <em class="jxr_comment">// Close the non-keep-alive connection after the write operation is done.</em>
+<a class="jxr_linenumber" name="178" href="#178">178</a>         <strong class="jxr_keyword">if</strong> (!keepAlive) {
+<a class="jxr_linenumber" name="179" href="#179">179</a>             ctx.flush().addListener(ChannelFutureListener.CLOSE);
+<a class="jxr_linenumber" name="180" href="#180">180</a>         }
+<a class="jxr_linenumber" name="181" href="#181">181</a>     }
+<a class="jxr_linenumber" name="182" href="#182">182</a> 
+<a class="jxr_linenumber" name="183" href="#183">183</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> send100Continue(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="184" href="#184">184</a>         <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> response = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultHttpResponse.html">DefaultHttpResponse</a>(HTTP_1_1, CONTINUE);
+<a class="jxr_linenumber" name="185" href="#185">185</a>         ctx.nextOutboundMessageBuffer().add(response);
+<a class="jxr_linenumber" name="186" href="#186">186</a>     }
+<a class="jxr_linenumber" name="187" href="#187">187</a> 
+<a class="jxr_linenumber" name="188" href="#188">188</a>     @Override
+<a class="jxr_linenumber" name="189" href="#189">189</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> endMessageReceived(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="190" href="#190">190</a>         ctx.flush();
+<a class="jxr_linenumber" name="191" href="#191">191</a>     }
+<a class="jxr_linenumber" name="192" href="#192">192</a> 
+<a class="jxr_linenumber" name="193" href="#193">193</a>     @Override
+<a class="jxr_linenumber" name="194" href="#194">194</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(
+<a class="jxr_linenumber" name="195" href="#195">195</a>             <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="196" href="#196">196</a>         cause.printStackTrace();
+<a class="jxr_linenumber" name="197" href="#197">197</a>         ctx.close();
+<a class="jxr_linenumber" name="198" href="#198">198</a>     }
+<a class="jxr_linenumber" name="199" href="#199">199</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
