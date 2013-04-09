@@ -5,9 +5,9 @@ To contribute to the project documentation, simply fork this repository and issu
 
 ### Step 1. Installing Awestruct
 
-Your system must have a working Ruby installation (1.9+) because Awestruct is written in Ruby.  You can install Awestruct using the `gem` command:
+Your system must have a working Ruby installation (1.9+) because Awestruct is written in Ruby.  You can install Awestruct using the `bundle` command:
 
-    $ gem install awestruct disqus nokogiri htmlentities rb-fsevent therubyracer -- --with-cflags=-w
+    $ bundle install
 
 
 ### Step 2. Fork netty-website Repository
@@ -34,7 +34,7 @@ Modify the web site files as you wish.
 To test locally, start the embedded web server using Awestruct.
 
     $ cd netty-website
-    $ awestruct --auto --server
+    $ bundle exec awestruct --auto --server
 
 The web site will be available at `http://localhost:4242/`
 
