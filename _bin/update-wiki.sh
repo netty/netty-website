@@ -104,12 +104,14 @@ cat 'wiki/_pages' | while read -r LINE; do
         # 3. Remove broken links
         # 4. Make internal links to wiki home work
         # 5. Make internal links to other wiki pages work
+        # 6. Add Bootstrap class to table tags
       } | ruby \
         | perl -pi0 -e 's/[\r]//g' \
         | perl -pi -e 's/^/  /g' \
         | perl -pi -e 's/<a [^>]*absent[^>]*>(((?!<\/a>).)*)<\/a>/<span class="broken-link">$1<\/span>/gi' \
         | perl -pi -e 's#/netty/netty/wiki/(Home)?"#index.html"#gi' \
         | perl -pi -e 's#/netty/netty/wiki/((?!images/)[^"]+)#\L$1.html#g' \
+        | perl -pi -e 's/<table>/<table class="table table-hover">/gi' \
         || exit 1
       echo
     } > "wiki/$WIKI_FILE.html.haml"
