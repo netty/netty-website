@@ -69,7 +69,7 @@
 <a class="jxr_linenumber" name="59" href="#59">59</a>  
 <a class="jxr_linenumber" name="60" href="#60">60</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxContentLength;
 <a class="jxr_linenumber" name="61" href="#61">61</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../../org/jboss/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> currentMessage;
-<a class="jxr_linenumber" name="62" href="#62">62</a>  
+<a class="jxr_linenumber" name="62" href="#62">62</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> tooLongFrameFound;
 <a class="jxr_linenumber" name="63" href="#63">63</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
 <a class="jxr_linenumber" name="64" href="#64">64</a>  
 <a class="jxr_linenumber" name="65" href="#65">65</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> maxCumulationBufferComponents = DEFAULT_MAX_COMPOSITEBUFFER_COMPONENTS;
@@ -132,116 +132,118 @@
 <a class="jxr_linenumber" name="122" href="#122">122</a> 
 <a class="jxr_linenumber" name="123" href="#123">123</a>         <strong class="jxr_keyword">if</strong> (msg instanceof HttpMessage) {
 <a class="jxr_linenumber" name="124" href="#124">124</a>             <a href="../../../../../../org/jboss/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> m = (HttpMessage) msg;
-<a class="jxr_linenumber" name="125" href="#125">125</a> 
-<a class="jxr_linenumber" name="126" href="#126">126</a>             <em class="jxr_comment">// Handle the 'Expect: 100-continue' header if necessary.</em>
-<a class="jxr_linenumber" name="127" href="#127">127</a>             <em class="jxr_comment">// TODO: Respond with 413 Request Entity Too Large</em>
-<a class="jxr_linenumber" name="128" href="#128">128</a>             <em class="jxr_comment">//   and discard the traffic or close the connection.</em>
-<a class="jxr_linenumber" name="129" href="#129">129</a>             <em class="jxr_comment">//       No need to notify the upstream handlers - just log.</em>
-<a class="jxr_linenumber" name="130" href="#130">130</a>             <em class="jxr_comment">//       If decoding a response, just throw an exception.</em>
-<a class="jxr_linenumber" name="131" href="#131">131</a>             <strong class="jxr_keyword">if</strong> (is100ContinueExpected(m)) {
-<a class="jxr_linenumber" name="132" href="#132">132</a>                 write(ctx, succeededFuture(ctx.getChannel()), CONTINUE.duplicate());
-<a class="jxr_linenumber" name="133" href="#133">133</a>             }
-<a class="jxr_linenumber" name="134" href="#134">134</a> 
-<a class="jxr_linenumber" name="135" href="#135">135</a>             <strong class="jxr_keyword">if</strong> (m.isChunked()) {
-<a class="jxr_linenumber" name="136" href="#136">136</a>                 <em class="jxr_comment">// A chunked message - remove 'Transfer-Encoding' header,</em>
-<a class="jxr_linenumber" name="137" href="#137">137</a>                 <em class="jxr_comment">// initialize the cumulative buffer, and wait for incoming chunks.</em>
-<a class="jxr_linenumber" name="138" href="#138">138</a>                 List&lt;String&gt; encodings = m.getHeaders(HttpHeaders.Names.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="139" href="#139">139</a>                 encodings.remove(HttpHeaders.Values.CHUNKED);
-<a class="jxr_linenumber" name="140" href="#140">140</a>                 <strong class="jxr_keyword">if</strong> (encodings.isEmpty()) {
-<a class="jxr_linenumber" name="141" href="#141">141</a>                     m.removeHeader(HttpHeaders.Names.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="142" href="#142">142</a>                 }
-<a class="jxr_linenumber" name="143" href="#143">143</a>                 m.setChunked(false);
-<a class="jxr_linenumber" name="144" href="#144">144</a>                 <strong class="jxr_keyword">this</strong>.currentMessage = m;
-<a class="jxr_linenumber" name="145" href="#145">145</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="146" href="#146">146</a>                 <em class="jxr_comment">// Not a chunked message - pass through.</em>
-<a class="jxr_linenumber" name="147" href="#147">147</a>                 <strong class="jxr_keyword">this</strong>.currentMessage = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="148" href="#148">148</a>                 ctx.sendUpstream(e);
-<a class="jxr_linenumber" name="149" href="#149">149</a>             }
-<a class="jxr_linenumber" name="150" href="#150">150</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof HttpChunk) {
-<a class="jxr_linenumber" name="151" href="#151">151</a>             <em class="jxr_comment">// Sanity check</em>
-<a class="jxr_linenumber" name="152" href="#152">152</a>             <strong class="jxr_keyword">if</strong> (currentMessage == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="153" href="#153">153</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(
-<a class="jxr_linenumber" name="154" href="#154">154</a>                         <span class="jxr_string">"received "</span> + HttpChunk.<strong class="jxr_keyword">class</strong>.getSimpleName() +
-<a class="jxr_linenumber" name="155" href="#155">155</a>                         <span class="jxr_string">" without "</span> + HttpMessage.<strong class="jxr_keyword">class</strong>.getSimpleName());
-<a class="jxr_linenumber" name="156" href="#156">156</a>             }
-<a class="jxr_linenumber" name="157" href="#157">157</a> 
-<a class="jxr_linenumber" name="158" href="#158">158</a>             <em class="jxr_comment">// Merge the received chunk into the content of the current message.</em>
-<a class="jxr_linenumber" name="159" href="#159">159</a>             <a href="../../../../../../org/jboss/netty/handler/codec/http/HttpChunk.html">HttpChunk</a> chunk = (HttpChunk) msg;
-<a class="jxr_linenumber" name="160" href="#160">160</a>             <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a> content = currentMessage.getContent();
-<a class="jxr_linenumber" name="161" href="#161">161</a> 
-<a class="jxr_linenumber" name="162" href="#162">162</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - chunk.getContent().readableBytes()) {
-<a class="jxr_linenumber" name="163" href="#163">163</a>                 <em class="jxr_comment">// TODO: Respond with 413 Request Entity Too Large</em>
-<a class="jxr_linenumber" name="164" href="#164">164</a>                 <em class="jxr_comment">//   and discard the traffic or close the connection.</em>
-<a class="jxr_linenumber" name="165" href="#165">165</a>                 <em class="jxr_comment">//       No need to notify the upstream handlers - just log.</em>
-<a class="jxr_linenumber" name="166" href="#166">166</a>                 <em class="jxr_comment">//       If decoding a response, just throw an exception.</em>
-<a class="jxr_linenumber" name="167" href="#167">167</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../../org/jboss/netty/handler/codec/frame/TooLongFrameException.html">TooLongFrameException</a>(
-<a class="jxr_linenumber" name="168" href="#168">168</a>                         <span class="jxr_string">"HTTP content length exceeded "</span> + maxContentLength +
-<a class="jxr_linenumber" name="169" href="#169">169</a>                         <span class="jxr_string">" bytes."</span>);
-<a class="jxr_linenumber" name="170" href="#170">170</a>             }
-<a class="jxr_linenumber" name="171" href="#171">171</a> 
-<a class="jxr_linenumber" name="172" href="#172">172</a>             <em class="jxr_comment">// Append the content of the chunk</em>
-<a class="jxr_linenumber" name="173" href="#173">173</a>             appendToCumulation(chunk.getContent());
-<a class="jxr_linenumber" name="174" href="#174">174</a> 
-<a class="jxr_linenumber" name="175" href="#175">175</a>             <strong class="jxr_keyword">if</strong> (chunk.isLast()) {
-<a class="jxr_linenumber" name="176" href="#176">176</a>                 <strong class="jxr_keyword">this</strong>.currentMessage = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="177" href="#177">177</a> 
-<a class="jxr_linenumber" name="178" href="#178">178</a>                 <em class="jxr_comment">// Merge trailing headers into the message.</em>
-<a class="jxr_linenumber" name="179" href="#179">179</a>                 <strong class="jxr_keyword">if</strong> (chunk instanceof HttpChunkTrailer) {
-<a class="jxr_linenumber" name="180" href="#180">180</a>                     <a href="../../../../../../org/jboss/netty/handler/codec/http/HttpChunkTrailer.html">HttpChunkTrailer</a> trailer = (HttpChunkTrailer) chunk;
-<a class="jxr_linenumber" name="181" href="#181">181</a>                     <strong class="jxr_keyword">for</strong> (Entry&lt;String, String&gt; header: trailer.getHeaders()) {
-<a class="jxr_linenumber" name="182" href="#182">182</a>                         currentMessage.setHeader(header.getKey(), header.getValue());
-<a class="jxr_linenumber" name="183" href="#183">183</a>                     }
-<a class="jxr_linenumber" name="184" href="#184">184</a>                 }
-<a class="jxr_linenumber" name="185" href="#185">185</a> 
-<a class="jxr_linenumber" name="186" href="#186">186</a>                 <em class="jxr_comment">// Set the 'Content-Length' header.</em>
-<a class="jxr_linenumber" name="187" href="#187">187</a>                 currentMessage.setHeader(
-<a class="jxr_linenumber" name="188" href="#188">188</a>                         HttpHeaders.Names.CONTENT_LENGTH,
-<a class="jxr_linenumber" name="189" href="#189">189</a>                         String.valueOf(content.readableBytes()));
-<a class="jxr_linenumber" name="190" href="#190">190</a> 
-<a class="jxr_linenumber" name="191" href="#191">191</a>                 <em class="jxr_comment">// All done - generate the event.</em>
-<a class="jxr_linenumber" name="192" href="#192">192</a>                 fireMessageReceived(ctx, currentMessage, e.getRemoteAddress());
-<a class="jxr_linenumber" name="193" href="#193">193</a>             }
-<a class="jxr_linenumber" name="194" href="#194">194</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="195" href="#195">195</a>             <em class="jxr_comment">// Neither HttpMessage or HttpChunk</em>
-<a class="jxr_linenumber" name="196" href="#196">196</a>             ctx.sendUpstream(e);
-<a class="jxr_linenumber" name="197" href="#197">197</a>         }
-<a class="jxr_linenumber" name="198" href="#198">198</a>     }
-<a class="jxr_linenumber" name="199" href="#199">199</a> 
-<a class="jxr_linenumber" name="200" href="#200">200</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> appendToCumulation(<a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a> input) {
-<a class="jxr_linenumber" name="201" href="#201">201</a>         <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a> cumulation = currentMessage.getContent();
-<a class="jxr_linenumber" name="202" href="#202">202</a>         <strong class="jxr_keyword">if</strong> (cumulation instanceof CompositeChannelBuffer) {
-<a class="jxr_linenumber" name="203" href="#203">203</a>             <em class="jxr_comment">// Make sure the resulting cumulation buffer has no more than the configured components.</em>
-<a class="jxr_linenumber" name="204" href="#204">204</a>             <a href="../../../../../../org/jboss/netty/buffer/CompositeChannelBuffer.html">CompositeChannelBuffer</a> composite = (CompositeChannelBuffer) cumulation;
-<a class="jxr_linenumber" name="205" href="#205">205</a>             <strong class="jxr_keyword">if</strong> (composite.numComponents() &gt;= maxCumulationBufferComponents) {
-<a class="jxr_linenumber" name="206" href="#206">206</a>                 currentMessage.setContent(ChannelBuffers.wrappedBuffer(composite.copy(), input));
-<a class="jxr_linenumber" name="207" href="#207">207</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="208" href="#208">208</a>                 List&lt;ChannelBuffer&gt; decomposed = composite.decompose(0, composite.readableBytes());
-<a class="jxr_linenumber" name="209" href="#209">209</a>                 <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a>[] buffers = decomposed.toArray(<strong class="jxr_keyword">new</strong> <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a>[decomposed.size() + 1]);
-<a class="jxr_linenumber" name="210" href="#210">210</a>                 buffers[buffers.length - 1] = input;
-<a class="jxr_linenumber" name="211" href="#211">211</a> 
-<a class="jxr_linenumber" name="212" href="#212">212</a>                 currentMessage.setContent(ChannelBuffers.wrappedBuffer(buffers));
-<a class="jxr_linenumber" name="213" href="#213">213</a>             }
-<a class="jxr_linenumber" name="214" href="#214">214</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="215" href="#215">215</a>             currentMessage.setContent(ChannelBuffers.wrappedBuffer(cumulation, input));
-<a class="jxr_linenumber" name="216" href="#216">216</a>         }
-<a class="jxr_linenumber" name="217" href="#217">217</a>     }
-<a class="jxr_linenumber" name="218" href="#218">218</a> 
-<a class="jxr_linenumber" name="219" href="#219">219</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeAdd(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="220" href="#220">220</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="221" href="#221">221</a>     }
-<a class="jxr_linenumber" name="222" href="#222">222</a> 
-<a class="jxr_linenumber" name="223" href="#223">223</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterAdd(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="224" href="#224">224</a>         <em class="jxr_comment">// noop</em>
-<a class="jxr_linenumber" name="225" href="#225">225</a>     }
-<a class="jxr_linenumber" name="226" href="#226">226</a> 
-<a class="jxr_linenumber" name="227" href="#227">227</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeRemove(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="228" href="#228">228</a>         <em class="jxr_comment">// noop</em>
-<a class="jxr_linenumber" name="229" href="#229">229</a>     }
-<a class="jxr_linenumber" name="230" href="#230">230</a> 
-<a class="jxr_linenumber" name="231" href="#231">231</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterRemove(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="232" href="#232">232</a>         <em class="jxr_comment">// noop</em>
-<a class="jxr_linenumber" name="233" href="#233">233</a>     }
-<a class="jxr_linenumber" name="234" href="#234">234</a> }
+<a class="jxr_linenumber" name="125" href="#125">125</a>             tooLongFrameFound = false;
+<a class="jxr_linenumber" name="126" href="#126">126</a> 
+<a class="jxr_linenumber" name="127" href="#127">127</a>             <em class="jxr_comment">// Handle the 'Expect: 100-continue' header if necessary.</em>
+<a class="jxr_linenumber" name="128" href="#128">128</a>             <em class="jxr_comment">// TODO: Respond with 413 Request Entity Too Large</em>
+<a class="jxr_linenumber" name="129" href="#129">129</a>             <em class="jxr_comment">//   and discard the traffic or close the connection.</em>
+<a class="jxr_linenumber" name="130" href="#130">130</a>             <em class="jxr_comment">//       No need to notify the upstream handlers - just log.</em>
+<a class="jxr_linenumber" name="131" href="#131">131</a>             <em class="jxr_comment">//       If decoding a response, just throw an exception.</em>
+<a class="jxr_linenumber" name="132" href="#132">132</a>             <strong class="jxr_keyword">if</strong> (is100ContinueExpected(m)) {
+<a class="jxr_linenumber" name="133" href="#133">133</a>                 write(ctx, succeededFuture(ctx.getChannel()), CONTINUE.duplicate());
+<a class="jxr_linenumber" name="134" href="#134">134</a>             }
+<a class="jxr_linenumber" name="135" href="#135">135</a> 
+<a class="jxr_linenumber" name="136" href="#136">136</a>             <strong class="jxr_keyword">if</strong> (m.isChunked()) {
+<a class="jxr_linenumber" name="137" href="#137">137</a>                 <em class="jxr_comment">// A chunked message - remove 'Transfer-Encoding' header,</em>
+<a class="jxr_linenumber" name="138" href="#138">138</a>                 <em class="jxr_comment">// initialize the cumulative buffer, and wait for incoming chunks.</em>
+<a class="jxr_linenumber" name="139" href="#139">139</a>                 HttpCodecUtil.removeTransferEncodingChunked(m);
+<a class="jxr_linenumber" name="140" href="#140">140</a>                 m.setChunked(false);
+<a class="jxr_linenumber" name="141" href="#141">141</a>                 <strong class="jxr_keyword">this</strong>.currentMessage = m;
+<a class="jxr_linenumber" name="142" href="#142">142</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="143" href="#143">143</a>                 <em class="jxr_comment">// Not a chunked message - pass through.</em>
+<a class="jxr_linenumber" name="144" href="#144">144</a>                 <strong class="jxr_keyword">this</strong>.currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="145" href="#145">145</a>                 ctx.sendUpstream(e);
+<a class="jxr_linenumber" name="146" href="#146">146</a>             }
+<a class="jxr_linenumber" name="147" href="#147">147</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof HttpChunk) {
+<a class="jxr_linenumber" name="148" href="#148">148</a>             <em class="jxr_comment">// Sanity check</em>
+<a class="jxr_linenumber" name="149" href="#149">149</a>             <strong class="jxr_keyword">if</strong> (currentMessage == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="150" href="#150">150</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(
+<a class="jxr_linenumber" name="151" href="#151">151</a>                         <span class="jxr_string">"received "</span> + HttpChunk.<strong class="jxr_keyword">class</strong>.getSimpleName() +
+<a class="jxr_linenumber" name="152" href="#152">152</a>                         <span class="jxr_string">" without "</span> + HttpMessage.<strong class="jxr_keyword">class</strong>.getSimpleName());
+<a class="jxr_linenumber" name="153" href="#153">153</a>             }
+<a class="jxr_linenumber" name="154" href="#154">154</a>             <a href="../../../../../../org/jboss/netty/handler/codec/http/HttpChunk.html">HttpChunk</a> chunk = (HttpChunk) msg;
+<a class="jxr_linenumber" name="155" href="#155">155</a> 
+<a class="jxr_linenumber" name="156" href="#156">156</a>             <strong class="jxr_keyword">if</strong> (tooLongFrameFound) {
+<a class="jxr_linenumber" name="157" href="#157">157</a>                 <strong class="jxr_keyword">if</strong> (chunk.isLast()) {
+<a class="jxr_linenumber" name="158" href="#158">158</a>                     <strong class="jxr_keyword">this</strong>.currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="159" href="#159">159</a>                 }
+<a class="jxr_linenumber" name="160" href="#160">160</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="161" href="#161">161</a>             }
+<a class="jxr_linenumber" name="162" href="#162">162</a> 
+<a class="jxr_linenumber" name="163" href="#163">163</a>             <em class="jxr_comment">// Merge the received chunk into the content of the current message.</em>
+<a class="jxr_linenumber" name="164" href="#164">164</a>             <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a> content = currentMessage.getContent();
+<a class="jxr_linenumber" name="165" href="#165">165</a> 
+<a class="jxr_linenumber" name="166" href="#166">166</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - chunk.getContent().readableBytes()) {
+<a class="jxr_linenumber" name="167" href="#167">167</a>                 tooLongFrameFound = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="168" href="#168">168</a> 
+<a class="jxr_linenumber" name="169" href="#169">169</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../../org/jboss/netty/handler/codec/frame/TooLongFrameException.html">TooLongFrameException</a>(
+<a class="jxr_linenumber" name="170" href="#170">170</a>                         <span class="jxr_string">"HTTP content length exceeded "</span> + maxContentLength +
+<a class="jxr_linenumber" name="171" href="#171">171</a>                         <span class="jxr_string">" bytes."</span>);
+<a class="jxr_linenumber" name="172" href="#172">172</a>             }
+<a class="jxr_linenumber" name="173" href="#173">173</a> 
+<a class="jxr_linenumber" name="174" href="#174">174</a>             <em class="jxr_comment">// Append the content of the chunk</em>
+<a class="jxr_linenumber" name="175" href="#175">175</a>             appendToCumulation(chunk.getContent());
+<a class="jxr_linenumber" name="176" href="#176">176</a> 
+<a class="jxr_linenumber" name="177" href="#177">177</a>             <strong class="jxr_keyword">if</strong> (chunk.isLast()) {
+<a class="jxr_linenumber" name="178" href="#178">178</a>                 <strong class="jxr_keyword">this</strong>.currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="179" href="#179">179</a> 
+<a class="jxr_linenumber" name="180" href="#180">180</a>                 <em class="jxr_comment">// Merge trailing headers into the message.</em>
+<a class="jxr_linenumber" name="181" href="#181">181</a>                 <strong class="jxr_keyword">if</strong> (chunk instanceof HttpChunkTrailer) {
+<a class="jxr_linenumber" name="182" href="#182">182</a>                     <a href="../../../../../../org/jboss/netty/handler/codec/http/HttpChunkTrailer.html">HttpChunkTrailer</a> trailer = (HttpChunkTrailer) chunk;
+<a class="jxr_linenumber" name="183" href="#183">183</a>                     <strong class="jxr_keyword">for</strong> (Entry&lt;String, String&gt; header: trailer.getHeaders()) {
+<a class="jxr_linenumber" name="184" href="#184">184</a>                         currentMessage.setHeader(header.getKey(), header.getValue());
+<a class="jxr_linenumber" name="185" href="#185">185</a>                     }
+<a class="jxr_linenumber" name="186" href="#186">186</a>                 }
+<a class="jxr_linenumber" name="187" href="#187">187</a> 
+<a class="jxr_linenumber" name="188" href="#188">188</a>                 <em class="jxr_comment">// Set the 'Content-Length' header.</em>
+<a class="jxr_linenumber" name="189" href="#189">189</a>                 currentMessage.setHeader(
+<a class="jxr_linenumber" name="190" href="#190">190</a>                         HttpHeaders.Names.CONTENT_LENGTH,
+<a class="jxr_linenumber" name="191" href="#191">191</a>                         String.valueOf(content.readableBytes()));
+<a class="jxr_linenumber" name="192" href="#192">192</a> 
+<a class="jxr_linenumber" name="193" href="#193">193</a>                 <em class="jxr_comment">// All done - generate the event.</em>
+<a class="jxr_linenumber" name="194" href="#194">194</a>                 fireMessageReceived(ctx, currentMessage, e.getRemoteAddress());
+<a class="jxr_linenumber" name="195" href="#195">195</a>             }
+<a class="jxr_linenumber" name="196" href="#196">196</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="197" href="#197">197</a>             <em class="jxr_comment">// Neither HttpMessage or HttpChunk</em>
+<a class="jxr_linenumber" name="198" href="#198">198</a>             ctx.sendUpstream(e);
+<a class="jxr_linenumber" name="199" href="#199">199</a>         }
+<a class="jxr_linenumber" name="200" href="#200">200</a>     }
+<a class="jxr_linenumber" name="201" href="#201">201</a> 
+<a class="jxr_linenumber" name="202" href="#202">202</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> appendToCumulation(<a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a> input) {
+<a class="jxr_linenumber" name="203" href="#203">203</a>         <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a> cumulation = currentMessage.getContent();
+<a class="jxr_linenumber" name="204" href="#204">204</a>         <strong class="jxr_keyword">if</strong> (cumulation instanceof CompositeChannelBuffer) {
+<a class="jxr_linenumber" name="205" href="#205">205</a>             <em class="jxr_comment">// Make sure the resulting cumulation buffer has no more than the configured components.</em>
+<a class="jxr_linenumber" name="206" href="#206">206</a>             <a href="../../../../../../org/jboss/netty/buffer/CompositeChannelBuffer.html">CompositeChannelBuffer</a> composite = (CompositeChannelBuffer) cumulation;
+<a class="jxr_linenumber" name="207" href="#207">207</a>             <strong class="jxr_keyword">if</strong> (composite.numComponents() &gt;= maxCumulationBufferComponents) {
+<a class="jxr_linenumber" name="208" href="#208">208</a>                 currentMessage.setContent(ChannelBuffers.wrappedBuffer(composite.copy(), input));
+<a class="jxr_linenumber" name="209" href="#209">209</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="210" href="#210">210</a>                 List&lt;ChannelBuffer&gt; decomposed = composite.decompose(0, composite.readableBytes());
+<a class="jxr_linenumber" name="211" href="#211">211</a>                 <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a>[] buffers = decomposed.toArray(<strong class="jxr_keyword">new</strong> <a href="../../../../../../org/jboss/netty/buffer/ChannelBuffer.html">ChannelBuffer</a>[decomposed.size() + 1]);
+<a class="jxr_linenumber" name="212" href="#212">212</a>                 buffers[buffers.length - 1] = input;
+<a class="jxr_linenumber" name="213" href="#213">213</a> 
+<a class="jxr_linenumber" name="214" href="#214">214</a>                 currentMessage.setContent(ChannelBuffers.wrappedBuffer(buffers));
+<a class="jxr_linenumber" name="215" href="#215">215</a>             }
+<a class="jxr_linenumber" name="216" href="#216">216</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="217" href="#217">217</a>             currentMessage.setContent(ChannelBuffers.wrappedBuffer(cumulation, input));
+<a class="jxr_linenumber" name="218" href="#218">218</a>         }
+<a class="jxr_linenumber" name="219" href="#219">219</a>     }
+<a class="jxr_linenumber" name="220" href="#220">220</a> 
+<a class="jxr_linenumber" name="221" href="#221">221</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeAdd(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="222" href="#222">222</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="223" href="#223">223</a>     }
+<a class="jxr_linenumber" name="224" href="#224">224</a> 
+<a class="jxr_linenumber" name="225" href="#225">225</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterAdd(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="226" href="#226">226</a>         <em class="jxr_comment">// noop</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a>     }
+<a class="jxr_linenumber" name="228" href="#228">228</a> 
+<a class="jxr_linenumber" name="229" href="#229">229</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> beforeRemove(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="230" href="#230">230</a>         <em class="jxr_comment">// noop</em>
+<a class="jxr_linenumber" name="231" href="#231">231</a>     }
+<a class="jxr_linenumber" name="232" href="#232">232</a> 
+<a class="jxr_linenumber" name="233" href="#233">233</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> afterRemove(<a href="../../../../../../org/jboss/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="234" href="#234">234</a>         <em class="jxr_comment">// noop</em>
+<a class="jxr_linenumber" name="235" href="#235">235</a>     }
+<a class="jxr_linenumber" name="236" href="#236">236</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
