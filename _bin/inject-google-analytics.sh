@@ -25,7 +25,7 @@ find . '(' -name '*.html' -and -not -name '*-frame.html' ')' | while read -r TAR
   fi
 
   if grep -qiF '</body>' "$TARGET"; then
-    perl -pi -e "s/(<\\/body>)/\\n${TRACKER_CODE////\\/}\\n\$1/i" < "$TARGET" > "$TARGET.new"
+    perl -p -e "s/(<\\/body>)/\\n${TRACKER_CODE////\\/}\\n\$1/i" < "$TARGET" > "$TARGET.new"
   else
     { cat "$TARGET"; echo; echo "$TRACKER_CODE"; echo; } > "$TARGET.new"
   fi
