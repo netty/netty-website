@@ -34,17 +34,6 @@ cat 'wiki/_pages' | while read -r LINE; do
     WIKI_TMPFILE="`mktemp`"
 
     {
-      echo '---'
-      echo 'layout: wiki'
-      echo "title: '$WIKI_TITLE'"
-      echo "github_name: '$WIKI_GITHUB_NAME'"
-      echo "retrieval_date: '`date '+%d-%b-%Y'`'"
-      echo '---'
-      echo
-      echo ':plain'
-    } > "$WIKI_TMPFILE"
-
-    {
       echo '# encoding: UTF-8'
       echo "require 'nokogiri'"
       echo "require 'htmlentities'"
@@ -118,7 +107,19 @@ cat 'wiki/_pages' | while read -r LINE; do
     perl -pi -e 's#/netty/netty/wiki/((?!images/)[^"]+)#\L$1.html#g' "$WIKI_TMPFILE"
     perl -pi -e 's/<table>/<table class="table table-hover">/gi' "$WIKI_TMPFILE"
 
-    mv -f "$WIKI_TMPFILE" "wiki/$WIKI_FILE.html.haml"
+    {
+      echo '---'
+      echo 'layout: wiki'
+      echo "title: '$WIKI_TITLE'"
+      echo "github_name: '$WIKI_GITHUB_NAME'"
+      echo "retrieval_date: '`date '+%d-%b-%Y'`'"
+      echo '---'
+      echo
+      echo ':plain'
+      cat "$WIKI_TMPFILE"
+    } > "wiki/$WIKI_FILE.html.haml"
+
+    rm -f "$WIKI_TMPFILE"
 
     {
       echo '  %li'
