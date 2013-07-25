@@ -5,7 +5,14 @@ mkdir -p 'wiki'
 echo 'Retrieving the wiki page lists ..'
 curl -s https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
 
-echo The wiki contains `wc -l 'wiki/_pages'` pages.
+PAGE_CNT=`cat wiki/_pages | wc -l`
+
+if [[ -z "$PAGE_CNT" ]] || [[ "$PAGE_CNT" -le 0 ]]; then
+  echo "Failed to retrieve the list of the wiki pages."
+  exit 1
+fi
+
+echo The wiki contains "$PAGE_CNT" pages.
 
 {
   echo '---'
@@ -44,7 +51,7 @@ cat 'wiki/_pages' | while read -r LINE; do
 
       # Generate TOC
       echo '
-        headings = @doc.css("h2,h3,h4")
+        headings = @doc.css("#wiki-content h2, #wiki-content h3, #wiki-content h4")
         if headings.size() > 1 and @doc.css("#wiki-notoc").size() == 0
           coder = HTMLEntities.new
           toc_idx = 0
@@ -58,7 +65,7 @@ cat 'wiki/_pages' | while read -r LINE; do
             toc_idx = toc_idx + 1
             h["id"] = section_id
             new_toc_level = h.name[1].ord - 48
-            toc_text = coder.encode(h.inner_text)
+            toc_text = coder.encode(h.inner_text).strip
             if new_toc_level == toc_level
               puts "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
               first = false
