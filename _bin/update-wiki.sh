@@ -1,14 +1,15 @@
 #!/bin/bash -e
 cd "`dirname "$0"`/.."
-mkdir -p 'wiki'
+rm -fr 'wiki'
+mkdir 'wiki'
 
-echo 'Retrieving the wiki page lists ..'
+echo 'Retrieving the wiki page list ..'
 curl -s https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
 
 PAGE_CNT=`cat wiki/_pages | wc -l`
 
 if [[ -z "$PAGE_CNT" ]] || [[ "$PAGE_CNT" -le 0 ]]; then
-  echo "Failed to retrieve the list of the wiki pages."
+  echo "Failed to retrieve the wiki page list"
   exit 1
 fi
 
@@ -141,4 +142,21 @@ done
   echo "  %small Last retrived on `date '+%d-%b-%Y'`"
   echo
 } >> 'wiki/all-documents.html.haml'
+
+# Ensure all wiki pages were retrieved and indexed.
+
+INDEXED_PAGE_CNT=`grep -F '%li' 'wiki/all-documents.html.haml' | wc -l`
+if [[ "$INDEXED_PAGE_CNT" != "$PAGE_CNT" ]]; then
+  echo "Mismatching number of wiki pages in all-documents: $INDEXED_PAGE_CNT (expected: $PAGE_CNT)"
+  exit 1
+fi
+
+((PAGE_CNT++)) # Consider all-documents.html.haml
+
+ACTUAL_PAGE_CNT=`find wiki -name '*.html.haml' | wc -l`
+
+if [[ "$ACTUAL_PAGE_CNT" != "$PAGE_CNT" ]]; then
+  echo "Mismatching number of generated files: $ACTUAL_PAGE_CNT (expected: $PAGE_CNT)"
+  exit 1
+fi
 
