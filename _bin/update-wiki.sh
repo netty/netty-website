@@ -6,7 +6,7 @@ mkdir 'wiki'
 echo 'Retrieving the wiki page list ..'
 curl -s https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
 
-PAGE_CNT=`cat wiki/_pages | wc -l`
+PAGE_CNT=`cat wiki/_pages | wc -l | sed -e 's/ //g'`
 
 if [[ -z "$PAGE_CNT" ]] || [[ "$PAGE_CNT" -le 0 ]]; then
   echo "Failed to retrieve the wiki page list"
@@ -39,7 +39,7 @@ cat 'wiki/_pages' | while read -r LINE; do
     fi
     WIKI_TITLE=${BASH_REMATCH[4]}
     echo Retrieving: "$WIKI_FILE" from "$WIKI_URI" ..
-    WIKI_TMPFILE="`mktemp`"
+    WIKI_TMPFILE="`mktemp -t XXX`"
 
     {
       echo '# encoding: UTF-8'
@@ -145,7 +145,7 @@ done
 
 # Ensure all wiki pages were retrieved and indexed.
 
-INDEXED_PAGE_CNT=`grep -F '%li' 'wiki/all-documents.html.haml' | wc -l`
+INDEXED_PAGE_CNT=`grep -F '%li' 'wiki/all-documents.html.haml' | wc -l | sed -e 's/ //g'`
 if [[ "$INDEXED_PAGE_CNT" != "$PAGE_CNT" ]]; then
   echo "Mismatching number of wiki pages in all-documents: $INDEXED_PAGE_CNT (expected: $PAGE_CNT)"
   exit 1
@@ -153,7 +153,7 @@ fi
 
 ((PAGE_CNT++)) # Consider all-documents.html.haml
 
-ACTUAL_PAGE_CNT=`find wiki -name '*.html.haml' | wc -l`
+ACTUAL_PAGE_CNT=`find wiki -name '*.html.haml' | wc -l | sed -e 's/ //g'`
 
 if [[ "$ACTUAL_PAGE_CNT" != "$PAGE_CNT" ]]; then
   echo "Mismatching number of generated files: $ACTUAL_PAGE_CNT (expected: $PAGE_CNT)"
