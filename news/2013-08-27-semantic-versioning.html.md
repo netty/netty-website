@@ -4,7 +4,7 @@ title: 'Netty adopts the modified Semantic Versioning'
 author: trustin
 ---
 
-As you might already have been following [the discussion](https://groups.google.com/forum/#!topic/netty/wZz6BvAqwxc) about adopting [Semantic Versioning](http://semver.org/) in [our discussion group](https://groups.google.com/forum/#!forum/netty), we are adoptin the slightly modified Semantic Versioning for all the subsequent releases as of today.
+As you might already have been following [the discussion](https://groups.google.com/forum/#!topic/netty/wZz6BvAqwxc) about adopting [Semantic Versioning](http://semver.org/) in [our discussion group](https://groups.google.com/forum/#!forum/netty), we are adopting the slightly modified Semantic Versioning for all the subsequent releases as of today.
 
 #### What does this really mean?
 
