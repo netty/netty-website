@@ -78,9 +78,10 @@ cat 'wiki/_pages' | while read -r LINE; do
               toc_level = new_toc_level
               toc_html << "<ul class=\"nav nav-list nav-stacked\"><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>\n"
               first = false;
-            elsif !first and new_toc_level == toc_level - 1
+            elsif !first and new_toc_level < toc_level
+              toc_html << "</li></ul>" * (toc_level - new_toc_level)
+              toc_html << "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>\n"
               toc_level = new_toc_level
-              toc_html << "</li></ul></li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>\n"
               first = false;
             end
           end
