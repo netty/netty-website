@@ -59,7 +59,7 @@ cat 'wiki/_pages' | while read -r LINE; do
           toc_idx = 0
           toc_level = 2
           first = true
-          toc_html << "<div class=\"wiki-toc col-md-3 well pull-right hidden-print\" role=\"complementary\">\n"
+          toc_html << "<div class=\"wiki-toc col-md-3 well pull-right hidden-xs hidden-sm hidden-print\" role=\"complementary\">\n"
           toc_html << "<ul class=\"nav nav-list nav-stacked\">\n"
           toc_html << "<li class=\"nav-header\">Table of Contents\n"
           for h in headings
