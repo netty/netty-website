@@ -17,7 +17,7 @@ echo The wiki contains "$PAGE_CNT" pages.
 
 {
   echo '---'
-  echo 'layout: base'
+  echo 'layout: jumbotronless'
   echo "title: 'All documents'"
   echo '---'
   echo
@@ -52,15 +52,16 @@ cat 'wiki/_pages' | while read -r LINE; do
 
       # Generate TOC
       echo '
+        toc_html = ""
         headings = @doc.css("#wiki-content h2, #wiki-content h3, #wiki-content h4")
-        if headings.size() > 1 and @doc.css("#wiki-notoc").size() == 0
+        if headings.size() > 1 and @doc.css("#wiki-notoc").size() == 0 and @doc.css("#notoc").size() == 0
           coder = HTMLEntities.new
           toc_idx = 0
           toc_level = 2
           first = true
-          puts "<div class=\"wiki-toc well pull-right\">"
-          puts "<ul class=\"nav nav-list\">"
-          puts "<li class=\"nav-header\">Table of Contents"
+          toc_html << "<div class=\"toc well\">\n"
+          toc_html << "<ul class=\"nav nav-list nav-stacked\">\n"
+          toc_html << "<li class=\"nav-header\">Table of Contents\n"
           for h in headings
             section_id = "wiki-" + h.name + "-" + toc_idx.to_s
             toc_idx = toc_idx + 1
@@ -68,26 +69,27 @@ cat 'wiki/_pages' | while read -r LINE; do
             new_toc_level = h.name[1].ord - 48
             toc_text = coder.encode(h.inner_text).strip
             if new_toc_level == toc_level
-              puts "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+              toc_html << "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>\n"
               first = false
             elsif new_toc_level == toc_level + 1
               if first # first heading is not h2 but h3
-                puts "</li><li>"
+                toc_html << "</li><li>\n"
               end
               toc_level = new_toc_level
-              puts "<ul class=\"nav nav-list\"><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
+              toc_html << "<ul class=\"nav nav-list nav-stacked\"><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>\n"
               first = false;
-            elsif !first and new_toc_level == toc_level - 1
+            elsif !first and new_toc_level < toc_level
+              toc_html << "</li></ul>" * (toc_level - new_toc_level)
+              toc_html << "</li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>\n"
               toc_level = new_toc_level
-              puts "</li></ul></li><li><a href=\"#" + section_id + "\" title=\"" + toc_text + "\">" + toc_text + "</a>"
               first = false;
             end
           end
           while toc_level >= 2
             toc_level = toc_level - 1
-            puts "</li></ul>"
+            toc_html << "</li></ul>\n"
           end
-          puts "</div>"
+          toc_html << "</div>\n"
         end
       '
 
@@ -98,7 +100,21 @@ cat 'wiki/_pages' | while read -r LINE; do
         end
       '
 
-      echo 'print @doc.at_css "div#wiki-body"'
+      # Print the wiki body and the generated toc together.
+      echo '
+        if toc_html == ""
+          print @doc.at_css "div#wiki-body"
+        else
+          puts "<div class=\"row\">"
+          puts "<div class=\"col-md-9\">"
+          print @doc.at_css "div#wiki-body"
+          puts "</div>"
+          puts "<div class=\"toc-container col-md-3 hidden-xs hidden-sm hidden-print\" role=\"complementary\">"
+          print toc_html
+          puts "</div>"
+          puts "</div>"
+        end
+      '
     } | ruby >> "$WIKI_TMPFILE"
       
     # Perl regex soup below:
@@ -120,6 +136,12 @@ cat 'wiki/_pages' | while read -r LINE; do
       echo 'layout: wiki'
       echo "title: '$WIKI_TITLE'"
       echo "github_name: '$WIKI_GITHUB_NAME'"
+      echo -n "has_toc: "
+      if grep -qF "toc-container" "$WIKI_TMPFILE"; then
+        echo true
+      else
+        echo false
+      fi
       echo "retrieval_date: '`date '+%d-%b-%Y'`'"
       echo '---'
       echo
@@ -159,4 +181,6 @@ if [[ "$ACTUAL_PAGE_CNT" != "$PAGE_CNT" ]]; then
   echo "Mismatching number of generated files: $ACTUAL_PAGE_CNT (expected: $PAGE_CNT)"
   exit 1
 fi
+
+exec _bin/generate.sh
 
