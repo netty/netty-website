@@ -55,7 +55,7 @@
 <a class="jxr_linenumber" name="45" href="#45">45</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> byte[] ZERO_CRLF = { '0', CR, LF };
 <a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> byte[] ZERO_CRLF_CRLF = { '0', CR, LF, CR, LF };
 <a class="jxr_linenumber" name="47" href="#47">47</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> byte[] HEADER_SEPARATOR = { COLON, SP };
-<a class="jxr_linenumber" name="48" href="#48">48</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> CRLF_BUF = unreleasableBuffer(directBuffer(ZERO_CRLF.length).writeBytes(ZERO_CRLF));
+<a class="jxr_linenumber" name="48" href="#48">48</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> CRLF_BUF = unreleasableBuffer(directBuffer(CRLF.length).writeBytes(CRLF));
 <a class="jxr_linenumber" name="49" href="#49">49</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> ZERO_CRLF_CRLF_BUF = unreleasableBuffer(directBuffer(ZERO_CRLF_CRLF.length)
 <a class="jxr_linenumber" name="50" href="#50">50</a>              .writeBytes(ZERO_CRLF_CRLF));
 <a class="jxr_linenumber" name="51" href="#51">51</a>  
@@ -103,94 +103,98 @@
 <a class="jxr_linenumber" name="93" href="#93">93</a>                      state = ST_INIT;
 <a class="jxr_linenumber" name="94" href="#94">94</a>                  }
 <a class="jxr_linenumber" name="95" href="#95">95</a>              } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (state == ST_CONTENT_CHUNK) {
-<a class="jxr_linenumber" name="96" href="#96">96</a>                  <strong class="jxr_keyword">if</strong> (contentLength &gt; 0) {
-<a class="jxr_linenumber" name="97" href="#97">97</a>                      byte[] length = Integer.toHexString(contentLength).getBytes(CharsetUtil.US_ASCII);
-<a class="jxr_linenumber" name="98" href="#98">98</a>                      <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = ctx.alloc().buffer(length.length + 2);
-<a class="jxr_linenumber" name="99" href="#99">99</a>                      buf.writeBytes(length);
-<a class="jxr_linenumber" name="100" href="#100">100</a>                     buf.writeBytes(CRLF);
-<a class="jxr_linenumber" name="101" href="#101">101</a>                     out.add(buf);
-<a class="jxr_linenumber" name="102" href="#102">102</a>                     out.add(encodeAndRetain(msg));
-<a class="jxr_linenumber" name="103" href="#103">103</a>                     out.add(CRLF_BUF.duplicate());
-<a class="jxr_linenumber" name="104" href="#104">104</a>                 }
-<a class="jxr_linenumber" name="105" href="#105">105</a> 
-<a class="jxr_linenumber" name="106" href="#106">106</a>                 <strong class="jxr_keyword">if</strong> (msg instanceof LastHttpContent) {
-<a class="jxr_linenumber" name="107" href="#107">107</a>                     <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> headers = ((LastHttpContent) msg).trailingHeaders();
-<a class="jxr_linenumber" name="108" href="#108">108</a>                     <strong class="jxr_keyword">if</strong> (headers.isEmpty()) {
-<a class="jxr_linenumber" name="109" href="#109">109</a>                         out.add(ZERO_CRLF_CRLF_BUF.duplicate());
-<a class="jxr_linenumber" name="110" href="#110">110</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="111" href="#111">111</a>                         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = ctx.alloc().buffer();
-<a class="jxr_linenumber" name="112" href="#112">112</a>                         buf.writeBytes(ZERO_CRLF);
-<a class="jxr_linenumber" name="113" href="#113">113</a>                         encodeHeaders(buf, headers);
-<a class="jxr_linenumber" name="114" href="#114">114</a>                         buf.writeBytes(CRLF);
-<a class="jxr_linenumber" name="115" href="#115">115</a>                         out.add(buf);
-<a class="jxr_linenumber" name="116" href="#116">116</a>                     }
-<a class="jxr_linenumber" name="117" href="#117">117</a> 
-<a class="jxr_linenumber" name="118" href="#118">118</a>                     state = ST_INIT;
-<a class="jxr_linenumber" name="119" href="#119">119</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="120" href="#120">120</a>                   <strong class="jxr_keyword">if</strong> (contentLength == 0) {
-<a class="jxr_linenumber" name="121" href="#121">121</a>                       <em class="jxr_comment">// Need to produce some output otherwise an</em>
-<a class="jxr_linenumber" name="122" href="#122">122</a>                       <em class="jxr_comment">// IllegalstateException will be thrown</em>
-<a class="jxr_linenumber" name="123" href="#123">123</a>                       out.add(EMPTY_BUFFER);
-<a class="jxr_linenumber" name="124" href="#124">124</a>                   }
-<a class="jxr_linenumber" name="125" href="#125">125</a>                 }
-<a class="jxr_linenumber" name="126" href="#126">126</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="127" href="#127">127</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
-<a class="jxr_linenumber" name="128" href="#128">128</a>             }
-<a class="jxr_linenumber" name="129" href="#129">129</a>         }
-<a class="jxr_linenumber" name="130" href="#130">130</a>     }
-<a class="jxr_linenumber" name="131" href="#131">131</a> 
-<a class="jxr_linenumber" name="132" href="#132">132</a>     @Override
-<a class="jxr_linenumber" name="133" href="#133">133</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> acceptOutboundMessage(Object msg) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="134" href="#134">134</a>         <strong class="jxr_keyword">return</strong> msg instanceof <a href="../../../../../io/netty/handler/codec/http/HttpObject.html">HttpObject</a> || msg instanceof <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> || msg instanceof FileRegion;
-<a class="jxr_linenumber" name="135" href="#135">135</a>     }
-<a class="jxr_linenumber" name="136" href="#136">136</a> 
-<a class="jxr_linenumber" name="137" href="#137">137</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Object encodeAndRetain(Object msg) {
-<a class="jxr_linenumber" name="138" href="#138">138</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
-<a class="jxr_linenumber" name="139" href="#139">139</a>             <strong class="jxr_keyword">return</strong> ((ByteBuf) msg).retain();
-<a class="jxr_linenumber" name="140" href="#140">140</a>         }
-<a class="jxr_linenumber" name="141" href="#141">141</a>         <strong class="jxr_keyword">if</strong> (msg instanceof HttpContent) {
-<a class="jxr_linenumber" name="142" href="#142">142</a>             <strong class="jxr_keyword">return</strong> ((HttpContent) msg).content().retain();
-<a class="jxr_linenumber" name="143" href="#143">143</a>         }
-<a class="jxr_linenumber" name="144" href="#144">144</a>         <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
-<a class="jxr_linenumber" name="145" href="#145">145</a>             <strong class="jxr_keyword">return</strong> ((FileRegion) msg).retain();
-<a class="jxr_linenumber" name="146" href="#146">146</a>         }
-<a class="jxr_linenumber" name="147" href="#147">147</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"unexpected message type: "</span> + msg.getClass().getSimpleName());
-<a class="jxr_linenumber" name="148" href="#148">148</a>     }
-<a class="jxr_linenumber" name="149" href="#149">149</a> 
-<a class="jxr_linenumber" name="150" href="#150">150</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> contentLength(Object msg) {
-<a class="jxr_linenumber" name="151" href="#151">151</a>         <strong class="jxr_keyword">if</strong> (msg instanceof HttpContent) {
-<a class="jxr_linenumber" name="152" href="#152">152</a>             <strong class="jxr_keyword">return</strong> ((HttpContent) msg).content().readableBytes();
-<a class="jxr_linenumber" name="153" href="#153">153</a>         }
-<a class="jxr_linenumber" name="154" href="#154">154</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
-<a class="jxr_linenumber" name="155" href="#155">155</a>             <strong class="jxr_keyword">return</strong> ((ByteBuf) msg).readableBytes();
-<a class="jxr_linenumber" name="156" href="#156">156</a>         }
-<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
-<a class="jxr_linenumber" name="158" href="#158">158</a>             <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) ((FileRegion) msg).count();
-<a class="jxr_linenumber" name="159" href="#159">159</a>         }
-<a class="jxr_linenumber" name="160" href="#160">160</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"unexpected message type: "</span> + msg.getClass().getSimpleName());
-<a class="jxr_linenumber" name="161" href="#161">161</a>     }
-<a class="jxr_linenumber" name="162" href="#162">162</a> 
-<a class="jxr_linenumber" name="163" href="#163">163</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeHeaders(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> headers) {
-<a class="jxr_linenumber" name="164" href="#164">164</a>         <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; h: headers) {
-<a class="jxr_linenumber" name="165" href="#165">165</a>             encodeHeader(buf, h.getKey(), h.getValue());
-<a class="jxr_linenumber" name="166" href="#166">166</a>         }
-<a class="jxr_linenumber" name="167" href="#167">167</a>     }
-<a class="jxr_linenumber" name="168" href="#168">168</a> 
-<a class="jxr_linenumber" name="169" href="#169">169</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeHeader(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, String header, String value) {
-<a class="jxr_linenumber" name="170" href="#170">170</a>         encodeAscii(header, buf);
-<a class="jxr_linenumber" name="171" href="#171">171</a>         buf.writeBytes(HEADER_SEPARATOR);
-<a class="jxr_linenumber" name="172" href="#172">172</a>         encodeAscii(value, buf);
-<a class="jxr_linenumber" name="173" href="#173">173</a>         buf.writeBytes(CRLF);
-<a class="jxr_linenumber" name="174" href="#174">174</a>     }
-<a class="jxr_linenumber" name="175" href="#175">175</a> 
-<a class="jxr_linenumber" name="176" href="#176">176</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeAscii(String s, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
-<a class="jxr_linenumber" name="177" href="#177">177</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; s.length(); i++) {
-<a class="jxr_linenumber" name="178" href="#178">178</a>             buf.writeByte(s.charAt(i));
-<a class="jxr_linenumber" name="179" href="#179">179</a>         }
-<a class="jxr_linenumber" name="180" href="#180">180</a>     }
-<a class="jxr_linenumber" name="181" href="#181">181</a> 
-<a class="jxr_linenumber" name="182" href="#182">182</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> encodeInitialLine(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, H message) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="183" href="#183">183</a> }
+<a class="jxr_linenumber" name="96" href="#96">96</a>                  encodeChunkedContent(ctx, msg, contentLength, out);
+<a class="jxr_linenumber" name="97" href="#97">97</a>              } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="98" href="#98">98</a>                  <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
+<a class="jxr_linenumber" name="99" href="#99">99</a>              }
+<a class="jxr_linenumber" name="100" href="#100">100</a>         }
+<a class="jxr_linenumber" name="101" href="#101">101</a>     }
+<a class="jxr_linenumber" name="102" href="#102">102</a> 
+<a class="jxr_linenumber" name="103" href="#103">103</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> encodeChunkedContent(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg, <strong class="jxr_keyword">int</strong> contentLength, List&lt;Object&gt; out) {
+<a class="jxr_linenumber" name="104" href="#104">104</a>         <strong class="jxr_keyword">if</strong> (contentLength &gt; 0) {
+<a class="jxr_linenumber" name="105" href="#105">105</a>             byte[] length = Integer.toHexString(contentLength).getBytes(CharsetUtil.US_ASCII);
+<a class="jxr_linenumber" name="106" href="#106">106</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = ctx.alloc().buffer(length.length + 2);
+<a class="jxr_linenumber" name="107" href="#107">107</a>             buf.writeBytes(length);
+<a class="jxr_linenumber" name="108" href="#108">108</a>             buf.writeBytes(CRLF);
+<a class="jxr_linenumber" name="109" href="#109">109</a>             out.add(buf);
+<a class="jxr_linenumber" name="110" href="#110">110</a>             out.add(encodeAndRetain(msg));
+<a class="jxr_linenumber" name="111" href="#111">111</a>             out.add(CRLF_BUF.duplicate());
+<a class="jxr_linenumber" name="112" href="#112">112</a>         }
+<a class="jxr_linenumber" name="113" href="#113">113</a> 
+<a class="jxr_linenumber" name="114" href="#114">114</a>         <strong class="jxr_keyword">if</strong> (msg instanceof LastHttpContent) {
+<a class="jxr_linenumber" name="115" href="#115">115</a>             <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> headers = ((LastHttpContent) msg).trailingHeaders();
+<a class="jxr_linenumber" name="116" href="#116">116</a>             <strong class="jxr_keyword">if</strong> (headers.isEmpty()) {
+<a class="jxr_linenumber" name="117" href="#117">117</a>                 out.add(ZERO_CRLF_CRLF_BUF.duplicate());
+<a class="jxr_linenumber" name="118" href="#118">118</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="119" href="#119">119</a>                 <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = ctx.alloc().buffer();
+<a class="jxr_linenumber" name="120" href="#120">120</a>                 buf.writeBytes(ZERO_CRLF);
+<a class="jxr_linenumber" name="121" href="#121">121</a>                 encodeHeaders(buf, headers);
+<a class="jxr_linenumber" name="122" href="#122">122</a>                 buf.writeBytes(CRLF);
+<a class="jxr_linenumber" name="123" href="#123">123</a>                 out.add(buf);
+<a class="jxr_linenumber" name="124" href="#124">124</a>             }
+<a class="jxr_linenumber" name="125" href="#125">125</a> 
+<a class="jxr_linenumber" name="126" href="#126">126</a>             state = ST_INIT;
+<a class="jxr_linenumber" name="127" href="#127">127</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="128" href="#128">128</a>             <strong class="jxr_keyword">if</strong> (contentLength == 0) {
+<a class="jxr_linenumber" name="129" href="#129">129</a>                 <em class="jxr_comment">// Need to produce some output otherwise an</em>
+<a class="jxr_linenumber" name="130" href="#130">130</a>                 <em class="jxr_comment">// IllegalstateException will be thrown</em>
+<a class="jxr_linenumber" name="131" href="#131">131</a>                 out.add(EMPTY_BUFFER);
+<a class="jxr_linenumber" name="132" href="#132">132</a>             }
+<a class="jxr_linenumber" name="133" href="#133">133</a>         }
+<a class="jxr_linenumber" name="134" href="#134">134</a>     }
+<a class="jxr_linenumber" name="135" href="#135">135</a> 
+<a class="jxr_linenumber" name="136" href="#136">136</a>     @Override
+<a class="jxr_linenumber" name="137" href="#137">137</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> acceptOutboundMessage(Object msg) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="138" href="#138">138</a>         <strong class="jxr_keyword">return</strong> msg instanceof <a href="../../../../../io/netty/handler/codec/http/HttpObject.html">HttpObject</a> || msg instanceof <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> || msg instanceof FileRegion;
+<a class="jxr_linenumber" name="139" href="#139">139</a>     }
+<a class="jxr_linenumber" name="140" href="#140">140</a> 
+<a class="jxr_linenumber" name="141" href="#141">141</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Object encodeAndRetain(Object msg) {
+<a class="jxr_linenumber" name="142" href="#142">142</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
+<a class="jxr_linenumber" name="143" href="#143">143</a>             <strong class="jxr_keyword">return</strong> ((ByteBuf) msg).retain();
+<a class="jxr_linenumber" name="144" href="#144">144</a>         }
+<a class="jxr_linenumber" name="145" href="#145">145</a>         <strong class="jxr_keyword">if</strong> (msg instanceof HttpContent) {
+<a class="jxr_linenumber" name="146" href="#146">146</a>             <strong class="jxr_keyword">return</strong> ((HttpContent) msg).content().retain();
+<a class="jxr_linenumber" name="147" href="#147">147</a>         }
+<a class="jxr_linenumber" name="148" href="#148">148</a>         <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
+<a class="jxr_linenumber" name="149" href="#149">149</a>             <strong class="jxr_keyword">return</strong> ((FileRegion) msg).retain();
+<a class="jxr_linenumber" name="150" href="#150">150</a>         }
+<a class="jxr_linenumber" name="151" href="#151">151</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"unexpected message type: "</span> + msg.getClass().getSimpleName());
+<a class="jxr_linenumber" name="152" href="#152">152</a>     }
+<a class="jxr_linenumber" name="153" href="#153">153</a> 
+<a class="jxr_linenumber" name="154" href="#154">154</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> contentLength(Object msg) {
+<a class="jxr_linenumber" name="155" href="#155">155</a>         <strong class="jxr_keyword">if</strong> (msg instanceof HttpContent) {
+<a class="jxr_linenumber" name="156" href="#156">156</a>             <strong class="jxr_keyword">return</strong> ((HttpContent) msg).content().readableBytes();
+<a class="jxr_linenumber" name="157" href="#157">157</a>         }
+<a class="jxr_linenumber" name="158" href="#158">158</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
+<a class="jxr_linenumber" name="159" href="#159">159</a>             <strong class="jxr_keyword">return</strong> ((ByteBuf) msg).readableBytes();
+<a class="jxr_linenumber" name="160" href="#160">160</a>         }
+<a class="jxr_linenumber" name="161" href="#161">161</a>         <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
+<a class="jxr_linenumber" name="162" href="#162">162</a>             <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) ((FileRegion) msg).count();
+<a class="jxr_linenumber" name="163" href="#163">163</a>         }
+<a class="jxr_linenumber" name="164" href="#164">164</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"unexpected message type: "</span> + msg.getClass().getSimpleName());
+<a class="jxr_linenumber" name="165" href="#165">165</a>     }
+<a class="jxr_linenumber" name="166" href="#166">166</a> 
+<a class="jxr_linenumber" name="167" href="#167">167</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeHeaders(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> headers) {
+<a class="jxr_linenumber" name="168" href="#168">168</a>         <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; h: headers) {
+<a class="jxr_linenumber" name="169" href="#169">169</a>             encodeHeader(buf, h.getKey(), h.getValue());
+<a class="jxr_linenumber" name="170" href="#170">170</a>         }
+<a class="jxr_linenumber" name="171" href="#171">171</a>     }
+<a class="jxr_linenumber" name="172" href="#172">172</a> 
+<a class="jxr_linenumber" name="173" href="#173">173</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeHeader(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, String header, String value) {
+<a class="jxr_linenumber" name="174" href="#174">174</a>         encodeAscii(header, buf);
+<a class="jxr_linenumber" name="175" href="#175">175</a>         buf.writeBytes(HEADER_SEPARATOR);
+<a class="jxr_linenumber" name="176" href="#176">176</a>         encodeAscii(value, buf);
+<a class="jxr_linenumber" name="177" href="#177">177</a>         buf.writeBytes(CRLF);
+<a class="jxr_linenumber" name="178" href="#178">178</a>     }
+<a class="jxr_linenumber" name="179" href="#179">179</a> 
+<a class="jxr_linenumber" name="180" href="#180">180</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeAscii(String s, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
+<a class="jxr_linenumber" name="181" href="#181">181</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; s.length(); i++) {
+<a class="jxr_linenumber" name="182" href="#182">182</a>             buf.writeByte(s.charAt(i));
+<a class="jxr_linenumber" name="183" href="#183">183</a>         }
+<a class="jxr_linenumber" name="184" href="#184">184</a>     }
+<a class="jxr_linenumber" name="185" href="#185">185</a> 
+<a class="jxr_linenumber" name="186" href="#186">186</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> encodeInitialLine(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, H message) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="187" href="#187">187</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
