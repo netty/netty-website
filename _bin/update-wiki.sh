@@ -59,7 +59,7 @@ cat 'wiki/_pages' | while read -r LINE; do
           toc_idx = 0
           toc_level = 2
           first = true
-          toc_html << "<div class=\"wiki-toc col-md-3 well pull-right hidden-xs hidden-sm hidden-print\" role=\"complementary\">\n"
+          toc_html << "<div class=\"toc well\">\n"
           toc_html << "<ul class=\"nav nav-list nav-stacked\">\n"
           toc_html << "<li class=\"nav-header\">Table of Contents\n"
           for h in headings
@@ -102,8 +102,18 @@ cat 'wiki/_pages' | while read -r LINE; do
 
       # Print the wiki body and the generated toc together.
       echo '
-        print toc_html
-        print @doc.at_css "div#wiki-body"
+        if toc_html == ""
+          print @doc.at_css "div#wiki-body"
+        else
+          puts "<div class=\"row\">"
+          puts "<div class=\"col-md-9\">"
+          print @doc.at_css "div#wiki-body"
+          puts "</div>"
+          puts "<div class=\"col-md-3 hidden-xs hidden-sm hidden-print\" role=\"complementary\">"
+          print toc_html
+          puts "</div>"
+          puts "</div>"
+        end
       '
     } | ruby >> "$WIKI_TMPFILE"
       
@@ -165,4 +175,6 @@ if [[ "$ACTUAL_PAGE_CNT" != "$PAGE_CNT" ]]; then
   echo "Mismatching number of generated files: $ACTUAL_PAGE_CNT (expected: $PAGE_CNT)"
   exit 1
 fi
+
+exec _bin/generate.sh
 
