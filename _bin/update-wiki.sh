@@ -54,7 +54,7 @@ cat 'wiki/_pages' | while read -r LINE; do
       echo '
         toc_html = ""
         headings = @doc.css("#wiki-content h2, #wiki-content h3, #wiki-content h4")
-        if headings.size() > 1 and @doc.css("#wiki-notoc").size() == 0
+        if headings.size() > 1 and @doc.css("#wiki-notoc").size() == 0 and @doc.css("#notoc").size() == 0
           coder = HTMLEntities.new
           toc_idx = 0
           toc_level = 2
@@ -109,7 +109,7 @@ cat 'wiki/_pages' | while read -r LINE; do
           puts "<div class=\"col-md-9\">"
           print @doc.at_css "div#wiki-body"
           puts "</div>"
-          puts "<div class=\"col-md-3 hidden-xs hidden-sm hidden-print\" role=\"complementary\">"
+          puts "<div class=\"toc-container col-md-3 hidden-xs hidden-sm hidden-print\" role=\"complementary\">"
           print toc_html
           puts "</div>"
           puts "</div>"
@@ -136,6 +136,12 @@ cat 'wiki/_pages' | while read -r LINE; do
       echo 'layout: wiki'
       echo "title: '$WIKI_TITLE'"
       echo "github_name: '$WIKI_GITHUB_NAME'"
+      echo -n "has_toc: "
+      if grep -qF "toc-container" "$WIKI_TMPFILE"; then
+        echo true
+      else
+        echo false
+      fi
       echo "retrieval_date: '`date '+%d-%b-%Y'`'"
       echo '---'
       echo
