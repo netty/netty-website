@@ -87,8 +87,6 @@ else
   # Rewind to the initial commit.
   pushd "$DST"
   git checkout 533f5da7361390c306889bbe6bfe25a47b2f4a9c || exit 1
-  git branch -D master || exit 1
-  git checkout -B master || exit 1
   popd
 
   # Copy the generated web site to netty.github.com
@@ -98,6 +96,8 @@ else
   cd "$DST"
   git add -A
   git commit -m "Deploy site '$(git log -1 --format=format:%h)' on $DATE"
+  git branch -D master
+  git checkout -B master
   git push -u --force origin master
 fi
 
