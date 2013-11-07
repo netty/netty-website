@@ -99,5 +99,6 @@ else
   git branch -D master
   git checkout -B master
   git push -u --force origin master
+  git gc
 fi
 
