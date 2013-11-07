@@ -58,8 +58,10 @@ touch "$SRC/.nojekyll"
 # Pull the latest changes in netty.github.com
 pushd "$DST"
 git reset --hard HEAD || exit 1
-git checkout master || exit 1
-git pull --ff-only origin master || exit 1
+git fetch origin master || exit 1
+git checkout origin/master || exit 1
+git branch -D master || exit 1
+git checkout -B master || exit 1
 NUM_DEPLOYS=$(git rev-list --count HEAD)
 popd
 
