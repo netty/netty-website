@@ -74,7 +74,7 @@ fi
 "$BIN/inject-google-analytics.sh" || exit 1
 
 DATE="$(date -u '+%Y-%m-%d %H:%M:%S')"
-if [[ $NUM_DEPLOYS -lt 16 ]]; then
+if [[ $NUM_DEPLOYS -lt 128 ]]; then
   # Copy the generated web site to netty.github.com
   rsync -a --delete --exclude=.git/ "$SRC/" "$DST" || exit 1
 
