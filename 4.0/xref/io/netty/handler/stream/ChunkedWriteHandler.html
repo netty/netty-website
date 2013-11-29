@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_US" lang="en_US">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de_DE" lang="de_DE">
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 <title>ChunkedWriteHandler xref</title>
@@ -249,148 +249,137 @@
 <a class="jxr_linenumber" name="239" href="#239">239</a>                     }
 <a class="jxr_linenumber" name="240" href="#240">240</a> 
 <a class="jxr_linenumber" name="241" href="#241">241</a>                     currentWrite.fail(t);
-<a class="jxr_linenumber" name="242" href="#242">242</a>                     <strong class="jxr_keyword">if</strong> (ctx.executor().inEventLoop()) {
-<a class="jxr_linenumber" name="243" href="#243">243</a>                         ctx.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="244" href="#244">244</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="245" href="#245">245</a>                         ctx.executor().execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="246" href="#246">246</a>                             @Override
-<a class="jxr_linenumber" name="247" href="#247">247</a>                             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="248" href="#248">248</a>                                 ctx.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="249" href="#249">249</a>                             }
-<a class="jxr_linenumber" name="250" href="#250">250</a>                         });
-<a class="jxr_linenumber" name="251" href="#251">251</a>                     }
+<a class="jxr_linenumber" name="242" href="#242">242</a>                     closeInput(chunks);
+<a class="jxr_linenumber" name="243" href="#243">243</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="244" href="#244">244</a>                 }
+<a class="jxr_linenumber" name="245" href="#245">245</a> 
+<a class="jxr_linenumber" name="246" href="#246">246</a>                 <strong class="jxr_keyword">if</strong> (suspend) {
+<a class="jxr_linenumber" name="247" href="#247">247</a>                     <em class="jxr_comment">// ChunkedInput.nextChunk() returned null and it has</em>
+<a class="jxr_linenumber" name="248" href="#248">248</a>                     <em class="jxr_comment">// not reached at the end of input. Let's wait until</em>
+<a class="jxr_linenumber" name="249" href="#249">249</a>                     <em class="jxr_comment">// more chunks arrive. Nothing to write or notify.</em>
+<a class="jxr_linenumber" name="250" href="#250">250</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="251" href="#251">251</a>                 }
 <a class="jxr_linenumber" name="252" href="#252">252</a> 
-<a class="jxr_linenumber" name="253" href="#253">253</a>                     closeInput(chunks);
-<a class="jxr_linenumber" name="254" href="#254">254</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="255" href="#255">255</a>                 }
-<a class="jxr_linenumber" name="256" href="#256">256</a> 
-<a class="jxr_linenumber" name="257" href="#257">257</a>                 <strong class="jxr_keyword">if</strong> (suspend) {
-<a class="jxr_linenumber" name="258" href="#258">258</a>                     <em class="jxr_comment">// ChunkedInput.nextChunk() returned null and it has</em>
-<a class="jxr_linenumber" name="259" href="#259">259</a>                     <em class="jxr_comment">// not reached at the end of input. Let's wait until</em>
-<a class="jxr_linenumber" name="260" href="#260">260</a>                     <em class="jxr_comment">// more chunks arrive. Nothing to write or notify.</em>
-<a class="jxr_linenumber" name="261" href="#261">261</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="262" href="#262">262</a>                 }
+<a class="jxr_linenumber" name="253" href="#253">253</a>                 <strong class="jxr_keyword">if</strong> (message == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="254" href="#254">254</a>                     <em class="jxr_comment">// If message is null write an empty ByteBuf.</em>
+<a class="jxr_linenumber" name="255" href="#255">255</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/1671</em>
+<a class="jxr_linenumber" name="256" href="#256">256</a>                     message = Unpooled.EMPTY_BUFFER;
+<a class="jxr_linenumber" name="257" href="#257">257</a>                 }
+<a class="jxr_linenumber" name="258" href="#258">258</a> 
+<a class="jxr_linenumber" name="259" href="#259">259</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> amount = amount(message);
+<a class="jxr_linenumber" name="260" href="#260">260</a>                 <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f = ctx.write(message);
+<a class="jxr_linenumber" name="261" href="#261">261</a>                 <strong class="jxr_keyword">if</strong> (endOfInput) {
+<a class="jxr_linenumber" name="262" href="#262">262</a>                     <strong class="jxr_keyword">this</strong>.currentWrite = <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="263" href="#263">263</a> 
-<a class="jxr_linenumber" name="264" href="#264">264</a>                 <strong class="jxr_keyword">if</strong> (message == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="265" href="#265">265</a>                     <em class="jxr_comment">// If message is null write an empty ByteBuf.</em>
-<a class="jxr_linenumber" name="266" href="#266">266</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/1671</em>
-<a class="jxr_linenumber" name="267" href="#267">267</a>                     message = Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="268" href="#268">268</a>                 }
-<a class="jxr_linenumber" name="269" href="#269">269</a> 
-<a class="jxr_linenumber" name="270" href="#270">270</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> amount = amount(message);
-<a class="jxr_linenumber" name="271" href="#271">271</a>                 <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f = ctx.write(message);
-<a class="jxr_linenumber" name="272" href="#272">272</a>                 <strong class="jxr_keyword">if</strong> (endOfInput) {
-<a class="jxr_linenumber" name="273" href="#273">273</a>                     <strong class="jxr_keyword">this</strong>.currentWrite = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="274" href="#274">274</a> 
-<a class="jxr_linenumber" name="275" href="#275">275</a>                     <em class="jxr_comment">// Register a listener which will close the input once the write is complete.</em>
-<a class="jxr_linenumber" name="276" href="#276">276</a>                     <em class="jxr_comment">// This is needed because the Chunk may have some resource bound that can not</em>
-<a class="jxr_linenumber" name="277" href="#277">277</a>                     <em class="jxr_comment">// be closed before its not written.</em>
-<a class="jxr_linenumber" name="278" href="#278">278</a>                     <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="279" href="#279">279</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/303</em>
-<a class="jxr_linenumber" name="280" href="#280">280</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="281" href="#281">281</a>                         @Override
-<a class="jxr_linenumber" name="282" href="#282">282</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="283" href="#283">283</a>                             currentWrite.progress(amount);
-<a class="jxr_linenumber" name="284" href="#284">284</a>                             currentWrite.success();
-<a class="jxr_linenumber" name="285" href="#285">285</a>                             closeInput(chunks);
-<a class="jxr_linenumber" name="286" href="#286">286</a>                         }
-<a class="jxr_linenumber" name="287" href="#287">287</a>                     });
-<a class="jxr_linenumber" name="288" href="#288">288</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (channel.isWritable()) {
-<a class="jxr_linenumber" name="289" href="#289">289</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="290" href="#290">290</a>                         @Override
-<a class="jxr_linenumber" name="291" href="#291">291</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="292" href="#292">292</a>                             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="293" href="#293">293</a>                                 closeInput((ChunkedInput&lt;?&gt;) pendingMessage);
-<a class="jxr_linenumber" name="294" href="#294">294</a>                                 currentWrite.fail(future.cause());
-<a class="jxr_linenumber" name="295" href="#295">295</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="296" href="#296">296</a>                                 currentWrite.progress(amount);
-<a class="jxr_linenumber" name="297" href="#297">297</a>                             }
-<a class="jxr_linenumber" name="298" href="#298">298</a>                         }
-<a class="jxr_linenumber" name="299" href="#299">299</a>                     });
-<a class="jxr_linenumber" name="300" href="#300">300</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="301" href="#301">301</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="302" href="#302">302</a>                         @Override
-<a class="jxr_linenumber" name="303" href="#303">303</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="304" href="#304">304</a>                             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="305" href="#305">305</a>                                 closeInput((ChunkedInput&lt;?&gt;) pendingMessage);
-<a class="jxr_linenumber" name="306" href="#306">306</a>                                 currentWrite.fail(future.cause());
-<a class="jxr_linenumber" name="307" href="#307">307</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="308" href="#308">308</a>                                 currentWrite.progress(amount);
-<a class="jxr_linenumber" name="309" href="#309">309</a>                                 <strong class="jxr_keyword">if</strong> (channel.isWritable()) {
-<a class="jxr_linenumber" name="310" href="#310">310</a>                                     resumeTransfer();
-<a class="jxr_linenumber" name="311" href="#311">311</a>                                 }
-<a class="jxr_linenumber" name="312" href="#312">312</a>                             }
-<a class="jxr_linenumber" name="313" href="#313">313</a>                         }
-<a class="jxr_linenumber" name="314" href="#314">314</a>                     });
-<a class="jxr_linenumber" name="315" href="#315">315</a>                 }
-<a class="jxr_linenumber" name="316" href="#316">316</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="317" href="#317">317</a>                 ctx.write(pendingMessage, currentWrite.promise);
-<a class="jxr_linenumber" name="318" href="#318">318</a>                 <strong class="jxr_keyword">this</strong>.currentWrite = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="319" href="#319">319</a>             }
-<a class="jxr_linenumber" name="320" href="#320">320</a> 
-<a class="jxr_linenumber" name="321" href="#321">321</a>             <strong class="jxr_keyword">if</strong> (needsFlush) {
-<a class="jxr_linenumber" name="322" href="#322">322</a>                 ctx.flush();
-<a class="jxr_linenumber" name="323" href="#323">323</a>             }
-<a class="jxr_linenumber" name="324" href="#324">324</a>             <strong class="jxr_keyword">if</strong> (!channel.isActive()) {
-<a class="jxr_linenumber" name="325" href="#325">325</a>                 discard(<strong class="jxr_keyword">new</strong> ClosedChannelException());
-<a class="jxr_linenumber" name="326" href="#326">326</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="327" href="#327">327</a>             }
-<a class="jxr_linenumber" name="328" href="#328">328</a>         }
-<a class="jxr_linenumber" name="329" href="#329">329</a>     }
-<a class="jxr_linenumber" name="330" href="#330">330</a> 
-<a class="jxr_linenumber" name="331" href="#331">331</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> closeInput(ChunkedInput&lt;?&gt; chunks) {
-<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="333" href="#333">333</a>             chunks.close();
-<a class="jxr_linenumber" name="334" href="#334">334</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="335" href="#335">335</a>             <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
-<a class="jxr_linenumber" name="336" href="#336">336</a>                 logger.warn(<span class="jxr_string">"Failed to close a chunked input."</span>, t);
-<a class="jxr_linenumber" name="337" href="#337">337</a>             }
+<a class="jxr_linenumber" name="264" href="#264">264</a>                     <em class="jxr_comment">// Register a listener which will close the input once the write is complete.</em>
+<a class="jxr_linenumber" name="265" href="#265">265</a>                     <em class="jxr_comment">// This is needed because the Chunk may have some resource bound that can not</em>
+<a class="jxr_linenumber" name="266" href="#266">266</a>                     <em class="jxr_comment">// be closed before its not written.</em>
+<a class="jxr_linenumber" name="267" href="#267">267</a>                     <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="268" href="#268">268</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/303</em>
+<a class="jxr_linenumber" name="269" href="#269">269</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="270" href="#270">270</a>                         @Override
+<a class="jxr_linenumber" name="271" href="#271">271</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="272" href="#272">272</a>                             currentWrite.progress(amount);
+<a class="jxr_linenumber" name="273" href="#273">273</a>                             currentWrite.success();
+<a class="jxr_linenumber" name="274" href="#274">274</a>                             closeInput(chunks);
+<a class="jxr_linenumber" name="275" href="#275">275</a>                         }
+<a class="jxr_linenumber" name="276" href="#276">276</a>                     });
+<a class="jxr_linenumber" name="277" href="#277">277</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (channel.isWritable()) {
+<a class="jxr_linenumber" name="278" href="#278">278</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="279" href="#279">279</a>                         @Override
+<a class="jxr_linenumber" name="280" href="#280">280</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="281" href="#281">281</a>                             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="282" href="#282">282</a>                                 closeInput((ChunkedInput&lt;?&gt;) pendingMessage);
+<a class="jxr_linenumber" name="283" href="#283">283</a>                                 currentWrite.fail(future.cause());
+<a class="jxr_linenumber" name="284" href="#284">284</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="285" href="#285">285</a>                                 currentWrite.progress(amount);
+<a class="jxr_linenumber" name="286" href="#286">286</a>                             }
+<a class="jxr_linenumber" name="287" href="#287">287</a>                         }
+<a class="jxr_linenumber" name="288" href="#288">288</a>                     });
+<a class="jxr_linenumber" name="289" href="#289">289</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="290" href="#290">290</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="291" href="#291">291</a>                         @Override
+<a class="jxr_linenumber" name="292" href="#292">292</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="293" href="#293">293</a>                             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="294" href="#294">294</a>                                 closeInput((ChunkedInput&lt;?&gt;) pendingMessage);
+<a class="jxr_linenumber" name="295" href="#295">295</a>                                 currentWrite.fail(future.cause());
+<a class="jxr_linenumber" name="296" href="#296">296</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="297" href="#297">297</a>                                 currentWrite.progress(amount);
+<a class="jxr_linenumber" name="298" href="#298">298</a>                                 <strong class="jxr_keyword">if</strong> (channel.isWritable()) {
+<a class="jxr_linenumber" name="299" href="#299">299</a>                                     resumeTransfer();
+<a class="jxr_linenumber" name="300" href="#300">300</a>                                 }
+<a class="jxr_linenumber" name="301" href="#301">301</a>                             }
+<a class="jxr_linenumber" name="302" href="#302">302</a>                         }
+<a class="jxr_linenumber" name="303" href="#303">303</a>                     });
+<a class="jxr_linenumber" name="304" href="#304">304</a>                 }
+<a class="jxr_linenumber" name="305" href="#305">305</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="306" href="#306">306</a>                 ctx.write(pendingMessage, currentWrite.promise);
+<a class="jxr_linenumber" name="307" href="#307">307</a>                 <strong class="jxr_keyword">this</strong>.currentWrite = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="308" href="#308">308</a>             }
+<a class="jxr_linenumber" name="309" href="#309">309</a> 
+<a class="jxr_linenumber" name="310" href="#310">310</a>             <strong class="jxr_keyword">if</strong> (needsFlush) {
+<a class="jxr_linenumber" name="311" href="#311">311</a>                 ctx.flush();
+<a class="jxr_linenumber" name="312" href="#312">312</a>             }
+<a class="jxr_linenumber" name="313" href="#313">313</a>             <strong class="jxr_keyword">if</strong> (!channel.isActive()) {
+<a class="jxr_linenumber" name="314" href="#314">314</a>                 discard(<strong class="jxr_keyword">new</strong> ClosedChannelException());
+<a class="jxr_linenumber" name="315" href="#315">315</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="316" href="#316">316</a>             }
+<a class="jxr_linenumber" name="317" href="#317">317</a>         }
+<a class="jxr_linenumber" name="318" href="#318">318</a>     }
+<a class="jxr_linenumber" name="319" href="#319">319</a> 
+<a class="jxr_linenumber" name="320" href="#320">320</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> closeInput(ChunkedInput&lt;?&gt; chunks) {
+<a class="jxr_linenumber" name="321" href="#321">321</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="322" href="#322">322</a>             chunks.close();
+<a class="jxr_linenumber" name="323" href="#323">323</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="324" href="#324">324</a>             <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
+<a class="jxr_linenumber" name="325" href="#325">325</a>                 logger.warn(<span class="jxr_string">"Failed to close a chunked input."</span>, t);
+<a class="jxr_linenumber" name="326" href="#326">326</a>             }
+<a class="jxr_linenumber" name="327" href="#327">327</a>         }
+<a class="jxr_linenumber" name="328" href="#328">328</a>     }
+<a class="jxr_linenumber" name="329" href="#329">329</a> 
+<a class="jxr_linenumber" name="330" href="#330">330</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/stream/ChunkedWriteHandler.html">PendingWrite</a> {
+<a class="jxr_linenumber" name="331" href="#331">331</a>         <strong class="jxr_keyword">final</strong> Object msg;
+<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
+<a class="jxr_linenumber" name="333" href="#333">333</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> progress;
+<a class="jxr_linenumber" name="334" href="#334">334</a> 
+<a class="jxr_linenumber" name="335" href="#335">335</a>         <a href="../../../../io/netty/handler/stream/ChunkedWriteHandler.html">PendingWrite</a>(Object msg, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="336" href="#336">336</a>             <strong class="jxr_keyword">this</strong>.msg = msg;
+<a class="jxr_linenumber" name="337" href="#337">337</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
 <a class="jxr_linenumber" name="338" href="#338">338</a>         }
-<a class="jxr_linenumber" name="339" href="#339">339</a>     }
-<a class="jxr_linenumber" name="340" href="#340">340</a> 
-<a class="jxr_linenumber" name="341" href="#341">341</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/stream/ChunkedWriteHandler.html">PendingWrite</a> {
-<a class="jxr_linenumber" name="342" href="#342">342</a>         <strong class="jxr_keyword">final</strong> Object msg;
-<a class="jxr_linenumber" name="343" href="#343">343</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
-<a class="jxr_linenumber" name="344" href="#344">344</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> progress;
-<a class="jxr_linenumber" name="345" href="#345">345</a> 
-<a class="jxr_linenumber" name="346" href="#346">346</a>         <a href="../../../../io/netty/handler/stream/ChunkedWriteHandler.html">PendingWrite</a>(Object msg, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="347" href="#347">347</a>             <strong class="jxr_keyword">this</strong>.msg = msg;
-<a class="jxr_linenumber" name="348" href="#348">348</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="349" href="#349">349</a>         }
-<a class="jxr_linenumber" name="350" href="#350">350</a> 
-<a class="jxr_linenumber" name="351" href="#351">351</a>         <strong class="jxr_keyword">void</strong> fail(Throwable cause) {
-<a class="jxr_linenumber" name="352" href="#352">352</a>             ReferenceCountUtil.release(msg);
-<a class="jxr_linenumber" name="353" href="#353">353</a>             <strong class="jxr_keyword">if</strong> (promise != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="354" href="#354">354</a>                 promise.setFailure(cause);
-<a class="jxr_linenumber" name="355" href="#355">355</a>             }
-<a class="jxr_linenumber" name="356" href="#356">356</a>         }
-<a class="jxr_linenumber" name="357" href="#357">357</a> 
-<a class="jxr_linenumber" name="358" href="#358">358</a>         <strong class="jxr_keyword">void</strong> success() {
-<a class="jxr_linenumber" name="359" href="#359">359</a>             <strong class="jxr_keyword">if</strong> (promise instanceof ChannelProgressivePromise) {
-<a class="jxr_linenumber" name="360" href="#360">360</a>                 <em class="jxr_comment">// Now we know what the total is.</em>
-<a class="jxr_linenumber" name="361" href="#361">361</a>                 ((<a href="../../../../io/netty/channel/ChannelProgressivePromise.html">ChannelProgressivePromise</a>) promise).tryProgress(progress, progress);
-<a class="jxr_linenumber" name="362" href="#362">362</a>             }
-<a class="jxr_linenumber" name="363" href="#363">363</a>             promise.setSuccess();
-<a class="jxr_linenumber" name="364" href="#364">364</a>         }
-<a class="jxr_linenumber" name="365" href="#365">365</a> 
-<a class="jxr_linenumber" name="366" href="#366">366</a>         <strong class="jxr_keyword">void</strong> progress(<strong class="jxr_keyword">int</strong> amount) {
-<a class="jxr_linenumber" name="367" href="#367">367</a>             progress += amount;
-<a class="jxr_linenumber" name="368" href="#368">368</a>             <strong class="jxr_keyword">if</strong> (promise instanceof ChannelProgressivePromise) {
-<a class="jxr_linenumber" name="369" href="#369">369</a>                 ((<a href="../../../../io/netty/channel/ChannelProgressivePromise.html">ChannelProgressivePromise</a>) promise).tryProgress(progress, -1);
-<a class="jxr_linenumber" name="370" href="#370">370</a>             }
-<a class="jxr_linenumber" name="371" href="#371">371</a>         }
-<a class="jxr_linenumber" name="372" href="#372">372</a>     }
-<a class="jxr_linenumber" name="373" href="#373">373</a> 
-<a class="jxr_linenumber" name="374" href="#374">374</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> amount(Object msg) {
-<a class="jxr_linenumber" name="375" href="#375">375</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
-<a class="jxr_linenumber" name="376" href="#376">376</a>             <strong class="jxr_keyword">return</strong> ((ByteBuf) msg).readableBytes();
-<a class="jxr_linenumber" name="377" href="#377">377</a>         }
-<a class="jxr_linenumber" name="378" href="#378">378</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBufHolder) {
-<a class="jxr_linenumber" name="379" href="#379">379</a>             <strong class="jxr_keyword">return</strong> ((ByteBufHolder) msg).content().readableBytes();
-<a class="jxr_linenumber" name="380" href="#380">380</a>         }
-<a class="jxr_linenumber" name="381" href="#381">381</a>         <strong class="jxr_keyword">return</strong> 1;
-<a class="jxr_linenumber" name="382" href="#382">382</a>     }
-<a class="jxr_linenumber" name="383" href="#383">383</a> }
+<a class="jxr_linenumber" name="339" href="#339">339</a> 
+<a class="jxr_linenumber" name="340" href="#340">340</a>         <strong class="jxr_keyword">void</strong> fail(Throwable cause) {
+<a class="jxr_linenumber" name="341" href="#341">341</a>             ReferenceCountUtil.release(msg);
+<a class="jxr_linenumber" name="342" href="#342">342</a>             <strong class="jxr_keyword">if</strong> (promise != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="343" href="#343">343</a>                 promise.tryFailure(cause);
+<a class="jxr_linenumber" name="344" href="#344">344</a>             }
+<a class="jxr_linenumber" name="345" href="#345">345</a>         }
+<a class="jxr_linenumber" name="346" href="#346">346</a> 
+<a class="jxr_linenumber" name="347" href="#347">347</a>         <strong class="jxr_keyword">void</strong> success() {
+<a class="jxr_linenumber" name="348" href="#348">348</a>             <strong class="jxr_keyword">if</strong> (promise instanceof ChannelProgressivePromise) {
+<a class="jxr_linenumber" name="349" href="#349">349</a>                 <em class="jxr_comment">// Now we know what the total is.</em>
+<a class="jxr_linenumber" name="350" href="#350">350</a>                 ((<a href="../../../../io/netty/channel/ChannelProgressivePromise.html">ChannelProgressivePromise</a>) promise).tryProgress(progress, progress);
+<a class="jxr_linenumber" name="351" href="#351">351</a>             }
+<a class="jxr_linenumber" name="352" href="#352">352</a>             promise.setSuccess();
+<a class="jxr_linenumber" name="353" href="#353">353</a>         }
+<a class="jxr_linenumber" name="354" href="#354">354</a> 
+<a class="jxr_linenumber" name="355" href="#355">355</a>         <strong class="jxr_keyword">void</strong> progress(<strong class="jxr_keyword">int</strong> amount) {
+<a class="jxr_linenumber" name="356" href="#356">356</a>             progress += amount;
+<a class="jxr_linenumber" name="357" href="#357">357</a>             <strong class="jxr_keyword">if</strong> (promise instanceof ChannelProgressivePromise) {
+<a class="jxr_linenumber" name="358" href="#358">358</a>                 ((<a href="../../../../io/netty/channel/ChannelProgressivePromise.html">ChannelProgressivePromise</a>) promise).tryProgress(progress, -1);
+<a class="jxr_linenumber" name="359" href="#359">359</a>             }
+<a class="jxr_linenumber" name="360" href="#360">360</a>         }
+<a class="jxr_linenumber" name="361" href="#361">361</a>     }
+<a class="jxr_linenumber" name="362" href="#362">362</a> 
+<a class="jxr_linenumber" name="363" href="#363">363</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> amount(Object msg) {
+<a class="jxr_linenumber" name="364" href="#364">364</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
+<a class="jxr_linenumber" name="365" href="#365">365</a>             <strong class="jxr_keyword">return</strong> ((ByteBuf) msg).readableBytes();
+<a class="jxr_linenumber" name="366" href="#366">366</a>         }
+<a class="jxr_linenumber" name="367" href="#367">367</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBufHolder) {
+<a class="jxr_linenumber" name="368" href="#368">368</a>             <strong class="jxr_keyword">return</strong> ((ByteBufHolder) msg).content().readableBytes();
+<a class="jxr_linenumber" name="369" href="#369">369</a>         }
+<a class="jxr_linenumber" name="370" href="#370">370</a>         <strong class="jxr_keyword">return</strong> 1;
+<a class="jxr_linenumber" name="371" href="#371">371</a>     }
+<a class="jxr_linenumber" name="372" href="#372">372</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
