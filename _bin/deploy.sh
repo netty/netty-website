@@ -26,9 +26,11 @@ function ensure_clean_copy {
     echo "Working directory not clean: $PWD"
     exit 1
   fi
-  if [[ ${GIT_STATUS} =~ (Your branch is) ]]; then
-    echo "Working directory has unpushed changes: $PWD"
-    exit 1
+  if [[ ! ${GIT_STATUS} =~ (Your branch is up-to-date with ) ]]; then
+    if [[ ${GIT_STATUS} =~ (Your branch is) ]]; then
+      echo "Working directory has unpushed changes: $PWD"
+      exit 1
+    fi
   fi
 }
 
