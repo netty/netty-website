@@ -1,7 +1,17 @@
 #!/bin/bash
 
-BIN=`dirname "$0"`
+cd "`dirname "$0"`" || exit 1
+BIN="`pwd`"
 SRC="$BIN/../_site"
+cd "$BIN/.." || exit 1
+
+function spushd {
+  pushd "$@" > /dev/null
+}
+
+function spopd {
+  popd "$@" > /dev/null
+}
 
 if [[ $# -ne 1 ]]; then
   DST="$BIN/../../netty.github.com"
@@ -35,37 +45,37 @@ function ensure_clean_copy {
 }
 
 # Make sure netty-website is clean
-pushd "$BIN/.."
+spushd "$BIN/.."
 #ensure_clean_copy
-popd
+spopd
 
 # Make sure netty.github.com is clean
-pushd "$DST"
+spushd "$DST"
 if ! git remote -v | grep -q -E '(git@|https://)github.com[:/]netty/netty.github.com'; then
   echo "Not a netty.github.com repository: $PWD"
   exit 1
 fi
 ensure_clean_copy
-popd
+spopd
 
 # Generate the web site
 rm -fr "$SRC"
-pushd "$BIN/.."
+spushd "$BIN/.."
 "$BIN/update-wiki.sh" || exit 1 # Retreve all wiki pages
 bundle exec awestruct --generate --force || exit 1
 cp -R 3.* 4.* "$SRC" || exit 1
-popd
+spopd
 touch "$SRC/.nojekyll"
 
 # Pull the latest changes in netty.github.com
-pushd "$DST"
+spushd "$DST"
 git reset --hard HEAD || exit 1
 git fetch origin master || exit 1
 git checkout origin/master || exit 1
 git branch -D master || exit 1
 git checkout -B master || exit 1
 NUM_DEPLOYS=$(git rev-list --count HEAD)
-popd
+spopd
 
 if [[ -z "$NUM_DEPLOYS" ]]; then
   echo 'Failed to get the repository information.'
@@ -87,9 +97,9 @@ if [[ $NUM_DEPLOYS -lt 128 ]]; then
   git push -u --force origin master
 else
   # Rewind to the initial commit.
-  pushd "$DST"
+  spushd "$DST"
   git checkout 533f5da7361390c306889bbe6bfe25a47b2f4a9c || exit 1
-  popd
+  spopd
 
   # Copy the generated web site to netty.github.com
   rsync -a --delete --exclude=.git/ "$SRC/" "$DST" || exit 1
@@ -103,4 +113,6 @@ else
   git push -u --force origin master
   git gc
 fi
+
+"$BIN/purge-cloudflare.sh"
 
