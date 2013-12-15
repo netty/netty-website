@@ -1,17 +1,9 @@
-#!/bin/bash
+#!/bin/bash -e
 
-cd "`dirname "$0"`" || exit 1
+cd "`dirname "$0"`"
 BIN="`pwd`"
 SRC="$BIN/../_site"
-cd "$BIN/.." || exit 1
-
-function spushd {
-  pushd "$@" > /dev/null
-}
-
-function spopd {
-  popd "$@" > /dev/null
-}
+cd "$BIN/.."
 
 if [[ $# -ne 1 ]]; then
   DST="$BIN/../../netty.github.com"
@@ -28,7 +20,13 @@ if [[ ! -d "$DST/.git" ]]; then
   exit 1
 fi
 
-set -e
+function spushd {
+  pushd "$@" > /dev/null
+}
+
+function spopd {
+  popd "$@" > /dev/null
+}
 
 function ensure_clean_copy {
   GIT_STATUS="$(git status 2> /dev/null)"
@@ -46,7 +44,7 @@ function ensure_clean_copy {
 
 # Make sure netty-website is clean
 spushd "$BIN/.."
-#ensure_clean_copy
+ensure_clean_copy
 spopd
 
 # Make sure netty.github.com is clean
@@ -61,19 +59,19 @@ spopd
 # Generate the web site
 rm -fr "$SRC"
 spushd "$BIN/.."
-"$BIN/update-wiki.sh" || exit 1 # Retreve all wiki pages
-bundle exec awestruct --generate --force || exit 1
-cp -R 3.* 4.* "$SRC" || exit 1
+"$BIN/update-wiki.sh" # Retreve all wiki pages
+bundle exec awestruct --generate --force
+cp -R 3.* 4.* "$SRC"
 spopd
 touch "$SRC/.nojekyll"
 
 # Pull the latest changes in netty.github.com
 spushd "$DST"
-git reset --hard HEAD || exit 1
-git fetch origin master || exit 1
-git checkout origin/master || exit 1
-git branch -D master || exit 1
-git checkout -B master || exit 1
+git reset --hard HEAD
+git fetch origin master
+git checkout origin/master 2> /dev/null
+git branch -D master 2> /dev/null
+git checkout -B master 2> /dev/null
 NUM_DEPLOYS=$(git rev-list --count HEAD)
 spopd
 
@@ -83,12 +81,12 @@ if [[ -z "$NUM_DEPLOYS" ]]; then
 fi
 
 # Inject Google Analytics JavaScript in all generated HTMLs
-"$BIN/inject-google-analytics.sh" || exit 1
+"$BIN/inject-google-analytics.sh"
 
 DATE="$(date -u '+%Y-%m-%d %H:%M:%S')"
 if [[ $NUM_DEPLOYS -lt 128 ]]; then
   # Copy the generated web site to netty.github.com
-  rsync -a --delete --exclude=.git/ "$SRC/" "$DST" || exit 1
+  rsync -a --delete --exclude=.git/ "$SRC/" "$DST"
 
   # Publish the generated web site
   cd "$DST"
@@ -98,11 +96,11 @@ if [[ $NUM_DEPLOYS -lt 128 ]]; then
 else
   # Rewind to the initial commit.
   spushd "$DST"
-  git checkout 533f5da7361390c306889bbe6bfe25a47b2f4a9c || exit 1
+  git checkout 533f5da7361390c306889bbe6bfe25a47b2f4a9c
   spopd
 
   # Copy the generated web site to netty.github.com
-  rsync -a --delete --exclude=.git/ "$SRC/" "$DST" || exit 1
+  rsync -a --delete --exclude=.git/ "$SRC/" "$DST"
 
   # Publish the generated web site
   cd "$DST"
