@@ -61,7 +61,7 @@ rm -fr "$SRC"
 spushd "$BIN/.."
 "$BIN/update-wiki.sh" # Retreve all wiki pages
 bundle exec awestruct --generate --force
-cp -R 3.* 4.* "$SRC"
+cp -R [3456789].* "$SRC"
 spopd
 touch "$SRC/.nojekyll"
 
