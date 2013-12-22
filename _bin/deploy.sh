@@ -112,5 +112,5 @@ else
   git gc
 fi
 
-"$BIN/purge-cloudflare.sh"
+echo "Deployment successful. Wait about 5 minutes to give GitHub pages to synchronize, and run '$BIN/purge-cloudflare.sh'"
 
