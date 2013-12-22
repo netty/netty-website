@@ -112,5 +112,7 @@ else
   git gc
 fi
 
-echo "Deployment successful. Wait about 5 minutes to give GitHub pages to synchronize, and run '$BIN/purge-cloudflare.sh'"
+echo
+echo 'Deployment successful. Wait about 5 minutes to give GitHub pages to synchronize.'
+echo "If the web site is still out-of-date, try to run '$BIN/purge-cloudflare.sh'"
 
