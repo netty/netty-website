@@ -114,5 +114,5 @@ fi
 
 echo
 echo 'Deployment successful. Wait about 5 minutes to give GitHub pages to synchronize.'
-echo "If the web site is still out-of-date, try to run '$BIN/purge-cloudflare.sh'"
+echo "If the web site is still out-of-date, try to run '_bin/purge-cloudflare.sh'"
 
