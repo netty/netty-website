@@ -6,7 +6,6 @@ echo 'Retrieving the wiki page list ..'
 curl -s https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
 
 PAGE_CNT=`cat wiki/_pages | wc -l | sed -e 's/ //g'`
-((PAGE_CNT--)) # Consider the index page
 
 if [[ -z "$PAGE_CNT" ]] || [[ "$PAGE_CNT" -le 0 ]]; then
   echo "Failed to retrieve the wiki page list"
@@ -24,6 +23,8 @@ echo The wiki contains "$PAGE_CNT" pages.
   echo '%h1 All documentation pages'
   echo
   echo '%ul'
+  echo '  %li'
+  echo "    %a{ :href=>'index.html' } Home"
 } > 'wiki/all-documents.html.haml'
 
 cat 'wiki/_pages' | while read -r LINE; do
