@@ -1,12 +1,12 @@
 #!/bin/bash -e
 cd "`dirname "$0"`/.."
-rm -fr 'wiki'
-mkdir 'wiki'
+find wiki '(' -type f -and -not -name 'index.html.haml' ')' -delete
 
 echo 'Retrieving the wiki page list ..'
 curl -s https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
 
 PAGE_CNT=`cat wiki/_pages | wc -l | sed -e 's/ //g'`
+((PAGE_CNT--)) # Consider the index page
 
 if [[ -z "$PAGE_CNT" ]] || [[ "$PAGE_CNT" -le 0 ]]; then
   echo "Failed to retrieve the wiki page list"
@@ -32,8 +32,8 @@ cat 'wiki/_pages' | while read -r LINE; do
     WIKI_FILE=${BASH_REMATCH[3]}
     WIKI_GITHUB_NAME="$WIKI_FILE"
     if [[ "x$WIKI_FILE" = 'x' ]]; then
-      WIKI_FILE='index'
-      WIKI_GITHUB_NAME='Home'
+      # Wiki home is generated dynamically wiki/index.html.haml
+      continue;
     else
       WIKI_FILE=`echo "$WIKI_FILE" | tr '[:upper:]' '[:lower:]'`
     fi
