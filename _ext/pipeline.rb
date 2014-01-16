@@ -4,11 +4,16 @@ require 'htmlentities'
 class RelativeSiteUrl
   def execute(site)
     for p in site.pages
-      p.output_path_depth = p.output_path.count('/\\') - 1;
-      if p.output_path_depth == 0
-        p.site_url = '.'
+      if p.simple_name == '404'
+        # Use the absolute path for 404
+        p.site_url = site.base_url
       else
-        p.site_url = '../' * (p.output_path_depth - 1) + '..'
+        p.output_path_depth = p.output_path.count('/\\') - 1;
+        if p.output_path_depth == 0
+          p.site_url = '.'
+        else
+          p.site_url = '../' * (p.output_path_depth - 1) + '..'
+        end
       end
     end
   end
