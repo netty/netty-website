@@ -1,6 +1,17 @@
 require 'nokogiri'
 require 'htmlentities'
+require 'haml'
 
+# The HAML filter for rendering source code with correct indentation
+module Haml::Filters::Source
+  include Haml::Filters::Base
+  def render(text)
+    Haml::Helpers.preserve(Haml::Helpers.html_escape(text))
+  end
+end
+
+# The Awestruct extension that adds 'site_url' property to all pages
+# so that it's possible to use the relative path to the site root.
 class RelativeSiteUrl
   def execute(site)
     for p in site.pages
@@ -19,6 +30,7 @@ class RelativeSiteUrl
   end
 end
 
+# The Awestruct extension that populates the properties about the releases
 class ReleaseInfo
   def execute(site)
     simple_versions = Hash.new
@@ -26,8 +38,12 @@ class ReleaseInfo
       r.site = site
       r.extend Release
 
-      if r.stable and site.latest_stable_release.nil?
-        site.latest_stable_release = r
+      # Recommend the first stable release.
+      if r.stable and site.recommended_release.nil?
+        site.recommended_release = r
+        r.is_recommended = true
+      else
+        r.is_recommended = false
       end
 
       if r.major_version.nil?
@@ -49,14 +65,6 @@ class ReleaseInfo
       if r.branch.nil?
         r.branch = r.simple_version
       end
-#      if r.example_url.nil?
-#        if r.major_version > 3
-#          r.example_url = site.base_url + r.simple_version + '/xref/io/netty/example'
-#        else
-#          r.example_url = site.base_url + r.simple_version + '/xref/io/netty/example'
-#          r.example_url = 'https://github.com/netty/netty/tree/' + r.branch + '/src/main/java/org/jboss/netty/example'
-#        end
-#      end
     end
 
     site.major_releases = simple_versions.values
@@ -83,20 +91,28 @@ class ReleaseInfo
         end
       end
     end
+
+    def recommended?
+      self.is_recommended
+    end
   end
 end
 
+# Initialize the custom pipeline
 Awestruct::Extensions::Pipeline.new do
   if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('1.9.3') then
     raise 'Upgrade your Ruby to the latest stable version. The current version is: ' + RUBY_VERSION
   end
 
+  # Put the Posts extension first so that it fills the correct output path for news items.
   extension Awestruct::Extensions::Posts.new( '/news', :posts )
   extension Awestruct::Extensions::Disqus.new()
 
+  # Register our own extensions
   extension ReleaseInfo.new()
   extension RelativeSiteUrl.new()
 
+  # Put the Atomizer extension last so that it has all the custom properties populated by our extensions.
   extension Awestruct::Extensions::Atomizer.new( :posts, '/news/index.atom' )
 end
 
