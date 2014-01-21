@@ -1,7 +1,8 @@
 #!/bin/bash -e
 
-BASE_DIR="`dirname "$0"`/.."
-#BASE_DIR="`readlink -m "$BASE_DIR"`"
+pushd "`dirname "$0"`/.." >/dev/null 2>&1
+BASE_DIR="$(pwd)"
+popd >/dev/null 2>&1
 
 if [[ $# -eq 0 ]]; then
   cd "$BASE_DIR/_site"
