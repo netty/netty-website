@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de_DE" lang="de_DE">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_US" lang="en_US">
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 <title>WriteTimeoutHandler xref</title>
@@ -122,38 +122,40 @@
 <a class="jxr_linenumber" name="112" href="#112">112</a>             <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; sf = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
 <a class="jxr_linenumber" name="113" href="#113">113</a>                 @Override
 <a class="jxr_linenumber" name="114" href="#114">114</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="115" href="#115">115</a>                     <strong class="jxr_keyword">if</strong> (future.tryFailure(WriteTimeoutException.INSTANCE)) {
-<a class="jxr_linenumber" name="116" href="#116">116</a>                         <em class="jxr_comment">// If succeeded to mark as failure, notify the pipeline, too.</em>
-<a class="jxr_linenumber" name="117" href="#117">117</a>                         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="118" href="#118">118</a>                             writeTimedOut(ctx);
-<a class="jxr_linenumber" name="119" href="#119">119</a>                         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="120" href="#120">120</a>                             ctx.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="121" href="#121">121</a>                         }
-<a class="jxr_linenumber" name="122" href="#122">122</a>                     }
-<a class="jxr_linenumber" name="123" href="#123">123</a>                 }
-<a class="jxr_linenumber" name="124" href="#124">124</a>             }, timeoutMillis, TimeUnit.MILLISECONDS);
-<a class="jxr_linenumber" name="125" href="#125">125</a> 
-<a class="jxr_linenumber" name="126" href="#126">126</a>             <em class="jxr_comment">// Cancel the scheduled timeout if the flush future is complete.</em>
-<a class="jxr_linenumber" name="127" href="#127">127</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="128" href="#128">128</a>                 @Override
-<a class="jxr_linenumber" name="129" href="#129">129</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="130" href="#130">130</a>                     sf.cancel(false);
-<a class="jxr_linenumber" name="131" href="#131">131</a>                 }
-<a class="jxr_linenumber" name="132" href="#132">132</a>             });
-<a class="jxr_linenumber" name="133" href="#133">133</a>         }
-<a class="jxr_linenumber" name="134" href="#134">134</a>     }
-<a class="jxr_linenumber" name="135" href="#135">135</a> 
-<a class="jxr_linenumber" name="136" href="#136">136</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="137" href="#137">137</a> <em class="jxr_javadoccomment">     * Is called when a write timeout was detected</em>
-<a class="jxr_linenumber" name="138" href="#138">138</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="139" href="#139">139</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> writeTimedOut(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="140" href="#140">140</a>         <strong class="jxr_keyword">if</strong> (!closed) {
-<a class="jxr_linenumber" name="141" href="#141">141</a>             ctx.fireExceptionCaught(WriteTimeoutException.INSTANCE);
-<a class="jxr_linenumber" name="142" href="#142">142</a>             ctx.close();
-<a class="jxr_linenumber" name="143" href="#143">143</a>             closed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="144" href="#144">144</a>         }
-<a class="jxr_linenumber" name="145" href="#145">145</a>     }
-<a class="jxr_linenumber" name="146" href="#146">146</a> }
+<a class="jxr_linenumber" name="115" href="#115">115</a>                     <em class="jxr_comment">// Was not written yet so issue a write timeout</em>
+<a class="jxr_linenumber" name="116" href="#116">116</a>                     <em class="jxr_comment">// The future itself will be failed with a ClosedChannelException once the close() was issued</em>
+<a class="jxr_linenumber" name="117" href="#117">117</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/2159</em>
+<a class="jxr_linenumber" name="118" href="#118">118</a>                     <strong class="jxr_keyword">if</strong> (!future.isDone()) {
+<a class="jxr_linenumber" name="119" href="#119">119</a>                         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="120" href="#120">120</a>                             writeTimedOut(ctx);
+<a class="jxr_linenumber" name="121" href="#121">121</a>                         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="122" href="#122">122</a>                             ctx.fireExceptionCaught(t);
+<a class="jxr_linenumber" name="123" href="#123">123</a>                         }
+<a class="jxr_linenumber" name="124" href="#124">124</a>                     }
+<a class="jxr_linenumber" name="125" href="#125">125</a>                 }
+<a class="jxr_linenumber" name="126" href="#126">126</a>             }, timeoutMillis, TimeUnit.MILLISECONDS);
+<a class="jxr_linenumber" name="127" href="#127">127</a> 
+<a class="jxr_linenumber" name="128" href="#128">128</a>             <em class="jxr_comment">// Cancel the scheduled timeout if the flush future is complete.</em>
+<a class="jxr_linenumber" name="129" href="#129">129</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="130" href="#130">130</a>                 @Override
+<a class="jxr_linenumber" name="131" href="#131">131</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="132" href="#132">132</a>                     sf.cancel(false);
+<a class="jxr_linenumber" name="133" href="#133">133</a>                 }
+<a class="jxr_linenumber" name="134" href="#134">134</a>             });
+<a class="jxr_linenumber" name="135" href="#135">135</a>         }
+<a class="jxr_linenumber" name="136" href="#136">136</a>     }
+<a class="jxr_linenumber" name="137" href="#137">137</a> 
+<a class="jxr_linenumber" name="138" href="#138">138</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="139" href="#139">139</a> <em class="jxr_javadoccomment">     * Is called when a write timeout was detected</em>
+<a class="jxr_linenumber" name="140" href="#140">140</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="141" href="#141">141</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> writeTimedOut(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="142" href="#142">142</a>         <strong class="jxr_keyword">if</strong> (!closed) {
+<a class="jxr_linenumber" name="143" href="#143">143</a>             ctx.fireExceptionCaught(WriteTimeoutException.INSTANCE);
+<a class="jxr_linenumber" name="144" href="#144">144</a>             ctx.close();
+<a class="jxr_linenumber" name="145" href="#145">145</a>             closed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="146" href="#146">146</a>         }
+<a class="jxr_linenumber" name="147" href="#147">147</a>     }
+<a class="jxr_linenumber" name="148" href="#148">148</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
