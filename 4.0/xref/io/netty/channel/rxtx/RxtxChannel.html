@@ -75,7 +75,7 @@
 <a class="jxr_linenumber" name="65" href="#65">65</a>          <a href="../../../../io/netty/channel/rxtx/RxtxDeviceAddress.html">RxtxDeviceAddress</a> remote = (RxtxDeviceAddress) remoteAddress;
 <a class="jxr_linenumber" name="66" href="#66">66</a>          <strong class="jxr_keyword">final</strong> CommPortIdentifier cpi = CommPortIdentifier.getPortIdentifier(remote.value());
 <a class="jxr_linenumber" name="67" href="#67">67</a>          <strong class="jxr_keyword">final</strong> CommPort commPort = cpi.open(getClass().getName(), 1000);
-<a class="jxr_linenumber" name="68" href="#68">68</a>  
+<a class="jxr_linenumber" name="68" href="#68">68</a>          commPort.enableReceiveTimeout(config().getOption(READ_TIMEOUT));
 <a class="jxr_linenumber" name="69" href="#69">69</a>          deviceAddress = remote;
 <a class="jxr_linenumber" name="70" href="#70">70</a>  
 <a class="jxr_linenumber" name="71" href="#71">71</a>          serialPort = (SerialPort) commPort;
@@ -143,7 +143,7 @@
 <a class="jxr_linenumber" name="133" href="#133">133</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(
 <a class="jxr_linenumber" name="134" href="#134">134</a>                 <strong class="jxr_keyword">final</strong> SocketAddress remoteAddress,
 <a class="jxr_linenumber" name="135" href="#135">135</a>                 <strong class="jxr_keyword">final</strong> SocketAddress localAddress, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="136" href="#136">136</a>             <strong class="jxr_keyword">if</strong> (!ensureOpen(promise)) {
+<a class="jxr_linenumber" name="136" href="#136">136</a>             <strong class="jxr_keyword">if</strong> (!promise.setUncancellable() || !ensureOpen(promise)) {
 <a class="jxr_linenumber" name="137" href="#137">137</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="138" href="#138">138</a>             }
 <a class="jxr_linenumber" name="139" href="#139">139</a> 
@@ -158,25 +158,25 @@
 <a class="jxr_linenumber" name="148" href="#148">148</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
 <a class="jxr_linenumber" name="149" href="#149">149</a>                             <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="150" href="#150">150</a>                                 doInit();
-<a class="jxr_linenumber" name="151" href="#151">151</a>                                 promise.setSuccess();
+<a class="jxr_linenumber" name="151" href="#151">151</a>                                 safeSetSuccess(promise);
 <a class="jxr_linenumber" name="152" href="#152">152</a>                                 <strong class="jxr_keyword">if</strong> (!wasActive &amp;&amp; isActive()) {
 <a class="jxr_linenumber" name="153" href="#153">153</a>                                     pipeline().fireChannelActive();
 <a class="jxr_linenumber" name="154" href="#154">154</a>                                 }
 <a class="jxr_linenumber" name="155" href="#155">155</a>                             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="156" href="#156">156</a>                                 promise.setFailure(t);
+<a class="jxr_linenumber" name="156" href="#156">156</a>                                 safeSetFailure(promise, t);
 <a class="jxr_linenumber" name="157" href="#157">157</a>                                 closeIfClosed();
 <a class="jxr_linenumber" name="158" href="#158">158</a>                             }
 <a class="jxr_linenumber" name="159" href="#159">159</a>                         }
 <a class="jxr_linenumber" name="160" href="#160">160</a>                    }, waitTime, TimeUnit.MILLISECONDS);
 <a class="jxr_linenumber" name="161" href="#161">161</a>                 } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="162" href="#162">162</a>                     doInit();
-<a class="jxr_linenumber" name="163" href="#163">163</a>                     promise.setSuccess();
+<a class="jxr_linenumber" name="163" href="#163">163</a>                     safeSetSuccess(promise);
 <a class="jxr_linenumber" name="164" href="#164">164</a>                     <strong class="jxr_keyword">if</strong> (!wasActive &amp;&amp; isActive()) {
 <a class="jxr_linenumber" name="165" href="#165">165</a>                         pipeline().fireChannelActive();
 <a class="jxr_linenumber" name="166" href="#166">166</a>                     }
 <a class="jxr_linenumber" name="167" href="#167">167</a>                 }
 <a class="jxr_linenumber" name="168" href="#168">168</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="169" href="#169">169</a>                 promise.setFailure(t);
+<a class="jxr_linenumber" name="169" href="#169">169</a>                 safeSetFailure(promise, t);
 <a class="jxr_linenumber" name="170" href="#170">170</a>                 closeIfClosed();
 <a class="jxr_linenumber" name="171" href="#171">171</a>             }
 <a class="jxr_linenumber" name="172" href="#172">172</a>         }
