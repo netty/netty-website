@@ -7,7 +7,7 @@ Right before taking my two-week vacation, I decided to release three versions fr
 
 ### 5.0.0.Alpha1
 
-This is our new attempt to clean up the overall design even more.  Fortunately, the changes are not really big thanks to the many changes we made in 4.x, and you might actually like it due to its simplicity.  I wrote a dedicated page for the list of the notable changes [here](http://netty.io/wiki/new-and-noteworthy-in-5.x.html).
+This is our new attempt to clean up the overall design even more.  Fortunately, the changes are not really big thanks to the many changes we made in 4.x, and you might actually like it due to its simplicity.  I wrote a dedicated page for the list of the notable changes [here](http://netty.io/wiki/new-and-noteworthy-in-5.0.html).
 
 ### 4.0.14.Final
 
