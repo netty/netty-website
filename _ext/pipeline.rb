@@ -98,6 +98,18 @@ class ReleaseInfo
   end
 end
 
+# Simplistic URL-shortener
+class ShortenedLinkGenerator
+  def execute(site)
+    for l in site.shortened_links
+      p = site.engine.load_page('_layouts/shortened_link.html.haml')
+      p.output_path = '/s/' + l[0] + '/index.html'
+      p.long_url = l[1];
+      site.pages << p;
+    end
+  end
+end
+
 # Initialize the custom pipeline
 Awestruct::Extensions::Pipeline.new do
   if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('1.9.3') then
@@ -111,6 +123,7 @@ Awestruct::Extensions::Pipeline.new do
   # Register our own extensions
   extension ReleaseInfo.new()
   extension RelativeSiteUrl.new()
+  extension ShortenedLinkGenerator.new()
 
   # Put the Atomizer extension last so that it has all the custom properties populated by our extensions.
   extension Awestruct::Extensions::Atomizer.new( :posts, '/news/index.atom' )
