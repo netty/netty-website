@@ -310,176 +310,179 @@
 <a class="jxr_linenumber" name="300" href="#300">300</a>             init(channel);
 <a class="jxr_linenumber" name="301" href="#301">301</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
 <a class="jxr_linenumber" name="302" href="#302">302</a>             channel.unsafe().closeForcibly();
-<a class="jxr_linenumber" name="303" href="#303">303</a>             <strong class="jxr_keyword">return</strong> channel.newFailedFuture(t);
-<a class="jxr_linenumber" name="304" href="#304">304</a>         }
-<a class="jxr_linenumber" name="305" href="#305">305</a> 
-<a class="jxr_linenumber" name="306" href="#306">306</a>         <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> regFuture = group().register(channel);
-<a class="jxr_linenumber" name="307" href="#307">307</a>         <strong class="jxr_keyword">if</strong> (regFuture.cause() != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="308" href="#308">308</a>             <strong class="jxr_keyword">if</strong> (channel.isRegistered()) {
-<a class="jxr_linenumber" name="309" href="#309">309</a>                 channel.close();
-<a class="jxr_linenumber" name="310" href="#310">310</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="311" href="#311">311</a>                 channel.unsafe().closeForcibly();
-<a class="jxr_linenumber" name="312" href="#312">312</a>             }
-<a class="jxr_linenumber" name="313" href="#313">313</a>         }
-<a class="jxr_linenumber" name="314" href="#314">314</a> 
-<a class="jxr_linenumber" name="315" href="#315">315</a>         <em class="jxr_comment">// If we are here and the promise is not failed, it's one of the following cases:</em>
-<a class="jxr_linenumber" name="316" href="#316">316</a>         <em class="jxr_comment">// 1) If we attempted registration from the event loop, the registration has been completed at this point.</em>
-<a class="jxr_linenumber" name="317" href="#317">317</a>         <em class="jxr_comment">//    i.e. It's safe to attempt bind() or connect() now because the channel has been registered.</em>
-<a class="jxr_linenumber" name="318" href="#318">318</a>         <em class="jxr_comment">// 2) If we attempted registration from the other thread, the registration request has been successfully</em>
-<a class="jxr_linenumber" name="319" href="#319">319</a>         <em class="jxr_comment">//    added to the event loop's task queue for later execution.</em>
-<a class="jxr_linenumber" name="320" href="#320">320</a>         <em class="jxr_comment">//    i.e. It's safe to attempt bind() or connect() now:</em>
-<a class="jxr_linenumber" name="321" href="#321">321</a>         <em class="jxr_comment">//         because bind() or connect() will be executed *after* the scheduled registration task is executed</em>
-<a class="jxr_linenumber" name="322" href="#322">322</a>         <em class="jxr_comment">//         because register(), bind(), and connect() are all bound to the same thread.</em>
-<a class="jxr_linenumber" name="323" href="#323">323</a> 
-<a class="jxr_linenumber" name="324" href="#324">324</a>         <strong class="jxr_keyword">return</strong> regFuture;
-<a class="jxr_linenumber" name="325" href="#325">325</a>     }
-<a class="jxr_linenumber" name="326" href="#326">326</a> 
-<a class="jxr_linenumber" name="327" href="#327">327</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> init(<a href="../../../io/netty/channel/Channel.html">Channel</a> channel) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="328" href="#328">328</a> 
-<a class="jxr_linenumber" name="329" href="#329">329</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> doBind0(
-<a class="jxr_linenumber" name="330" href="#330">330</a>             <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> regFuture, <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> channel,
-<a class="jxr_linenumber" name="331" href="#331">331</a>             <strong class="jxr_keyword">final</strong> SocketAddress localAddress, <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="332" href="#332">332</a> 
-<a class="jxr_linenumber" name="333" href="#333">333</a>         <em class="jxr_comment">// This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up</em>
-<a class="jxr_linenumber" name="334" href="#334">334</a>         <em class="jxr_comment">// the pipeline in its channelRegistered() implementation.</em>
-<a class="jxr_linenumber" name="335" href="#335">335</a>         channel.eventLoop().execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="336" href="#336">336</a>             @Override
-<a class="jxr_linenumber" name="337" href="#337">337</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="338" href="#338">338</a>                 <strong class="jxr_keyword">if</strong> (regFuture.isSuccess()) {
-<a class="jxr_linenumber" name="339" href="#339">339</a>                     channel.bind(localAddress, promise).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-<a class="jxr_linenumber" name="340" href="#340">340</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="341" href="#341">341</a>                     promise.setFailure(regFuture.cause());
-<a class="jxr_linenumber" name="342" href="#342">342</a>                 }
-<a class="jxr_linenumber" name="343" href="#343">343</a>             }
-<a class="jxr_linenumber" name="344" href="#344">344</a>         });
-<a class="jxr_linenumber" name="345" href="#345">345</a>     }
-<a class="jxr_linenumber" name="346" href="#346">346</a> 
-<a class="jxr_linenumber" name="347" href="#347">347</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="348" href="#348">348</a> <em class="jxr_javadoccomment">     * the {@link ChannelHandler} to use for serving the requests.</em>
-<a class="jxr_linenumber" name="349" href="#349">349</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="350" href="#350">350</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="351" href="#351">351</a>     <strong class="jxr_keyword">public</strong> B handler(<a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler) {
-<a class="jxr_linenumber" name="352" href="#352">352</a>         <strong class="jxr_keyword">if</strong> (handler == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="353" href="#353">353</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NullPointerException(<span class="jxr_string">"handler"</span>);
-<a class="jxr_linenumber" name="354" href="#354">354</a>         }
-<a class="jxr_linenumber" name="355" href="#355">355</a>         <strong class="jxr_keyword">this</strong>.handler = handler;
-<a class="jxr_linenumber" name="356" href="#356">356</a>         <strong class="jxr_keyword">return</strong> (B) <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="357" href="#357">357</a>     }
-<a class="jxr_linenumber" name="358" href="#358">358</a> 
-<a class="jxr_linenumber" name="359" href="#359">359</a>     <strong class="jxr_keyword">final</strong> SocketAddress localAddress() {
-<a class="jxr_linenumber" name="360" href="#360">360</a>         <strong class="jxr_keyword">return</strong> localAddress;
-<a class="jxr_linenumber" name="361" href="#361">361</a>     }
-<a class="jxr_linenumber" name="362" href="#362">362</a> 
-<a class="jxr_linenumber" name="363" href="#363">363</a>     <strong class="jxr_keyword">final</strong> ChannelFactory&lt;? <strong class="jxr_keyword">extends</strong> C&gt; channelFactory() {
-<a class="jxr_linenumber" name="364" href="#364">364</a>         <strong class="jxr_keyword">return</strong> channelFactory;
-<a class="jxr_linenumber" name="365" href="#365">365</a>     }
-<a class="jxr_linenumber" name="366" href="#366">366</a> 
-<a class="jxr_linenumber" name="367" href="#367">367</a>     <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler() {
-<a class="jxr_linenumber" name="368" href="#368">368</a>         <strong class="jxr_keyword">return</strong> handler;
-<a class="jxr_linenumber" name="369" href="#369">369</a>     }
-<a class="jxr_linenumber" name="370" href="#370">370</a> 
-<a class="jxr_linenumber" name="371" href="#371">371</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="372" href="#372">372</a> <em class="jxr_javadoccomment">     * Return the configured {@link EventLoopGroup} or {@code null} if non is configured yet.</em>
-<a class="jxr_linenumber" name="373" href="#373">373</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="374" href="#374">374</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/EventLoopGroup.html">EventLoopGroup</a> group() {
-<a class="jxr_linenumber" name="375" href="#375">375</a>         <strong class="jxr_keyword">return</strong> group;
-<a class="jxr_linenumber" name="376" href="#376">376</a>     }
-<a class="jxr_linenumber" name="377" href="#377">377</a> 
-<a class="jxr_linenumber" name="378" href="#378">378</a>     <strong class="jxr_keyword">final</strong> Map&lt;ChannelOption&lt;?&gt;, Object&gt; options() {
-<a class="jxr_linenumber" name="379" href="#379">379</a>         <strong class="jxr_keyword">return</strong> options;
-<a class="jxr_linenumber" name="380" href="#380">380</a>     }
-<a class="jxr_linenumber" name="381" href="#381">381</a> 
-<a class="jxr_linenumber" name="382" href="#382">382</a>     <strong class="jxr_keyword">final</strong> Map&lt;AttributeKey&lt;?&gt;, Object&gt; attrs() {
-<a class="jxr_linenumber" name="383" href="#383">383</a>         <strong class="jxr_keyword">return</strong> attrs;
-<a class="jxr_linenumber" name="384" href="#384">384</a>     }
-<a class="jxr_linenumber" name="385" href="#385">385</a> 
-<a class="jxr_linenumber" name="386" href="#386">386</a>     @Override
-<a class="jxr_linenumber" name="387" href="#387">387</a>     <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="388" href="#388">388</a>         StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder();
-<a class="jxr_linenumber" name="389" href="#389">389</a>         buf.append(StringUtil.simpleClassName(<strong class="jxr_keyword">this</strong>));
-<a class="jxr_linenumber" name="390" href="#390">390</a>         buf.append('(');
-<a class="jxr_linenumber" name="391" href="#391">391</a>         <strong class="jxr_keyword">if</strong> (group != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="392" href="#392">392</a>             buf.append(<span class="jxr_string">"group: "</span>);
-<a class="jxr_linenumber" name="393" href="#393">393</a>             buf.append(StringUtil.simpleClassName(group));
-<a class="jxr_linenumber" name="394" href="#394">394</a>             buf.append(<span class="jxr_string">", "</span>);
-<a class="jxr_linenumber" name="395" href="#395">395</a>         }
-<a class="jxr_linenumber" name="396" href="#396">396</a>         <strong class="jxr_keyword">if</strong> (channelFactory != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="397" href="#397">397</a>             buf.append(<span class="jxr_string">"channelFactory: "</span>);
-<a class="jxr_linenumber" name="398" href="#398">398</a>             buf.append(channelFactory);
-<a class="jxr_linenumber" name="399" href="#399">399</a>             buf.append(<span class="jxr_string">", "</span>);
-<a class="jxr_linenumber" name="400" href="#400">400</a>         }
-<a class="jxr_linenumber" name="401" href="#401">401</a>         <strong class="jxr_keyword">if</strong> (localAddress != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="402" href="#402">402</a>             buf.append(<span class="jxr_string">"localAddress: "</span>);
-<a class="jxr_linenumber" name="403" href="#403">403</a>             buf.append(localAddress);
-<a class="jxr_linenumber" name="404" href="#404">404</a>             buf.append(<span class="jxr_string">", "</span>);
-<a class="jxr_linenumber" name="405" href="#405">405</a>         }
-<a class="jxr_linenumber" name="406" href="#406">406</a>         <strong class="jxr_keyword">synchronized</strong> (options) {
-<a class="jxr_linenumber" name="407" href="#407">407</a>             <strong class="jxr_keyword">if</strong> (!options.isEmpty()) {
-<a class="jxr_linenumber" name="408" href="#408">408</a>                 buf.append(<span class="jxr_string">"options: "</span>);
-<a class="jxr_linenumber" name="409" href="#409">409</a>                 buf.append(options);
-<a class="jxr_linenumber" name="410" href="#410">410</a>                 buf.append(<span class="jxr_string">", "</span>);
-<a class="jxr_linenumber" name="411" href="#411">411</a>             }
-<a class="jxr_linenumber" name="412" href="#412">412</a>         }
-<a class="jxr_linenumber" name="413" href="#413">413</a>         <strong class="jxr_keyword">synchronized</strong> (attrs) {
-<a class="jxr_linenumber" name="414" href="#414">414</a>             <strong class="jxr_keyword">if</strong> (!attrs.isEmpty()) {
-<a class="jxr_linenumber" name="415" href="#415">415</a>                 buf.append(<span class="jxr_string">"attrs: "</span>);
-<a class="jxr_linenumber" name="416" href="#416">416</a>                 buf.append(attrs);
-<a class="jxr_linenumber" name="417" href="#417">417</a>                 buf.append(<span class="jxr_string">", "</span>);
-<a class="jxr_linenumber" name="418" href="#418">418</a>             }
-<a class="jxr_linenumber" name="419" href="#419">419</a>         }
-<a class="jxr_linenumber" name="420" href="#420">420</a>         <strong class="jxr_keyword">if</strong> (handler != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="421" href="#421">421</a>             buf.append(<span class="jxr_string">"handler: "</span>);
-<a class="jxr_linenumber" name="422" href="#422">422</a>             buf.append(handler);
-<a class="jxr_linenumber" name="423" href="#423">423</a>             buf.append(<span class="jxr_string">", "</span>);
-<a class="jxr_linenumber" name="424" href="#424">424</a>         }
-<a class="jxr_linenumber" name="425" href="#425">425</a>         <strong class="jxr_keyword">if</strong> (buf.charAt(buf.length() - 1) == '(') {
-<a class="jxr_linenumber" name="426" href="#426">426</a>             buf.append(')');
-<a class="jxr_linenumber" name="427" href="#427">427</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="428" href="#428">428</a>             buf.setCharAt(buf.length() - 2, ')');
-<a class="jxr_linenumber" name="429" href="#429">429</a>             buf.setLength(buf.length() - 1);
-<a class="jxr_linenumber" name="430" href="#430">430</a>         }
-<a class="jxr_linenumber" name="431" href="#431">431</a>         <strong class="jxr_keyword">return</strong> buf.toString();
-<a class="jxr_linenumber" name="432" href="#432">432</a>     }
-<a class="jxr_linenumber" name="433" href="#433">433</a> 
-<a class="jxr_linenumber" name="434" href="#434">434</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> BootstrapChannelFactory&lt;T <strong class="jxr_keyword">extends</strong> Channel&gt; <strong class="jxr_keyword">implements</strong> ChannelFactory&lt;T&gt; {
-<a class="jxr_linenumber" name="435" href="#435">435</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Class&lt;? <strong class="jxr_keyword">extends</strong> T&gt; clazz;
-<a class="jxr_linenumber" name="436" href="#436">436</a> 
-<a class="jxr_linenumber" name="437" href="#437">437</a>         <a href="../../../io/netty/bootstrap/AbstractBootstrap.html">BootstrapChannelFactory</a>(Class&lt;? <strong class="jxr_keyword">extends</strong> T&gt; clazz) {
-<a class="jxr_linenumber" name="438" href="#438">438</a>             <strong class="jxr_keyword">this</strong>.clazz = clazz;
-<a class="jxr_linenumber" name="439" href="#439">439</a>         }
-<a class="jxr_linenumber" name="440" href="#440">440</a> 
-<a class="jxr_linenumber" name="441" href="#441">441</a>         @Override
-<a class="jxr_linenumber" name="442" href="#442">442</a>         <strong class="jxr_keyword">public</strong> T newChannel() {
-<a class="jxr_linenumber" name="443" href="#443">443</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="444" href="#444">444</a>                 <strong class="jxr_keyword">return</strong> clazz.newInstance();
-<a class="jxr_linenumber" name="445" href="#445">445</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="446" href="#446">446</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/ChannelException.html">ChannelException</a>(<span class="jxr_string">"Unable to create Channel from class "</span> + clazz, t);
-<a class="jxr_linenumber" name="447" href="#447">447</a>             }
-<a class="jxr_linenumber" name="448" href="#448">448</a>         }
-<a class="jxr_linenumber" name="449" href="#449">449</a> 
-<a class="jxr_linenumber" name="450" href="#450">450</a>         @Override
-<a class="jxr_linenumber" name="451" href="#451">451</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="452" href="#452">452</a>             <strong class="jxr_keyword">return</strong> StringUtil.simpleClassName(clazz) + <span class="jxr_string">".class"</span>;
-<a class="jxr_linenumber" name="453" href="#453">453</a>         }
-<a class="jxr_linenumber" name="454" href="#454">454</a>     }
-<a class="jxr_linenumber" name="455" href="#455">455</a> 
-<a class="jxr_linenumber" name="456" href="#456">456</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/bootstrap/AbstractBootstrap.html">PendingRegistrationPromise</a> <strong class="jxr_keyword">extends</strong> <a href="../../../io/netty/channel/DefaultChannelPromise.html">DefaultChannelPromise</a> {
-<a class="jxr_linenumber" name="457" href="#457">457</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/bootstrap/AbstractBootstrap.html">PendingRegistrationPromise</a>(<a href="../../../io/netty/channel/Channel.html">Channel</a> channel) {
-<a class="jxr_linenumber" name="458" href="#458">458</a>             <strong class="jxr_keyword">super</strong>(channel);
-<a class="jxr_linenumber" name="459" href="#459">459</a>         }
-<a class="jxr_linenumber" name="460" href="#460">460</a> 
-<a class="jxr_linenumber" name="461" href="#461">461</a>         @Override
-<a class="jxr_linenumber" name="462" href="#462">462</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor() {
-<a class="jxr_linenumber" name="463" href="#463">463</a>             <strong class="jxr_keyword">if</strong> (isSuccess()) {
-<a class="jxr_linenumber" name="464" href="#464">464</a>                 <em class="jxr_comment">// If the registration was a success we can just call super.executor() which will return</em>
-<a class="jxr_linenumber" name="465" href="#465">465</a>                 <em class="jxr_comment">// channel.eventLoop().</em>
-<a class="jxr_linenumber" name="466" href="#466">466</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.executor();
-<a class="jxr_linenumber" name="467" href="#467">467</a>             }
-<a class="jxr_linenumber" name="468" href="#468">468</a>             <em class="jxr_comment">// The registration failed so we can only use the GlobalEventExecutor as last resort to notify.</em>
-<a class="jxr_linenumber" name="469" href="#469">469</a>             <strong class="jxr_keyword">return</strong> GlobalEventExecutor.INSTANCE;
-<a class="jxr_linenumber" name="470" href="#470">470</a>         }
-<a class="jxr_linenumber" name="471" href="#471">471</a>     }
-<a class="jxr_linenumber" name="472" href="#472">472</a> }
+<a class="jxr_linenumber" name="303" href="#303">303</a>             <em class="jxr_comment">// as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor</em>
+<a class="jxr_linenumber" name="304" href="#304">304</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/DefaultChannelPromise.html">DefaultChannelPromise</a>(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
+<a class="jxr_linenumber" name="305" href="#305">305</a>         }
+<a class="jxr_linenumber" name="306" href="#306">306</a> 
+<a class="jxr_linenumber" name="307" href="#307">307</a>         <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> regFuture = group().register(channel);
+<a class="jxr_linenumber" name="308" href="#308">308</a>         <strong class="jxr_keyword">if</strong> (regFuture.cause() != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="309" href="#309">309</a>             <strong class="jxr_keyword">if</strong> (channel.isRegistered()) {
+<a class="jxr_linenumber" name="310" href="#310">310</a>                 channel.close();
+<a class="jxr_linenumber" name="311" href="#311">311</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="312" href="#312">312</a>                 channel.unsafe().closeForcibly();
+<a class="jxr_linenumber" name="313" href="#313">313</a>             }
+<a class="jxr_linenumber" name="314" href="#314">314</a>         }
+<a class="jxr_linenumber" name="315" href="#315">315</a> 
+<a class="jxr_linenumber" name="316" href="#316">316</a>         <em class="jxr_comment">// If we are here and the promise is not failed, it's one of the following cases:</em>
+<a class="jxr_linenumber" name="317" href="#317">317</a>         <em class="jxr_comment">// 1) If we attempted registration from the event loop, the registration has been completed at this point.</em>
+<a class="jxr_linenumber" name="318" href="#318">318</a>         <em class="jxr_comment">//    i.e. It's safe to attempt bind() or connect() now because the channel has been registered.</em>
+<a class="jxr_linenumber" name="319" href="#319">319</a>         <em class="jxr_comment">// 2) If we attempted registration from the other thread, the registration request has been successfully</em>
+<a class="jxr_linenumber" name="320" href="#320">320</a>         <em class="jxr_comment">//    added to the event loop's task queue for later execution.</em>
+<a class="jxr_linenumber" name="321" href="#321">321</a>         <em class="jxr_comment">//    i.e. It's safe to attempt bind() or connect() now:</em>
+<a class="jxr_linenumber" name="322" href="#322">322</a>         <em class="jxr_comment">//         because bind() or connect() will be executed *after* the scheduled registration task is executed</em>
+<a class="jxr_linenumber" name="323" href="#323">323</a>         <em class="jxr_comment">//         because register(), bind(), and connect() are all bound to the same thread.</em>
+<a class="jxr_linenumber" name="324" href="#324">324</a> 
+<a class="jxr_linenumber" name="325" href="#325">325</a>         <strong class="jxr_keyword">return</strong> regFuture;
+<a class="jxr_linenumber" name="326" href="#326">326</a>     }
+<a class="jxr_linenumber" name="327" href="#327">327</a> 
+<a class="jxr_linenumber" name="328" href="#328">328</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> init(<a href="../../../io/netty/channel/Channel.html">Channel</a> channel) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="329" href="#329">329</a> 
+<a class="jxr_linenumber" name="330" href="#330">330</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> doBind0(
+<a class="jxr_linenumber" name="331" href="#331">331</a>             <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> regFuture, <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> channel,
+<a class="jxr_linenumber" name="332" href="#332">332</a>             <strong class="jxr_keyword">final</strong> SocketAddress localAddress, <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="333" href="#333">333</a> 
+<a class="jxr_linenumber" name="334" href="#334">334</a>         <em class="jxr_comment">// This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up</em>
+<a class="jxr_linenumber" name="335" href="#335">335</a>         <em class="jxr_comment">// the pipeline in its channelRegistered() implementation.</em>
+<a class="jxr_linenumber" name="336" href="#336">336</a>         channel.eventLoop().execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="337" href="#337">337</a>             @Override
+<a class="jxr_linenumber" name="338" href="#338">338</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="339" href="#339">339</a>                 <strong class="jxr_keyword">if</strong> (regFuture.isSuccess()) {
+<a class="jxr_linenumber" name="340" href="#340">340</a>                     channel.bind(localAddress, promise).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+<a class="jxr_linenumber" name="341" href="#341">341</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="342" href="#342">342</a>                     promise.setFailure(regFuture.cause());
+<a class="jxr_linenumber" name="343" href="#343">343</a>                 }
+<a class="jxr_linenumber" name="344" href="#344">344</a>             }
+<a class="jxr_linenumber" name="345" href="#345">345</a>         });
+<a class="jxr_linenumber" name="346" href="#346">346</a>     }
+<a class="jxr_linenumber" name="347" href="#347">347</a> 
+<a class="jxr_linenumber" name="348" href="#348">348</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="349" href="#349">349</a> <em class="jxr_javadoccomment">     * the {@link ChannelHandler} to use for serving the requests.</em>
+<a class="jxr_linenumber" name="350" href="#350">350</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="351" href="#351">351</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="352" href="#352">352</a>     <strong class="jxr_keyword">public</strong> B handler(<a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler) {
+<a class="jxr_linenumber" name="353" href="#353">353</a>         <strong class="jxr_keyword">if</strong> (handler == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="354" href="#354">354</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NullPointerException(<span class="jxr_string">"handler"</span>);
+<a class="jxr_linenumber" name="355" href="#355">355</a>         }
+<a class="jxr_linenumber" name="356" href="#356">356</a>         <strong class="jxr_keyword">this</strong>.handler = handler;
+<a class="jxr_linenumber" name="357" href="#357">357</a>         <strong class="jxr_keyword">return</strong> (B) <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="358" href="#358">358</a>     }
+<a class="jxr_linenumber" name="359" href="#359">359</a> 
+<a class="jxr_linenumber" name="360" href="#360">360</a>     <strong class="jxr_keyword">final</strong> SocketAddress localAddress() {
+<a class="jxr_linenumber" name="361" href="#361">361</a>         <strong class="jxr_keyword">return</strong> localAddress;
+<a class="jxr_linenumber" name="362" href="#362">362</a>     }
+<a class="jxr_linenumber" name="363" href="#363">363</a> 
+<a class="jxr_linenumber" name="364" href="#364">364</a>     <strong class="jxr_keyword">final</strong> ChannelFactory&lt;? <strong class="jxr_keyword">extends</strong> C&gt; channelFactory() {
+<a class="jxr_linenumber" name="365" href="#365">365</a>         <strong class="jxr_keyword">return</strong> channelFactory;
+<a class="jxr_linenumber" name="366" href="#366">366</a>     }
+<a class="jxr_linenumber" name="367" href="#367">367</a> 
+<a class="jxr_linenumber" name="368" href="#368">368</a>     <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler() {
+<a class="jxr_linenumber" name="369" href="#369">369</a>         <strong class="jxr_keyword">return</strong> handler;
+<a class="jxr_linenumber" name="370" href="#370">370</a>     }
+<a class="jxr_linenumber" name="371" href="#371">371</a> 
+<a class="jxr_linenumber" name="372" href="#372">372</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="373" href="#373">373</a> <em class="jxr_javadoccomment">     * Return the configured {@link EventLoopGroup} or {@code null} if non is configured yet.</em>
+<a class="jxr_linenumber" name="374" href="#374">374</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="375" href="#375">375</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/EventLoopGroup.html">EventLoopGroup</a> group() {
+<a class="jxr_linenumber" name="376" href="#376">376</a>         <strong class="jxr_keyword">return</strong> group;
+<a class="jxr_linenumber" name="377" href="#377">377</a>     }
+<a class="jxr_linenumber" name="378" href="#378">378</a> 
+<a class="jxr_linenumber" name="379" href="#379">379</a>     <strong class="jxr_keyword">final</strong> Map&lt;ChannelOption&lt;?&gt;, Object&gt; options() {
+<a class="jxr_linenumber" name="380" href="#380">380</a>         <strong class="jxr_keyword">return</strong> options;
+<a class="jxr_linenumber" name="381" href="#381">381</a>     }
+<a class="jxr_linenumber" name="382" href="#382">382</a> 
+<a class="jxr_linenumber" name="383" href="#383">383</a>     <strong class="jxr_keyword">final</strong> Map&lt;AttributeKey&lt;?&gt;, Object&gt; attrs() {
+<a class="jxr_linenumber" name="384" href="#384">384</a>         <strong class="jxr_keyword">return</strong> attrs;
+<a class="jxr_linenumber" name="385" href="#385">385</a>     }
+<a class="jxr_linenumber" name="386" href="#386">386</a> 
+<a class="jxr_linenumber" name="387" href="#387">387</a>     @Override
+<a class="jxr_linenumber" name="388" href="#388">388</a>     <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="389" href="#389">389</a>         StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder();
+<a class="jxr_linenumber" name="390" href="#390">390</a>         buf.append(StringUtil.simpleClassName(<strong class="jxr_keyword">this</strong>));
+<a class="jxr_linenumber" name="391" href="#391">391</a>         buf.append('(');
+<a class="jxr_linenumber" name="392" href="#392">392</a>         <strong class="jxr_keyword">if</strong> (group != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="393" href="#393">393</a>             buf.append(<span class="jxr_string">"group: "</span>);
+<a class="jxr_linenumber" name="394" href="#394">394</a>             buf.append(StringUtil.simpleClassName(group));
+<a class="jxr_linenumber" name="395" href="#395">395</a>             buf.append(<span class="jxr_string">", "</span>);
+<a class="jxr_linenumber" name="396" href="#396">396</a>         }
+<a class="jxr_linenumber" name="397" href="#397">397</a>         <strong class="jxr_keyword">if</strong> (channelFactory != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="398" href="#398">398</a>             buf.append(<span class="jxr_string">"channelFactory: "</span>);
+<a class="jxr_linenumber" name="399" href="#399">399</a>             buf.append(channelFactory);
+<a class="jxr_linenumber" name="400" href="#400">400</a>             buf.append(<span class="jxr_string">", "</span>);
+<a class="jxr_linenumber" name="401" href="#401">401</a>         }
+<a class="jxr_linenumber" name="402" href="#402">402</a>         <strong class="jxr_keyword">if</strong> (localAddress != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="403" href="#403">403</a>             buf.append(<span class="jxr_string">"localAddress: "</span>);
+<a class="jxr_linenumber" name="404" href="#404">404</a>             buf.append(localAddress);
+<a class="jxr_linenumber" name="405" href="#405">405</a>             buf.append(<span class="jxr_string">", "</span>);
+<a class="jxr_linenumber" name="406" href="#406">406</a>         }
+<a class="jxr_linenumber" name="407" href="#407">407</a>         <strong class="jxr_keyword">synchronized</strong> (options) {
+<a class="jxr_linenumber" name="408" href="#408">408</a>             <strong class="jxr_keyword">if</strong> (!options.isEmpty()) {
+<a class="jxr_linenumber" name="409" href="#409">409</a>                 buf.append(<span class="jxr_string">"options: "</span>);
+<a class="jxr_linenumber" name="410" href="#410">410</a>                 buf.append(options);
+<a class="jxr_linenumber" name="411" href="#411">411</a>                 buf.append(<span class="jxr_string">", "</span>);
+<a class="jxr_linenumber" name="412" href="#412">412</a>             }
+<a class="jxr_linenumber" name="413" href="#413">413</a>         }
+<a class="jxr_linenumber" name="414" href="#414">414</a>         <strong class="jxr_keyword">synchronized</strong> (attrs) {
+<a class="jxr_linenumber" name="415" href="#415">415</a>             <strong class="jxr_keyword">if</strong> (!attrs.isEmpty()) {
+<a class="jxr_linenumber" name="416" href="#416">416</a>                 buf.append(<span class="jxr_string">"attrs: "</span>);
+<a class="jxr_linenumber" name="417" href="#417">417</a>                 buf.append(attrs);
+<a class="jxr_linenumber" name="418" href="#418">418</a>                 buf.append(<span class="jxr_string">", "</span>);
+<a class="jxr_linenumber" name="419" href="#419">419</a>             }
+<a class="jxr_linenumber" name="420" href="#420">420</a>         }
+<a class="jxr_linenumber" name="421" href="#421">421</a>         <strong class="jxr_keyword">if</strong> (handler != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="422" href="#422">422</a>             buf.append(<span class="jxr_string">"handler: "</span>);
+<a class="jxr_linenumber" name="423" href="#423">423</a>             buf.append(handler);
+<a class="jxr_linenumber" name="424" href="#424">424</a>             buf.append(<span class="jxr_string">", "</span>);
+<a class="jxr_linenumber" name="425" href="#425">425</a>         }
+<a class="jxr_linenumber" name="426" href="#426">426</a>         <strong class="jxr_keyword">if</strong> (buf.charAt(buf.length() - 1) == '(') {
+<a class="jxr_linenumber" name="427" href="#427">427</a>             buf.append(')');
+<a class="jxr_linenumber" name="428" href="#428">428</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="429" href="#429">429</a>             buf.setCharAt(buf.length() - 2, ')');
+<a class="jxr_linenumber" name="430" href="#430">430</a>             buf.setLength(buf.length() - 1);
+<a class="jxr_linenumber" name="431" href="#431">431</a>         }
+<a class="jxr_linenumber" name="432" href="#432">432</a>         <strong class="jxr_keyword">return</strong> buf.toString();
+<a class="jxr_linenumber" name="433" href="#433">433</a>     }
+<a class="jxr_linenumber" name="434" href="#434">434</a> 
+<a class="jxr_linenumber" name="435" href="#435">435</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> BootstrapChannelFactory&lt;T <strong class="jxr_keyword">extends</strong> Channel&gt; <strong class="jxr_keyword">implements</strong> ChannelFactory&lt;T&gt; {
+<a class="jxr_linenumber" name="436" href="#436">436</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Class&lt;? <strong class="jxr_keyword">extends</strong> T&gt; clazz;
+<a class="jxr_linenumber" name="437" href="#437">437</a> 
+<a class="jxr_linenumber" name="438" href="#438">438</a>         <a href="../../../io/netty/bootstrap/AbstractBootstrap.html">BootstrapChannelFactory</a>(Class&lt;? <strong class="jxr_keyword">extends</strong> T&gt; clazz) {
+<a class="jxr_linenumber" name="439" href="#439">439</a>             <strong class="jxr_keyword">this</strong>.clazz = clazz;
+<a class="jxr_linenumber" name="440" href="#440">440</a>         }
+<a class="jxr_linenumber" name="441" href="#441">441</a> 
+<a class="jxr_linenumber" name="442" href="#442">442</a>         @Override
+<a class="jxr_linenumber" name="443" href="#443">443</a>         <strong class="jxr_keyword">public</strong> T newChannel() {
+<a class="jxr_linenumber" name="444" href="#444">444</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="445" href="#445">445</a>                 <strong class="jxr_keyword">return</strong> clazz.newInstance();
+<a class="jxr_linenumber" name="446" href="#446">446</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="447" href="#447">447</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/ChannelException.html">ChannelException</a>(<span class="jxr_string">"Unable to create Channel from class "</span> + clazz, t);
+<a class="jxr_linenumber" name="448" href="#448">448</a>             }
+<a class="jxr_linenumber" name="449" href="#449">449</a>         }
+<a class="jxr_linenumber" name="450" href="#450">450</a> 
+<a class="jxr_linenumber" name="451" href="#451">451</a>         @Override
+<a class="jxr_linenumber" name="452" href="#452">452</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="453" href="#453">453</a>             <strong class="jxr_keyword">return</strong> StringUtil.simpleClassName(clazz) + <span class="jxr_string">".class"</span>;
+<a class="jxr_linenumber" name="454" href="#454">454</a>         }
+<a class="jxr_linenumber" name="455" href="#455">455</a>     }
+<a class="jxr_linenumber" name="456" href="#456">456</a> 
+<a class="jxr_linenumber" name="457" href="#457">457</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/bootstrap/AbstractBootstrap.html">PendingRegistrationPromise</a> <strong class="jxr_keyword">extends</strong> <a href="../../../io/netty/channel/DefaultChannelPromise.html">DefaultChannelPromise</a> {
+<a class="jxr_linenumber" name="458" href="#458">458</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/bootstrap/AbstractBootstrap.html">PendingRegistrationPromise</a>(<a href="../../../io/netty/channel/Channel.html">Channel</a> channel) {
+<a class="jxr_linenumber" name="459" href="#459">459</a>             <strong class="jxr_keyword">super</strong>(channel);
+<a class="jxr_linenumber" name="460" href="#460">460</a>         }
+<a class="jxr_linenumber" name="461" href="#461">461</a> 
+<a class="jxr_linenumber" name="462" href="#462">462</a>         @Override
+<a class="jxr_linenumber" name="463" href="#463">463</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor() {
+<a class="jxr_linenumber" name="464" href="#464">464</a>             <strong class="jxr_keyword">if</strong> (channel().isRegistered()) {
+<a class="jxr_linenumber" name="465" href="#465">465</a>                 <em class="jxr_comment">// If the registration was a success we can just call super.executor() which will return</em>
+<a class="jxr_linenumber" name="466" href="#466">466</a>                 <em class="jxr_comment">// channel.eventLoop().</em>
+<a class="jxr_linenumber" name="467" href="#467">467</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="468" href="#468">468</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2586</em>
+<a class="jxr_linenumber" name="469" href="#469">469</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.executor();
+<a class="jxr_linenumber" name="470" href="#470">470</a>             }
+<a class="jxr_linenumber" name="471" href="#471">471</a>             <em class="jxr_comment">// The registration failed so we can only use the GlobalEventExecutor as last resort to notify.</em>
+<a class="jxr_linenumber" name="472" href="#472">472</a>             <strong class="jxr_keyword">return</strong> GlobalEventExecutor.INSTANCE;
+<a class="jxr_linenumber" name="473" href="#473">473</a>         }
+<a class="jxr_linenumber" name="474" href="#474">474</a>     }
+<a class="jxr_linenumber" name="475" href="#475">475</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
