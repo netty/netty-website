@@ -14,7 +14,7 @@ This is our new attempt to clean up the overall design even more.  Fortunately, 
 * Advanced leak tracking mechanism that enables you find where you leaked a buffer easily. Read [this article](http://netty.io/wiki/reference-counted-objects.html) for more information.
 * SPDY/3.1 support
 * Support for `charset` property in HTTP multipart request boundary
-* [11 bug fixes](https://github.com/netty/netty/issues?milestone=77&state=closed)
+* [11 bug fixes](https://github.com/netty/netty/issues?q=milestone%3A4.0.14.Final)
 
 ### 3.9.0.Final
 
@@ -22,5 +22,5 @@ This is our new attempt to clean up the overall design even more.  Fortunately, 
 * SPDY/3.1 support
 * Faster `ChannelBuffers.EMPTY_BUFFER`
 * Support for `charset` property in HTTP multipart request boundary (backported from 4.x)
-* [a couple bug fixes](https://github.com/netty/netty/issues?milestone=74&state=closed)
+* [a couple bug fixes](https://github.com/netty/netty/issues?q=milestone%3A3.9.0.Final)
 

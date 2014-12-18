@@ -25,7 +25,7 @@ For more details on the fixes for these various releases please see the followin
 * Improve release of unused memory out of the buffer pool cache
 
 
-Visit [here](https://github.com/netty/netty/issues?milestone=88&page=1&state=closed) for the complete list of the changes and all the details.
+Visit [here](https://github.com/netty/netty/issues?q=milestone%3A4.0.19.Final) for the complete list of the changes and all the details.
 
 As always please let us know if you find any issues. We love feedback!
 
@@ -36,7 +36,7 @@ As always please let us know if you find any issues. We love feedback!
 * Various SSL fixes
 * SPDY improvements
 
-Visit [here](https://github.com/netty/netty/issues?milestone=81&page=1&state=closed) for the complete list of the changes and all the details.
+Visit [here](https://github.com/netty/netty/issues?q=milestone%3A3.9.1.Final) for the complete list of the changes and all the details.
 
 ## Netty 3.8.2.Final 
 
@@ -44,7 +44,7 @@ Visit [here](https://github.com/netty/netty/issues?milestone=81&page=1&state=clo
 * Fix a resource usage problem in the WebSocket08FrameDecoder
 * Various SSL fixes
 
-Visit [here](https://github.com/netty/netty/issues?milestone=93&page=1&state=closed) for the complete list of the changes and all the details.
+Visit [here](https://github.com/netty/netty/issues?q=milestone%3A3.8.2.Final) for the complete list of the changes and all the details.
 
 ## Netty 3.7.1.Final 
 
@@ -52,14 +52,14 @@ Visit [here](https://github.com/netty/netty/issues?milestone=93&page=1&state=clo
 * Fix a resource usage problem in the WebSocket08FrameDecoder
 * Various SSL fixes
 
-Visit [here](https://github.com/netty/netty/issues?milestone=94&state=closed) for the complete list of the changes and all the details.
+Visit [here](https://github.com/netty/netty/issues?q=milestone%3A3.7.1.Final) for the complete list of the changes and all the details.
 
 ## Netty 3.6.9.Final 
 
 ### Most important changes / fixes
 * Fix a resource usage problem in the WebSocket08FrameDecoder
 
-Visit [here](https://github.com/netty/netty/issues?milestone=89&state=closed) for the complete list of the changes and all the details.
+Visit [here](https://github.com/netty/netty/issues?q=milestone%3A3.6.9.Final) for the complete list of the changes and all the details.
 
 
 
