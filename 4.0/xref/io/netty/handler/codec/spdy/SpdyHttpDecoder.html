@@ -143,7 +143,7 @@
 <a class="jxr_linenumber" name="133" href="#133">133</a>                 <strong class="jxr_keyword">int</strong> associatedToStreamId = spdySynStreamFrame.associatedStreamId();
 <a class="jxr_linenumber" name="134" href="#134">134</a> 
 <a class="jxr_linenumber" name="135" href="#135">135</a>                 <em class="jxr_comment">// If a client receives a SYN_STREAM with an Associated-To-Stream-ID of 0</em>
-<a class="jxr_linenumber" name="136" href="#136">136</a>                 <em class="jxr_comment">// it must reply with a RST_STREAM with error code INVALID_STREAM</em>
+<a class="jxr_linenumber" name="136" href="#136">136</a>                 <em class="jxr_comment">// it must reply with a RST_STREAM with error code INVALID_STREAM.</em>
 <a class="jxr_linenumber" name="137" href="#137">137</a>                 <strong class="jxr_keyword">if</strong> (associatedToStreamId == 0) {
 <a class="jxr_linenumber" name="138" href="#138">138</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
 <a class="jxr_linenumber" name="139" href="#139">139</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.INVALID_STREAM);
@@ -151,243 +151,267 @@
 <a class="jxr_linenumber" name="141" href="#141">141</a>                     <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="142" href="#142">142</a>                 }
 <a class="jxr_linenumber" name="143" href="#143">143</a> 
-<a class="jxr_linenumber" name="144" href="#144">144</a>                 String URL = SpdyHeaders.getUrl(spdyVersion, spdySynStreamFrame);
-<a class="jxr_linenumber" name="145" href="#145">145</a> 
-<a class="jxr_linenumber" name="146" href="#146">146</a>                 <em class="jxr_comment">// If a client receives a SYN_STREAM without a 'url' header</em>
-<a class="jxr_linenumber" name="147" href="#147">147</a>                 <em class="jxr_comment">// it must reply with a RST_STREAM with error code PROTOCOL_ERROR</em>
-<a class="jxr_linenumber" name="148" href="#148">148</a>                 <strong class="jxr_keyword">if</strong> (URL == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="149" href="#149">149</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
-<a class="jxr_linenumber" name="150" href="#150">150</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
-<a class="jxr_linenumber" name="151" href="#151">151</a>                     ctx.writeAndFlush(spdyRstStreamFrame);
-<a class="jxr_linenumber" name="152" href="#152">152</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="153" href="#153">153</a>                 }
-<a class="jxr_linenumber" name="154" href="#154">154</a> 
-<a class="jxr_linenumber" name="155" href="#155">155</a>                 <em class="jxr_comment">// If a client receives a response with a truncated header block,</em>
-<a class="jxr_linenumber" name="156" href="#156">156</a>                 <em class="jxr_comment">// reply with a RST_STREAM with error code INTERNAL_ERROR.</em>
-<a class="jxr_linenumber" name="157" href="#157">157</a>                 <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isTruncated()) {
-<a class="jxr_linenumber" name="158" href="#158">158</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
-<a class="jxr_linenumber" name="159" href="#159">159</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.INTERNAL_ERROR);
-<a class="jxr_linenumber" name="160" href="#160">160</a>                     ctx.writeAndFlush(spdyRstStreamFrame);
-<a class="jxr_linenumber" name="161" href="#161">161</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="162" href="#162">162</a>                 }
-<a class="jxr_linenumber" name="163" href="#163">163</a> 
-<a class="jxr_linenumber" name="164" href="#164">164</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="165" href="#165">165</a>                     <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> httpResponseWithEntity =
-<a class="jxr_linenumber" name="166" href="#166">166</a>                             createHttpResponse(ctx, spdyVersion, spdySynStreamFrame, validateHeaders);
-<a class="jxr_linenumber" name="167" href="#167">167</a> 
-<a class="jxr_linenumber" name="168" href="#168">168</a>                     <em class="jxr_comment">// Set the Stream-ID, Associated-To-Stream-ID, Priority, and URL as headers</em>
-<a class="jxr_linenumber" name="169" href="#169">169</a>                     SpdyHttpHeaders.setStreamId(httpResponseWithEntity, streamId);
-<a class="jxr_linenumber" name="170" href="#170">170</a>                     SpdyHttpHeaders.setAssociatedToStreamId(httpResponseWithEntity, associatedToStreamId);
-<a class="jxr_linenumber" name="171" href="#171">171</a>                     SpdyHttpHeaders.setPriority(httpResponseWithEntity, spdySynStreamFrame.priority());
-<a class="jxr_linenumber" name="172" href="#172">172</a>                     SpdyHttpHeaders.setUrl(httpResponseWithEntity, URL);
-<a class="jxr_linenumber" name="173" href="#173">173</a> 
-<a class="jxr_linenumber" name="174" href="#174">174</a>                     <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isLast()) {
-<a class="jxr_linenumber" name="175" href="#175">175</a>                         HttpHeaders.setContentLength(httpResponseWithEntity, 0);
-<a class="jxr_linenumber" name="176" href="#176">176</a>                         out.add(httpResponseWithEntity);
-<a class="jxr_linenumber" name="177" href="#177">177</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="178" href="#178">178</a>                         <em class="jxr_comment">// Response body will follow in a series of Data Frames</em>
-<a class="jxr_linenumber" name="179" href="#179">179</a>                         putMessage(streamId, httpResponseWithEntity);
-<a class="jxr_linenumber" name="180" href="#180">180</a>                     }
-<a class="jxr_linenumber" name="181" href="#181">181</a>                 } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="182" href="#182">182</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
-<a class="jxr_linenumber" name="183" href="#183">183</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
-<a class="jxr_linenumber" name="184" href="#184">184</a>                     ctx.writeAndFlush(spdyRstStreamFrame);
-<a class="jxr_linenumber" name="185" href="#185">185</a>                 }
-<a class="jxr_linenumber" name="186" href="#186">186</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="187" href="#187">187</a>                 <em class="jxr_comment">// SYN_STREAM frames initiated by the client are HTTP requests</em>
-<a class="jxr_linenumber" name="188" href="#188">188</a> 
-<a class="jxr_linenumber" name="189" href="#189">189</a>                 <em class="jxr_comment">// If a client sends a request with a truncated header block, the server must</em>
-<a class="jxr_linenumber" name="190" href="#190">190</a>                 <em class="jxr_comment">// reply with a HTTP 431 REQUEST HEADER FIELDS TOO LARGE reply.</em>
-<a class="jxr_linenumber" name="191" href="#191">191</a>                 <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isTruncated()) {
-<a class="jxr_linenumber" name="192" href="#192">192</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdySynReplyFrame.html">SpdySynReplyFrame</a> spdySynReplyFrame = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdySynReplyFrame.html">DefaultSpdySynReplyFrame</a>(streamId);
-<a class="jxr_linenumber" name="193" href="#193">193</a>                     spdySynReplyFrame.setLast(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="194" href="#194">194</a>                     SpdyHeaders.setStatus(spdyVersion,
-<a class="jxr_linenumber" name="195" href="#195">195</a>                             spdySynReplyFrame,
-<a class="jxr_linenumber" name="196" href="#196">196</a>                             HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE);
-<a class="jxr_linenumber" name="197" href="#197">197</a>                     SpdyHeaders.setVersion(spdyVersion, spdySynReplyFrame, HttpVersion.HTTP_1_0);
-<a class="jxr_linenumber" name="198" href="#198">198</a>                     ctx.writeAndFlush(spdySynReplyFrame);
-<a class="jxr_linenumber" name="199" href="#199">199</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="200" href="#200">200</a>                 }
-<a class="jxr_linenumber" name="201" href="#201">201</a> 
-<a class="jxr_linenumber" name="202" href="#202">202</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="203" href="#203">203</a>                     <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> httpRequestWithEntity = createHttpRequest(spdyVersion, spdySynStreamFrame);
-<a class="jxr_linenumber" name="204" href="#204">204</a> 
-<a class="jxr_linenumber" name="205" href="#205">205</a>                     <em class="jxr_comment">// Set the Stream-ID as a header</em>
-<a class="jxr_linenumber" name="206" href="#206">206</a>                     SpdyHttpHeaders.setStreamId(httpRequestWithEntity, streamId);
-<a class="jxr_linenumber" name="207" href="#207">207</a> 
-<a class="jxr_linenumber" name="208" href="#208">208</a>                     <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isLast()) {
-<a class="jxr_linenumber" name="209" href="#209">209</a>                         out.add(httpRequestWithEntity);
-<a class="jxr_linenumber" name="210" href="#210">210</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="211" href="#211">211</a>                         <em class="jxr_comment">// Request body will follow in a series of Data Frames</em>
-<a class="jxr_linenumber" name="212" href="#212">212</a>                         putMessage(streamId, httpRequestWithEntity);
-<a class="jxr_linenumber" name="213" href="#213">213</a>                     }
-<a class="jxr_linenumber" name="214" href="#214">214</a>                 } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="215" href="#215">215</a>                     <em class="jxr_comment">// If a client sends a SYN_STREAM without all of the getMethod, url (host and path),</em>
-<a class="jxr_linenumber" name="216" href="#216">216</a>                     <em class="jxr_comment">// scheme, and version headers the server must reply with a HTTP 400 BAD REQUEST reply.</em>
-<a class="jxr_linenumber" name="217" href="#217">217</a>                     <em class="jxr_comment">// Also sends HTTP 400 BAD REQUEST reply if header name/value pairs are invalid</em>
-<a class="jxr_linenumber" name="218" href="#218">218</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdySynReplyFrame.html">SpdySynReplyFrame</a> spdySynReplyFrame = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdySynReplyFrame.html">DefaultSpdySynReplyFrame</a>(streamId);
-<a class="jxr_linenumber" name="219" href="#219">219</a>                     spdySynReplyFrame.setLast(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="220" href="#220">220</a>                     SpdyHeaders.setStatus(spdyVersion, spdySynReplyFrame, HttpResponseStatus.BAD_REQUEST);
-<a class="jxr_linenumber" name="221" href="#221">221</a>                     SpdyHeaders.setVersion(spdyVersion, spdySynReplyFrame, HttpVersion.HTTP_1_0);
-<a class="jxr_linenumber" name="222" href="#222">222</a>                     ctx.writeAndFlush(spdySynReplyFrame);
-<a class="jxr_linenumber" name="223" href="#223">223</a>                 }
-<a class="jxr_linenumber" name="224" href="#224">224</a>             }
-<a class="jxr_linenumber" name="225" href="#225">225</a> 
-<a class="jxr_linenumber" name="226" href="#226">226</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdySynReplyFrame) {
-<a class="jxr_linenumber" name="227" href="#227">227</a> 
-<a class="jxr_linenumber" name="228" href="#228">228</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdySynReplyFrame.html">SpdySynReplyFrame</a> spdySynReplyFrame = (SpdySynReplyFrame) msg;
-<a class="jxr_linenumber" name="229" href="#229">229</a>             <strong class="jxr_keyword">int</strong> streamId = spdySynReplyFrame.streamId();
-<a class="jxr_linenumber" name="230" href="#230">230</a> 
-<a class="jxr_linenumber" name="231" href="#231">231</a>             <em class="jxr_comment">// If a client receives a SYN_REPLY with a truncated header block,</em>
-<a class="jxr_linenumber" name="232" href="#232">232</a>             <em class="jxr_comment">// reply with a RST_STREAM frame with error code INTERNAL_ERROR.</em>
-<a class="jxr_linenumber" name="233" href="#233">233</a>             <strong class="jxr_keyword">if</strong> (spdySynReplyFrame.isTruncated()) {
-<a class="jxr_linenumber" name="234" href="#234">234</a>                 <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
-<a class="jxr_linenumber" name="235" href="#235">235</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.INTERNAL_ERROR);
-<a class="jxr_linenumber" name="236" href="#236">236</a>                 ctx.writeAndFlush(spdyRstStreamFrame);
-<a class="jxr_linenumber" name="237" href="#237">237</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="238" href="#238">238</a>             }
-<a class="jxr_linenumber" name="239" href="#239">239</a> 
-<a class="jxr_linenumber" name="240" href="#240">240</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="241" href="#241">241</a>                 <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> httpResponseWithEntity =
-<a class="jxr_linenumber" name="242" href="#242">242</a>                         createHttpResponse(ctx, spdyVersion, spdySynReplyFrame, validateHeaders);
-<a class="jxr_linenumber" name="243" href="#243">243</a> 
-<a class="jxr_linenumber" name="244" href="#244">244</a>                 <em class="jxr_comment">// Set the Stream-ID as a header</em>
-<a class="jxr_linenumber" name="245" href="#245">245</a>                 SpdyHttpHeaders.setStreamId(httpResponseWithEntity, streamId);
-<a class="jxr_linenumber" name="246" href="#246">246</a> 
-<a class="jxr_linenumber" name="247" href="#247">247</a>                 <strong class="jxr_keyword">if</strong> (spdySynReplyFrame.isLast()) {
-<a class="jxr_linenumber" name="248" href="#248">248</a>                     HttpHeaders.setContentLength(httpResponseWithEntity, 0);
-<a class="jxr_linenumber" name="249" href="#249">249</a>                     out.add(httpResponseWithEntity);
-<a class="jxr_linenumber" name="250" href="#250">250</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="251" href="#251">251</a>                     <em class="jxr_comment">// Response body will follow in a series of Data Frames</em>
-<a class="jxr_linenumber" name="252" href="#252">252</a>                     putMessage(streamId, httpResponseWithEntity);
-<a class="jxr_linenumber" name="253" href="#253">253</a>                 }
-<a class="jxr_linenumber" name="254" href="#254">254</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="255" href="#255">255</a>                 <em class="jxr_comment">// If a client receives a SYN_REPLY without valid getStatus and version headers</em>
-<a class="jxr_linenumber" name="256" href="#256">256</a>                 <em class="jxr_comment">// the client must reply with a RST_STREAM frame indicating a PROTOCOL_ERROR</em>
-<a class="jxr_linenumber" name="257" href="#257">257</a>                 <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
-<a class="jxr_linenumber" name="258" href="#258">258</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
-<a class="jxr_linenumber" name="259" href="#259">259</a>                 ctx.writeAndFlush(spdyRstStreamFrame);
-<a class="jxr_linenumber" name="260" href="#260">260</a>             }
-<a class="jxr_linenumber" name="261" href="#261">261</a> 
-<a class="jxr_linenumber" name="262" href="#262">262</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdyHeadersFrame) {
+<a class="jxr_linenumber" name="144" href="#144">144</a>                 <em class="jxr_comment">// If a client receives a SYN_STREAM with isLast set,</em>
+<a class="jxr_linenumber" name="145" href="#145">145</a>                 <em class="jxr_comment">// reply with a RST_STREAM with error code PROTOCOL_ERROR</em>
+<a class="jxr_linenumber" name="146" href="#146">146</a>                 <em class="jxr_comment">// (we only support pushed resources divided into two header blocks).</em>
+<a class="jxr_linenumber" name="147" href="#147">147</a>                 <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isLast()) {
+<a class="jxr_linenumber" name="148" href="#148">148</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="149" href="#149">149</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
+<a class="jxr_linenumber" name="150" href="#150">150</a>                     ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="151" href="#151">151</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="152" href="#152">152</a>                 }
+<a class="jxr_linenumber" name="153" href="#153">153</a> 
+<a class="jxr_linenumber" name="154" href="#154">154</a>                 <em class="jxr_comment">// If a client receives a response with a truncated header block,</em>
+<a class="jxr_linenumber" name="155" href="#155">155</a>                 <em class="jxr_comment">// reply with a RST_STREAM with error code INTERNAL_ERROR.</em>
+<a class="jxr_linenumber" name="156" href="#156">156</a>                 <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isTruncated()) {
+<a class="jxr_linenumber" name="157" href="#157">157</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="158" href="#158">158</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.INTERNAL_ERROR);
+<a class="jxr_linenumber" name="159" href="#159">159</a>                     ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="160" href="#160">160</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="161" href="#161">161</a>                 }
+<a class="jxr_linenumber" name="162" href="#162">162</a> 
+<a class="jxr_linenumber" name="163" href="#163">163</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="164" href="#164">164</a>                     <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> httpRequestWithEntity = createHttpRequest(spdyVersion, spdySynStreamFrame);
+<a class="jxr_linenumber" name="165" href="#165">165</a> 
+<a class="jxr_linenumber" name="166" href="#166">166</a>                     <em class="jxr_comment">// Set the Stream-ID, Associated-To-Stream-ID, and Priority as headers</em>
+<a class="jxr_linenumber" name="167" href="#167">167</a>                     SpdyHttpHeaders.setStreamId(httpRequestWithEntity, streamId);
+<a class="jxr_linenumber" name="168" href="#168">168</a>                     SpdyHttpHeaders.setAssociatedToStreamId(httpRequestWithEntity, associatedToStreamId);
+<a class="jxr_linenumber" name="169" href="#169">169</a>                     SpdyHttpHeaders.setPriority(httpRequestWithEntity, spdySynStreamFrame.priority());
+<a class="jxr_linenumber" name="170" href="#170">170</a> 
+<a class="jxr_linenumber" name="171" href="#171">171</a>                     out.add(httpRequestWithEntity);
+<a class="jxr_linenumber" name="172" href="#172">172</a> 
+<a class="jxr_linenumber" name="173" href="#173">173</a>                 } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="174" href="#174">174</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="175" href="#175">175</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
+<a class="jxr_linenumber" name="176" href="#176">176</a>                     ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="177" href="#177">177</a>                 }
+<a class="jxr_linenumber" name="178" href="#178">178</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="179" href="#179">179</a>                 <em class="jxr_comment">// SYN_STREAM frames initiated by the client are HTTP requests</em>
+<a class="jxr_linenumber" name="180" href="#180">180</a> 
+<a class="jxr_linenumber" name="181" href="#181">181</a>                 <em class="jxr_comment">// If a client sends a request with a truncated header block, the server must</em>
+<a class="jxr_linenumber" name="182" href="#182">182</a>                 <em class="jxr_comment">// reply with a HTTP 431 REQUEST HEADER FIELDS TOO LARGE reply.</em>
+<a class="jxr_linenumber" name="183" href="#183">183</a>                 <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isTruncated()) {
+<a class="jxr_linenumber" name="184" href="#184">184</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdySynReplyFrame.html">SpdySynReplyFrame</a> spdySynReplyFrame = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdySynReplyFrame.html">DefaultSpdySynReplyFrame</a>(streamId);
+<a class="jxr_linenumber" name="185" href="#185">185</a>                     spdySynReplyFrame.setLast(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="186" href="#186">186</a>                     SpdyHeaders.setStatus(spdyVersion,
+<a class="jxr_linenumber" name="187" href="#187">187</a>                             spdySynReplyFrame,
+<a class="jxr_linenumber" name="188" href="#188">188</a>                             HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE);
+<a class="jxr_linenumber" name="189" href="#189">189</a>                     SpdyHeaders.setVersion(spdyVersion, spdySynReplyFrame, HttpVersion.HTTP_1_0);
+<a class="jxr_linenumber" name="190" href="#190">190</a>                     ctx.writeAndFlush(spdySynReplyFrame);
+<a class="jxr_linenumber" name="191" href="#191">191</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="192" href="#192">192</a>                 }
+<a class="jxr_linenumber" name="193" href="#193">193</a> 
+<a class="jxr_linenumber" name="194" href="#194">194</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="195" href="#195">195</a>                     <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> httpRequestWithEntity = createHttpRequest(spdyVersion, spdySynStreamFrame);
+<a class="jxr_linenumber" name="196" href="#196">196</a> 
+<a class="jxr_linenumber" name="197" href="#197">197</a>                     <em class="jxr_comment">// Set the Stream-ID as a header</em>
+<a class="jxr_linenumber" name="198" href="#198">198</a>                     SpdyHttpHeaders.setStreamId(httpRequestWithEntity, streamId);
+<a class="jxr_linenumber" name="199" href="#199">199</a> 
+<a class="jxr_linenumber" name="200" href="#200">200</a>                     <strong class="jxr_keyword">if</strong> (spdySynStreamFrame.isLast()) {
+<a class="jxr_linenumber" name="201" href="#201">201</a>                         out.add(httpRequestWithEntity);
+<a class="jxr_linenumber" name="202" href="#202">202</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="203" href="#203">203</a>                         <em class="jxr_comment">// Request body will follow in a series of Data Frames</em>
+<a class="jxr_linenumber" name="204" href="#204">204</a>                         putMessage(streamId, httpRequestWithEntity);
+<a class="jxr_linenumber" name="205" href="#205">205</a>                     }
+<a class="jxr_linenumber" name="206" href="#206">206</a>                 } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="207" href="#207">207</a>                     <em class="jxr_comment">// If a client sends a SYN_STREAM without all of the getMethod, url (host and path),</em>
+<a class="jxr_linenumber" name="208" href="#208">208</a>                     <em class="jxr_comment">// scheme, and version headers the server must reply with a HTTP 400 BAD REQUEST reply.</em>
+<a class="jxr_linenumber" name="209" href="#209">209</a>                     <em class="jxr_comment">// Also sends HTTP 400 BAD REQUEST reply if header name/value pairs are invalid</em>
+<a class="jxr_linenumber" name="210" href="#210">210</a>                     <a href="../../../../../io/netty/handler/codec/spdy/SpdySynReplyFrame.html">SpdySynReplyFrame</a> spdySynReplyFrame = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdySynReplyFrame.html">DefaultSpdySynReplyFrame</a>(streamId);
+<a class="jxr_linenumber" name="211" href="#211">211</a>                     spdySynReplyFrame.setLast(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="212" href="#212">212</a>                     SpdyHeaders.setStatus(spdyVersion, spdySynReplyFrame, HttpResponseStatus.BAD_REQUEST);
+<a class="jxr_linenumber" name="213" href="#213">213</a>                     SpdyHeaders.setVersion(spdyVersion, spdySynReplyFrame, HttpVersion.HTTP_1_0);
+<a class="jxr_linenumber" name="214" href="#214">214</a>                     ctx.writeAndFlush(spdySynReplyFrame);
+<a class="jxr_linenumber" name="215" href="#215">215</a>                 }
+<a class="jxr_linenumber" name="216" href="#216">216</a>             }
+<a class="jxr_linenumber" name="217" href="#217">217</a> 
+<a class="jxr_linenumber" name="218" href="#218">218</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdySynReplyFrame) {
+<a class="jxr_linenumber" name="219" href="#219">219</a> 
+<a class="jxr_linenumber" name="220" href="#220">220</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdySynReplyFrame.html">SpdySynReplyFrame</a> spdySynReplyFrame = (SpdySynReplyFrame) msg;
+<a class="jxr_linenumber" name="221" href="#221">221</a>             <strong class="jxr_keyword">int</strong> streamId = spdySynReplyFrame.streamId();
+<a class="jxr_linenumber" name="222" href="#222">222</a> 
+<a class="jxr_linenumber" name="223" href="#223">223</a>             <em class="jxr_comment">// If a client receives a SYN_REPLY with a truncated header block,</em>
+<a class="jxr_linenumber" name="224" href="#224">224</a>             <em class="jxr_comment">// reply with a RST_STREAM frame with error code INTERNAL_ERROR.</em>
+<a class="jxr_linenumber" name="225" href="#225">225</a>             <strong class="jxr_keyword">if</strong> (spdySynReplyFrame.isTruncated()) {
+<a class="jxr_linenumber" name="226" href="#226">226</a>                 <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="227" href="#227">227</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.INTERNAL_ERROR);
+<a class="jxr_linenumber" name="228" href="#228">228</a>                 ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="229" href="#229">229</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="230" href="#230">230</a>             }
+<a class="jxr_linenumber" name="231" href="#231">231</a> 
+<a class="jxr_linenumber" name="232" href="#232">232</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="233" href="#233">233</a>                 <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> httpResponseWithEntity =
+<a class="jxr_linenumber" name="234" href="#234">234</a>                         createHttpResponse(ctx, spdyVersion, spdySynReplyFrame, validateHeaders);
+<a class="jxr_linenumber" name="235" href="#235">235</a> 
+<a class="jxr_linenumber" name="236" href="#236">236</a>                 <em class="jxr_comment">// Set the Stream-ID as a header</em>
+<a class="jxr_linenumber" name="237" href="#237">237</a>                 SpdyHttpHeaders.setStreamId(httpResponseWithEntity, streamId);
+<a class="jxr_linenumber" name="238" href="#238">238</a> 
+<a class="jxr_linenumber" name="239" href="#239">239</a>                 <strong class="jxr_keyword">if</strong> (spdySynReplyFrame.isLast()) {
+<a class="jxr_linenumber" name="240" href="#240">240</a>                     HttpHeaders.setContentLength(httpResponseWithEntity, 0);
+<a class="jxr_linenumber" name="241" href="#241">241</a>                     out.add(httpResponseWithEntity);
+<a class="jxr_linenumber" name="242" href="#242">242</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="243" href="#243">243</a>                     <em class="jxr_comment">// Response body will follow in a series of Data Frames</em>
+<a class="jxr_linenumber" name="244" href="#244">244</a>                     putMessage(streamId, httpResponseWithEntity);
+<a class="jxr_linenumber" name="245" href="#245">245</a>                 }
+<a class="jxr_linenumber" name="246" href="#246">246</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="247" href="#247">247</a>                 <em class="jxr_comment">// If a client receives a SYN_REPLY without valid getStatus and version headers</em>
+<a class="jxr_linenumber" name="248" href="#248">248</a>                 <em class="jxr_comment">// the client must reply with a RST_STREAM frame indicating a PROTOCOL_ERROR</em>
+<a class="jxr_linenumber" name="249" href="#249">249</a>                 <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="250" href="#250">250</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
+<a class="jxr_linenumber" name="251" href="#251">251</a>                 ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="252" href="#252">252</a>             }
+<a class="jxr_linenumber" name="253" href="#253">253</a> 
+<a class="jxr_linenumber" name="254" href="#254">254</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdyHeadersFrame) {
+<a class="jxr_linenumber" name="255" href="#255">255</a> 
+<a class="jxr_linenumber" name="256" href="#256">256</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html">SpdyHeadersFrame</a> spdyHeadersFrame = (SpdyHeadersFrame) msg;
+<a class="jxr_linenumber" name="257" href="#257">257</a>             <strong class="jxr_keyword">int</strong> streamId = spdyHeadersFrame.streamId();
+<a class="jxr_linenumber" name="258" href="#258">258</a>             <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> fullHttpMessage = getMessage(streamId);
+<a class="jxr_linenumber" name="259" href="#259">259</a> 
+<a class="jxr_linenumber" name="260" href="#260">260</a>             <strong class="jxr_keyword">if</strong> (fullHttpMessage == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="261" href="#261">261</a>                 <em class="jxr_comment">// HEADERS frames may initiate a pushed response</em>
+<a class="jxr_linenumber" name="262" href="#262">262</a>                 <strong class="jxr_keyword">if</strong> (SpdyCodecUtil.isServerId(streamId)) {
 <a class="jxr_linenumber" name="263" href="#263">263</a> 
-<a class="jxr_linenumber" name="264" href="#264">264</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html">SpdyHeadersFrame</a> spdyHeadersFrame = (SpdyHeadersFrame) msg;
-<a class="jxr_linenumber" name="265" href="#265">265</a>             <strong class="jxr_keyword">int</strong> streamId = spdyHeadersFrame.streamId();
-<a class="jxr_linenumber" name="266" href="#266">266</a>             <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> fullHttpMessage = getMessage(streamId);
-<a class="jxr_linenumber" name="267" href="#267">267</a> 
-<a class="jxr_linenumber" name="268" href="#268">268</a>             <em class="jxr_comment">// If message is not in map discard HEADERS frame.</em>
-<a class="jxr_linenumber" name="269" href="#269">269</a>             <strong class="jxr_keyword">if</strong> (fullHttpMessage == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="270" href="#270">270</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="271" href="#271">271</a>             }
+<a class="jxr_linenumber" name="264" href="#264">264</a>                     <em class="jxr_comment">// If a client receives a HEADERS with a truncated header block,</em>
+<a class="jxr_linenumber" name="265" href="#265">265</a>                     <em class="jxr_comment">// reply with a RST_STREAM frame with error code INTERNAL_ERROR.</em>
+<a class="jxr_linenumber" name="266" href="#266">266</a>                     <strong class="jxr_keyword">if</strong> (spdyHeadersFrame.isTruncated()) {
+<a class="jxr_linenumber" name="267" href="#267">267</a>                         <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="268" href="#268">268</a>                             <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.INTERNAL_ERROR);
+<a class="jxr_linenumber" name="269" href="#269">269</a>                         ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="270" href="#270">270</a>                         <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="271" href="#271">271</a>                     }
 <a class="jxr_linenumber" name="272" href="#272">272</a> 
-<a class="jxr_linenumber" name="273" href="#273">273</a>             <em class="jxr_comment">// Ignore trailers in a truncated HEADERS frame.</em>
-<a class="jxr_linenumber" name="274" href="#274">274</a>             <strong class="jxr_keyword">if</strong> (!spdyHeadersFrame.isTruncated()) {
-<a class="jxr_linenumber" name="275" href="#275">275</a>                 <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; e: spdyHeadersFrame.headers()) {
-<a class="jxr_linenumber" name="276" href="#276">276</a>                     fullHttpMessage.headers().add(e.getKey(), e.getValue());
-<a class="jxr_linenumber" name="277" href="#277">277</a>                 }
-<a class="jxr_linenumber" name="278" href="#278">278</a>             }
-<a class="jxr_linenumber" name="279" href="#279">279</a> 
-<a class="jxr_linenumber" name="280" href="#280">280</a>             <strong class="jxr_keyword">if</strong> (spdyHeadersFrame.isLast()) {
-<a class="jxr_linenumber" name="281" href="#281">281</a>                 HttpHeaders.setContentLength(fullHttpMessage, fullHttpMessage.content().readableBytes());
-<a class="jxr_linenumber" name="282" href="#282">282</a>                 removeMessage(streamId);
-<a class="jxr_linenumber" name="283" href="#283">283</a>                 out.add(fullHttpMessage);
-<a class="jxr_linenumber" name="284" href="#284">284</a>             }
-<a class="jxr_linenumber" name="285" href="#285">285</a> 
-<a class="jxr_linenumber" name="286" href="#286">286</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdyDataFrame) {
-<a class="jxr_linenumber" name="287" href="#287">287</a> 
-<a class="jxr_linenumber" name="288" href="#288">288</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdyDataFrame.html">SpdyDataFrame</a> spdyDataFrame = (SpdyDataFrame) msg;
-<a class="jxr_linenumber" name="289" href="#289">289</a>             <strong class="jxr_keyword">int</strong> streamId = spdyDataFrame.streamId();
-<a class="jxr_linenumber" name="290" href="#290">290</a>             <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> fullHttpMessage = getMessage(streamId);
-<a class="jxr_linenumber" name="291" href="#291">291</a> 
-<a class="jxr_linenumber" name="292" href="#292">292</a>             <em class="jxr_comment">// If message is not in map discard Data Frame.</em>
-<a class="jxr_linenumber" name="293" href="#293">293</a>             <strong class="jxr_keyword">if</strong> (fullHttpMessage == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="273" href="#273">273</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="274" href="#274">274</a>                         fullHttpMessage = createHttpResponse(ctx, spdyVersion, spdyHeadersFrame, validateHeaders);
+<a class="jxr_linenumber" name="275" href="#275">275</a> 
+<a class="jxr_linenumber" name="276" href="#276">276</a>                         <em class="jxr_comment">// Set the Stream-ID as a header</em>
+<a class="jxr_linenumber" name="277" href="#277">277</a>                         SpdyHttpHeaders.setStreamId(fullHttpMessage, streamId);
+<a class="jxr_linenumber" name="278" href="#278">278</a> 
+<a class="jxr_linenumber" name="279" href="#279">279</a>                         <strong class="jxr_keyword">if</strong> (spdyHeadersFrame.isLast()) {
+<a class="jxr_linenumber" name="280" href="#280">280</a>                             HttpHeaders.setContentLength(fullHttpMessage, 0);
+<a class="jxr_linenumber" name="281" href="#281">281</a>                             out.add(fullHttpMessage);
+<a class="jxr_linenumber" name="282" href="#282">282</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="283" href="#283">283</a>                             <em class="jxr_comment">// Response body will follow in a series of Data Frames</em>
+<a class="jxr_linenumber" name="284" href="#284">284</a>                             putMessage(streamId, fullHttpMessage);
+<a class="jxr_linenumber" name="285" href="#285">285</a>                         }
+<a class="jxr_linenumber" name="286" href="#286">286</a>                     } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="287" href="#287">287</a>                         <em class="jxr_comment">// If a client receives a SYN_REPLY without valid getStatus and version headers</em>
+<a class="jxr_linenumber" name="288" href="#288">288</a>                         <em class="jxr_comment">// the client must reply with a RST_STREAM frame indicating a PROTOCOL_ERROR</em>
+<a class="jxr_linenumber" name="289" href="#289">289</a>                         <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame =
+<a class="jxr_linenumber" name="290" href="#290">290</a>                             <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.html">DefaultSpdyRstStreamFrame</a>(streamId, SpdyStreamStatus.PROTOCOL_ERROR);
+<a class="jxr_linenumber" name="291" href="#291">291</a>                         ctx.writeAndFlush(spdyRstStreamFrame);
+<a class="jxr_linenumber" name="292" href="#292">292</a>                     }
+<a class="jxr_linenumber" name="293" href="#293">293</a>                 }
 <a class="jxr_linenumber" name="294" href="#294">294</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="295" href="#295">295</a>             }
 <a class="jxr_linenumber" name="296" href="#296">296</a> 
-<a class="jxr_linenumber" name="297" href="#297">297</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> content = fullHttpMessage.content();
-<a class="jxr_linenumber" name="298" href="#298">298</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - spdyDataFrame.content().readableBytes()) {
-<a class="jxr_linenumber" name="299" href="#299">299</a>                 removeMessage(streamId);
-<a class="jxr_linenumber" name="300" href="#300">300</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/TooLongFrameException.html">TooLongFrameException</a>(
-<a class="jxr_linenumber" name="301" href="#301">301</a>                         <span class="jxr_string">"HTTP content length exceeded "</span> + maxContentLength + <span class="jxr_string">" bytes."</span>);
+<a class="jxr_linenumber" name="297" href="#297">297</a>             <em class="jxr_comment">// Ignore trailers in a truncated HEADERS frame.</em>
+<a class="jxr_linenumber" name="298" href="#298">298</a>             <strong class="jxr_keyword">if</strong> (!spdyHeadersFrame.isTruncated()) {
+<a class="jxr_linenumber" name="299" href="#299">299</a>                 <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; e: spdyHeadersFrame.headers()) {
+<a class="jxr_linenumber" name="300" href="#300">300</a>                     fullHttpMessage.headers().add(e.getKey(), e.getValue());
+<a class="jxr_linenumber" name="301" href="#301">301</a>                 }
 <a class="jxr_linenumber" name="302" href="#302">302</a>             }
 <a class="jxr_linenumber" name="303" href="#303">303</a> 
-<a class="jxr_linenumber" name="304" href="#304">304</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> spdyDataFrameData = spdyDataFrame.content();
-<a class="jxr_linenumber" name="305" href="#305">305</a>             <strong class="jxr_keyword">int</strong> spdyDataFrameDataLen = spdyDataFrameData.readableBytes();
-<a class="jxr_linenumber" name="306" href="#306">306</a>             content.writeBytes(spdyDataFrameData, spdyDataFrameData.readerIndex(), spdyDataFrameDataLen);
-<a class="jxr_linenumber" name="307" href="#307">307</a> 
-<a class="jxr_linenumber" name="308" href="#308">308</a>             <strong class="jxr_keyword">if</strong> (spdyDataFrame.isLast()) {
-<a class="jxr_linenumber" name="309" href="#309">309</a>                 HttpHeaders.setContentLength(fullHttpMessage, content.readableBytes());
-<a class="jxr_linenumber" name="310" href="#310">310</a>                 removeMessage(streamId);
-<a class="jxr_linenumber" name="311" href="#311">311</a>                 out.add(fullHttpMessage);
-<a class="jxr_linenumber" name="312" href="#312">312</a>             }
-<a class="jxr_linenumber" name="313" href="#313">313</a> 
-<a class="jxr_linenumber" name="314" href="#314">314</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdyRstStreamFrame) {
+<a class="jxr_linenumber" name="304" href="#304">304</a>             <strong class="jxr_keyword">if</strong> (spdyHeadersFrame.isLast()) {
+<a class="jxr_linenumber" name="305" href="#305">305</a>                 HttpHeaders.setContentLength(fullHttpMessage, fullHttpMessage.content().readableBytes());
+<a class="jxr_linenumber" name="306" href="#306">306</a>                 removeMessage(streamId);
+<a class="jxr_linenumber" name="307" href="#307">307</a>                 out.add(fullHttpMessage);
+<a class="jxr_linenumber" name="308" href="#308">308</a>             }
+<a class="jxr_linenumber" name="309" href="#309">309</a> 
+<a class="jxr_linenumber" name="310" href="#310">310</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdyDataFrame) {
+<a class="jxr_linenumber" name="311" href="#311">311</a> 
+<a class="jxr_linenumber" name="312" href="#312">312</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdyDataFrame.html">SpdyDataFrame</a> spdyDataFrame = (SpdyDataFrame) msg;
+<a class="jxr_linenumber" name="313" href="#313">313</a>             <strong class="jxr_keyword">int</strong> streamId = spdyDataFrame.streamId();
+<a class="jxr_linenumber" name="314" href="#314">314</a>             <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> fullHttpMessage = getMessage(streamId);
 <a class="jxr_linenumber" name="315" href="#315">315</a> 
-<a class="jxr_linenumber" name="316" href="#316">316</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame = (SpdyRstStreamFrame) msg;
-<a class="jxr_linenumber" name="317" href="#317">317</a>             <strong class="jxr_keyword">int</strong> streamId = spdyRstStreamFrame.streamId();
-<a class="jxr_linenumber" name="318" href="#318">318</a>             removeMessage(streamId);
-<a class="jxr_linenumber" name="319" href="#319">319</a>         }
-<a class="jxr_linenumber" name="320" href="#320">320</a>     }
-<a class="jxr_linenumber" name="321" href="#321">321</a> 
-<a class="jxr_linenumber" name="322" href="#322">322</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> createHttpRequest(<strong class="jxr_keyword">int</strong> spdyVersion, <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html">SpdyHeadersFrame</a> requestFrame)
-<a class="jxr_linenumber" name="323" href="#323">323</a>             <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="324" href="#324">324</a>         <em class="jxr_comment">// Create the first line of the request from the name/value pairs</em>
-<a class="jxr_linenumber" name="325" href="#325">325</a>         <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeaders.html">SpdyHeaders</a> headers     = requestFrame.headers();
-<a class="jxr_linenumber" name="326" href="#326">326</a>         <a href="../../../../../io/netty/handler/codec/http/HttpMethod.html">HttpMethod</a>  method      = SpdyHeaders.getMethod(spdyVersion, requestFrame);
-<a class="jxr_linenumber" name="327" href="#327">327</a>         String      url         = SpdyHeaders.getUrl(spdyVersion, requestFrame);
-<a class="jxr_linenumber" name="328" href="#328">328</a>         <a href="../../../../../io/netty/handler/codec/http/HttpVersion.html">HttpVersion</a> httpVersion = SpdyHeaders.getVersion(spdyVersion, requestFrame);
-<a class="jxr_linenumber" name="329" href="#329">329</a>         SpdyHeaders.removeMethod(spdyVersion, requestFrame);
-<a class="jxr_linenumber" name="330" href="#330">330</a>         SpdyHeaders.removeUrl(spdyVersion, requestFrame);
-<a class="jxr_linenumber" name="331" href="#331">331</a>         SpdyHeaders.removeVersion(spdyVersion, requestFrame);
-<a class="jxr_linenumber" name="332" href="#332">332</a> 
-<a class="jxr_linenumber" name="333" href="#333">333</a>         <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> req = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html">DefaultFullHttpRequest</a>(httpVersion, method, url);
-<a class="jxr_linenumber" name="334" href="#334">334</a> 
-<a class="jxr_linenumber" name="335" href="#335">335</a>         <em class="jxr_comment">// Remove the scheme header</em>
-<a class="jxr_linenumber" name="336" href="#336">336</a>         SpdyHeaders.removeScheme(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="316" href="#316">316</a>             <em class="jxr_comment">// If message is not in map discard Data Frame.</em>
+<a class="jxr_linenumber" name="317" href="#317">317</a>             <strong class="jxr_keyword">if</strong> (fullHttpMessage == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="318" href="#318">318</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="319" href="#319">319</a>             }
+<a class="jxr_linenumber" name="320" href="#320">320</a> 
+<a class="jxr_linenumber" name="321" href="#321">321</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> content = fullHttpMessage.content();
+<a class="jxr_linenumber" name="322" href="#322">322</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - spdyDataFrame.content().readableBytes()) {
+<a class="jxr_linenumber" name="323" href="#323">323</a>                 removeMessage(streamId);
+<a class="jxr_linenumber" name="324" href="#324">324</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/TooLongFrameException.html">TooLongFrameException</a>(
+<a class="jxr_linenumber" name="325" href="#325">325</a>                         <span class="jxr_string">"HTTP content length exceeded "</span> + maxContentLength + <span class="jxr_string">" bytes."</span>);
+<a class="jxr_linenumber" name="326" href="#326">326</a>             }
+<a class="jxr_linenumber" name="327" href="#327">327</a> 
+<a class="jxr_linenumber" name="328" href="#328">328</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> spdyDataFrameData = spdyDataFrame.content();
+<a class="jxr_linenumber" name="329" href="#329">329</a>             <strong class="jxr_keyword">int</strong> spdyDataFrameDataLen = spdyDataFrameData.readableBytes();
+<a class="jxr_linenumber" name="330" href="#330">330</a>             content.writeBytes(spdyDataFrameData, spdyDataFrameData.readerIndex(), spdyDataFrameDataLen);
+<a class="jxr_linenumber" name="331" href="#331">331</a> 
+<a class="jxr_linenumber" name="332" href="#332">332</a>             <strong class="jxr_keyword">if</strong> (spdyDataFrame.isLast()) {
+<a class="jxr_linenumber" name="333" href="#333">333</a>                 HttpHeaders.setContentLength(fullHttpMessage, content.readableBytes());
+<a class="jxr_linenumber" name="334" href="#334">334</a>                 removeMessage(streamId);
+<a class="jxr_linenumber" name="335" href="#335">335</a>                 out.add(fullHttpMessage);
+<a class="jxr_linenumber" name="336" href="#336">336</a>             }
 <a class="jxr_linenumber" name="337" href="#337">337</a> 
-<a class="jxr_linenumber" name="338" href="#338">338</a>         <em class="jxr_comment">// Replace the SPDY host header with the HTTP host header</em>
-<a class="jxr_linenumber" name="339" href="#339">339</a>         String host = headers.get(SpdyHeaders.HttpNames.HOST);
-<a class="jxr_linenumber" name="340" href="#340">340</a>         headers.remove(SpdyHeaders.HttpNames.HOST);
-<a class="jxr_linenumber" name="341" href="#341">341</a>         req.headers().set(HttpHeaders.Names.HOST, host);
-<a class="jxr_linenumber" name="342" href="#342">342</a> 
-<a class="jxr_linenumber" name="343" href="#343">343</a>         <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; e: requestFrame.headers()) {
-<a class="jxr_linenumber" name="344" href="#344">344</a>             req.headers().add(e.getKey(), e.getValue());
-<a class="jxr_linenumber" name="345" href="#345">345</a>         }
-<a class="jxr_linenumber" name="346" href="#346">346</a> 
-<a class="jxr_linenumber" name="347" href="#347">347</a>         <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
-<a class="jxr_linenumber" name="348" href="#348">348</a>         HttpHeaders.setKeepAlive(req, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="349" href="#349">349</a> 
-<a class="jxr_linenumber" name="350" href="#350">350</a>         <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
-<a class="jxr_linenumber" name="351" href="#351">351</a>         req.headers().remove(HttpHeaders.Names.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="352" href="#352">352</a> 
-<a class="jxr_linenumber" name="353" href="#353">353</a>         <strong class="jxr_keyword">return</strong> req;
-<a class="jxr_linenumber" name="354" href="#354">354</a>     }
-<a class="jxr_linenumber" name="355" href="#355">355</a> 
-<a class="jxr_linenumber" name="356" href="#356">356</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> createHttpResponse(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> spdyVersion,
-<a class="jxr_linenumber" name="357" href="#357">357</a>                                                        <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html">SpdyHeadersFrame</a> responseFrame,
-<a class="jxr_linenumber" name="358" href="#358">358</a>                                                        <strong class="jxr_keyword">boolean</strong> validateHeaders) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="359" href="#359">359</a> 
-<a class="jxr_linenumber" name="360" href="#360">360</a>         <em class="jxr_comment">// Create the first line of the response from the name/value pairs</em>
-<a class="jxr_linenumber" name="361" href="#361">361</a>         <a href="../../../../../io/netty/handler/codec/http/HttpResponseStatus.html">HttpResponseStatus</a> status = SpdyHeaders.getStatus(spdyVersion, responseFrame);
-<a class="jxr_linenumber" name="362" href="#362">362</a>         <a href="../../../../../io/netty/handler/codec/http/HttpVersion.html">HttpVersion</a> version = SpdyHeaders.getVersion(spdyVersion, responseFrame);
-<a class="jxr_linenumber" name="363" href="#363">363</a>         SpdyHeaders.removeStatus(spdyVersion, responseFrame);
-<a class="jxr_linenumber" name="364" href="#364">364</a>         SpdyHeaders.removeVersion(spdyVersion, responseFrame);
-<a class="jxr_linenumber" name="365" href="#365">365</a> 
-<a class="jxr_linenumber" name="366" href="#366">366</a>         <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> res = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html">DefaultFullHttpResponse</a>(version, status, ctx.alloc().buffer(), validateHeaders);
-<a class="jxr_linenumber" name="367" href="#367">367</a>         <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; e: responseFrame.headers()) {
-<a class="jxr_linenumber" name="368" href="#368">368</a>             res.headers().add(e.getKey(), e.getValue());
+<a class="jxr_linenumber" name="338" href="#338">338</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof SpdyRstStreamFrame) {
+<a class="jxr_linenumber" name="339" href="#339">339</a> 
+<a class="jxr_linenumber" name="340" href="#340">340</a>             <a href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html">SpdyRstStreamFrame</a> spdyRstStreamFrame = (SpdyRstStreamFrame) msg;
+<a class="jxr_linenumber" name="341" href="#341">341</a>             <strong class="jxr_keyword">int</strong> streamId = spdyRstStreamFrame.streamId();
+<a class="jxr_linenumber" name="342" href="#342">342</a>             removeMessage(streamId);
+<a class="jxr_linenumber" name="343" href="#343">343</a>         }
+<a class="jxr_linenumber" name="344" href="#344">344</a>     }
+<a class="jxr_linenumber" name="345" href="#345">345</a> 
+<a class="jxr_linenumber" name="346" href="#346">346</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> createHttpRequest(<strong class="jxr_keyword">int</strong> spdyVersion, <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html">SpdyHeadersFrame</a> requestFrame)
+<a class="jxr_linenumber" name="347" href="#347">347</a>             <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="348" href="#348">348</a>         <em class="jxr_comment">// Create the first line of the request from the name/value pairs</em>
+<a class="jxr_linenumber" name="349" href="#349">349</a>         <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeaders.html">SpdyHeaders</a> headers     = requestFrame.headers();
+<a class="jxr_linenumber" name="350" href="#350">350</a>         <a href="../../../../../io/netty/handler/codec/http/HttpMethod.html">HttpMethod</a>  method      = SpdyHeaders.getMethod(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="351" href="#351">351</a>         String      url         = SpdyHeaders.getUrl(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="352" href="#352">352</a>         <a href="../../../../../io/netty/handler/codec/http/HttpVersion.html">HttpVersion</a> httpVersion = SpdyHeaders.getVersion(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="353" href="#353">353</a>         SpdyHeaders.removeMethod(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="354" href="#354">354</a>         SpdyHeaders.removeUrl(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="355" href="#355">355</a>         SpdyHeaders.removeVersion(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="356" href="#356">356</a> 
+<a class="jxr_linenumber" name="357" href="#357">357</a>         <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> req = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html">DefaultFullHttpRequest</a>(httpVersion, method, url);
+<a class="jxr_linenumber" name="358" href="#358">358</a> 
+<a class="jxr_linenumber" name="359" href="#359">359</a>         <em class="jxr_comment">// Remove the scheme header</em>
+<a class="jxr_linenumber" name="360" href="#360">360</a>         SpdyHeaders.removeScheme(spdyVersion, requestFrame);
+<a class="jxr_linenumber" name="361" href="#361">361</a> 
+<a class="jxr_linenumber" name="362" href="#362">362</a>         <em class="jxr_comment">// Replace the SPDY host header with the HTTP host header</em>
+<a class="jxr_linenumber" name="363" href="#363">363</a>         String host = headers.get(SpdyHeaders.HttpNames.HOST);
+<a class="jxr_linenumber" name="364" href="#364">364</a>         headers.remove(SpdyHeaders.HttpNames.HOST);
+<a class="jxr_linenumber" name="365" href="#365">365</a>         req.headers().set(HttpHeaders.Names.HOST, host);
+<a class="jxr_linenumber" name="366" href="#366">366</a> 
+<a class="jxr_linenumber" name="367" href="#367">367</a>         <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; e: requestFrame.headers()) {
+<a class="jxr_linenumber" name="368" href="#368">368</a>             req.headers().add(e.getKey(), e.getValue());
 <a class="jxr_linenumber" name="369" href="#369">369</a>         }
 <a class="jxr_linenumber" name="370" href="#370">370</a> 
 <a class="jxr_linenumber" name="371" href="#371">371</a>         <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
-<a class="jxr_linenumber" name="372" href="#372">372</a>         HttpHeaders.setKeepAlive(res, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="372" href="#372">372</a>         HttpHeaders.setKeepAlive(req, <strong class="jxr_keyword">true</strong>);
 <a class="jxr_linenumber" name="373" href="#373">373</a> 
 <a class="jxr_linenumber" name="374" href="#374">374</a>         <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
-<a class="jxr_linenumber" name="375" href="#375">375</a>         res.headers().remove(HttpHeaders.Names.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="376" href="#376">376</a>         res.headers().remove(HttpHeaders.Names.TRAILER);
-<a class="jxr_linenumber" name="377" href="#377">377</a> 
-<a class="jxr_linenumber" name="378" href="#378">378</a>         <strong class="jxr_keyword">return</strong> res;
-<a class="jxr_linenumber" name="379" href="#379">379</a>     }
-<a class="jxr_linenumber" name="380" href="#380">380</a> }
+<a class="jxr_linenumber" name="375" href="#375">375</a>         req.headers().remove(HttpHeaders.Names.TRANSFER_ENCODING);
+<a class="jxr_linenumber" name="376" href="#376">376</a> 
+<a class="jxr_linenumber" name="377" href="#377">377</a>         <strong class="jxr_keyword">return</strong> req;
+<a class="jxr_linenumber" name="378" href="#378">378</a>     }
+<a class="jxr_linenumber" name="379" href="#379">379</a> 
+<a class="jxr_linenumber" name="380" href="#380">380</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> createHttpResponse(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> spdyVersion,
+<a class="jxr_linenumber" name="381" href="#381">381</a>                                                        <a href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html">SpdyHeadersFrame</a> responseFrame,
+<a class="jxr_linenumber" name="382" href="#382">382</a>                                                        <strong class="jxr_keyword">boolean</strong> validateHeaders) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="383" href="#383">383</a> 
+<a class="jxr_linenumber" name="384" href="#384">384</a>         <em class="jxr_comment">// Create the first line of the response from the name/value pairs</em>
+<a class="jxr_linenumber" name="385" href="#385">385</a>         <a href="../../../../../io/netty/handler/codec/http/HttpResponseStatus.html">HttpResponseStatus</a> status = SpdyHeaders.getStatus(spdyVersion, responseFrame);
+<a class="jxr_linenumber" name="386" href="#386">386</a>         <a href="../../../../../io/netty/handler/codec/http/HttpVersion.html">HttpVersion</a> version = SpdyHeaders.getVersion(spdyVersion, responseFrame);
+<a class="jxr_linenumber" name="387" href="#387">387</a>         SpdyHeaders.removeStatus(spdyVersion, responseFrame);
+<a class="jxr_linenumber" name="388" href="#388">388</a>         SpdyHeaders.removeVersion(spdyVersion, responseFrame);
+<a class="jxr_linenumber" name="389" href="#389">389</a> 
+<a class="jxr_linenumber" name="390" href="#390">390</a>         <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> res = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html">DefaultFullHttpResponse</a>(version, status, ctx.alloc().buffer(), validateHeaders);
+<a class="jxr_linenumber" name="391" href="#391">391</a>         <strong class="jxr_keyword">for</strong> (Map.Entry&lt;String, String&gt; e: responseFrame.headers()) {
+<a class="jxr_linenumber" name="392" href="#392">392</a>             res.headers().add(e.getKey(), e.getValue());
+<a class="jxr_linenumber" name="393" href="#393">393</a>         }
+<a class="jxr_linenumber" name="394" href="#394">394</a> 
+<a class="jxr_linenumber" name="395" href="#395">395</a>         <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
+<a class="jxr_linenumber" name="396" href="#396">396</a>         HttpHeaders.setKeepAlive(res, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="397" href="#397">397</a> 
+<a class="jxr_linenumber" name="398" href="#398">398</a>         <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
+<a class="jxr_linenumber" name="399" href="#399">399</a>         res.headers().remove(HttpHeaders.Names.TRANSFER_ENCODING);
+<a class="jxr_linenumber" name="400" href="#400">400</a>         res.headers().remove(HttpHeaders.Names.TRAILER);
+<a class="jxr_linenumber" name="401" href="#401">401</a> 
+<a class="jxr_linenumber" name="402" href="#402">402</a>         <strong class="jxr_keyword">return</strong> res;
+<a class="jxr_linenumber" name="403" href="#403">403</a>     }
+<a class="jxr_linenumber" name="404" href="#404">404</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
