@@ -455,44 +455,48 @@
 <a class="jxr_linenumber" name="445" href="#445">445</a>             <strong class="jxr_keyword">for</strong> (; free &gt; 0; free--) {
 <a class="jxr_linenumber" name="446" href="#446">446</a>                 <strong class="jxr_keyword">if</strong> (!freeEntry(entries[i])) {
 <a class="jxr_linenumber" name="447" href="#447">447</a>                     <em class="jxr_comment">// all freed</em>
-<a class="jxr_linenumber" name="448" href="#448">448</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="448" href="#448">448</a>                     <strong class="jxr_keyword">break</strong>;
 <a class="jxr_linenumber" name="449" href="#449">449</a>                 }
 <a class="jxr_linenumber" name="450" href="#450">450</a>                 i = nextIdx(i);
 <a class="jxr_linenumber" name="451" href="#451">451</a>             }
-<a class="jxr_linenumber" name="452" href="#452">452</a>         }
-<a class="jxr_linenumber" name="453" href="#453">453</a> 
-<a class="jxr_linenumber" name="454" href="#454">454</a>         @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
-<a class="jxr_linenumber" name="455" href="#455">455</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> freeEntry(<a href="../../../io/netty/util/ThreadDeathWatcher.html">Entry</a> entry) {
-<a class="jxr_linenumber" name="456" href="#456">456</a>             <a href="../../../io/netty/buffer/PoolChunk.html">PoolChunk</a> chunk = entry.chunk;
-<a class="jxr_linenumber" name="457" href="#457">457</a>             <strong class="jxr_keyword">if</strong> (chunk == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="458" href="#458">458</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="459" href="#459">459</a>             }
-<a class="jxr_linenumber" name="460" href="#460">460</a>             <em class="jxr_comment">// need to synchronize on the area from which it was allocated before.</em>
-<a class="jxr_linenumber" name="461" href="#461">461</a>             <strong class="jxr_keyword">synchronized</strong> (chunk.arena) {
-<a class="jxr_linenumber" name="462" href="#462">462</a>                 chunk.parent.free(chunk, entry.handle);
+<a class="jxr_linenumber" name="452" href="#452">452</a> 
+<a class="jxr_linenumber" name="453" href="#453">453</a>             <em class="jxr_comment">// Update head to point to te correct entry</em>
+<a class="jxr_linenumber" name="454" href="#454">454</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/2924</em>
+<a class="jxr_linenumber" name="455" href="#455">455</a>             head = i;
+<a class="jxr_linenumber" name="456" href="#456">456</a>         }
+<a class="jxr_linenumber" name="457" href="#457">457</a> 
+<a class="jxr_linenumber" name="458" href="#458">458</a>         @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
+<a class="jxr_linenumber" name="459" href="#459">459</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> freeEntry(<a href="../../../io/netty/util/ThreadDeathWatcher.html">Entry</a> entry) {
+<a class="jxr_linenumber" name="460" href="#460">460</a>             <a href="../../../io/netty/buffer/PoolChunk.html">PoolChunk</a> chunk = entry.chunk;
+<a class="jxr_linenumber" name="461" href="#461">461</a>             <strong class="jxr_keyword">if</strong> (chunk == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="462" href="#462">462</a>                 <strong class="jxr_keyword">return</strong> false;
 <a class="jxr_linenumber" name="463" href="#463">463</a>             }
-<a class="jxr_linenumber" name="464" href="#464">464</a>             entry.chunk = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="465" href="#465">465</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="466" href="#466">466</a>         }
-<a class="jxr_linenumber" name="467" href="#467">467</a> 
-<a class="jxr_linenumber" name="468" href="#468">468</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="469" href="#469">469</a> <em class="jxr_javadoccomment">         * Return the number of cached entries.</em>
-<a class="jxr_linenumber" name="470" href="#470">470</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="471" href="#471">471</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> size()  {
-<a class="jxr_linenumber" name="472" href="#472">472</a>             <strong class="jxr_keyword">return</strong> tail - head &amp; entries.length - 1;
-<a class="jxr_linenumber" name="473" href="#473">473</a>         }
-<a class="jxr_linenumber" name="474" href="#474">474</a> 
-<a class="jxr_linenumber" name="475" href="#475">475</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> nextIdx(<strong class="jxr_keyword">int</strong> index) {
-<a class="jxr_linenumber" name="476" href="#476">476</a>             <em class="jxr_comment">// use bitwise operation as this is faster as using modulo.</em>
-<a class="jxr_linenumber" name="477" href="#477">477</a>             <strong class="jxr_keyword">return</strong> index + 1 &amp; entries.length - 1;
-<a class="jxr_linenumber" name="478" href="#478">478</a>         }
-<a class="jxr_linenumber" name="479" href="#479">479</a> 
-<a class="jxr_linenumber" name="480" href="#480">480</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Entry&lt;T&gt; {
-<a class="jxr_linenumber" name="481" href="#481">481</a>             PoolChunk&lt;T&gt; chunk;
-<a class="jxr_linenumber" name="482" href="#482">482</a>             <strong class="jxr_keyword">long</strong> handle;
-<a class="jxr_linenumber" name="483" href="#483">483</a>         }
-<a class="jxr_linenumber" name="484" href="#484">484</a>     }
-<a class="jxr_linenumber" name="485" href="#485">485</a> }
+<a class="jxr_linenumber" name="464" href="#464">464</a>             <em class="jxr_comment">// need to synchronize on the area from which it was allocated before.</em>
+<a class="jxr_linenumber" name="465" href="#465">465</a>             <strong class="jxr_keyword">synchronized</strong> (chunk.arena) {
+<a class="jxr_linenumber" name="466" href="#466">466</a>                 chunk.parent.free(chunk, entry.handle);
+<a class="jxr_linenumber" name="467" href="#467">467</a>             }
+<a class="jxr_linenumber" name="468" href="#468">468</a>             entry.chunk = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="469" href="#469">469</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="470" href="#470">470</a>         }
+<a class="jxr_linenumber" name="471" href="#471">471</a> 
+<a class="jxr_linenumber" name="472" href="#472">472</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="473" href="#473">473</a> <em class="jxr_javadoccomment">         * Return the number of cached entries.</em>
+<a class="jxr_linenumber" name="474" href="#474">474</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="475" href="#475">475</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> size()  {
+<a class="jxr_linenumber" name="476" href="#476">476</a>             <strong class="jxr_keyword">return</strong> tail - head &amp; entries.length - 1;
+<a class="jxr_linenumber" name="477" href="#477">477</a>         }
+<a class="jxr_linenumber" name="478" href="#478">478</a> 
+<a class="jxr_linenumber" name="479" href="#479">479</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> nextIdx(<strong class="jxr_keyword">int</strong> index) {
+<a class="jxr_linenumber" name="480" href="#480">480</a>             <em class="jxr_comment">// use bitwise operation as this is faster as using modulo.</em>
+<a class="jxr_linenumber" name="481" href="#481">481</a>             <strong class="jxr_keyword">return</strong> index + 1 &amp; entries.length - 1;
+<a class="jxr_linenumber" name="482" href="#482">482</a>         }
+<a class="jxr_linenumber" name="483" href="#483">483</a> 
+<a class="jxr_linenumber" name="484" href="#484">484</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Entry&lt;T&gt; {
+<a class="jxr_linenumber" name="485" href="#485">485</a>             PoolChunk&lt;T&gt; chunk;
+<a class="jxr_linenumber" name="486" href="#486">486</a>             <strong class="jxr_keyword">long</strong> handle;
+<a class="jxr_linenumber" name="487" href="#487">487</a>         }
+<a class="jxr_linenumber" name="488" href="#488">488</a>     }
+<a class="jxr_linenumber" name="489" href="#489">489</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

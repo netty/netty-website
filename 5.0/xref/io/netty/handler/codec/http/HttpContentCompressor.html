@@ -104,9 +104,9 @@
 <a class="jxr_linenumber" name="94" href="#94">94</a>  
 <a class="jxr_linenumber" name="95" href="#95">95</a>      @Override
 <a class="jxr_linenumber" name="96" href="#96">96</a>      <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/handler/codec/http/HttpContentEncoder.html">Result</a> beginEncode(<a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> headers, CharSequence acceptEncoding) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="97" href="#97">97</a>          String contentEncoding = headers.headers().get(HttpHeaders.Names.CONTENT_ENCODING);
+<a class="jxr_linenumber" name="97" href="#97">97</a>          CharSequence contentEncoding = headers.headers().get(HttpHeaderNames.CONTENT_ENCODING);
 <a class="jxr_linenumber" name="98" href="#98">98</a>          <strong class="jxr_keyword">if</strong> (contentEncoding != <strong class="jxr_keyword">null</strong> &amp;&amp;
-<a class="jxr_linenumber" name="99" href="#99">99</a>              !HttpHeaders.equalsIgnoreCase(HttpHeaders.Values.IDENTITY, contentEncoding)) {
+<a class="jxr_linenumber" name="99" href="#99">99</a>              !HttpHeaderValues.IDENTITY.equalsIgnoreCase(contentEncoding)) {
 <a class="jxr_linenumber" name="100" href="#100">100</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="101" href="#101">101</a>         }
 <a class="jxr_linenumber" name="102" href="#102">102</a> 
@@ -133,47 +133,48 @@
 <a class="jxr_linenumber" name="123" href="#123">123</a>                         wrapper, compressionLevel, windowBits, memLevel)));
 <a class="jxr_linenumber" name="124" href="#124">124</a>     }
 <a class="jxr_linenumber" name="125" href="#125">125</a> 
-<a class="jxr_linenumber" name="126" href="#126">126</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/handler/codec/compression/ZlibWrapper.html">ZlibWrapper</a> determineWrapper(CharSequence acceptEncoding) {
-<a class="jxr_linenumber" name="127" href="#127">127</a>         <strong class="jxr_keyword">float</strong> starQ = -1.0f;
-<a class="jxr_linenumber" name="128" href="#128">128</a>         <strong class="jxr_keyword">float</strong> gzipQ = -1.0f;
-<a class="jxr_linenumber" name="129" href="#129">129</a>         <strong class="jxr_keyword">float</strong> deflateQ = -1.0f;
-<a class="jxr_linenumber" name="130" href="#130">130</a>         <strong class="jxr_keyword">for</strong> (String encoding: StringUtil.split(acceptEncoding.toString(), ',')) {
-<a class="jxr_linenumber" name="131" href="#131">131</a>             <strong class="jxr_keyword">float</strong> q = 1.0f;
-<a class="jxr_linenumber" name="132" href="#132">132</a>             <strong class="jxr_keyword">int</strong> equalsPos = encoding.indexOf('=');
-<a class="jxr_linenumber" name="133" href="#133">133</a>             <strong class="jxr_keyword">if</strong> (equalsPos != -1) {
-<a class="jxr_linenumber" name="134" href="#134">134</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="135" href="#135">135</a>                     q = Float.valueOf(encoding.substring(equalsPos + 1));
-<a class="jxr_linenumber" name="136" href="#136">136</a>                 } <strong class="jxr_keyword">catch</strong> (NumberFormatException e) {
-<a class="jxr_linenumber" name="137" href="#137">137</a>                     <em class="jxr_comment">// Ignore encoding</em>
-<a class="jxr_linenumber" name="138" href="#138">138</a>                     q = 0.0f;
-<a class="jxr_linenumber" name="139" href="#139">139</a>                 }
-<a class="jxr_linenumber" name="140" href="#140">140</a>             }
-<a class="jxr_linenumber" name="141" href="#141">141</a>             <strong class="jxr_keyword">if</strong> (encoding.contains(<span class="jxr_string">"*"</span>)) {
-<a class="jxr_linenumber" name="142" href="#142">142</a>                 starQ = q;
-<a class="jxr_linenumber" name="143" href="#143">143</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (encoding.contains(<span class="jxr_string">"gzip"</span>) &amp;&amp; q &gt; gzipQ) {
-<a class="jxr_linenumber" name="144" href="#144">144</a>                 gzipQ = q;
-<a class="jxr_linenumber" name="145" href="#145">145</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (encoding.contains(<span class="jxr_string">"deflate"</span>) &amp;&amp; q &gt; deflateQ) {
-<a class="jxr_linenumber" name="146" href="#146">146</a>                 deflateQ = q;
-<a class="jxr_linenumber" name="147" href="#147">147</a>             }
-<a class="jxr_linenumber" name="148" href="#148">148</a>         }
-<a class="jxr_linenumber" name="149" href="#149">149</a>         <strong class="jxr_keyword">if</strong> (gzipQ &gt; 0.0f || deflateQ &gt; 0.0f) {
-<a class="jxr_linenumber" name="150" href="#150">150</a>             <strong class="jxr_keyword">if</strong> (gzipQ &gt;= deflateQ) {
-<a class="jxr_linenumber" name="151" href="#151">151</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.GZIP;
-<a class="jxr_linenumber" name="152" href="#152">152</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="153" href="#153">153</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.ZLIB;
-<a class="jxr_linenumber" name="154" href="#154">154</a>             }
-<a class="jxr_linenumber" name="155" href="#155">155</a>         }
-<a class="jxr_linenumber" name="156" href="#156">156</a>         <strong class="jxr_keyword">if</strong> (starQ &gt; 0.0f) {
-<a class="jxr_linenumber" name="157" href="#157">157</a>             <strong class="jxr_keyword">if</strong> (gzipQ == -1.0f) {
-<a class="jxr_linenumber" name="158" href="#158">158</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.GZIP;
-<a class="jxr_linenumber" name="159" href="#159">159</a>             }
-<a class="jxr_linenumber" name="160" href="#160">160</a>             <strong class="jxr_keyword">if</strong> (deflateQ == -1.0f) {
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.ZLIB;
-<a class="jxr_linenumber" name="162" href="#162">162</a>             }
-<a class="jxr_linenumber" name="163" href="#163">163</a>         }
-<a class="jxr_linenumber" name="164" href="#164">164</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="165" href="#165">165</a>     }
-<a class="jxr_linenumber" name="166" href="#166">166</a> }
+<a class="jxr_linenumber" name="126" href="#126">126</a>     @SuppressWarnings(<span class="jxr_string">"FloatingPointEquality"</span>)
+<a class="jxr_linenumber" name="127" href="#127">127</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/handler/codec/compression/ZlibWrapper.html">ZlibWrapper</a> determineWrapper(CharSequence acceptEncoding) {
+<a class="jxr_linenumber" name="128" href="#128">128</a>         <strong class="jxr_keyword">float</strong> starQ = -1.0f;
+<a class="jxr_linenumber" name="129" href="#129">129</a>         <strong class="jxr_keyword">float</strong> gzipQ = -1.0f;
+<a class="jxr_linenumber" name="130" href="#130">130</a>         <strong class="jxr_keyword">float</strong> deflateQ = -1.0f;
+<a class="jxr_linenumber" name="131" href="#131">131</a>         <strong class="jxr_keyword">for</strong> (String encoding: StringUtil.split(acceptEncoding.toString(), ',')) {
+<a class="jxr_linenumber" name="132" href="#132">132</a>             <strong class="jxr_keyword">float</strong> q = 1.0f;
+<a class="jxr_linenumber" name="133" href="#133">133</a>             <strong class="jxr_keyword">int</strong> equalsPos = encoding.indexOf('=');
+<a class="jxr_linenumber" name="134" href="#134">134</a>             <strong class="jxr_keyword">if</strong> (equalsPos != -1) {
+<a class="jxr_linenumber" name="135" href="#135">135</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="136" href="#136">136</a>                     q = Float.valueOf(encoding.substring(equalsPos + 1));
+<a class="jxr_linenumber" name="137" href="#137">137</a>                 } <strong class="jxr_keyword">catch</strong> (NumberFormatException e) {
+<a class="jxr_linenumber" name="138" href="#138">138</a>                     <em class="jxr_comment">// Ignore encoding</em>
+<a class="jxr_linenumber" name="139" href="#139">139</a>                     q = 0.0f;
+<a class="jxr_linenumber" name="140" href="#140">140</a>                 }
+<a class="jxr_linenumber" name="141" href="#141">141</a>             }
+<a class="jxr_linenumber" name="142" href="#142">142</a>             <strong class="jxr_keyword">if</strong> (encoding.contains(<span class="jxr_string">"*"</span>)) {
+<a class="jxr_linenumber" name="143" href="#143">143</a>                 starQ = q;
+<a class="jxr_linenumber" name="144" href="#144">144</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (encoding.contains(<span class="jxr_string">"gzip"</span>) &amp;&amp; q &gt; gzipQ) {
+<a class="jxr_linenumber" name="145" href="#145">145</a>                 gzipQ = q;
+<a class="jxr_linenumber" name="146" href="#146">146</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (encoding.contains(<span class="jxr_string">"deflate"</span>) &amp;&amp; q &gt; deflateQ) {
+<a class="jxr_linenumber" name="147" href="#147">147</a>                 deflateQ = q;
+<a class="jxr_linenumber" name="148" href="#148">148</a>             }
+<a class="jxr_linenumber" name="149" href="#149">149</a>         }
+<a class="jxr_linenumber" name="150" href="#150">150</a>         <strong class="jxr_keyword">if</strong> (gzipQ &gt; 0.0f || deflateQ &gt; 0.0f) {
+<a class="jxr_linenumber" name="151" href="#151">151</a>             <strong class="jxr_keyword">if</strong> (gzipQ &gt;= deflateQ) {
+<a class="jxr_linenumber" name="152" href="#152">152</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.GZIP;
+<a class="jxr_linenumber" name="153" href="#153">153</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="154" href="#154">154</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.ZLIB;
+<a class="jxr_linenumber" name="155" href="#155">155</a>             }
+<a class="jxr_linenumber" name="156" href="#156">156</a>         }
+<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">if</strong> (starQ &gt; 0.0f) {
+<a class="jxr_linenumber" name="158" href="#158">158</a>             <strong class="jxr_keyword">if</strong> (gzipQ == -1.0f) {
+<a class="jxr_linenumber" name="159" href="#159">159</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.GZIP;
+<a class="jxr_linenumber" name="160" href="#160">160</a>             }
+<a class="jxr_linenumber" name="161" href="#161">161</a>             <strong class="jxr_keyword">if</strong> (deflateQ == -1.0f) {
+<a class="jxr_linenumber" name="162" href="#162">162</a>                 <strong class="jxr_keyword">return</strong> ZlibWrapper.ZLIB;
+<a class="jxr_linenumber" name="163" href="#163">163</a>             }
+<a class="jxr_linenumber" name="164" href="#164">164</a>         }
+<a class="jxr_linenumber" name="165" href="#165">165</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="166" href="#166">166</a>     }
+<a class="jxr_linenumber" name="167" href="#167">167</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

@@ -265,7 +265,7 @@
 <a class="jxr_linenumber" name="255" href="#255">255</a>                 <strong class="jxr_keyword">int</strong> tooLongFrameLength = <strong class="jxr_keyword">this</strong>.tooLongFrameLength;
 <a class="jxr_linenumber" name="256" href="#256">256</a>                 <strong class="jxr_keyword">this</strong>.tooLongFrameLength = 0;
 <a class="jxr_linenumber" name="257" href="#257">257</a>                 <strong class="jxr_keyword">if</strong> (!failFast) {
-<a class="jxr_linenumber" name="258" href="#258">258</a>                     fail(ctx, tooLongFrameLength);
+<a class="jxr_linenumber" name="258" href="#258">258</a>                     fail(tooLongFrameLength);
 <a class="jxr_linenumber" name="259" href="#259">259</a>                 }
 <a class="jxr_linenumber" name="260" href="#260">260</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="261" href="#261">261</a>             }
@@ -273,18 +273,18 @@
 <a class="jxr_linenumber" name="263" href="#263">263</a>             <strong class="jxr_keyword">if</strong> (minFrameLength &gt; maxFrameLength) {
 <a class="jxr_linenumber" name="264" href="#264">264</a>                 <em class="jxr_comment">// Discard read frame.</em>
 <a class="jxr_linenumber" name="265" href="#265">265</a>                 buffer.skipBytes(minFrameLength + minDelimLength);
-<a class="jxr_linenumber" name="266" href="#266">266</a>                 fail(ctx, minFrameLength);
+<a class="jxr_linenumber" name="266" href="#266">266</a>                 fail(minFrameLength);
 <a class="jxr_linenumber" name="267" href="#267">267</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="268" href="#268">268</a>             }
 <a class="jxr_linenumber" name="269" href="#269">269</a> 
 <a class="jxr_linenumber" name="270" href="#270">270</a>             <strong class="jxr_keyword">if</strong> (stripDelimiter) {
-<a class="jxr_linenumber" name="271" href="#271">271</a>                 frame = buffer.readBytes(minFrameLength);
+<a class="jxr_linenumber" name="271" href="#271">271</a>                 frame = buffer.readSlice(minFrameLength);
 <a class="jxr_linenumber" name="272" href="#272">272</a>                 buffer.skipBytes(minDelimLength);
 <a class="jxr_linenumber" name="273" href="#273">273</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="274" href="#274">274</a>                 frame = buffer.readBytes(minFrameLength + minDelimLength);
+<a class="jxr_linenumber" name="274" href="#274">274</a>                 frame = buffer.readSlice(minFrameLength + minDelimLength);
 <a class="jxr_linenumber" name="275" href="#275">275</a>             }
 <a class="jxr_linenumber" name="276" href="#276">276</a> 
-<a class="jxr_linenumber" name="277" href="#277">277</a>             <strong class="jxr_keyword">return</strong> frame;
+<a class="jxr_linenumber" name="277" href="#277">277</a>             <strong class="jxr_keyword">return</strong> frame.retain();
 <a class="jxr_linenumber" name="278" href="#278">278</a>         } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="279" href="#279">279</a>             <strong class="jxr_keyword">if</strong> (!discardingTooLongFrame) {
 <a class="jxr_linenumber" name="280" href="#280">280</a>                 <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &gt; maxFrameLength) {
@@ -293,7 +293,7 @@
 <a class="jxr_linenumber" name="283" href="#283">283</a>                     buffer.skipBytes(buffer.readableBytes());
 <a class="jxr_linenumber" name="284" href="#284">284</a>                     discardingTooLongFrame = <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="285" href="#285">285</a>                     <strong class="jxr_keyword">if</strong> (failFast) {
-<a class="jxr_linenumber" name="286" href="#286">286</a>                         fail(ctx, tooLongFrameLength);
+<a class="jxr_linenumber" name="286" href="#286">286</a>                         fail(tooLongFrameLength);
 <a class="jxr_linenumber" name="287" href="#287">287</a>                     }
 <a class="jxr_linenumber" name="288" href="#288">288</a>                 }
 <a class="jxr_linenumber" name="289" href="#289">289</a>             } <strong class="jxr_keyword">else</strong> {
@@ -305,66 +305,64 @@
 <a class="jxr_linenumber" name="295" href="#295">295</a>         }
 <a class="jxr_linenumber" name="296" href="#296">296</a>     }
 <a class="jxr_linenumber" name="297" href="#297">297</a> 
-<a class="jxr_linenumber" name="298" href="#298">298</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> fail(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> frameLength) {
+<a class="jxr_linenumber" name="298" href="#298">298</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> fail(<strong class="jxr_keyword">long</strong> frameLength) {
 <a class="jxr_linenumber" name="299" href="#299">299</a>         <strong class="jxr_keyword">if</strong> (frameLength &gt; 0) {
-<a class="jxr_linenumber" name="300" href="#300">300</a>             ctx.fireExceptionCaught(
-<a class="jxr_linenumber" name="301" href="#301">301</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/TooLongFrameException.html">TooLongFrameException</a>(
-<a class="jxr_linenumber" name="302" href="#302">302</a>                             <span class="jxr_string">"frame length exceeds "</span> + maxFrameLength +
-<a class="jxr_linenumber" name="303" href="#303">303</a>                             <span class="jxr_string">": "</span> + frameLength + <span class="jxr_string">" - discarded"</span>));
-<a class="jxr_linenumber" name="304" href="#304">304</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="305" href="#305">305</a>             ctx.fireExceptionCaught(
-<a class="jxr_linenumber" name="306" href="#306">306</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/TooLongFrameException.html">TooLongFrameException</a>(
-<a class="jxr_linenumber" name="307" href="#307">307</a>                             <span class="jxr_string">"frame length exceeds "</span> + maxFrameLength +
-<a class="jxr_linenumber" name="308" href="#308">308</a>                             <span class="jxr_string">" - discarding"</span>));
-<a class="jxr_linenumber" name="309" href="#309">309</a>         }
-<a class="jxr_linenumber" name="310" href="#310">310</a>     }
-<a class="jxr_linenumber" name="311" href="#311">311</a> 
-<a class="jxr_linenumber" name="312" href="#312">312</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="313" href="#313">313</a> <em class="jxr_javadoccomment">     * Returns the number of bytes between the readerIndex of the haystack and</em>
-<a class="jxr_linenumber" name="314" href="#314">314</a> <em class="jxr_javadoccomment">     * the first needle found in the haystack.  -1 is returned if no needle is</em>
-<a class="jxr_linenumber" name="315" href="#315">315</a> <em class="jxr_javadoccomment">     * found in the haystack.</em>
-<a class="jxr_linenumber" name="316" href="#316">316</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="317" href="#317">317</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> indexOf(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> haystack, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> needle) {
-<a class="jxr_linenumber" name="318" href="#318">318</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = haystack.readerIndex(); i &lt; haystack.writerIndex(); i ++) {
-<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">int</strong> haystackIndex = i;
-<a class="jxr_linenumber" name="320" href="#320">320</a>             <strong class="jxr_keyword">int</strong> needleIndex;
-<a class="jxr_linenumber" name="321" href="#321">321</a>             <strong class="jxr_keyword">for</strong> (needleIndex = 0; needleIndex &lt; needle.capacity(); needleIndex ++) {
-<a class="jxr_linenumber" name="322" href="#322">322</a>                 <strong class="jxr_keyword">if</strong> (haystack.getByte(haystackIndex) != needle.getByte(needleIndex)) {
-<a class="jxr_linenumber" name="323" href="#323">323</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="324" href="#324">324</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="325" href="#325">325</a>                     haystackIndex ++;
-<a class="jxr_linenumber" name="326" href="#326">326</a>                     <strong class="jxr_keyword">if</strong> (haystackIndex == haystack.writerIndex() &amp;&amp;
-<a class="jxr_linenumber" name="327" href="#327">327</a>                         needleIndex != needle.capacity() - 1) {
-<a class="jxr_linenumber" name="328" href="#328">328</a>                         <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="329" href="#329">329</a>                     }
-<a class="jxr_linenumber" name="330" href="#330">330</a>                 }
-<a class="jxr_linenumber" name="331" href="#331">331</a>             }
-<a class="jxr_linenumber" name="332" href="#332">332</a> 
-<a class="jxr_linenumber" name="333" href="#333">333</a>             <strong class="jxr_keyword">if</strong> (needleIndex == needle.capacity()) {
-<a class="jxr_linenumber" name="334" href="#334">334</a>                 <em class="jxr_comment">// Found the needle from the haystack!</em>
-<a class="jxr_linenumber" name="335" href="#335">335</a>                 <strong class="jxr_keyword">return</strong> i - haystack.readerIndex();
-<a class="jxr_linenumber" name="336" href="#336">336</a>             }
-<a class="jxr_linenumber" name="337" href="#337">337</a>         }
-<a class="jxr_linenumber" name="338" href="#338">338</a>         <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="339" href="#339">339</a>     }
-<a class="jxr_linenumber" name="340" href="#340">340</a> 
-<a class="jxr_linenumber" name="341" href="#341">341</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> validateDelimiter(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> delimiter) {
-<a class="jxr_linenumber" name="342" href="#342">342</a>         <strong class="jxr_keyword">if</strong> (delimiter == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="343" href="#343">343</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NullPointerException(<span class="jxr_string">"delimiter"</span>);
-<a class="jxr_linenumber" name="344" href="#344">344</a>         }
-<a class="jxr_linenumber" name="345" href="#345">345</a>         <strong class="jxr_keyword">if</strong> (!delimiter.isReadable()) {
-<a class="jxr_linenumber" name="346" href="#346">346</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"empty delimiter"</span>);
-<a class="jxr_linenumber" name="347" href="#347">347</a>         }
-<a class="jxr_linenumber" name="348" href="#348">348</a>     }
-<a class="jxr_linenumber" name="349" href="#349">349</a> 
-<a class="jxr_linenumber" name="350" href="#350">350</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> validateMaxFrameLength(<strong class="jxr_keyword">int</strong> maxFrameLength) {
-<a class="jxr_linenumber" name="351" href="#351">351</a>         <strong class="jxr_keyword">if</strong> (maxFrameLength &lt;= 0) {
-<a class="jxr_linenumber" name="352" href="#352">352</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="353" href="#353">353</a>                     <span class="jxr_string">"maxFrameLength must be a positive integer: "</span> +
-<a class="jxr_linenumber" name="354" href="#354">354</a>                     maxFrameLength);
-<a class="jxr_linenumber" name="355" href="#355">355</a>         }
-<a class="jxr_linenumber" name="356" href="#356">356</a>     }
-<a class="jxr_linenumber" name="357" href="#357">357</a> }
+<a class="jxr_linenumber" name="300" href="#300">300</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/TooLongFrameException.html">TooLongFrameException</a>(
+<a class="jxr_linenumber" name="301" href="#301">301</a>                             <span class="jxr_string">"frame length exceeds "</span> + maxFrameLength +
+<a class="jxr_linenumber" name="302" href="#302">302</a>                             <span class="jxr_string">": "</span> + frameLength + <span class="jxr_string">" - discarded"</span>);
+<a class="jxr_linenumber" name="303" href="#303">303</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="304" href="#304">304</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/TooLongFrameException.html">TooLongFrameException</a>(
+<a class="jxr_linenumber" name="305" href="#305">305</a>                             <span class="jxr_string">"frame length exceeds "</span> + maxFrameLength +
+<a class="jxr_linenumber" name="306" href="#306">306</a>                             <span class="jxr_string">" - discarding"</span>);
+<a class="jxr_linenumber" name="307" href="#307">307</a>         }
+<a class="jxr_linenumber" name="308" href="#308">308</a>     }
+<a class="jxr_linenumber" name="309" href="#309">309</a> 
+<a class="jxr_linenumber" name="310" href="#310">310</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="311" href="#311">311</a> <em class="jxr_javadoccomment">     * Returns the number of bytes between the readerIndex of the haystack and</em>
+<a class="jxr_linenumber" name="312" href="#312">312</a> <em class="jxr_javadoccomment">     * the first needle found in the haystack.  -1 is returned if no needle is</em>
+<a class="jxr_linenumber" name="313" href="#313">313</a> <em class="jxr_javadoccomment">     * found in the haystack.</em>
+<a class="jxr_linenumber" name="314" href="#314">314</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="315" href="#315">315</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> indexOf(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> haystack, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> needle) {
+<a class="jxr_linenumber" name="316" href="#316">316</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = haystack.readerIndex(); i &lt; haystack.writerIndex(); i ++) {
+<a class="jxr_linenumber" name="317" href="#317">317</a>             <strong class="jxr_keyword">int</strong> haystackIndex = i;
+<a class="jxr_linenumber" name="318" href="#318">318</a>             <strong class="jxr_keyword">int</strong> needleIndex;
+<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">for</strong> (needleIndex = 0; needleIndex &lt; needle.capacity(); needleIndex ++) {
+<a class="jxr_linenumber" name="320" href="#320">320</a>                 <strong class="jxr_keyword">if</strong> (haystack.getByte(haystackIndex) != needle.getByte(needleIndex)) {
+<a class="jxr_linenumber" name="321" href="#321">321</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="322" href="#322">322</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="323" href="#323">323</a>                     haystackIndex ++;
+<a class="jxr_linenumber" name="324" href="#324">324</a>                     <strong class="jxr_keyword">if</strong> (haystackIndex == haystack.writerIndex() &amp;&amp;
+<a class="jxr_linenumber" name="325" href="#325">325</a>                         needleIndex != needle.capacity() - 1) {
+<a class="jxr_linenumber" name="326" href="#326">326</a>                         <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="327" href="#327">327</a>                     }
+<a class="jxr_linenumber" name="328" href="#328">328</a>                 }
+<a class="jxr_linenumber" name="329" href="#329">329</a>             }
+<a class="jxr_linenumber" name="330" href="#330">330</a> 
+<a class="jxr_linenumber" name="331" href="#331">331</a>             <strong class="jxr_keyword">if</strong> (needleIndex == needle.capacity()) {
+<a class="jxr_linenumber" name="332" href="#332">332</a>                 <em class="jxr_comment">// Found the needle from the haystack!</em>
+<a class="jxr_linenumber" name="333" href="#333">333</a>                 <strong class="jxr_keyword">return</strong> i - haystack.readerIndex();
+<a class="jxr_linenumber" name="334" href="#334">334</a>             }
+<a class="jxr_linenumber" name="335" href="#335">335</a>         }
+<a class="jxr_linenumber" name="336" href="#336">336</a>         <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="337" href="#337">337</a>     }
+<a class="jxr_linenumber" name="338" href="#338">338</a> 
+<a class="jxr_linenumber" name="339" href="#339">339</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> validateDelimiter(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> delimiter) {
+<a class="jxr_linenumber" name="340" href="#340">340</a>         <strong class="jxr_keyword">if</strong> (delimiter == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="341" href="#341">341</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> NullPointerException(<span class="jxr_string">"delimiter"</span>);
+<a class="jxr_linenumber" name="342" href="#342">342</a>         }
+<a class="jxr_linenumber" name="343" href="#343">343</a>         <strong class="jxr_keyword">if</strong> (!delimiter.isReadable()) {
+<a class="jxr_linenumber" name="344" href="#344">344</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"empty delimiter"</span>);
+<a class="jxr_linenumber" name="345" href="#345">345</a>         }
+<a class="jxr_linenumber" name="346" href="#346">346</a>     }
+<a class="jxr_linenumber" name="347" href="#347">347</a> 
+<a class="jxr_linenumber" name="348" href="#348">348</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> validateMaxFrameLength(<strong class="jxr_keyword">int</strong> maxFrameLength) {
+<a class="jxr_linenumber" name="349" href="#349">349</a>         <strong class="jxr_keyword">if</strong> (maxFrameLength &lt;= 0) {
+<a class="jxr_linenumber" name="350" href="#350">350</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="351" href="#351">351</a>                     <span class="jxr_string">"maxFrameLength must be a positive integer: "</span> +
+<a class="jxr_linenumber" name="352" href="#352">352</a>                     maxFrameLength);
+<a class="jxr_linenumber" name="353" href="#353">353</a>         }
+<a class="jxr_linenumber" name="354" href="#354">354</a>     }
+<a class="jxr_linenumber" name="355" href="#355">355</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

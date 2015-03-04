@@ -67,7 +67,7 @@
 <a class="jxr_linenumber" name="57" href="#57">57</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/nio/AbstractNioByteChannel.html">NioByteUnsafe</a>();
 <a class="jxr_linenumber" name="58" href="#58">58</a>      }
 <a class="jxr_linenumber" name="59" href="#59">59</a>  
-<a class="jxr_linenumber" name="60" href="#60">60</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/nio/AbstractNioByteChannel.html">NioByteUnsafe</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/nio/AbstractNioChannel.html">AbstractNioUnsafe</a> {
+<a class="jxr_linenumber" name="60" href="#60">60</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/nio/AbstractNioByteChannel.html">NioByteUnsafe</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/nio/AbstractNioChannel.html">AbstractNioUnsafe</a> {
 <a class="jxr_linenumber" name="61" href="#61">61</a>          <strong class="jxr_keyword">private</strong> RecvByteBufAllocator.Handle allocHandle;
 <a class="jxr_linenumber" name="62" href="#62">62</a>  
 <a class="jxr_linenumber" name="63" href="#63">63</a>          <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeOnRead(<a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline) {
@@ -101,7 +101,7 @@
 <a class="jxr_linenumber" name="91" href="#91">91</a>          }
 <a class="jxr_linenumber" name="92" href="#92">92</a>  
 <a class="jxr_linenumber" name="93" href="#93">93</a>          @Override
-<a class="jxr_linenumber" name="94" href="#94">94</a>          <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read() {
+<a class="jxr_linenumber" name="94" href="#94">94</a>          <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> read() {
 <a class="jxr_linenumber" name="95" href="#95">95</a>              <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> config = config();
 <a class="jxr_linenumber" name="96" href="#96">96</a>              <strong class="jxr_keyword">if</strong> (!config.isAutoRead() &amp;&amp; !isReadPending()) {
 <a class="jxr_linenumber" name="97" href="#97">97</a>                  <em class="jxr_comment">// ChannelConfig.setAutoRead(false) was called in the meantime</em>
@@ -130,234 +130,235 @@
 <a class="jxr_linenumber" name="120" href="#120">120</a>                     <strong class="jxr_keyword">if</strong> (localReadAmount &lt;= 0) {
 <a class="jxr_linenumber" name="121" href="#121">121</a>                         <em class="jxr_comment">// not was read release the buffer</em>
 <a class="jxr_linenumber" name="122" href="#122">122</a>                         byteBuf.release();
-<a class="jxr_linenumber" name="123" href="#123">123</a>                         close = localReadAmount &lt; 0;
-<a class="jxr_linenumber" name="124" href="#124">124</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="125" href="#125">125</a>                     }
-<a class="jxr_linenumber" name="126" href="#126">126</a>                     <strong class="jxr_keyword">if</strong> (!readPendingReset) {
-<a class="jxr_linenumber" name="127" href="#127">127</a>                         readPendingReset = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="128" href="#128">128</a>                         setReadPending(false);
-<a class="jxr_linenumber" name="129" href="#129">129</a>                     }
-<a class="jxr_linenumber" name="130" href="#130">130</a>                     pipeline.fireChannelRead(byteBuf);
-<a class="jxr_linenumber" name="131" href="#131">131</a>                     byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="132" href="#132">132</a> 
-<a class="jxr_linenumber" name="133" href="#133">133</a>                     <strong class="jxr_keyword">if</strong> (totalReadAmount &gt;= Integer.MAX_VALUE - localReadAmount) {
-<a class="jxr_linenumber" name="134" href="#134">134</a>                         <em class="jxr_comment">// Avoid overflow.</em>
-<a class="jxr_linenumber" name="135" href="#135">135</a>                         totalReadAmount = Integer.MAX_VALUE;
-<a class="jxr_linenumber" name="136" href="#136">136</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="137" href="#137">137</a>                     }
-<a class="jxr_linenumber" name="138" href="#138">138</a> 
-<a class="jxr_linenumber" name="139" href="#139">139</a>                     totalReadAmount += localReadAmount;
-<a class="jxr_linenumber" name="140" href="#140">140</a> 
-<a class="jxr_linenumber" name="141" href="#141">141</a>                     <em class="jxr_comment">// stop reading</em>
-<a class="jxr_linenumber" name="142" href="#142">142</a>                     <strong class="jxr_keyword">if</strong> (!config.isAutoRead()) {
-<a class="jxr_linenumber" name="143" href="#143">143</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="144" href="#144">144</a>                     }
-<a class="jxr_linenumber" name="145" href="#145">145</a> 
-<a class="jxr_linenumber" name="146" href="#146">146</a>                     <strong class="jxr_keyword">if</strong> (localReadAmount &lt; writable) {
-<a class="jxr_linenumber" name="147" href="#147">147</a>                         <em class="jxr_comment">// Read less than what the buffer can hold,</em>
-<a class="jxr_linenumber" name="148" href="#148">148</a>                         <em class="jxr_comment">// which might mean we drained the recv buffer completely.</em>
-<a class="jxr_linenumber" name="149" href="#149">149</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="150" href="#150">150</a>                     }
-<a class="jxr_linenumber" name="151" href="#151">151</a>                 } <strong class="jxr_keyword">while</strong> (++ messages &lt; maxMessagesPerRead);
-<a class="jxr_linenumber" name="152" href="#152">152</a> 
-<a class="jxr_linenumber" name="153" href="#153">153</a>                 pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="154" href="#154">154</a>                 allocHandle.record(totalReadAmount);
-<a class="jxr_linenumber" name="155" href="#155">155</a> 
-<a class="jxr_linenumber" name="156" href="#156">156</a>                 <strong class="jxr_keyword">if</strong> (close) {
-<a class="jxr_linenumber" name="157" href="#157">157</a>                     closeOnRead(pipeline);
-<a class="jxr_linenumber" name="158" href="#158">158</a>                     close = false;
-<a class="jxr_linenumber" name="159" href="#159">159</a>                 }
-<a class="jxr_linenumber" name="160" href="#160">160</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 handleReadException(pipeline, byteBuf, t, close);
-<a class="jxr_linenumber" name="162" href="#162">162</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="163" href="#163">163</a>                 <em class="jxr_comment">// Check if there is a readPending which was not processed yet.</em>
-<a class="jxr_linenumber" name="164" href="#164">164</a>                 <em class="jxr_comment">// This could be for two reasons:</em>
-<a class="jxr_linenumber" name="165" href="#165">165</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</em>
-<a class="jxr_linenumber" name="166" href="#166">166</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</em>
-<a class="jxr_linenumber" name="167" href="#167">167</a>                 <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="168" href="#168">168</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2254</em>
-<a class="jxr_linenumber" name="169" href="#169">169</a>                 <strong class="jxr_keyword">if</strong> (!config.isAutoRead() &amp;&amp; !isReadPending()) {
-<a class="jxr_linenumber" name="170" href="#170">170</a>                     removeReadOp();
-<a class="jxr_linenumber" name="171" href="#171">171</a>                 }
-<a class="jxr_linenumber" name="172" href="#172">172</a>             }
-<a class="jxr_linenumber" name="173" href="#173">173</a>         }
-<a class="jxr_linenumber" name="174" href="#174">174</a>     }
-<a class="jxr_linenumber" name="175" href="#175">175</a> 
-<a class="jxr_linenumber" name="176" href="#176">176</a>     @Override
-<a class="jxr_linenumber" name="177" href="#177">177</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doWrite(<a href="../../../../io/netty/channel/ChannelOutboundBuffer.html">ChannelOutboundBuffer</a> in) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="178" href="#178">178</a>         <strong class="jxr_keyword">int</strong> writeSpinCount = -1;
-<a class="jxr_linenumber" name="179" href="#179">179</a> 
-<a class="jxr_linenumber" name="180" href="#180">180</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="181" href="#181">181</a>             Object msg = in.current();
-<a class="jxr_linenumber" name="182" href="#182">182</a>             <strong class="jxr_keyword">if</strong> (msg == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="183" href="#183">183</a>                 <em class="jxr_comment">// Wrote all messages.</em>
-<a class="jxr_linenumber" name="184" href="#184">184</a>                 clearOpWrite();
-<a class="jxr_linenumber" name="185" href="#185">185</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="186" href="#186">186</a>             }
-<a class="jxr_linenumber" name="187" href="#187">187</a> 
-<a class="jxr_linenumber" name="188" href="#188">188</a>             <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
-<a class="jxr_linenumber" name="189" href="#189">189</a>                 <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = (ByteBuf) msg;
-<a class="jxr_linenumber" name="190" href="#190">190</a>                 <strong class="jxr_keyword">int</strong> readableBytes = buf.readableBytes();
-<a class="jxr_linenumber" name="191" href="#191">191</a>                 <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
-<a class="jxr_linenumber" name="192" href="#192">192</a>                     in.remove();
-<a class="jxr_linenumber" name="193" href="#193">193</a>                     <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="194" href="#194">194</a>                 }
-<a class="jxr_linenumber" name="195" href="#195">195</a> 
-<a class="jxr_linenumber" name="196" href="#196">196</a>                 <strong class="jxr_keyword">boolean</strong> setOpWrite = false;
-<a class="jxr_linenumber" name="197" href="#197">197</a>                 <strong class="jxr_keyword">boolean</strong> done = false;
-<a class="jxr_linenumber" name="198" href="#198">198</a>                 <strong class="jxr_keyword">long</strong> flushedAmount = 0;
-<a class="jxr_linenumber" name="199" href="#199">199</a>                 <strong class="jxr_keyword">if</strong> (writeSpinCount == -1) {
-<a class="jxr_linenumber" name="200" href="#200">200</a>                     writeSpinCount = config().getWriteSpinCount();
-<a class="jxr_linenumber" name="201" href="#201">201</a>                 }
-<a class="jxr_linenumber" name="202" href="#202">202</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = writeSpinCount - 1; i &gt;= 0; i --) {
-<a class="jxr_linenumber" name="203" href="#203">203</a>                     <strong class="jxr_keyword">int</strong> localFlushedAmount = doWriteBytes(buf);
-<a class="jxr_linenumber" name="204" href="#204">204</a>                     <strong class="jxr_keyword">if</strong> (localFlushedAmount == 0) {
-<a class="jxr_linenumber" name="205" href="#205">205</a>                         setOpWrite = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="206" href="#206">206</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="207" href="#207">207</a>                     }
-<a class="jxr_linenumber" name="208" href="#208">208</a> 
-<a class="jxr_linenumber" name="209" href="#209">209</a>                     flushedAmount += localFlushedAmount;
-<a class="jxr_linenumber" name="210" href="#210">210</a>                     <strong class="jxr_keyword">if</strong> (!buf.isReadable()) {
-<a class="jxr_linenumber" name="211" href="#211">211</a>                         done = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="212" href="#212">212</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="213" href="#213">213</a>                     }
-<a class="jxr_linenumber" name="214" href="#214">214</a>                 }
-<a class="jxr_linenumber" name="215" href="#215">215</a> 
-<a class="jxr_linenumber" name="216" href="#216">216</a>                 in.progress(flushedAmount);
-<a class="jxr_linenumber" name="217" href="#217">217</a> 
-<a class="jxr_linenumber" name="218" href="#218">218</a>                 <strong class="jxr_keyword">if</strong> (done) {
-<a class="jxr_linenumber" name="219" href="#219">219</a>                     in.remove();
-<a class="jxr_linenumber" name="220" href="#220">220</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="221" href="#221">221</a>                     incompleteWrite(setOpWrite);
-<a class="jxr_linenumber" name="222" href="#222">222</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="223" href="#223">223</a>                 }
-<a class="jxr_linenumber" name="224" href="#224">224</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
-<a class="jxr_linenumber" name="225" href="#225">225</a>                 <a href="../../../../io/netty/channel/FileRegion.html">FileRegion</a> region = (FileRegion) msg;
-<a class="jxr_linenumber" name="226" href="#226">226</a>                 <strong class="jxr_keyword">boolean</strong> done = region.transfered() &gt;= region.count();
-<a class="jxr_linenumber" name="227" href="#227">227</a>                 <strong class="jxr_keyword">boolean</strong> setOpWrite = false;
-<a class="jxr_linenumber" name="228" href="#228">228</a> 
-<a class="jxr_linenumber" name="229" href="#229">229</a>                 <strong class="jxr_keyword">if</strong> (!done) {
-<a class="jxr_linenumber" name="230" href="#230">230</a>                     <strong class="jxr_keyword">long</strong> flushedAmount = 0;
-<a class="jxr_linenumber" name="231" href="#231">231</a>                     <strong class="jxr_keyword">if</strong> (writeSpinCount == -1) {
-<a class="jxr_linenumber" name="232" href="#232">232</a>                         writeSpinCount = config().getWriteSpinCount();
-<a class="jxr_linenumber" name="233" href="#233">233</a>                     }
-<a class="jxr_linenumber" name="234" href="#234">234</a> 
-<a class="jxr_linenumber" name="235" href="#235">235</a>                     <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = writeSpinCount - 1; i &gt;= 0; i--) {
-<a class="jxr_linenumber" name="236" href="#236">236</a>                         <strong class="jxr_keyword">long</strong> localFlushedAmount = doWriteFileRegion(region);
-<a class="jxr_linenumber" name="237" href="#237">237</a>                         <strong class="jxr_keyword">if</strong> (localFlushedAmount == 0) {
-<a class="jxr_linenumber" name="238" href="#238">238</a>                             setOpWrite = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="239" href="#239">239</a>                             <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="240" href="#240">240</a>                         }
-<a class="jxr_linenumber" name="241" href="#241">241</a> 
-<a class="jxr_linenumber" name="242" href="#242">242</a>                         flushedAmount += localFlushedAmount;
-<a class="jxr_linenumber" name="243" href="#243">243</a>                         <strong class="jxr_keyword">if</strong> (region.transfered() &gt;= region.count()) {
-<a class="jxr_linenumber" name="244" href="#244">244</a>                             done = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="245" href="#245">245</a>                             <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="246" href="#246">246</a>                         }
-<a class="jxr_linenumber" name="247" href="#247">247</a>                     }
-<a class="jxr_linenumber" name="248" href="#248">248</a> 
-<a class="jxr_linenumber" name="249" href="#249">249</a>                     in.progress(flushedAmount);
-<a class="jxr_linenumber" name="250" href="#250">250</a>                 }
-<a class="jxr_linenumber" name="251" href="#251">251</a> 
-<a class="jxr_linenumber" name="252" href="#252">252</a>                 <strong class="jxr_keyword">if</strong> (done) {
-<a class="jxr_linenumber" name="253" href="#253">253</a>                     in.remove();
-<a class="jxr_linenumber" name="254" href="#254">254</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="255" href="#255">255</a>                     incompleteWrite(setOpWrite);
-<a class="jxr_linenumber" name="256" href="#256">256</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="257" href="#257">257</a>                 }
-<a class="jxr_linenumber" name="258" href="#258">258</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="259" href="#259">259</a>                 <em class="jxr_comment">// Should not reach here.</em>
-<a class="jxr_linenumber" name="260" href="#260">260</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
-<a class="jxr_linenumber" name="261" href="#261">261</a>             }
-<a class="jxr_linenumber" name="262" href="#262">262</a>         }
-<a class="jxr_linenumber" name="263" href="#263">263</a>     }
-<a class="jxr_linenumber" name="264" href="#264">264</a> 
-<a class="jxr_linenumber" name="265" href="#265">265</a>     @Override
-<a class="jxr_linenumber" name="266" href="#266">266</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> Object filterOutboundMessage(Object msg) {
-<a class="jxr_linenumber" name="267" href="#267">267</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
-<a class="jxr_linenumber" name="268" href="#268">268</a>             <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = (ByteBuf) msg;
-<a class="jxr_linenumber" name="269" href="#269">269</a>             <strong class="jxr_keyword">if</strong> (buf.isDirect()) {
-<a class="jxr_linenumber" name="270" href="#270">270</a>                 <strong class="jxr_keyword">return</strong> msg;
-<a class="jxr_linenumber" name="271" href="#271">271</a>             }
-<a class="jxr_linenumber" name="272" href="#272">272</a> 
-<a class="jxr_linenumber" name="273" href="#273">273</a>             <strong class="jxr_keyword">return</strong> newDirectBuffer(buf);
-<a class="jxr_linenumber" name="274" href="#274">274</a>         }
-<a class="jxr_linenumber" name="275" href="#275">275</a> 
-<a class="jxr_linenumber" name="276" href="#276">276</a>         <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
-<a class="jxr_linenumber" name="277" href="#277">277</a>             <strong class="jxr_keyword">return</strong> msg;
-<a class="jxr_linenumber" name="278" href="#278">278</a>         }
-<a class="jxr_linenumber" name="279" href="#279">279</a> 
-<a class="jxr_linenumber" name="280" href="#280">280</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(
-<a class="jxr_linenumber" name="281" href="#281">281</a>                 <span class="jxr_string">"unsupported message type: "</span> + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
-<a class="jxr_linenumber" name="282" href="#282">282</a>     }
-<a class="jxr_linenumber" name="283" href="#283">283</a> 
-<a class="jxr_linenumber" name="284" href="#284">284</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> incompleteWrite(<strong class="jxr_keyword">boolean</strong> setOpWrite) {
-<a class="jxr_linenumber" name="285" href="#285">285</a>         <em class="jxr_comment">// Did not write completely.</em>
-<a class="jxr_linenumber" name="286" href="#286">286</a>         <strong class="jxr_keyword">if</strong> (setOpWrite) {
-<a class="jxr_linenumber" name="287" href="#287">287</a>             setOpWrite();
-<a class="jxr_linenumber" name="288" href="#288">288</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="289" href="#289">289</a>             <em class="jxr_comment">// Schedule flush again later so other tasks can be picked up in the meantime</em>
-<a class="jxr_linenumber" name="290" href="#290">290</a>             Runnable flushTask = <strong class="jxr_keyword">this</strong>.flushTask;
-<a class="jxr_linenumber" name="291" href="#291">291</a>             <strong class="jxr_keyword">if</strong> (flushTask == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="292" href="#292">292</a>                 flushTask = <strong class="jxr_keyword">this</strong>.flushTask = <strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="293" href="#293">293</a>                     @Override
-<a class="jxr_linenumber" name="294" href="#294">294</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="295" href="#295">295</a>                         flush();
-<a class="jxr_linenumber" name="296" href="#296">296</a>                     }
-<a class="jxr_linenumber" name="297" href="#297">297</a>                 };
-<a class="jxr_linenumber" name="298" href="#298">298</a>             }
-<a class="jxr_linenumber" name="299" href="#299">299</a>             eventLoop().execute(flushTask);
-<a class="jxr_linenumber" name="300" href="#300">300</a>         }
-<a class="jxr_linenumber" name="301" href="#301">301</a>     }
-<a class="jxr_linenumber" name="302" href="#302">302</a> 
-<a class="jxr_linenumber" name="303" href="#303">303</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="304" href="#304">304</a> <em class="jxr_javadoccomment">     * Write a {@link FileRegion}</em>
-<a class="jxr_linenumber" name="305" href="#305">305</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="306" href="#306">306</a> <em class="jxr_javadoccomment">     * @param region        the {@link FileRegion} from which the bytes should be written</em>
-<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * @return amount       the amount of written bytes</em>
-<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="309" href="#309">309</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">long</strong> doWriteFileRegion(<a href="../../../../io/netty/channel/FileRegion.html">FileRegion</a> region) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="310" href="#310">310</a> 
-<a class="jxr_linenumber" name="311" href="#311">311</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="312" href="#312">312</a> <em class="jxr_javadoccomment">     * Read bytes into the given {@link ByteBuf} and return the amount.</em>
-<a class="jxr_linenumber" name="313" href="#313">313</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="314" href="#314">314</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">int</strong> doReadBytes(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="315" href="#315">315</a> 
-<a class="jxr_linenumber" name="316" href="#316">316</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="317" href="#317">317</a> <em class="jxr_javadoccomment">     * Write bytes form the given {@link ByteBuf} to the underlying {@link java.nio.channels.Channel}.</em>
-<a class="jxr_linenumber" name="318" href="#318">318</a> <em class="jxr_javadoccomment">     * @param buf           the {@link ByteBuf} from which the bytes should be written</em>
-<a class="jxr_linenumber" name="319" href="#319">319</a> <em class="jxr_javadoccomment">     * @return amount       the amount of written bytes</em>
-<a class="jxr_linenumber" name="320" href="#320">320</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="321" href="#321">321</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">int</strong> doWriteBytes(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="322" href="#322">322</a> 
-<a class="jxr_linenumber" name="323" href="#323">323</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> setOpWrite() {
-<a class="jxr_linenumber" name="324" href="#324">324</a>         <strong class="jxr_keyword">final</strong> SelectionKey key = selectionKey();
-<a class="jxr_linenumber" name="325" href="#325">325</a>         <em class="jxr_comment">// Check first if the key is still valid as it may be canceled as part of the deregistration</em>
-<a class="jxr_linenumber" name="326" href="#326">326</a>         <em class="jxr_comment">// from the EventLoop</em>
-<a class="jxr_linenumber" name="327" href="#327">327</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/2104</em>
-<a class="jxr_linenumber" name="328" href="#328">328</a>         <strong class="jxr_keyword">if</strong> (!key.isValid()) {
-<a class="jxr_linenumber" name="329" href="#329">329</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="330" href="#330">330</a>         }
-<a class="jxr_linenumber" name="331" href="#331">331</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> interestOps = key.interestOps();
-<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">if</strong> ((interestOps &amp; SelectionKey.OP_WRITE) == 0) {
-<a class="jxr_linenumber" name="333" href="#333">333</a>             key.interestOps(interestOps | SelectionKey.OP_WRITE);
-<a class="jxr_linenumber" name="334" href="#334">334</a>         }
-<a class="jxr_linenumber" name="335" href="#335">335</a>     }
-<a class="jxr_linenumber" name="336" href="#336">336</a> 
-<a class="jxr_linenumber" name="337" href="#337">337</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> clearOpWrite() {
-<a class="jxr_linenumber" name="338" href="#338">338</a>         <strong class="jxr_keyword">final</strong> SelectionKey key = selectionKey();
-<a class="jxr_linenumber" name="339" href="#339">339</a>         <em class="jxr_comment">// Check first if the key is still valid as it may be canceled as part of the deregistration</em>
-<a class="jxr_linenumber" name="340" href="#340">340</a>         <em class="jxr_comment">// from the EventLoop</em>
-<a class="jxr_linenumber" name="341" href="#341">341</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/2104</em>
-<a class="jxr_linenumber" name="342" href="#342">342</a>         <strong class="jxr_keyword">if</strong> (!key.isValid()) {
-<a class="jxr_linenumber" name="343" href="#343">343</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="344" href="#344">344</a>         }
-<a class="jxr_linenumber" name="345" href="#345">345</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> interestOps = key.interestOps();
-<a class="jxr_linenumber" name="346" href="#346">346</a>         <strong class="jxr_keyword">if</strong> ((interestOps &amp; SelectionKey.OP_WRITE) != 0) {
-<a class="jxr_linenumber" name="347" href="#347">347</a>             key.interestOps(interestOps &amp; ~SelectionKey.OP_WRITE);
-<a class="jxr_linenumber" name="348" href="#348">348</a>         }
-<a class="jxr_linenumber" name="349" href="#349">349</a>     }
-<a class="jxr_linenumber" name="350" href="#350">350</a> }
+<a class="jxr_linenumber" name="123" href="#123">123</a>                         byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="124" href="#124">124</a>                         close = localReadAmount &lt; 0;
+<a class="jxr_linenumber" name="125" href="#125">125</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="126" href="#126">126</a>                     }
+<a class="jxr_linenumber" name="127" href="#127">127</a>                     <strong class="jxr_keyword">if</strong> (!readPendingReset) {
+<a class="jxr_linenumber" name="128" href="#128">128</a>                         readPendingReset = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="129" href="#129">129</a>                         setReadPending(false);
+<a class="jxr_linenumber" name="130" href="#130">130</a>                     }
+<a class="jxr_linenumber" name="131" href="#131">131</a>                     pipeline.fireChannelRead(byteBuf);
+<a class="jxr_linenumber" name="132" href="#132">132</a>                     byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="133" href="#133">133</a> 
+<a class="jxr_linenumber" name="134" href="#134">134</a>                     <strong class="jxr_keyword">if</strong> (totalReadAmount &gt;= Integer.MAX_VALUE - localReadAmount) {
+<a class="jxr_linenumber" name="135" href="#135">135</a>                         <em class="jxr_comment">// Avoid overflow.</em>
+<a class="jxr_linenumber" name="136" href="#136">136</a>                         totalReadAmount = Integer.MAX_VALUE;
+<a class="jxr_linenumber" name="137" href="#137">137</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="138" href="#138">138</a>                     }
+<a class="jxr_linenumber" name="139" href="#139">139</a> 
+<a class="jxr_linenumber" name="140" href="#140">140</a>                     totalReadAmount += localReadAmount;
+<a class="jxr_linenumber" name="141" href="#141">141</a> 
+<a class="jxr_linenumber" name="142" href="#142">142</a>                     <em class="jxr_comment">// stop reading</em>
+<a class="jxr_linenumber" name="143" href="#143">143</a>                     <strong class="jxr_keyword">if</strong> (!config.isAutoRead()) {
+<a class="jxr_linenumber" name="144" href="#144">144</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="145" href="#145">145</a>                     }
+<a class="jxr_linenumber" name="146" href="#146">146</a> 
+<a class="jxr_linenumber" name="147" href="#147">147</a>                     <strong class="jxr_keyword">if</strong> (localReadAmount &lt; writable) {
+<a class="jxr_linenumber" name="148" href="#148">148</a>                         <em class="jxr_comment">// Read less than what the buffer can hold,</em>
+<a class="jxr_linenumber" name="149" href="#149">149</a>                         <em class="jxr_comment">// which might mean we drained the recv buffer completely.</em>
+<a class="jxr_linenumber" name="150" href="#150">150</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="151" href="#151">151</a>                     }
+<a class="jxr_linenumber" name="152" href="#152">152</a>                 } <strong class="jxr_keyword">while</strong> (++ messages &lt; maxMessagesPerRead);
+<a class="jxr_linenumber" name="153" href="#153">153</a> 
+<a class="jxr_linenumber" name="154" href="#154">154</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="155" href="#155">155</a>                 allocHandle.record(totalReadAmount);
+<a class="jxr_linenumber" name="156" href="#156">156</a> 
+<a class="jxr_linenumber" name="157" href="#157">157</a>                 <strong class="jxr_keyword">if</strong> (close) {
+<a class="jxr_linenumber" name="158" href="#158">158</a>                     closeOnRead(pipeline);
+<a class="jxr_linenumber" name="159" href="#159">159</a>                     close = false;
+<a class="jxr_linenumber" name="160" href="#160">160</a>                 }
+<a class="jxr_linenumber" name="161" href="#161">161</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="162" href="#162">162</a>                 handleReadException(pipeline, byteBuf, t, close);
+<a class="jxr_linenumber" name="163" href="#163">163</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="164" href="#164">164</a>                 <em class="jxr_comment">// Check if there is a readPending which was not processed yet.</em>
+<a class="jxr_linenumber" name="165" href="#165">165</a>                 <em class="jxr_comment">// This could be for two reasons:</em>
+<a class="jxr_linenumber" name="166" href="#166">166</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</em>
+<a class="jxr_linenumber" name="167" href="#167">167</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</em>
+<a class="jxr_linenumber" name="168" href="#168">168</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="169" href="#169">169</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2254</em>
+<a class="jxr_linenumber" name="170" href="#170">170</a>                 <strong class="jxr_keyword">if</strong> (!config.isAutoRead() &amp;&amp; !isReadPending()) {
+<a class="jxr_linenumber" name="171" href="#171">171</a>                     removeReadOp();
+<a class="jxr_linenumber" name="172" href="#172">172</a>                 }
+<a class="jxr_linenumber" name="173" href="#173">173</a>             }
+<a class="jxr_linenumber" name="174" href="#174">174</a>         }
+<a class="jxr_linenumber" name="175" href="#175">175</a>     }
+<a class="jxr_linenumber" name="176" href="#176">176</a> 
+<a class="jxr_linenumber" name="177" href="#177">177</a>     @Override
+<a class="jxr_linenumber" name="178" href="#178">178</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doWrite(<a href="../../../../io/netty/channel/ChannelOutboundBuffer.html">ChannelOutboundBuffer</a> in) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="179" href="#179">179</a>         <strong class="jxr_keyword">int</strong> writeSpinCount = -1;
+<a class="jxr_linenumber" name="180" href="#180">180</a> 
+<a class="jxr_linenumber" name="181" href="#181">181</a>         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="182" href="#182">182</a>             Object msg = in.current();
+<a class="jxr_linenumber" name="183" href="#183">183</a>             <strong class="jxr_keyword">if</strong> (msg == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="184" href="#184">184</a>                 <em class="jxr_comment">// Wrote all messages.</em>
+<a class="jxr_linenumber" name="185" href="#185">185</a>                 clearOpWrite();
+<a class="jxr_linenumber" name="186" href="#186">186</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="187" href="#187">187</a>             }
+<a class="jxr_linenumber" name="188" href="#188">188</a> 
+<a class="jxr_linenumber" name="189" href="#189">189</a>             <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
+<a class="jxr_linenumber" name="190" href="#190">190</a>                 <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = (ByteBuf) msg;
+<a class="jxr_linenumber" name="191" href="#191">191</a>                 <strong class="jxr_keyword">int</strong> readableBytes = buf.readableBytes();
+<a class="jxr_linenumber" name="192" href="#192">192</a>                 <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
+<a class="jxr_linenumber" name="193" href="#193">193</a>                     in.remove();
+<a class="jxr_linenumber" name="194" href="#194">194</a>                     <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="195" href="#195">195</a>                 }
+<a class="jxr_linenumber" name="196" href="#196">196</a> 
+<a class="jxr_linenumber" name="197" href="#197">197</a>                 <strong class="jxr_keyword">boolean</strong> setOpWrite = false;
+<a class="jxr_linenumber" name="198" href="#198">198</a>                 <strong class="jxr_keyword">boolean</strong> done = false;
+<a class="jxr_linenumber" name="199" href="#199">199</a>                 <strong class="jxr_keyword">long</strong> flushedAmount = 0;
+<a class="jxr_linenumber" name="200" href="#200">200</a>                 <strong class="jxr_keyword">if</strong> (writeSpinCount == -1) {
+<a class="jxr_linenumber" name="201" href="#201">201</a>                     writeSpinCount = config().getWriteSpinCount();
+<a class="jxr_linenumber" name="202" href="#202">202</a>                 }
+<a class="jxr_linenumber" name="203" href="#203">203</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = writeSpinCount - 1; i &gt;= 0; i --) {
+<a class="jxr_linenumber" name="204" href="#204">204</a>                     <strong class="jxr_keyword">int</strong> localFlushedAmount = doWriteBytes(buf);
+<a class="jxr_linenumber" name="205" href="#205">205</a>                     <strong class="jxr_keyword">if</strong> (localFlushedAmount == 0) {
+<a class="jxr_linenumber" name="206" href="#206">206</a>                         setOpWrite = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="207" href="#207">207</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="208" href="#208">208</a>                     }
+<a class="jxr_linenumber" name="209" href="#209">209</a> 
+<a class="jxr_linenumber" name="210" href="#210">210</a>                     flushedAmount += localFlushedAmount;
+<a class="jxr_linenumber" name="211" href="#211">211</a>                     <strong class="jxr_keyword">if</strong> (!buf.isReadable()) {
+<a class="jxr_linenumber" name="212" href="#212">212</a>                         done = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="213" href="#213">213</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="214" href="#214">214</a>                     }
+<a class="jxr_linenumber" name="215" href="#215">215</a>                 }
+<a class="jxr_linenumber" name="216" href="#216">216</a> 
+<a class="jxr_linenumber" name="217" href="#217">217</a>                 in.progress(flushedAmount);
+<a class="jxr_linenumber" name="218" href="#218">218</a> 
+<a class="jxr_linenumber" name="219" href="#219">219</a>                 <strong class="jxr_keyword">if</strong> (done) {
+<a class="jxr_linenumber" name="220" href="#220">220</a>                     in.remove();
+<a class="jxr_linenumber" name="221" href="#221">221</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="222" href="#222">222</a>                     incompleteWrite(setOpWrite);
+<a class="jxr_linenumber" name="223" href="#223">223</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="224" href="#224">224</a>                 }
+<a class="jxr_linenumber" name="225" href="#225">225</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
+<a class="jxr_linenumber" name="226" href="#226">226</a>                 <a href="../../../../io/netty/channel/FileRegion.html">FileRegion</a> region = (FileRegion) msg;
+<a class="jxr_linenumber" name="227" href="#227">227</a>                 <strong class="jxr_keyword">boolean</strong> done = region.transfered() &gt;= region.count();
+<a class="jxr_linenumber" name="228" href="#228">228</a>                 <strong class="jxr_keyword">boolean</strong> setOpWrite = false;
+<a class="jxr_linenumber" name="229" href="#229">229</a> 
+<a class="jxr_linenumber" name="230" href="#230">230</a>                 <strong class="jxr_keyword">if</strong> (!done) {
+<a class="jxr_linenumber" name="231" href="#231">231</a>                     <strong class="jxr_keyword">long</strong> flushedAmount = 0;
+<a class="jxr_linenumber" name="232" href="#232">232</a>                     <strong class="jxr_keyword">if</strong> (writeSpinCount == -1) {
+<a class="jxr_linenumber" name="233" href="#233">233</a>                         writeSpinCount = config().getWriteSpinCount();
+<a class="jxr_linenumber" name="234" href="#234">234</a>                     }
+<a class="jxr_linenumber" name="235" href="#235">235</a> 
+<a class="jxr_linenumber" name="236" href="#236">236</a>                     <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = writeSpinCount - 1; i &gt;= 0; i--) {
+<a class="jxr_linenumber" name="237" href="#237">237</a>                         <strong class="jxr_keyword">long</strong> localFlushedAmount = doWriteFileRegion(region);
+<a class="jxr_linenumber" name="238" href="#238">238</a>                         <strong class="jxr_keyword">if</strong> (localFlushedAmount == 0) {
+<a class="jxr_linenumber" name="239" href="#239">239</a>                             setOpWrite = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="240" href="#240">240</a>                             <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="241" href="#241">241</a>                         }
+<a class="jxr_linenumber" name="242" href="#242">242</a> 
+<a class="jxr_linenumber" name="243" href="#243">243</a>                         flushedAmount += localFlushedAmount;
+<a class="jxr_linenumber" name="244" href="#244">244</a>                         <strong class="jxr_keyword">if</strong> (region.transfered() &gt;= region.count()) {
+<a class="jxr_linenumber" name="245" href="#245">245</a>                             done = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="246" href="#246">246</a>                             <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="247" href="#247">247</a>                         }
+<a class="jxr_linenumber" name="248" href="#248">248</a>                     }
+<a class="jxr_linenumber" name="249" href="#249">249</a> 
+<a class="jxr_linenumber" name="250" href="#250">250</a>                     in.progress(flushedAmount);
+<a class="jxr_linenumber" name="251" href="#251">251</a>                 }
+<a class="jxr_linenumber" name="252" href="#252">252</a> 
+<a class="jxr_linenumber" name="253" href="#253">253</a>                 <strong class="jxr_keyword">if</strong> (done) {
+<a class="jxr_linenumber" name="254" href="#254">254</a>                     in.remove();
+<a class="jxr_linenumber" name="255" href="#255">255</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="256" href="#256">256</a>                     incompleteWrite(setOpWrite);
+<a class="jxr_linenumber" name="257" href="#257">257</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="258" href="#258">258</a>                 }
+<a class="jxr_linenumber" name="259" href="#259">259</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="260" href="#260">260</a>                 <em class="jxr_comment">// Should not reach here.</em>
+<a class="jxr_linenumber" name="261" href="#261">261</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
+<a class="jxr_linenumber" name="262" href="#262">262</a>             }
+<a class="jxr_linenumber" name="263" href="#263">263</a>         }
+<a class="jxr_linenumber" name="264" href="#264">264</a>     }
+<a class="jxr_linenumber" name="265" href="#265">265</a> 
+<a class="jxr_linenumber" name="266" href="#266">266</a>     @Override
+<a class="jxr_linenumber" name="267" href="#267">267</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> Object filterOutboundMessage(Object msg) {
+<a class="jxr_linenumber" name="268" href="#268">268</a>         <strong class="jxr_keyword">if</strong> (msg instanceof ByteBuf) {
+<a class="jxr_linenumber" name="269" href="#269">269</a>             <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = (ByteBuf) msg;
+<a class="jxr_linenumber" name="270" href="#270">270</a>             <strong class="jxr_keyword">if</strong> (buf.isDirect()) {
+<a class="jxr_linenumber" name="271" href="#271">271</a>                 <strong class="jxr_keyword">return</strong> msg;
+<a class="jxr_linenumber" name="272" href="#272">272</a>             }
+<a class="jxr_linenumber" name="273" href="#273">273</a> 
+<a class="jxr_linenumber" name="274" href="#274">274</a>             <strong class="jxr_keyword">return</strong> newDirectBuffer(buf);
+<a class="jxr_linenumber" name="275" href="#275">275</a>         }
+<a class="jxr_linenumber" name="276" href="#276">276</a> 
+<a class="jxr_linenumber" name="277" href="#277">277</a>         <strong class="jxr_keyword">if</strong> (msg instanceof FileRegion) {
+<a class="jxr_linenumber" name="278" href="#278">278</a>             <strong class="jxr_keyword">return</strong> msg;
+<a class="jxr_linenumber" name="279" href="#279">279</a>         }
+<a class="jxr_linenumber" name="280" href="#280">280</a> 
+<a class="jxr_linenumber" name="281" href="#281">281</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(
+<a class="jxr_linenumber" name="282" href="#282">282</a>                 <span class="jxr_string">"unsupported message type: "</span> + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
+<a class="jxr_linenumber" name="283" href="#283">283</a>     }
+<a class="jxr_linenumber" name="284" href="#284">284</a> 
+<a class="jxr_linenumber" name="285" href="#285">285</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> incompleteWrite(<strong class="jxr_keyword">boolean</strong> setOpWrite) {
+<a class="jxr_linenumber" name="286" href="#286">286</a>         <em class="jxr_comment">// Did not write completely.</em>
+<a class="jxr_linenumber" name="287" href="#287">287</a>         <strong class="jxr_keyword">if</strong> (setOpWrite) {
+<a class="jxr_linenumber" name="288" href="#288">288</a>             setOpWrite();
+<a class="jxr_linenumber" name="289" href="#289">289</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="290" href="#290">290</a>             <em class="jxr_comment">// Schedule flush again later so other tasks can be picked up in the meantime</em>
+<a class="jxr_linenumber" name="291" href="#291">291</a>             Runnable flushTask = <strong class="jxr_keyword">this</strong>.flushTask;
+<a class="jxr_linenumber" name="292" href="#292">292</a>             <strong class="jxr_keyword">if</strong> (flushTask == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="293" href="#293">293</a>                 flushTask = <strong class="jxr_keyword">this</strong>.flushTask = <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="294" href="#294">294</a>                     @Override
+<a class="jxr_linenumber" name="295" href="#295">295</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="296" href="#296">296</a>                         flush();
+<a class="jxr_linenumber" name="297" href="#297">297</a>                     }
+<a class="jxr_linenumber" name="298" href="#298">298</a>                 };
+<a class="jxr_linenumber" name="299" href="#299">299</a>             }
+<a class="jxr_linenumber" name="300" href="#300">300</a>             eventLoop().execute(flushTask);
+<a class="jxr_linenumber" name="301" href="#301">301</a>         }
+<a class="jxr_linenumber" name="302" href="#302">302</a>     }
+<a class="jxr_linenumber" name="303" href="#303">303</a> 
+<a class="jxr_linenumber" name="304" href="#304">304</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="305" href="#305">305</a> <em class="jxr_javadoccomment">     * Write a {@link FileRegion}</em>
+<a class="jxr_linenumber" name="306" href="#306">306</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * @param region        the {@link FileRegion} from which the bytes should be written</em>
+<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     * @return amount       the amount of written bytes</em>
+<a class="jxr_linenumber" name="309" href="#309">309</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="310" href="#310">310</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">long</strong> doWriteFileRegion(<a href="../../../../io/netty/channel/FileRegion.html">FileRegion</a> region) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="311" href="#311">311</a> 
+<a class="jxr_linenumber" name="312" href="#312">312</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="313" href="#313">313</a> <em class="jxr_javadoccomment">     * Read bytes into the given {@link ByteBuf} and return the amount.</em>
+<a class="jxr_linenumber" name="314" href="#314">314</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="315" href="#315">315</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">int</strong> doReadBytes(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="316" href="#316">316</a> 
+<a class="jxr_linenumber" name="317" href="#317">317</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="318" href="#318">318</a> <em class="jxr_javadoccomment">     * Write bytes form the given {@link ByteBuf} to the underlying {@link java.nio.channels.Channel}.</em>
+<a class="jxr_linenumber" name="319" href="#319">319</a> <em class="jxr_javadoccomment">     * @param buf           the {@link ByteBuf} from which the bytes should be written</em>
+<a class="jxr_linenumber" name="320" href="#320">320</a> <em class="jxr_javadoccomment">     * @return amount       the amount of written bytes</em>
+<a class="jxr_linenumber" name="321" href="#321">321</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="322" href="#322">322</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">int</strong> doWriteBytes(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="323" href="#323">323</a> 
+<a class="jxr_linenumber" name="324" href="#324">324</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> setOpWrite() {
+<a class="jxr_linenumber" name="325" href="#325">325</a>         <strong class="jxr_keyword">final</strong> SelectionKey key = selectionKey();
+<a class="jxr_linenumber" name="326" href="#326">326</a>         <em class="jxr_comment">// Check first if the key is still valid as it may be canceled as part of the deregistration</em>
+<a class="jxr_linenumber" name="327" href="#327">327</a>         <em class="jxr_comment">// from the EventLoop</em>
+<a class="jxr_linenumber" name="328" href="#328">328</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/2104</em>
+<a class="jxr_linenumber" name="329" href="#329">329</a>         <strong class="jxr_keyword">if</strong> (!key.isValid()) {
+<a class="jxr_linenumber" name="330" href="#330">330</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="331" href="#331">331</a>         }
+<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> interestOps = key.interestOps();
+<a class="jxr_linenumber" name="333" href="#333">333</a>         <strong class="jxr_keyword">if</strong> ((interestOps &amp; SelectionKey.OP_WRITE) == 0) {
+<a class="jxr_linenumber" name="334" href="#334">334</a>             key.interestOps(interestOps | SelectionKey.OP_WRITE);
+<a class="jxr_linenumber" name="335" href="#335">335</a>         }
+<a class="jxr_linenumber" name="336" href="#336">336</a>     }
+<a class="jxr_linenumber" name="337" href="#337">337</a> 
+<a class="jxr_linenumber" name="338" href="#338">338</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> clearOpWrite() {
+<a class="jxr_linenumber" name="339" href="#339">339</a>         <strong class="jxr_keyword">final</strong> SelectionKey key = selectionKey();
+<a class="jxr_linenumber" name="340" href="#340">340</a>         <em class="jxr_comment">// Check first if the key is still valid as it may be canceled as part of the deregistration</em>
+<a class="jxr_linenumber" name="341" href="#341">341</a>         <em class="jxr_comment">// from the EventLoop</em>
+<a class="jxr_linenumber" name="342" href="#342">342</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/2104</em>
+<a class="jxr_linenumber" name="343" href="#343">343</a>         <strong class="jxr_keyword">if</strong> (!key.isValid()) {
+<a class="jxr_linenumber" name="344" href="#344">344</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="345" href="#345">345</a>         }
+<a class="jxr_linenumber" name="346" href="#346">346</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> interestOps = key.interestOps();
+<a class="jxr_linenumber" name="347" href="#347">347</a>         <strong class="jxr_keyword">if</strong> ((interestOps &amp; SelectionKey.OP_WRITE) != 0) {
+<a class="jxr_linenumber" name="348" href="#348">348</a>             key.interestOps(interestOps &amp; ~SelectionKey.OP_WRITE);
+<a class="jxr_linenumber" name="349" href="#349">349</a>         }
+<a class="jxr_linenumber" name="350" href="#350">350</a>     }
+<a class="jxr_linenumber" name="351" href="#351">351</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
