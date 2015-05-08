@@ -33,15 +33,15 @@
 <a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.handler.codec.http2.Http2FrameTypes.SETTINGS;
 <a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.util.internal.ObjectUtil.checkNotNull;
 <a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
-<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.Unpooled;
+<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBufUtil;
 <a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
-<a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.AsciiString;
-<a class="jxr_linenumber" name="29" href="#29">29</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.base64.Base64;
-<a class="jxr_linenumber" name="30" href="#30">30</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.FullHttpRequest;
-<a class="jxr_linenumber" name="31" href="#31">31</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.FullHttpResponse;
-<a class="jxr_linenumber" name="32" href="#32">32</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpServerUpgradeHandler;
-<a class="jxr_linenumber" name="33" href="#33">33</a>  <strong class="jxr_keyword">import</strong> io.netty.util.CharsetUtil;
-<a class="jxr_linenumber" name="34" href="#34">34</a>  
+<a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.base64.Base64;
+<a class="jxr_linenumber" name="29" href="#29">29</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.FullHttpRequest;
+<a class="jxr_linenumber" name="30" href="#30">30</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.FullHttpResponse;
+<a class="jxr_linenumber" name="31" href="#31">31</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpServerUpgradeHandler;
+<a class="jxr_linenumber" name="32" href="#32">32</a>  <strong class="jxr_keyword">import</strong> io.netty.util.CharsetUtil;
+<a class="jxr_linenumber" name="33" href="#33">33</a>  
+<a class="jxr_linenumber" name="34" href="#34">34</a>  <strong class="jxr_keyword">import</strong> java.nio.CharBuffer;
 <a class="jxr_linenumber" name="35" href="#35">35</a>  <strong class="jxr_keyword">import</strong> java.util.Collection;
 <a class="jxr_linenumber" name="36" href="#36">36</a>  <strong class="jxr_keyword">import</strong> java.util.Collections;
 <a class="jxr_linenumber" name="37" href="#37">37</a>  <strong class="jxr_keyword">import</strong> java.util.List;
@@ -114,60 +114,59 @@
 <a class="jxr_linenumber" name="104" href="#104">104</a>     @Override
 <a class="jxr_linenumber" name="105" href="#105">105</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> upgradeTo(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> upgradeRequest,
 <a class="jxr_linenumber" name="106" href="#106">106</a>             <a href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> upgradeResponse) {
-<a class="jxr_linenumber" name="107" href="#107">107</a>         <em class="jxr_comment">// Add the HTTP/2 connection handler to the pipeline immediately following the current</em>
-<a class="jxr_linenumber" name="108" href="#108">108</a>         <em class="jxr_comment">// handler.</em>
-<a class="jxr_linenumber" name="109" href="#109">109</a>         ctx.pipeline().addAfter(ctx.name(), handlerName, connectionHandler);
-<a class="jxr_linenumber" name="110" href="#110">110</a>     }
-<a class="jxr_linenumber" name="111" href="#111">111</a> 
-<a class="jxr_linenumber" name="112" href="#112">112</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="113" href="#113">113</a> <em class="jxr_javadoccomment">     * Decodes the settings header and returns a {@link Http2Settings} object.</em>
-<a class="jxr_linenumber" name="114" href="#114">114</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="115" href="#115">115</a>     <strong class="jxr_keyword">private</strong> Http2Settings decodeSettingsHeader(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, CharSequence settingsHeader)
-<a class="jxr_linenumber" name="116" href="#116">116</a>             <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="117" href="#117">117</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> header = Unpooled.wrappedBuffer(AsciiString.getBytes(settingsHeader, CharsetUtil.UTF_8));
-<a class="jxr_linenumber" name="118" href="#118">118</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="119" href="#119">119</a>             <em class="jxr_comment">// Decode the SETTINGS payload.</em>
-<a class="jxr_linenumber" name="120" href="#120">120</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload = Base64.decode(header, URL_SAFE);
-<a class="jxr_linenumber" name="121" href="#121">121</a> 
-<a class="jxr_linenumber" name="122" href="#122">122</a>             <em class="jxr_comment">// Create an HTTP/2 frame for the settings.</em>
-<a class="jxr_linenumber" name="123" href="#123">123</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> frame = createSettingsFrame(ctx, payload);
-<a class="jxr_linenumber" name="124" href="#124">124</a> 
-<a class="jxr_linenumber" name="125" href="#125">125</a>             <em class="jxr_comment">// Decode the SETTINGS frame and return the settings object.</em>
-<a class="jxr_linenumber" name="126" href="#126">126</a>             <strong class="jxr_keyword">return</strong> decodeSettings(ctx, frame);
-<a class="jxr_linenumber" name="127" href="#127">127</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="128" href="#128">128</a>             header.release();
-<a class="jxr_linenumber" name="129" href="#129">129</a>         }
-<a class="jxr_linenumber" name="130" href="#130">130</a>     }
-<a class="jxr_linenumber" name="131" href="#131">131</a> 
-<a class="jxr_linenumber" name="132" href="#132">132</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="133" href="#133">133</a> <em class="jxr_javadoccomment">     * Decodes the settings frame and returns the settings.</em>
-<a class="jxr_linenumber" name="134" href="#134">134</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="135" href="#135">135</a>     <strong class="jxr_keyword">private</strong> Http2Settings decodeSettings(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> frame) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="136" href="#136">136</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="137" href="#137">137</a>             <strong class="jxr_keyword">final</strong> Http2Settings decodedSettings = <strong class="jxr_keyword">new</strong> Http2Settings();
-<a class="jxr_linenumber" name="138" href="#138">138</a>             frameReader.readFrame(ctx, frame, <strong class="jxr_keyword">new</strong> Http2FrameAdapter() {
-<a class="jxr_linenumber" name="139" href="#139">139</a>                 @Override
-<a class="jxr_linenumber" name="140" href="#140">140</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onSettingsRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Settings settings) {
-<a class="jxr_linenumber" name="141" href="#141">141</a>                     decodedSettings.copyFrom(settings);
-<a class="jxr_linenumber" name="142" href="#142">142</a>                 }
-<a class="jxr_linenumber" name="143" href="#143">143</a>             });
-<a class="jxr_linenumber" name="144" href="#144">144</a>             <strong class="jxr_keyword">return</strong> decodedSettings;
-<a class="jxr_linenumber" name="145" href="#145">145</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="146" href="#146">146</a>             frame.release();
-<a class="jxr_linenumber" name="147" href="#147">147</a>         }
-<a class="jxr_linenumber" name="148" href="#148">148</a>     }
-<a class="jxr_linenumber" name="149" href="#149">149</a> 
-<a class="jxr_linenumber" name="150" href="#150">150</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="151" href="#151">151</a> <em class="jxr_javadoccomment">     * Creates an HTTP2-Settings header with the given payload. The payload buffer is released.</em>
-<a class="jxr_linenumber" name="152" href="#152">152</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="153" href="#153">153</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> createSettingsFrame(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload) {
-<a class="jxr_linenumber" name="154" href="#154">154</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> frame = ctx.alloc().buffer(FRAME_HEADER_LENGTH + payload.readableBytes());
-<a class="jxr_linenumber" name="155" href="#155">155</a>         writeFrameHeader(frame, payload.readableBytes(), SETTINGS, <strong class="jxr_keyword">new</strong> Http2Flags(), 0);
-<a class="jxr_linenumber" name="156" href="#156">156</a>         frame.writeBytes(payload);
-<a class="jxr_linenumber" name="157" href="#157">157</a>         payload.release();
-<a class="jxr_linenumber" name="158" href="#158">158</a>         <strong class="jxr_keyword">return</strong> frame;
-<a class="jxr_linenumber" name="159" href="#159">159</a>     }
-<a class="jxr_linenumber" name="160" href="#160">160</a> }
+<a class="jxr_linenumber" name="107" href="#107">107</a>         <em class="jxr_comment">// Add the HTTP/2 connection handler to the pipeline immediately following the current handler.</em>
+<a class="jxr_linenumber" name="108" href="#108">108</a>         ctx.pipeline().addAfter(ctx.name(), handlerName, connectionHandler);
+<a class="jxr_linenumber" name="109" href="#109">109</a>     }
+<a class="jxr_linenumber" name="110" href="#110">110</a> 
+<a class="jxr_linenumber" name="111" href="#111">111</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="112" href="#112">112</a> <em class="jxr_javadoccomment">     * Decodes the settings header and returns a {@link Http2Settings} object.</em>
+<a class="jxr_linenumber" name="113" href="#113">113</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="114" href="#114">114</a>     <strong class="jxr_keyword">private</strong> Http2Settings decodeSettingsHeader(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, CharSequence settingsHeader)
+<a class="jxr_linenumber" name="115" href="#115">115</a>             <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="116" href="#116">116</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> header = ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(settingsHeader), CharsetUtil.UTF_8);
+<a class="jxr_linenumber" name="117" href="#117">117</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="118" href="#118">118</a>             <em class="jxr_comment">// Decode the SETTINGS payload.</em>
+<a class="jxr_linenumber" name="119" href="#119">119</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload = Base64.decode(header, URL_SAFE);
+<a class="jxr_linenumber" name="120" href="#120">120</a> 
+<a class="jxr_linenumber" name="121" href="#121">121</a>             <em class="jxr_comment">// Create an HTTP/2 frame for the settings.</em>
+<a class="jxr_linenumber" name="122" href="#122">122</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> frame = createSettingsFrame(ctx, payload);
+<a class="jxr_linenumber" name="123" href="#123">123</a> 
+<a class="jxr_linenumber" name="124" href="#124">124</a>             <em class="jxr_comment">// Decode the SETTINGS frame and return the settings object.</em>
+<a class="jxr_linenumber" name="125" href="#125">125</a>             <strong class="jxr_keyword">return</strong> decodeSettings(ctx, frame);
+<a class="jxr_linenumber" name="126" href="#126">126</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="127" href="#127">127</a>             header.release();
+<a class="jxr_linenumber" name="128" href="#128">128</a>         }
+<a class="jxr_linenumber" name="129" href="#129">129</a>     }
+<a class="jxr_linenumber" name="130" href="#130">130</a> 
+<a class="jxr_linenumber" name="131" href="#131">131</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="132" href="#132">132</a> <em class="jxr_javadoccomment">     * Decodes the settings frame and returns the settings.</em>
+<a class="jxr_linenumber" name="133" href="#133">133</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="134" href="#134">134</a>     <strong class="jxr_keyword">private</strong> Http2Settings decodeSettings(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> frame) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="136" href="#136">136</a>             <strong class="jxr_keyword">final</strong> Http2Settings decodedSettings = <strong class="jxr_keyword">new</strong> Http2Settings();
+<a class="jxr_linenumber" name="137" href="#137">137</a>             frameReader.readFrame(ctx, frame, <strong class="jxr_keyword">new</strong> Http2FrameAdapter() {
+<a class="jxr_linenumber" name="138" href="#138">138</a>                 @Override
+<a class="jxr_linenumber" name="139" href="#139">139</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onSettingsRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Settings settings) {
+<a class="jxr_linenumber" name="140" href="#140">140</a>                     decodedSettings.copyFrom(settings);
+<a class="jxr_linenumber" name="141" href="#141">141</a>                 }
+<a class="jxr_linenumber" name="142" href="#142">142</a>             });
+<a class="jxr_linenumber" name="143" href="#143">143</a>             <strong class="jxr_keyword">return</strong> decodedSettings;
+<a class="jxr_linenumber" name="144" href="#144">144</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="145" href="#145">145</a>             frame.release();
+<a class="jxr_linenumber" name="146" href="#146">146</a>         }
+<a class="jxr_linenumber" name="147" href="#147">147</a>     }
+<a class="jxr_linenumber" name="148" href="#148">148</a> 
+<a class="jxr_linenumber" name="149" href="#149">149</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="150" href="#150">150</a> <em class="jxr_javadoccomment">     * Creates an HTTP2-Settings header with the given payload. The payload buffer is released.</em>
+<a class="jxr_linenumber" name="151" href="#151">151</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="152" href="#152">152</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> createSettingsFrame(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload) {
+<a class="jxr_linenumber" name="153" href="#153">153</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> frame = ctx.alloc().buffer(FRAME_HEADER_LENGTH + payload.readableBytes());
+<a class="jxr_linenumber" name="154" href="#154">154</a>         writeFrameHeader(frame, payload.readableBytes(), SETTINGS, <strong class="jxr_keyword">new</strong> Http2Flags(), 0);
+<a class="jxr_linenumber" name="155" href="#155">155</a>         frame.writeBytes(payload);
+<a class="jxr_linenumber" name="156" href="#156">156</a>         payload.release();
+<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">return</strong> frame;
+<a class="jxr_linenumber" name="158" href="#158">158</a>     }
+<a class="jxr_linenumber" name="159" href="#159">159</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

@@ -56,7 +56,7 @@
 <a class="jxr_linenumber" name="46" href="#46">46</a>  <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="47" href="#47">47</a>  <em class="jxr_javadoccomment"> * A {@link Http2FrameReader} that supports all frame types defined by the HTTP/2 specification.</em>
 <a class="jxr_linenumber" name="48" href="#48">48</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="49" href="#49">49</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> DefaultHttp2FrameReader <strong class="jxr_keyword">implements</strong> Http2FrameReader, Http2FrameSizePolicy, <a href="../../../../../io/netty/handler/codec/http2/Http2FrameReader.html">Configuration</a> {
+<a class="jxr_linenumber" name="49" href="#49">49</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> DefaultHttp2FrameReader <strong class="jxr_keyword">implements</strong> Http2FrameReader, Http2FrameSizePolicy, <a href="../../../../../io/netty/handler/codec/http2/Http2FrameWriter.html">Configuration</a> {
 <a class="jxr_linenumber" name="50" href="#50">50</a>      <strong class="jxr_keyword">private</strong> enum <a href="../../../../../io/netty/handler/codec/http2/Http2Stream.html">State</a> {
 <a class="jxr_linenumber" name="51" href="#51">51</a>          FRAME_HEADER,
 <a class="jxr_linenumber" name="52" href="#52">52</a>          FRAME_PAYLOAD,
@@ -88,7 +88,7 @@
 <a class="jxr_linenumber" name="78" href="#78">78</a>      }
 <a class="jxr_linenumber" name="79" href="#79">79</a>  
 <a class="jxr_linenumber" name="80" href="#80">80</a>      @Override
-<a class="jxr_linenumber" name="81" href="#81">81</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2FrameReader.html">Configuration</a> configuration() {
+<a class="jxr_linenumber" name="81" href="#81">81</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2FrameWriter.html">Configuration</a> configuration() {
 <a class="jxr_linenumber" name="82" href="#82">82</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
 <a class="jxr_linenumber" name="83" href="#83">83</a>      }
 <a class="jxr_linenumber" name="84" href="#84">84</a>  
@@ -492,7 +492,7 @@
 <a class="jxr_linenumber" name="482" href="#482">482</a>             <strong class="jxr_keyword">int</strong> numSettings = payloadLength / SETTING_ENTRY_LENGTH;
 <a class="jxr_linenumber" name="483" href="#483">483</a>             Http2Settings settings = <strong class="jxr_keyword">new</strong> Http2Settings();
 <a class="jxr_linenumber" name="484" href="#484">484</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> index = 0; index &lt; numSettings; ++index) {
-<a class="jxr_linenumber" name="485" href="#485">485</a>                 <strong class="jxr_keyword">int</strong> id = payload.readUnsignedShort();
+<a class="jxr_linenumber" name="485" href="#485">485</a>                 <strong class="jxr_keyword">char</strong> id = (<strong class="jxr_keyword">char</strong>) payload.readUnsignedShort();
 <a class="jxr_linenumber" name="486" href="#486">486</a>                 <strong class="jxr_keyword">long</strong> value = payload.readUnsignedInt();
 <a class="jxr_linenumber" name="487" href="#487">487</a>                 <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="488" href="#488">488</a>                     settings.put(id, value);
@@ -578,142 +578,143 @@
 <a class="jxr_linenumber" name="568" href="#568">568</a>                 listener);
 <a class="jxr_linenumber" name="569" href="#569">569</a>     }
 <a class="jxr_linenumber" name="570" href="#570">570</a> 
-<a class="jxr_linenumber" name="571" href="#571">571</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> readUnknownFrame(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload, Http2FrameListener listener) {
-<a class="jxr_linenumber" name="572" href="#572">572</a>         payload = payload.readSlice(payload.readableBytes());
-<a class="jxr_linenumber" name="573" href="#573">573</a>         listener.onUnknownFrame(ctx, frameType, streamId, flags, payload);
-<a class="jxr_linenumber" name="574" href="#574">574</a>     }
-<a class="jxr_linenumber" name="575" href="#575">575</a> 
-<a class="jxr_linenumber" name="576" href="#576">576</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="577" href="#577">577</a> <em class="jxr_javadoccomment">     * If padding is present in the payload, reads the next byte as padding. Otherwise, returns zero.</em>
-<a class="jxr_linenumber" name="578" href="#578">578</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="579" href="#579">579</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">short</strong> readPadding(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload) {
-<a class="jxr_linenumber" name="580" href="#580">580</a>         <strong class="jxr_keyword">if</strong> (!flags.paddingPresent()) {
-<a class="jxr_linenumber" name="581" href="#581">581</a>             <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="582" href="#582">582</a>         }
-<a class="jxr_linenumber" name="583" href="#583">583</a>         <strong class="jxr_keyword">return</strong> payload.readUnsignedByte();
-<a class="jxr_linenumber" name="584" href="#584">584</a>     }
-<a class="jxr_linenumber" name="585" href="#585">585</a> 
-<a class="jxr_linenumber" name="586" href="#586">586</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="587" href="#587">587</a> <em class="jxr_javadoccomment">     * Base class for processing of HEADERS and PUSH_PROMISE header blocks that potentially span</em>
-<a class="jxr_linenumber" name="588" href="#588">588</a> <em class="jxr_javadoccomment">     * multiple frames. The implementation of this interface will perform the final callback to the</em>
-<a class="jxr_linenumber" name="589" href="#589">589</a> <em class="jxr_javadoccomment">     * {@link Http2FrameListener} once the end of headers is reached.</em>
-<a class="jxr_linenumber" name="590" href="#590">590</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="591" href="#591">591</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersContinuation</a> {
-<a class="jxr_linenumber" name="592" href="#592">592</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a> builder = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a>();
-<a class="jxr_linenumber" name="593" href="#593">593</a> 
-<a class="jxr_linenumber" name="594" href="#594">594</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="595" href="#595">595</a> <em class="jxr_javadoccomment">         * Returns the stream for which headers are currently being processed.</em>
-<a class="jxr_linenumber" name="596" href="#596">596</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="597" href="#597">597</a>         <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">int</strong> getStreamId();
-<a class="jxr_linenumber" name="598" href="#598">598</a> 
-<a class="jxr_linenumber" name="599" href="#599">599</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="600" href="#600">600</a> <em class="jxr_javadoccomment">         * Processes the next fragment for the current header block.</em>
-<a class="jxr_linenumber" name="601" href="#601">601</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="602" href="#602">602</a> <em class="jxr_javadoccomment">         * @param endOfHeaders whether the fragment is the last in the header block.</em>
-<a class="jxr_linenumber" name="603" href="#603">603</a> <em class="jxr_javadoccomment">         * @param fragment the fragment of the header block to be added.</em>
-<a class="jxr_linenumber" name="604" href="#604">604</a> <em class="jxr_javadoccomment">         * @param listener the listener to be notified if the header block is completed.</em>
-<a class="jxr_linenumber" name="605" href="#605">605</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="606" href="#606">606</a>         <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> processFragment(<strong class="jxr_keyword">boolean</strong> endOfHeaders, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> fragment,
-<a class="jxr_linenumber" name="607" href="#607">607</a>                 Http2FrameListener listener) <strong class="jxr_keyword">throws</strong> Http2Exception;
-<a class="jxr_linenumber" name="608" href="#608">608</a> 
-<a class="jxr_linenumber" name="609" href="#609">609</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a> headersBlockBuilder() {
-<a class="jxr_linenumber" name="610" href="#610">610</a>             <strong class="jxr_keyword">return</strong> builder;
-<a class="jxr_linenumber" name="611" href="#611">611</a>         }
-<a class="jxr_linenumber" name="612" href="#612">612</a> 
-<a class="jxr_linenumber" name="613" href="#613">613</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="614" href="#614">614</a> <em class="jxr_javadoccomment">         * Free any allocated resources.</em>
-<a class="jxr_linenumber" name="615" href="#615">615</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="616" href="#616">616</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> close() {
-<a class="jxr_linenumber" name="617" href="#617">617</a>             builder.close();
-<a class="jxr_linenumber" name="618" href="#618">618</a>         }
-<a class="jxr_linenumber" name="619" href="#619">619</a>     }
-<a class="jxr_linenumber" name="620" href="#620">620</a> 
-<a class="jxr_linenumber" name="621" href="#621">621</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="622" href="#622">622</a> <em class="jxr_javadoccomment">     * Utility class to help with construction of the headers block that may potentially span</em>
-<a class="jxr_linenumber" name="623" href="#623">623</a> <em class="jxr_javadoccomment">     * multiple frames.</em>
-<a class="jxr_linenumber" name="624" href="#624">624</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="625" href="#625">625</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a> {
-<a class="jxr_linenumber" name="626" href="#626">626</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> headerBlock;
-<a class="jxr_linenumber" name="627" href="#627">627</a> 
-<a class="jxr_linenumber" name="628" href="#628">628</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="629" href="#629">629</a> <em class="jxr_javadoccomment">         * Adds a fragment to the block.</em>
-<a class="jxr_linenumber" name="630" href="#630">630</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="631" href="#631">631</a> <em class="jxr_javadoccomment">         * @param fragment the fragment of the headers block to be added.</em>
-<a class="jxr_linenumber" name="632" href="#632">632</a> <em class="jxr_javadoccomment">         * @param alloc allocator for new blocks if needed.</em>
-<a class="jxr_linenumber" name="633" href="#633">633</a> <em class="jxr_javadoccomment">         * @param endOfHeaders flag indicating whether the current frame is the end of the headers.</em>
-<a class="jxr_linenumber" name="634" href="#634">634</a> <em class="jxr_javadoccomment">         *            This is used for an optimization for when the first fragment is the full</em>
-<a class="jxr_linenumber" name="635" href="#635">635</a> <em class="jxr_javadoccomment">         *            block. In that case, the buffer is used directly without copying.</em>
-<a class="jxr_linenumber" name="636" href="#636">636</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="637" href="#637">637</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> addFragment(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> fragment, <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <strong class="jxr_keyword">boolean</strong> endOfHeaders) {
-<a class="jxr_linenumber" name="638" href="#638">638</a>             <strong class="jxr_keyword">if</strong> (headerBlock == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="639" href="#639">639</a>                 <strong class="jxr_keyword">if</strong> (endOfHeaders) {
-<a class="jxr_linenumber" name="640" href="#640">640</a>                     <em class="jxr_comment">// Optimization - don't bother copying, just use the buffer as-is. Need</em>
-<a class="jxr_linenumber" name="641" href="#641">641</a>                     <em class="jxr_comment">// to retain since we release when the header block is built.</em>
-<a class="jxr_linenumber" name="642" href="#642">642</a>                     headerBlock = fragment.retain();
-<a class="jxr_linenumber" name="643" href="#643">643</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="644" href="#644">644</a>                     headerBlock = alloc.buffer(fragment.readableBytes());
-<a class="jxr_linenumber" name="645" href="#645">645</a>                     headerBlock.writeBytes(fragment);
-<a class="jxr_linenumber" name="646" href="#646">646</a>                 }
-<a class="jxr_linenumber" name="647" href="#647">647</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="648" href="#648">648</a>             }
-<a class="jxr_linenumber" name="649" href="#649">649</a>             <strong class="jxr_keyword">if</strong> (headerBlock.isWritable(fragment.readableBytes())) {
-<a class="jxr_linenumber" name="650" href="#650">650</a>                 <em class="jxr_comment">// The buffer can hold the requested bytes, just write it directly.</em>
-<a class="jxr_linenumber" name="651" href="#651">651</a>                 headerBlock.writeBytes(fragment);
-<a class="jxr_linenumber" name="652" href="#652">652</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="653" href="#653">653</a>                 <em class="jxr_comment">// Allocate a new buffer that is big enough to hold the entire header block so far.</em>
-<a class="jxr_linenumber" name="654" href="#654">654</a>                 <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = alloc.buffer(headerBlock.readableBytes() + fragment.readableBytes());
-<a class="jxr_linenumber" name="655" href="#655">655</a>                 buf.writeBytes(headerBlock);
-<a class="jxr_linenumber" name="656" href="#656">656</a>                 buf.writeBytes(fragment);
-<a class="jxr_linenumber" name="657" href="#657">657</a>                 headerBlock.release();
-<a class="jxr_linenumber" name="658" href="#658">658</a>                 headerBlock = buf;
-<a class="jxr_linenumber" name="659" href="#659">659</a>             }
-<a class="jxr_linenumber" name="660" href="#660">660</a>         }
-<a class="jxr_linenumber" name="661" href="#661">661</a> 
-<a class="jxr_linenumber" name="662" href="#662">662</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="663" href="#663">663</a> <em class="jxr_javadoccomment">         * Builds the headers from the completed headers block. After this is called, this builder</em>
-<a class="jxr_linenumber" name="664" href="#664">664</a> <em class="jxr_javadoccomment">         * should not be called again.</em>
-<a class="jxr_linenumber" name="665" href="#665">665</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="666" href="#666">666</a>         Http2Headers headers() <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="667" href="#667">667</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="668" href="#668">668</a>                 <strong class="jxr_keyword">return</strong> headersDecoder.decodeHeaders(headerBlock);
-<a class="jxr_linenumber" name="669" href="#669">669</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="670" href="#670">670</a>                 close();
-<a class="jxr_linenumber" name="671" href="#671">671</a>             }
-<a class="jxr_linenumber" name="672" href="#672">672</a>         }
-<a class="jxr_linenumber" name="673" href="#673">673</a> 
-<a class="jxr_linenumber" name="674" href="#674">674</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="675" href="#675">675</a> <em class="jxr_javadoccomment">         * Closes this builder and frees any resources.</em>
-<a class="jxr_linenumber" name="676" href="#676">676</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="677" href="#677">677</a>         <strong class="jxr_keyword">void</strong> close() {
-<a class="jxr_linenumber" name="678" href="#678">678</a>             <strong class="jxr_keyword">if</strong> (headerBlock != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="679" href="#679">679</a>                 headerBlock.release();
-<a class="jxr_linenumber" name="680" href="#680">680</a>                 headerBlock = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="681" href="#681">681</a>             }
-<a class="jxr_linenumber" name="682" href="#682">682</a> 
-<a class="jxr_linenumber" name="683" href="#683">683</a>             <em class="jxr_comment">// Clear the member variable pointing at this instance.</em>
-<a class="jxr_linenumber" name="684" href="#684">684</a>             headersContinuation = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="685" href="#685">685</a>         }
-<a class="jxr_linenumber" name="686" href="#686">686</a>     }
-<a class="jxr_linenumber" name="687" href="#687">687</a> 
-<a class="jxr_linenumber" name="688" href="#688">688</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyNotProcessingHeaders() <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="689" href="#689">689</a>         <strong class="jxr_keyword">if</strong> (headersContinuation != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="690" href="#690">690</a>             <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Received frame of type %s while processing headers."</span>, frameType);
-<a class="jxr_linenumber" name="691" href="#691">691</a>         }
-<a class="jxr_linenumber" name="692" href="#692">692</a>     }
-<a class="jxr_linenumber" name="693" href="#693">693</a> 
-<a class="jxr_linenumber" name="694" href="#694">694</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyPayloadLength(<strong class="jxr_keyword">int</strong> payloadLength) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="695" href="#695">695</a>         <strong class="jxr_keyword">if</strong> (payloadLength &gt; maxFrameSize) {
-<a class="jxr_linenumber" name="696" href="#696">696</a>             <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Total payload length %d exceeds max frame length."</span>, payloadLength);
-<a class="jxr_linenumber" name="697" href="#697">697</a>         }
-<a class="jxr_linenumber" name="698" href="#698">698</a>     }
-<a class="jxr_linenumber" name="699" href="#699">699</a> 
-<a class="jxr_linenumber" name="700" href="#700">700</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyStreamOrConnectionId(<strong class="jxr_keyword">int</strong> streamId, String argumentName)
-<a class="jxr_linenumber" name="701" href="#701">701</a>             <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="702" href="#702">702</a>         <strong class="jxr_keyword">if</strong> (streamId &lt; 0) {
-<a class="jxr_linenumber" name="703" href="#703">703</a>             <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"%s must be &gt;= 0"</span>, argumentName);
-<a class="jxr_linenumber" name="704" href="#704">704</a>         }
-<a class="jxr_linenumber" name="705" href="#705">705</a>     }
-<a class="jxr_linenumber" name="706" href="#706">706</a> }
+<a class="jxr_linenumber" name="571" href="#571">571</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> readUnknownFrame(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload, Http2FrameListener listener)
+<a class="jxr_linenumber" name="572" href="#572">572</a>             <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="573" href="#573">573</a>         payload = payload.readSlice(payload.readableBytes());
+<a class="jxr_linenumber" name="574" href="#574">574</a>         listener.onUnknownFrame(ctx, frameType, streamId, flags, payload);
+<a class="jxr_linenumber" name="575" href="#575">575</a>     }
+<a class="jxr_linenumber" name="576" href="#576">576</a> 
+<a class="jxr_linenumber" name="577" href="#577">577</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="578" href="#578">578</a> <em class="jxr_javadoccomment">     * If padding is present in the payload, reads the next byte as padding. Otherwise, returns zero.</em>
+<a class="jxr_linenumber" name="579" href="#579">579</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="580" href="#580">580</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">short</strong> readPadding(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload) {
+<a class="jxr_linenumber" name="581" href="#581">581</a>         <strong class="jxr_keyword">if</strong> (!flags.paddingPresent()) {
+<a class="jxr_linenumber" name="582" href="#582">582</a>             <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="583" href="#583">583</a>         }
+<a class="jxr_linenumber" name="584" href="#584">584</a>         <strong class="jxr_keyword">return</strong> payload.readUnsignedByte();
+<a class="jxr_linenumber" name="585" href="#585">585</a>     }
+<a class="jxr_linenumber" name="586" href="#586">586</a> 
+<a class="jxr_linenumber" name="587" href="#587">587</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="588" href="#588">588</a> <em class="jxr_javadoccomment">     * Base class for processing of HEADERS and PUSH_PROMISE header blocks that potentially span</em>
+<a class="jxr_linenumber" name="589" href="#589">589</a> <em class="jxr_javadoccomment">     * multiple frames. The implementation of this interface will perform the final callback to the</em>
+<a class="jxr_linenumber" name="590" href="#590">590</a> <em class="jxr_javadoccomment">     * {@link Http2FrameListener} once the end of headers is reached.</em>
+<a class="jxr_linenumber" name="591" href="#591">591</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="592" href="#592">592</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersContinuation</a> {
+<a class="jxr_linenumber" name="593" href="#593">593</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a> builder = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a>();
+<a class="jxr_linenumber" name="594" href="#594">594</a> 
+<a class="jxr_linenumber" name="595" href="#595">595</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="596" href="#596">596</a> <em class="jxr_javadoccomment">         * Returns the stream for which headers are currently being processed.</em>
+<a class="jxr_linenumber" name="597" href="#597">597</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="598" href="#598">598</a>         <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">int</strong> getStreamId();
+<a class="jxr_linenumber" name="599" href="#599">599</a> 
+<a class="jxr_linenumber" name="600" href="#600">600</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="601" href="#601">601</a> <em class="jxr_javadoccomment">         * Processes the next fragment for the current header block.</em>
+<a class="jxr_linenumber" name="602" href="#602">602</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="603" href="#603">603</a> <em class="jxr_javadoccomment">         * @param endOfHeaders whether the fragment is the last in the header block.</em>
+<a class="jxr_linenumber" name="604" href="#604">604</a> <em class="jxr_javadoccomment">         * @param fragment the fragment of the header block to be added.</em>
+<a class="jxr_linenumber" name="605" href="#605">605</a> <em class="jxr_javadoccomment">         * @param listener the listener to be notified if the header block is completed.</em>
+<a class="jxr_linenumber" name="606" href="#606">606</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="607" href="#607">607</a>         <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> processFragment(<strong class="jxr_keyword">boolean</strong> endOfHeaders, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> fragment,
+<a class="jxr_linenumber" name="608" href="#608">608</a>                 Http2FrameListener listener) <strong class="jxr_keyword">throws</strong> Http2Exception;
+<a class="jxr_linenumber" name="609" href="#609">609</a> 
+<a class="jxr_linenumber" name="610" href="#610">610</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a> headersBlockBuilder() {
+<a class="jxr_linenumber" name="611" href="#611">611</a>             <strong class="jxr_keyword">return</strong> builder;
+<a class="jxr_linenumber" name="612" href="#612">612</a>         }
+<a class="jxr_linenumber" name="613" href="#613">613</a> 
+<a class="jxr_linenumber" name="614" href="#614">614</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="615" href="#615">615</a> <em class="jxr_javadoccomment">         * Free any allocated resources.</em>
+<a class="jxr_linenumber" name="616" href="#616">616</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="617" href="#617">617</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> close() {
+<a class="jxr_linenumber" name="618" href="#618">618</a>             builder.close();
+<a class="jxr_linenumber" name="619" href="#619">619</a>         }
+<a class="jxr_linenumber" name="620" href="#620">620</a>     }
+<a class="jxr_linenumber" name="621" href="#621">621</a> 
+<a class="jxr_linenumber" name="622" href="#622">622</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="623" href="#623">623</a> <em class="jxr_javadoccomment">     * Utility class to help with construction of the headers block that may potentially span</em>
+<a class="jxr_linenumber" name="624" href="#624">624</a> <em class="jxr_javadoccomment">     * multiple frames.</em>
+<a class="jxr_linenumber" name="625" href="#625">625</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="626" href="#626">626</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2FrameReader.html">HeadersBlockBuilder</a> {
+<a class="jxr_linenumber" name="627" href="#627">627</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> headerBlock;
+<a class="jxr_linenumber" name="628" href="#628">628</a> 
+<a class="jxr_linenumber" name="629" href="#629">629</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="630" href="#630">630</a> <em class="jxr_javadoccomment">         * Adds a fragment to the block.</em>
+<a class="jxr_linenumber" name="631" href="#631">631</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="632" href="#632">632</a> <em class="jxr_javadoccomment">         * @param fragment the fragment of the headers block to be added.</em>
+<a class="jxr_linenumber" name="633" href="#633">633</a> <em class="jxr_javadoccomment">         * @param alloc allocator for new blocks if needed.</em>
+<a class="jxr_linenumber" name="634" href="#634">634</a> <em class="jxr_javadoccomment">         * @param endOfHeaders flag indicating whether the current frame is the end of the headers.</em>
+<a class="jxr_linenumber" name="635" href="#635">635</a> <em class="jxr_javadoccomment">         *            This is used for an optimization for when the first fragment is the full</em>
+<a class="jxr_linenumber" name="636" href="#636">636</a> <em class="jxr_javadoccomment">         *            block. In that case, the buffer is used directly without copying.</em>
+<a class="jxr_linenumber" name="637" href="#637">637</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="638" href="#638">638</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> addFragment(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> fragment, <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <strong class="jxr_keyword">boolean</strong> endOfHeaders) {
+<a class="jxr_linenumber" name="639" href="#639">639</a>             <strong class="jxr_keyword">if</strong> (headerBlock == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="640" href="#640">640</a>                 <strong class="jxr_keyword">if</strong> (endOfHeaders) {
+<a class="jxr_linenumber" name="641" href="#641">641</a>                     <em class="jxr_comment">// Optimization - don't bother copying, just use the buffer as-is. Need</em>
+<a class="jxr_linenumber" name="642" href="#642">642</a>                     <em class="jxr_comment">// to retain since we release when the header block is built.</em>
+<a class="jxr_linenumber" name="643" href="#643">643</a>                     headerBlock = fragment.retain();
+<a class="jxr_linenumber" name="644" href="#644">644</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="645" href="#645">645</a>                     headerBlock = alloc.buffer(fragment.readableBytes());
+<a class="jxr_linenumber" name="646" href="#646">646</a>                     headerBlock.writeBytes(fragment);
+<a class="jxr_linenumber" name="647" href="#647">647</a>                 }
+<a class="jxr_linenumber" name="648" href="#648">648</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="649" href="#649">649</a>             }
+<a class="jxr_linenumber" name="650" href="#650">650</a>             <strong class="jxr_keyword">if</strong> (headerBlock.isWritable(fragment.readableBytes())) {
+<a class="jxr_linenumber" name="651" href="#651">651</a>                 <em class="jxr_comment">// The buffer can hold the requested bytes, just write it directly.</em>
+<a class="jxr_linenumber" name="652" href="#652">652</a>                 headerBlock.writeBytes(fragment);
+<a class="jxr_linenumber" name="653" href="#653">653</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="654" href="#654">654</a>                 <em class="jxr_comment">// Allocate a new buffer that is big enough to hold the entire header block so far.</em>
+<a class="jxr_linenumber" name="655" href="#655">655</a>                 <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = alloc.buffer(headerBlock.readableBytes() + fragment.readableBytes());
+<a class="jxr_linenumber" name="656" href="#656">656</a>                 buf.writeBytes(headerBlock);
+<a class="jxr_linenumber" name="657" href="#657">657</a>                 buf.writeBytes(fragment);
+<a class="jxr_linenumber" name="658" href="#658">658</a>                 headerBlock.release();
+<a class="jxr_linenumber" name="659" href="#659">659</a>                 headerBlock = buf;
+<a class="jxr_linenumber" name="660" href="#660">660</a>             }
+<a class="jxr_linenumber" name="661" href="#661">661</a>         }
+<a class="jxr_linenumber" name="662" href="#662">662</a> 
+<a class="jxr_linenumber" name="663" href="#663">663</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="664" href="#664">664</a> <em class="jxr_javadoccomment">         * Builds the headers from the completed headers block. After this is called, this builder</em>
+<a class="jxr_linenumber" name="665" href="#665">665</a> <em class="jxr_javadoccomment">         * should not be called again.</em>
+<a class="jxr_linenumber" name="666" href="#666">666</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="667" href="#667">667</a>         Http2Headers headers() <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="668" href="#668">668</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="669" href="#669">669</a>                 <strong class="jxr_keyword">return</strong> headersDecoder.decodeHeaders(headerBlock);
+<a class="jxr_linenumber" name="670" href="#670">670</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="671" href="#671">671</a>                 close();
+<a class="jxr_linenumber" name="672" href="#672">672</a>             }
+<a class="jxr_linenumber" name="673" href="#673">673</a>         }
+<a class="jxr_linenumber" name="674" href="#674">674</a> 
+<a class="jxr_linenumber" name="675" href="#675">675</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="676" href="#676">676</a> <em class="jxr_javadoccomment">         * Closes this builder and frees any resources.</em>
+<a class="jxr_linenumber" name="677" href="#677">677</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="678" href="#678">678</a>         <strong class="jxr_keyword">void</strong> close() {
+<a class="jxr_linenumber" name="679" href="#679">679</a>             <strong class="jxr_keyword">if</strong> (headerBlock != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="680" href="#680">680</a>                 headerBlock.release();
+<a class="jxr_linenumber" name="681" href="#681">681</a>                 headerBlock = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="682" href="#682">682</a>             }
+<a class="jxr_linenumber" name="683" href="#683">683</a> 
+<a class="jxr_linenumber" name="684" href="#684">684</a>             <em class="jxr_comment">// Clear the member variable pointing at this instance.</em>
+<a class="jxr_linenumber" name="685" href="#685">685</a>             headersContinuation = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="686" href="#686">686</a>         }
+<a class="jxr_linenumber" name="687" href="#687">687</a>     }
+<a class="jxr_linenumber" name="688" href="#688">688</a> 
+<a class="jxr_linenumber" name="689" href="#689">689</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyNotProcessingHeaders() <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="690" href="#690">690</a>         <strong class="jxr_keyword">if</strong> (headersContinuation != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="691" href="#691">691</a>             <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Received frame of type %s while processing headers."</span>, frameType);
+<a class="jxr_linenumber" name="692" href="#692">692</a>         }
+<a class="jxr_linenumber" name="693" href="#693">693</a>     }
+<a class="jxr_linenumber" name="694" href="#694">694</a> 
+<a class="jxr_linenumber" name="695" href="#695">695</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyPayloadLength(<strong class="jxr_keyword">int</strong> payloadLength) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="696" href="#696">696</a>         <strong class="jxr_keyword">if</strong> (payloadLength &gt; maxFrameSize) {
+<a class="jxr_linenumber" name="697" href="#697">697</a>             <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Total payload length %d exceeds max frame length."</span>, payloadLength);
+<a class="jxr_linenumber" name="698" href="#698">698</a>         }
+<a class="jxr_linenumber" name="699" href="#699">699</a>     }
+<a class="jxr_linenumber" name="700" href="#700">700</a> 
+<a class="jxr_linenumber" name="701" href="#701">701</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyStreamOrConnectionId(<strong class="jxr_keyword">int</strong> streamId, String argumentName)
+<a class="jxr_linenumber" name="702" href="#702">702</a>             <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="703" href="#703">703</a>         <strong class="jxr_keyword">if</strong> (streamId &lt; 0) {
+<a class="jxr_linenumber" name="704" href="#704">704</a>             <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"%s must be &gt;= 0"</span>, argumentName);
+<a class="jxr_linenumber" name="705" href="#705">705</a>         }
+<a class="jxr_linenumber" name="706" href="#706">706</a>     }
+<a class="jxr_linenumber" name="707" href="#707">707</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
