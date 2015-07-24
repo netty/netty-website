@@ -26,8 +26,8 @@
 <a class="jxr_linenumber" name="16" href="#16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.util.concurrent;
 <a class="jxr_linenumber" name="17" href="#17">17</a>  
 <a class="jxr_linenumber" name="18" href="#18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.ObjectUtil;
-<a class="jxr_linenumber" name="19" href="#19">19</a>  
-<a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> java.util.Iterator;
+<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.OneTimeTask;
+<a class="jxr_linenumber" name="20" href="#20">20</a>  
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> java.util.PriorityQueue;
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> java.util.Queue;
 <a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.Callable;
@@ -72,7 +72,7 @@
 <a class="jxr_linenumber" name="62" href="#62">62</a>                  scheduledTaskQueue.toArray(<strong class="jxr_keyword">new</strong> ScheduledFutureTask&lt;?&gt;[scheduledTaskQueue.size()]);
 <a class="jxr_linenumber" name="63" href="#63">63</a>  
 <a class="jxr_linenumber" name="64" href="#64">64</a>          <strong class="jxr_keyword">for</strong> (ScheduledFutureTask&lt;?&gt; task: scheduledTasks) {
-<a class="jxr_linenumber" name="65" href="#65">65</a>              task.cancel(false);
+<a class="jxr_linenumber" name="65" href="#65">65</a>              task.cancelWithoutRemove(false);
 <a class="jxr_linenumber" name="66" href="#66">66</a>          }
 <a class="jxr_linenumber" name="67" href="#67">67</a>  
 <a class="jxr_linenumber" name="68" href="#68">68</a>          scheduledTaskQueue.clear();
@@ -198,7 +198,7 @@
 <a class="jxr_linenumber" name="188" href="#188">188</a>         <strong class="jxr_keyword">if</strong> (inEventLoop()) {
 <a class="jxr_linenumber" name="189" href="#189">189</a>             scheduledTaskQueue().add(task);
 <a class="jxr_linenumber" name="190" href="#190">190</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="191" href="#191">191</a>             execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="191" href="#191">191</a>             execute(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
 <a class="jxr_linenumber" name="192" href="#192">192</a>                 @Override
 <a class="jxr_linenumber" name="193" href="#193">193</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
 <a class="jxr_linenumber" name="194" href="#194">194</a>                     scheduledTaskQueue().add(task);
@@ -209,20 +209,19 @@
 <a class="jxr_linenumber" name="199" href="#199">199</a>         <strong class="jxr_keyword">return</strong> task;
 <a class="jxr_linenumber" name="200" href="#200">200</a>     }
 <a class="jxr_linenumber" name="201" href="#201">201</a> 
-<a class="jxr_linenumber" name="202" href="#202">202</a>     <strong class="jxr_keyword">void</strong> purgeCancelledScheduledTasks() {
-<a class="jxr_linenumber" name="203" href="#203">203</a>         Queue&lt;ScheduledFutureTask&lt;?&gt;&gt; scheduledTaskQueue = <strong class="jxr_keyword">this</strong>.scheduledTaskQueue;
-<a class="jxr_linenumber" name="204" href="#204">204</a>         <strong class="jxr_keyword">if</strong> (isNullOrEmpty(scheduledTaskQueue)) {
-<a class="jxr_linenumber" name="205" href="#205">205</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="206" href="#206">206</a>         }
-<a class="jxr_linenumber" name="207" href="#207">207</a>         Iterator&lt;ScheduledFutureTask&lt;?&gt;&gt; i = scheduledTaskQueue.iterator();
-<a class="jxr_linenumber" name="208" href="#208">208</a>         <strong class="jxr_keyword">while</strong> (i.hasNext()) {
-<a class="jxr_linenumber" name="209" href="#209">209</a>             ScheduledFutureTask&lt;?&gt; task = i.next();
-<a class="jxr_linenumber" name="210" href="#210">210</a>             <strong class="jxr_keyword">if</strong> (task.isCancelled()) {
-<a class="jxr_linenumber" name="211" href="#211">211</a>                 i.remove();
-<a class="jxr_linenumber" name="212" href="#212">212</a>             }
-<a class="jxr_linenumber" name="213" href="#213">213</a>         }
-<a class="jxr_linenumber" name="214" href="#214">214</a>     }
-<a class="jxr_linenumber" name="215" href="#215">215</a> }
+<a class="jxr_linenumber" name="202" href="#202">202</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> removeScheduled(<strong class="jxr_keyword">final</strong> ScheduledFutureTask&lt;?&gt; task) {
+<a class="jxr_linenumber" name="203" href="#203">203</a>         <strong class="jxr_keyword">if</strong> (inEventLoop()) {
+<a class="jxr_linenumber" name="204" href="#204">204</a>             scheduledTaskQueue().remove(task);
+<a class="jxr_linenumber" name="205" href="#205">205</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="206" href="#206">206</a>             execute(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
+<a class="jxr_linenumber" name="207" href="#207">207</a>                 @Override
+<a class="jxr_linenumber" name="208" href="#208">208</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="209" href="#209">209</a>                     removeScheduled(task);
+<a class="jxr_linenumber" name="210" href="#210">210</a>                 }
+<a class="jxr_linenumber" name="211" href="#211">211</a>             });
+<a class="jxr_linenumber" name="212" href="#212">212</a>         }
+<a class="jxr_linenumber" name="213" href="#213">213</a>     }
+<a class="jxr_linenumber" name="214" href="#214">214</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
