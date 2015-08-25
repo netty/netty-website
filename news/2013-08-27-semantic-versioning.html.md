@@ -27,4 +27,4 @@ Although it might be controversial, we believe it is sometimes beneficial to inc
 
 #### How will you ensure the binary compatibility between releases?
 
-We are going to integrate the automated binary compatibility checker into our build so that [our CI server](http://clinker.netty.io/jenkins/) warns us whenever we break the binary compatibility.  It is not implemented in our `pom.xml` yet, so you might want to contribute some by [issuing a pull request](https://github.com/netty/netty/pulls) if you have an experience in this area.
+We are going to integrate the automated binary compatibility checker into our build so that [our CI server](https://garage.netty.io/teamcity/overview.html?guest=1) warns us whenever we break the binary compatibility.  It is not implemented in our `pom.xml` yet, so you might want to contribute some by [issuing a pull request](https://github.com/netty/netty/pulls) if you have an experience in this area.

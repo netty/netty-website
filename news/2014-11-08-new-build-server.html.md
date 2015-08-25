@@ -24,8 +24,8 @@ After a little bit of exploration, I also realized Clinker is more than just a C
   * [Checkstyle](http://checkstyle.sourceforge.net/)
   * [JaCoCo](http://www.eclemma.org/jacoco/)
 * [Nexus](http://www.sonatype.org/nexus/) for deployment of our snapshot artifacts
-* Almost infinite customizability of [our Jenkins instance](http://clinker.netty.io/jenkins/).
+* Almost infinite customizability of our Jenkins instance
 
-Especially, [the daily Sonar report](http://clinker.netty.io/sonar/dashboard/index/io.netty:netty-parent:master) provides very useful information that could raise our quality bar even higher.  Please take your time to browse it, you'll find many low-hanging fruits that could be translated into a new pull request fairly easily.
+Especially, the daily Sonar report provides very useful information that could raise our quality bar even higher.  Please take your time to browse it, you'll find many low-hanging fruits that could be translated into a new pull request fairly easily.
 
 I'd like to say huge thanks to the folks at Clinker again for their support for Netty.  They certainly addressed our biggest pain point.
