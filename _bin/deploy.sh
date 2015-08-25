@@ -49,7 +49,7 @@ spopd
 
 # Make sure netty.github.com is clean
 spushd "$DST"
-if ! git remote -v | grep -q -E '(git@|https://)github.com[:/]netty/netty.github.com'; then
+if ! git remote -v | grep -q -E '(git@|https://)?github.com[:/]netty/netty.github.com'; then
   echo "Not a netty.github.com repository: $PWD"
   exit 1
 fi
