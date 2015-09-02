@@ -35,7 +35,7 @@
 <a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.FullHttpRequest;
 <a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.FullHttpResponse;
 <a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpHeaderNames;
-<a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpHeaderUtil;
+<a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpUtil;
 <a class="jxr_linenumber" name="29" href="#29">29</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpStatusClass;
 <a class="jxr_linenumber" name="30" href="#30">30</a>  <strong class="jxr_keyword">import</strong> io.netty.util.collection.IntObjectHashMap;
 <a class="jxr_linenumber" name="31" href="#31">31</a>  <strong class="jxr_keyword">import</strong> io.netty.util.collection.IntObjectMap;
@@ -178,7 +178,7 @@
 <a class="jxr_linenumber" name="168" href="#168">168</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="169" href="#169">169</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> fireChannelRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> msg, <strong class="jxr_keyword">int</strong> streamId) {
 <a class="jxr_linenumber" name="170" href="#170">170</a>         removeMessage(streamId);
-<a class="jxr_linenumber" name="171" href="#171">171</a>         HttpHeaderUtil.setContentLength(msg, msg.content().readableBytes());
+<a class="jxr_linenumber" name="171" href="#171">171</a>         HttpUtil.setContentLength(msg, msg.content().readableBytes());
 <a class="jxr_linenumber" name="172" href="#172">172</a>         ctx.fireChannelRead(msg);
 <a class="jxr_linenumber" name="173" href="#173">173</a>     }
 <a class="jxr_linenumber" name="174" href="#174">174</a> 
@@ -196,8 +196,8 @@
 <a class="jxr_linenumber" name="186" href="#186">186</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="187" href="#187">187</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> newMessage(<strong class="jxr_keyword">int</strong> streamId, Http2Headers headers, <strong class="jxr_keyword">boolean</strong> validateHttpHeaders)
 <a class="jxr_linenumber" name="188" href="#188">188</a>             <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="189" href="#189">189</a>         <strong class="jxr_keyword">return</strong> connection.isServer() ? HttpUtil.toHttpRequest(streamId, headers,
-<a class="jxr_linenumber" name="190" href="#190">190</a>                 validateHttpHeaders) : HttpUtil.toHttpResponse(streamId, headers, validateHttpHeaders);
+<a class="jxr_linenumber" name="189" href="#189">189</a>         <strong class="jxr_keyword">return</strong> connection.isServer() ? HttpConversionUtil.toHttpRequest(streamId, headers,
+<a class="jxr_linenumber" name="190" href="#190">190</a>                 validateHttpHeaders) : HttpConversionUtil.toHttpResponse(streamId, headers, validateHttpHeaders);
 <a class="jxr_linenumber" name="191" href="#191">191</a>     }
 <a class="jxr_linenumber" name="192" href="#192">192</a> 
 <a class="jxr_linenumber" name="193" href="#193">193</a>     <em class="jxr_javadoccomment">/**</em>
@@ -231,7 +231,7 @@
 <a class="jxr_linenumber" name="221" href="#221">221</a>             msg = newMessage(streamId, headers, validateHttpHeaders);
 <a class="jxr_linenumber" name="222" href="#222">222</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (allowAppend) {
 <a class="jxr_linenumber" name="223" href="#223">223</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="224" href="#224">224</a>                 HttpUtil.addHttp2ToHttpHeaders(streamId, headers, msg, appendToTrailer);
+<a class="jxr_linenumber" name="224" href="#224">224</a>                 HttpConversionUtil.addHttp2ToHttpHeaders(streamId, headers, msg, appendToTrailer);
 <a class="jxr_linenumber" name="225" href="#225">225</a>             } <strong class="jxr_keyword">catch</strong> (Http2Exception e) {
 <a class="jxr_linenumber" name="226" href="#226">226</a>                 removeMessage(streamId);
 <a class="jxr_linenumber" name="227" href="#227">227</a>                 <strong class="jxr_keyword">throw</strong> e;
@@ -330,7 +330,7 @@
 <a class="jxr_linenumber" name="320" href="#320">320</a>                             promisedStreamId);
 <a class="jxr_linenumber" name="321" href="#321">321</a>         }
 <a class="jxr_linenumber" name="322" href="#322">322</a> 
-<a class="jxr_linenumber" name="323" href="#323">323</a>         msg.headers().setInt(HttpUtil.ExtensionHeaderNames.STREAM_PROMISE_ID.text(), streamId);
+<a class="jxr_linenumber" name="323" href="#323">323</a>         msg.headers().setInt(HttpConversionUtil.ExtensionHeaderNames.STREAM_PROMISE_ID.text(), streamId);
 <a class="jxr_linenumber" name="324" href="#324">324</a> 
 <a class="jxr_linenumber" name="325" href="#325">325</a>         processHeadersEnd(ctx, promisedStreamId, msg, false);
 <a class="jxr_linenumber" name="326" href="#326">326</a>     }

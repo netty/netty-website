@@ -29,64 +29,64 @@
 <a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.handler.codec.http2.Http2Exception.connectionError;
 <a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.util.internal.ObjectUtil.checkNotNull;
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
-<a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.Unpooled;
-<a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelFuture;
-<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelFutureListener;
-<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
-<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelPromise;
+<a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelFuture;
+<a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelFutureListener;
+<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelPromise;
+<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.CoalescingBufferQueue;
 <a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http2.Http2Exception.ClosedStreamCreationException;
-<a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.util.ReferenceCountUtil;
-<a class="jxr_linenumber" name="29" href="#29">29</a>  
-<a class="jxr_linenumber" name="30" href="#30">30</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayDeque;
-<a class="jxr_linenumber" name="31" href="#31">31</a>  
-<a class="jxr_linenumber" name="32" href="#32">32</a>  <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="33" href="#33">33</a>  <em class="jxr_javadoccomment"> * Default implementation of {@link Http2ConnectionEncoder}.</em>
-<a class="jxr_linenumber" name="34" href="#34">34</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="35" href="#35">35</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> DefaultHttp2ConnectionEncoder <strong class="jxr_keyword">implements</strong> Http2ConnectionEncoder {
-<a class="jxr_linenumber" name="36" href="#36">36</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2FrameWriter frameWriter;
-<a class="jxr_linenumber" name="37" href="#37">37</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2Connection connection;
-<a class="jxr_linenumber" name="38" href="#38">38</a>      <strong class="jxr_keyword">private</strong> Http2LifecycleManager lifecycleManager;
-<a class="jxr_linenumber" name="39" href="#39">39</a>      <em class="jxr_comment">// We prefer ArrayDeque to LinkedList because later will produce more GC.</em>
-<a class="jxr_linenumber" name="40" href="#40">40</a>      <em class="jxr_comment">// This initial capacity is plenty for SETTINGS traffic.</em>
-<a class="jxr_linenumber" name="41" href="#41">41</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> ArrayDeque&lt;Http2Settings&gt; outstandingLocalSettingsQueue = <strong class="jxr_keyword">new</strong> ArrayDeque&lt;Http2Settings&gt;(4);
-<a class="jxr_linenumber" name="42" href="#42">42</a>  
-<a class="jxr_linenumber" name="43" href="#43">43</a>      <strong class="jxr_keyword">public</strong> DefaultHttp2ConnectionEncoder(Http2Connection connection, Http2FrameWriter frameWriter) {
-<a class="jxr_linenumber" name="44" href="#44">44</a>          <strong class="jxr_keyword">this</strong>.connection = checkNotNull(connection, <span class="jxr_string">"connection"</span>);
-<a class="jxr_linenumber" name="45" href="#45">45</a>          <strong class="jxr_keyword">this</strong>.frameWriter = checkNotNull(frameWriter, <span class="jxr_string">"frameWriter"</span>);
-<a class="jxr_linenumber" name="46" href="#46">46</a>          <strong class="jxr_keyword">if</strong> (connection.remote().flowController() == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="47" href="#47">47</a>              connection.remote().flowController(<strong class="jxr_keyword">new</strong> DefaultHttp2RemoteFlowController(connection));
-<a class="jxr_linenumber" name="48" href="#48">48</a>          }
-<a class="jxr_linenumber" name="49" href="#49">49</a>      }
-<a class="jxr_linenumber" name="50" href="#50">50</a>  
-<a class="jxr_linenumber" name="51" href="#51">51</a>      @Override
-<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> lifecycleManager(Http2LifecycleManager lifecycleManager) {
-<a class="jxr_linenumber" name="53" href="#53">53</a>          <strong class="jxr_keyword">this</strong>.lifecycleManager = checkNotNull(lifecycleManager, <span class="jxr_string">"lifecycleManager"</span>);
-<a class="jxr_linenumber" name="54" href="#54">54</a>      }
-<a class="jxr_linenumber" name="55" href="#55">55</a>  
-<a class="jxr_linenumber" name="56" href="#56">56</a>      @Override
-<a class="jxr_linenumber" name="57" href="#57">57</a>      <strong class="jxr_keyword">public</strong> Http2FrameWriter frameWriter() {
-<a class="jxr_linenumber" name="58" href="#58">58</a>          <strong class="jxr_keyword">return</strong> frameWriter;
-<a class="jxr_linenumber" name="59" href="#59">59</a>      }
-<a class="jxr_linenumber" name="60" href="#60">60</a>  
-<a class="jxr_linenumber" name="61" href="#61">61</a>      @Override
-<a class="jxr_linenumber" name="62" href="#62">62</a>      <strong class="jxr_keyword">public</strong> Http2Connection connection() {
-<a class="jxr_linenumber" name="63" href="#63">63</a>          <strong class="jxr_keyword">return</strong> connection;
-<a class="jxr_linenumber" name="64" href="#64">64</a>      }
-<a class="jxr_linenumber" name="65" href="#65">65</a>  
-<a class="jxr_linenumber" name="66" href="#66">66</a>      @Override
-<a class="jxr_linenumber" name="67" href="#67">67</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> Http2RemoteFlowController flowController() {
-<a class="jxr_linenumber" name="68" href="#68">68</a>          <strong class="jxr_keyword">return</strong> connection().remote().flowController();
-<a class="jxr_linenumber" name="69" href="#69">69</a>      }
-<a class="jxr_linenumber" name="70" href="#70">70</a>  
-<a class="jxr_linenumber" name="71" href="#71">71</a>      @Override
-<a class="jxr_linenumber" name="72" href="#72">72</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> remoteSettings(Http2Settings settings) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="73" href="#73">73</a>          Boolean pushEnabled = settings.pushEnabled();
-<a class="jxr_linenumber" name="74" href="#74">74</a>          Http2FrameWriter.Configuration config = configuration();
-<a class="jxr_linenumber" name="75" href="#75">75</a>          Http2HeaderTable outboundHeaderTable = config.headerTable();
-<a class="jxr_linenumber" name="76" href="#76">76</a>          Http2FrameSizePolicy outboundFrameSizePolicy = config.frameSizePolicy();
-<a class="jxr_linenumber" name="77" href="#77">77</a>          <strong class="jxr_keyword">if</strong> (pushEnabled != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="78" href="#78">78</a>              <strong class="jxr_keyword">if</strong> (!connection.isServer()) {
-<a class="jxr_linenumber" name="79" href="#79">79</a>                  <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Client received SETTINGS frame with ENABLE_PUSH specified"</span>);
+<a class="jxr_linenumber" name="28" href="#28">28</a>  
+<a class="jxr_linenumber" name="29" href="#29">29</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayDeque;
+<a class="jxr_linenumber" name="30" href="#30">30</a>  
+<a class="jxr_linenumber" name="31" href="#31">31</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="32" href="#32">32</a>  <em class="jxr_javadoccomment"> * Default implementation of {@link Http2ConnectionEncoder}.</em>
+<a class="jxr_linenumber" name="33" href="#33">33</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="34" href="#34">34</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> DefaultHttp2ConnectionEncoder <strong class="jxr_keyword">implements</strong> Http2ConnectionEncoder {
+<a class="jxr_linenumber" name="35" href="#35">35</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2FrameWriter frameWriter;
+<a class="jxr_linenumber" name="36" href="#36">36</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2Connection connection;
+<a class="jxr_linenumber" name="37" href="#37">37</a>      <strong class="jxr_keyword">private</strong> Http2LifecycleManager lifecycleManager;
+<a class="jxr_linenumber" name="38" href="#38">38</a>      <em class="jxr_comment">// We prefer ArrayDeque to LinkedList because later will produce more GC.</em>
+<a class="jxr_linenumber" name="39" href="#39">39</a>      <em class="jxr_comment">// This initial capacity is plenty for SETTINGS traffic.</em>
+<a class="jxr_linenumber" name="40" href="#40">40</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> ArrayDeque&lt;Http2Settings&gt; outstandingLocalSettingsQueue = <strong class="jxr_keyword">new</strong> ArrayDeque&lt;Http2Settings&gt;(4);
+<a class="jxr_linenumber" name="41" href="#41">41</a>  
+<a class="jxr_linenumber" name="42" href="#42">42</a>      <strong class="jxr_keyword">public</strong> DefaultHttp2ConnectionEncoder(Http2Connection connection, Http2FrameWriter frameWriter) {
+<a class="jxr_linenumber" name="43" href="#43">43</a>          <strong class="jxr_keyword">this</strong>.connection = checkNotNull(connection, <span class="jxr_string">"connection"</span>);
+<a class="jxr_linenumber" name="44" href="#44">44</a>          <strong class="jxr_keyword">this</strong>.frameWriter = checkNotNull(frameWriter, <span class="jxr_string">"frameWriter"</span>);
+<a class="jxr_linenumber" name="45" href="#45">45</a>          <strong class="jxr_keyword">if</strong> (connection.remote().flowController() == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="46" href="#46">46</a>              connection.remote().flowController(<strong class="jxr_keyword">new</strong> DefaultHttp2RemoteFlowController(connection));
+<a class="jxr_linenumber" name="47" href="#47">47</a>          }
+<a class="jxr_linenumber" name="48" href="#48">48</a>      }
+<a class="jxr_linenumber" name="49" href="#49">49</a>  
+<a class="jxr_linenumber" name="50" href="#50">50</a>      @Override
+<a class="jxr_linenumber" name="51" href="#51">51</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> lifecycleManager(Http2LifecycleManager lifecycleManager) {
+<a class="jxr_linenumber" name="52" href="#52">52</a>          <strong class="jxr_keyword">this</strong>.lifecycleManager = checkNotNull(lifecycleManager, <span class="jxr_string">"lifecycleManager"</span>);
+<a class="jxr_linenumber" name="53" href="#53">53</a>      }
+<a class="jxr_linenumber" name="54" href="#54">54</a>  
+<a class="jxr_linenumber" name="55" href="#55">55</a>      @Override
+<a class="jxr_linenumber" name="56" href="#56">56</a>      <strong class="jxr_keyword">public</strong> Http2FrameWriter frameWriter() {
+<a class="jxr_linenumber" name="57" href="#57">57</a>          <strong class="jxr_keyword">return</strong> frameWriter;
+<a class="jxr_linenumber" name="58" href="#58">58</a>      }
+<a class="jxr_linenumber" name="59" href="#59">59</a>  
+<a class="jxr_linenumber" name="60" href="#60">60</a>      @Override
+<a class="jxr_linenumber" name="61" href="#61">61</a>      <strong class="jxr_keyword">public</strong> Http2Connection connection() {
+<a class="jxr_linenumber" name="62" href="#62">62</a>          <strong class="jxr_keyword">return</strong> connection;
+<a class="jxr_linenumber" name="63" href="#63">63</a>      }
+<a class="jxr_linenumber" name="64" href="#64">64</a>  
+<a class="jxr_linenumber" name="65" href="#65">65</a>      @Override
+<a class="jxr_linenumber" name="66" href="#66">66</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> Http2RemoteFlowController flowController() {
+<a class="jxr_linenumber" name="67" href="#67">67</a>          <strong class="jxr_keyword">return</strong> connection().remote().flowController();
+<a class="jxr_linenumber" name="68" href="#68">68</a>      }
+<a class="jxr_linenumber" name="69" href="#69">69</a>  
+<a class="jxr_linenumber" name="70" href="#70">70</a>      @Override
+<a class="jxr_linenumber" name="71" href="#71">71</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> remoteSettings(Http2Settings settings) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="72" href="#72">72</a>          Boolean pushEnabled = settings.pushEnabled();
+<a class="jxr_linenumber" name="73" href="#73">73</a>          Http2FrameWriter.Configuration config = configuration();
+<a class="jxr_linenumber" name="74" href="#74">74</a>          Http2HeaderTable outboundHeaderTable = config.headerTable();
+<a class="jxr_linenumber" name="75" href="#75">75</a>          Http2FrameSizePolicy outboundFrameSizePolicy = config.frameSizePolicy();
+<a class="jxr_linenumber" name="76" href="#76">76</a>          <strong class="jxr_keyword">if</strong> (pushEnabled != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="77" href="#77">77</a>              <strong class="jxr_keyword">if</strong> (!connection.isServer() &amp;&amp; pushEnabled) {
+<a class="jxr_linenumber" name="78" href="#78">78</a>                  <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR,
+<a class="jxr_linenumber" name="79" href="#79">79</a>                      <span class="jxr_string">"Client received a value of ENABLE_PUSH specified to other than 0"</span>);
 <a class="jxr_linenumber" name="80" href="#80">80</a>              }
 <a class="jxr_linenumber" name="81" href="#81">81</a>              connection.remote().allowPushTo(pushEnabled);
 <a class="jxr_linenumber" name="82" href="#82">82</a>          }
@@ -140,8 +140,8 @@
 <a class="jxr_linenumber" name="130" href="#130">130</a>         }
 <a class="jxr_linenumber" name="131" href="#131">131</a> 
 <a class="jxr_linenumber" name="132" href="#132">132</a>         <em class="jxr_comment">// Hand control of the frame to the flow controller.</em>
-<a class="jxr_linenumber" name="133" href="#133">133</a>         flowController().sendFlowControlled(ctx, stream,
-<a class="jxr_linenumber" name="134" href="#134">134</a>                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledData</a>(ctx, stream, data, padding, endOfStream, promise));
+<a class="jxr_linenumber" name="133" href="#133">133</a>         flowController().addFlowControlled(stream,
+<a class="jxr_linenumber" name="134" href="#134">134</a>                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledData</a>(stream, data, padding, endOfStream, promise));
 <a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">return</strong> promise;
 <a class="jxr_linenumber" name="136" href="#136">136</a>     }
 <a class="jxr_linenumber" name="137" href="#137">137</a> 
@@ -176,9 +176,9 @@
 <a class="jxr_linenumber" name="166" href="#166">166</a>             }
 <a class="jxr_linenumber" name="167" href="#167">167</a> 
 <a class="jxr_linenumber" name="168" href="#168">168</a>             <em class="jxr_comment">// Pass headers to the flow-controller so it can maintain their sequence relative to DATA frames.</em>
-<a class="jxr_linenumber" name="169" href="#169">169</a>             flowController().sendFlowControlled(ctx, stream,
-<a class="jxr_linenumber" name="170" href="#170">170</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledHeaders</a>(ctx, stream, headers, streamDependency, weight,
-<a class="jxr_linenumber" name="171" href="#171">171</a>                             exclusive, padding, endOfStream, promise));
+<a class="jxr_linenumber" name="169" href="#169">169</a>             flowController().addFlowControlled(stream,
+<a class="jxr_linenumber" name="170" href="#170">170</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledHeaders</a>(stream, headers, streamDependency, weight, exclusive, padding,
+<a class="jxr_linenumber" name="171" href="#171">171</a>                             endOfStream, promise));
 <a class="jxr_linenumber" name="172" href="#172">172</a>             <strong class="jxr_keyword">return</strong> promise;
 <a class="jxr_linenumber" name="173" href="#173">173</a>         } <strong class="jxr_keyword">catch</strong> (Http2NoMoreStreamIdsException e) {
 <a class="jxr_linenumber" name="174" href="#174">174</a>             lifecycleManager.onException(ctx, e);
@@ -325,155 +325,149 @@
 <a class="jxr_linenumber" name="315" href="#315">315</a> <em class="jxr_javadoccomment">     * &lt;/p&gt;</em>
 <a class="jxr_linenumber" name="316" href="#316">316</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="317" href="#317">317</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledData</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a> {
-<a class="jxr_linenumber" name="318" href="#318">318</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data;
-<a class="jxr_linenumber" name="319" href="#319">319</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> size;
-<a class="jxr_linenumber" name="320" href="#320">320</a> 
-<a class="jxr_linenumber" name="321" href="#321">321</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledData</a>(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Stream stream, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data, <strong class="jxr_keyword">int</strong> padding,
-<a class="jxr_linenumber" name="322" href="#322">322</a>                                     <strong class="jxr_keyword">boolean</strong> endOfStream, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="323" href="#323">323</a>             <strong class="jxr_keyword">super</strong>(ctx, stream, padding, endOfStream, promise);
-<a class="jxr_linenumber" name="324" href="#324">324</a>             <strong class="jxr_keyword">this</strong>.data = data;
-<a class="jxr_linenumber" name="325" href="#325">325</a>             size = data.readableBytes() + padding;
-<a class="jxr_linenumber" name="326" href="#326">326</a>         }
-<a class="jxr_linenumber" name="327" href="#327">327</a> 
-<a class="jxr_linenumber" name="328" href="#328">328</a>         @Override
-<a class="jxr_linenumber" name="329" href="#329">329</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> size() {
-<a class="jxr_linenumber" name="330" href="#330">330</a>             <strong class="jxr_keyword">return</strong> size;
-<a class="jxr_linenumber" name="331" href="#331">331</a>         }
-<a class="jxr_linenumber" name="332" href="#332">332</a> 
-<a class="jxr_linenumber" name="333" href="#333">333</a>         @Override
-<a class="jxr_linenumber" name="334" href="#334">334</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> error(Throwable cause) {
-<a class="jxr_linenumber" name="335" href="#335">335</a>             ReferenceCountUtil.safeRelease(data);
-<a class="jxr_linenumber" name="336" href="#336">336</a>             lifecycleManager.onException(ctx, cause);
-<a class="jxr_linenumber" name="337" href="#337">337</a>             data = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="338" href="#338">338</a>             size = 0;
-<a class="jxr_linenumber" name="339" href="#339">339</a>             promise.tryFailure(cause);
-<a class="jxr_linenumber" name="340" href="#340">340</a>         }
-<a class="jxr_linenumber" name="341" href="#341">341</a> 
-<a class="jxr_linenumber" name="342" href="#342">342</a>         @Override
-<a class="jxr_linenumber" name="343" href="#343">343</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<strong class="jxr_keyword">int</strong> allowedBytes) {
-<a class="jxr_linenumber" name="344" href="#344">344</a>             <strong class="jxr_keyword">int</strong> bytesWritten = 0;
-<a class="jxr_linenumber" name="345" href="#345">345</a>             <strong class="jxr_keyword">if</strong> (data == <strong class="jxr_keyword">null</strong> || (allowedBytes == 0 &amp;&amp; size != 0)) {
-<a class="jxr_linenumber" name="346" href="#346">346</a>                 <em class="jxr_comment">// No point writing an empty DATA frame, wait for a bigger allowance.</em>
-<a class="jxr_linenumber" name="347" href="#347">347</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="348" href="#348">348</a>             }
-<a class="jxr_linenumber" name="349" href="#349">349</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="350" href="#350">350</a>                 <strong class="jxr_keyword">int</strong> maxFrameSize = frameWriter().configuration().frameSizePolicy().maxFrameSize();
-<a class="jxr_linenumber" name="351" href="#351">351</a>                 <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="352" href="#352">352</a>                     <strong class="jxr_keyword">int</strong> allowedFrameSize = Math.min(maxFrameSize, allowedBytes - bytesWritten);
-<a class="jxr_linenumber" name="353" href="#353">353</a>                     <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> toWrite;
-<a class="jxr_linenumber" name="354" href="#354">354</a>                     <em class="jxr_comment">// Let data consume the frame before padding.</em>
-<a class="jxr_linenumber" name="355" href="#355">355</a>                     <strong class="jxr_keyword">int</strong> writeableData = data.readableBytes();
-<a class="jxr_linenumber" name="356" href="#356">356</a>                     <strong class="jxr_keyword">if</strong> (writeableData &gt; allowedFrameSize) {
-<a class="jxr_linenumber" name="357" href="#357">357</a>                         writeableData = allowedFrameSize;
-<a class="jxr_linenumber" name="358" href="#358">358</a>                         toWrite = data.readSlice(writeableData).retain();
-<a class="jxr_linenumber" name="359" href="#359">359</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="360" href="#360">360</a>                         <em class="jxr_comment">// We're going to write the full buffer which will cause it to be released, for subsequent</em>
-<a class="jxr_linenumber" name="361" href="#361">361</a>                         <em class="jxr_comment">// writes just use empty buffer to avoid over-releasing. Have to use an empty buffer</em>
-<a class="jxr_linenumber" name="362" href="#362">362</a>                         <em class="jxr_comment">// as we may continue to write padding in subsequent frames.</em>
-<a class="jxr_linenumber" name="363" href="#363">363</a>                         toWrite = data;
-<a class="jxr_linenumber" name="364" href="#364">364</a>                         data = Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="365" href="#365">365</a>                     }
-<a class="jxr_linenumber" name="366" href="#366">366</a>                     <strong class="jxr_keyword">int</strong> writeablePadding = Math.min(allowedFrameSize - writeableData, padding);
-<a class="jxr_linenumber" name="367" href="#367">367</a>                     padding -= writeablePadding;
-<a class="jxr_linenumber" name="368" href="#368">368</a>                     bytesWritten += writeableData + writeablePadding;
-<a class="jxr_linenumber" name="369" href="#369">369</a>                     <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> writePromise;
-<a class="jxr_linenumber" name="370" href="#370">370</a>                     <strong class="jxr_keyword">if</strong> (size == bytesWritten) {
-<a class="jxr_linenumber" name="371" href="#371">371</a>                         <em class="jxr_comment">// Can use the original promise if it's the last write</em>
-<a class="jxr_linenumber" name="372" href="#372">372</a>                         writePromise = promise;
-<a class="jxr_linenumber" name="373" href="#373">373</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="374" href="#374">374</a>                         <em class="jxr_comment">// Create a new promise and listen to it for failure</em>
-<a class="jxr_linenumber" name="375" href="#375">375</a>                         writePromise = ctx.newPromise();
-<a class="jxr_linenumber" name="376" href="#376">376</a>                         writePromise.addListener(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="377" href="#377">377</a>                     }
-<a class="jxr_linenumber" name="378" href="#378">378</a>                     frameWriter().writeData(ctx, stream.id(), toWrite, writeablePadding,
-<a class="jxr_linenumber" name="379" href="#379">379</a>                         size == bytesWritten &amp;&amp; endOfStream, writePromise);
-<a class="jxr_linenumber" name="380" href="#380">380</a>                 } <strong class="jxr_keyword">while</strong> (size != bytesWritten &amp;&amp; allowedBytes &gt; bytesWritten);
-<a class="jxr_linenumber" name="381" href="#381">381</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="382" href="#382">382</a>                 size -= bytesWritten;
-<a class="jxr_linenumber" name="383" href="#383">383</a>             }
-<a class="jxr_linenumber" name="384" href="#384">384</a>         }
-<a class="jxr_linenumber" name="385" href="#385">385</a>     }
-<a class="jxr_linenumber" name="386" href="#386">386</a> 
-<a class="jxr_linenumber" name="387" href="#387">387</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="388" href="#388">388</a> <em class="jxr_javadoccomment">     * Wrap headers so they can be written subject to flow-control. While headers do not have cost against the</em>
-<a class="jxr_linenumber" name="389" href="#389">389</a> <em class="jxr_javadoccomment">     * flow-control window their order with respect to other frames must be maintained, hence if a DATA frame is</em>
-<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">     * blocked on flow-control a HEADER frame must wait until this frame has been written.</em>
-<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="392" href="#392">392</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledHeaders</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a> {
-<a class="jxr_linenumber" name="393" href="#393">393</a> 
-<a class="jxr_linenumber" name="394" href="#394">394</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2Headers headers;
-<a class="jxr_linenumber" name="395" href="#395">395</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> streamDependency;
-<a class="jxr_linenumber" name="396" href="#396">396</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">short</strong> weight;
-<a class="jxr_linenumber" name="397" href="#397">397</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> exclusive;
-<a class="jxr_linenumber" name="398" href="#398">398</a> 
-<a class="jxr_linenumber" name="399" href="#399">399</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledHeaders</a>(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Stream stream, Http2Headers headers,
-<a class="jxr_linenumber" name="400" href="#400">400</a>                 <strong class="jxr_keyword">int</strong> streamDependency, <strong class="jxr_keyword">short</strong> weight, <strong class="jxr_keyword">boolean</strong> exclusive, <strong class="jxr_keyword">int</strong> padding,
-<a class="jxr_linenumber" name="401" href="#401">401</a>                 <strong class="jxr_keyword">boolean</strong> endOfStream, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="402" href="#402">402</a>             <strong class="jxr_keyword">super</strong>(ctx, stream, padding, endOfStream, promise);
-<a class="jxr_linenumber" name="403" href="#403">403</a>             <strong class="jxr_keyword">this</strong>.headers = headers;
-<a class="jxr_linenumber" name="404" href="#404">404</a>             <strong class="jxr_keyword">this</strong>.streamDependency = streamDependency;
-<a class="jxr_linenumber" name="405" href="#405">405</a>             <strong class="jxr_keyword">this</strong>.weight = weight;
-<a class="jxr_linenumber" name="406" href="#406">406</a>             <strong class="jxr_keyword">this</strong>.exclusive = exclusive;
-<a class="jxr_linenumber" name="407" href="#407">407</a>         }
-<a class="jxr_linenumber" name="408" href="#408">408</a> 
-<a class="jxr_linenumber" name="409" href="#409">409</a>         @Override
-<a class="jxr_linenumber" name="410" href="#410">410</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> size() {
-<a class="jxr_linenumber" name="411" href="#411">411</a>             <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="412" href="#412">412</a>         }
-<a class="jxr_linenumber" name="413" href="#413">413</a> 
-<a class="jxr_linenumber" name="414" href="#414">414</a>         @Override
-<a class="jxr_linenumber" name="415" href="#415">415</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> error(Throwable cause) {
-<a class="jxr_linenumber" name="416" href="#416">416</a>             lifecycleManager.onException(ctx, cause);
-<a class="jxr_linenumber" name="417" href="#417">417</a>             promise.tryFailure(cause);
-<a class="jxr_linenumber" name="418" href="#418">418</a>         }
-<a class="jxr_linenumber" name="419" href="#419">419</a> 
-<a class="jxr_linenumber" name="420" href="#420">420</a>         @Override
-<a class="jxr_linenumber" name="421" href="#421">421</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<strong class="jxr_keyword">int</strong> allowedBytes) {
-<a class="jxr_linenumber" name="422" href="#422">422</a>             frameWriter().writeHeaders(ctx, stream.id(), headers, streamDependency, weight, exclusive,
-<a class="jxr_linenumber" name="423" href="#423">423</a>                     padding, endOfStream, promise);
-<a class="jxr_linenumber" name="424" href="#424">424</a>         }
-<a class="jxr_linenumber" name="425" href="#425">425</a>     }
-<a class="jxr_linenumber" name="426" href="#426">426</a> 
-<a class="jxr_linenumber" name="427" href="#427">427</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="428" href="#428">428</a> <em class="jxr_javadoccomment">     * Common base type for payloads to deliver via flow-control.</em>
-<a class="jxr_linenumber" name="429" href="#429">429</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="430" href="#430">430</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a> <strong class="jxr_keyword">implements</strong> Http2RemoteFlowController.FlowControlled,
-<a class="jxr_linenumber" name="431" href="#431">431</a>             <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> {
-<a class="jxr_linenumber" name="432" href="#432">432</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
-<a class="jxr_linenumber" name="433" href="#433">433</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> Http2Stream stream;
-<a class="jxr_linenumber" name="434" href="#434">434</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
-<a class="jxr_linenumber" name="435" href="#435">435</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> endOfStream;
-<a class="jxr_linenumber" name="436" href="#436">436</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> padding;
-<a class="jxr_linenumber" name="437" href="#437">437</a> 
-<a class="jxr_linenumber" name="438" href="#438">438</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a>(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> Http2Stream stream, <strong class="jxr_keyword">int</strong> padding,
-<a class="jxr_linenumber" name="439" href="#439">439</a>                                   <strong class="jxr_keyword">boolean</strong> endOfStream, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="440" href="#440">440</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="441" href="#441">441</a>             <strong class="jxr_keyword">if</strong> (padding &lt; 0) {
-<a class="jxr_linenumber" name="442" href="#442">442</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"padding must be &gt;= 0"</span>);
-<a class="jxr_linenumber" name="443" href="#443">443</a>             }
-<a class="jxr_linenumber" name="444" href="#444">444</a>             <strong class="jxr_keyword">this</strong>.padding = padding;
-<a class="jxr_linenumber" name="445" href="#445">445</a>             <strong class="jxr_keyword">this</strong>.endOfStream = endOfStream;
-<a class="jxr_linenumber" name="446" href="#446">446</a>             <strong class="jxr_keyword">this</strong>.stream = stream;
-<a class="jxr_linenumber" name="447" href="#447">447</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="448" href="#448">448</a>             <em class="jxr_comment">// Ensure error() gets called in case something goes wrong after the frame is passed to Netty.</em>
-<a class="jxr_linenumber" name="449" href="#449">449</a>             promise.addListener(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="450" href="#450">450</a>         }
-<a class="jxr_linenumber" name="451" href="#451">451</a> 
-<a class="jxr_linenumber" name="452" href="#452">452</a>         @Override
-<a class="jxr_linenumber" name="453" href="#453">453</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> writeComplete() {
-<a class="jxr_linenumber" name="454" href="#454">454</a>             <strong class="jxr_keyword">if</strong> (endOfStream) {
-<a class="jxr_linenumber" name="455" href="#455">455</a>                 lifecycleManager.closeStreamLocal(stream, promise);
-<a class="jxr_linenumber" name="456" href="#456">456</a>             }
-<a class="jxr_linenumber" name="457" href="#457">457</a>         }
-<a class="jxr_linenumber" name="458" href="#458">458</a> 
-<a class="jxr_linenumber" name="459" href="#459">459</a>         @Override
-<a class="jxr_linenumber" name="460" href="#460">460</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="461" href="#461">461</a>             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="462" href="#462">462</a>                 error(future.cause());
-<a class="jxr_linenumber" name="463" href="#463">463</a>             }
-<a class="jxr_linenumber" name="464" href="#464">464</a>         }
-<a class="jxr_linenumber" name="465" href="#465">465</a>     }
-<a class="jxr_linenumber" name="466" href="#466">466</a> }
+<a class="jxr_linenumber" name="318" href="#318">318</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/CoalescingBufferQueue.html">CoalescingBufferQueue</a> queue;
+<a class="jxr_linenumber" name="319" href="#319">319</a> 
+<a class="jxr_linenumber" name="320" href="#320">320</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledData</a>(Http2Stream stream, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream,
+<a class="jxr_linenumber" name="321" href="#321">321</a>                                    <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="322" href="#322">322</a>             <strong class="jxr_keyword">super</strong>(stream, padding, endOfStream, promise);
+<a class="jxr_linenumber" name="323" href="#323">323</a>             queue = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/CoalescingBufferQueue.html">CoalescingBufferQueue</a>(promise.channel());
+<a class="jxr_linenumber" name="324" href="#324">324</a>             queue.add(buf, promise);
+<a class="jxr_linenumber" name="325" href="#325">325</a>         }
+<a class="jxr_linenumber" name="326" href="#326">326</a> 
+<a class="jxr_linenumber" name="327" href="#327">327</a>         @Override
+<a class="jxr_linenumber" name="328" href="#328">328</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> size() {
+<a class="jxr_linenumber" name="329" href="#329">329</a>             <strong class="jxr_keyword">return</strong> queue.readableBytes() + padding;
+<a class="jxr_linenumber" name="330" href="#330">330</a>         }
+<a class="jxr_linenumber" name="331" href="#331">331</a> 
+<a class="jxr_linenumber" name="332" href="#332">332</a>         @Override
+<a class="jxr_linenumber" name="333" href="#333">333</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> error(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="334" href="#334">334</a>             queue.releaseAndFailAll(cause);
+<a class="jxr_linenumber" name="335" href="#335">335</a>             lifecycleManager.onException(ctx, cause);
+<a class="jxr_linenumber" name="336" href="#336">336</a>             promise.tryFailure(cause);
+<a class="jxr_linenumber" name="337" href="#337">337</a>         }
+<a class="jxr_linenumber" name="338" href="#338">338</a> 
+<a class="jxr_linenumber" name="339" href="#339">339</a>         @Override
+<a class="jxr_linenumber" name="340" href="#340">340</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> allowedBytes) {
+<a class="jxr_linenumber" name="341" href="#341">341</a>             <strong class="jxr_keyword">if</strong> (!endOfStream &amp;&amp; (queue.readableBytes() == 0 || allowedBytes == 0)) {
+<a class="jxr_linenumber" name="342" href="#342">342</a>                 <em class="jxr_comment">// Nothing to write and we don't have to force a write because of EOS.</em>
+<a class="jxr_linenumber" name="343" href="#343">343</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="344" href="#344">344</a>             }
+<a class="jxr_linenumber" name="345" href="#345">345</a>             <strong class="jxr_keyword">int</strong> maxFrameSize = frameWriter().configuration().frameSizePolicy().maxFrameSize();
+<a class="jxr_linenumber" name="346" href="#346">346</a>             <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="347" href="#347">347</a>                 <strong class="jxr_keyword">int</strong> allowedFrameSize = Math.min(maxFrameSize, allowedBytes);
+<a class="jxr_linenumber" name="348" href="#348">348</a>                 <strong class="jxr_keyword">int</strong> writeableData = Math.min(queue.readableBytes(), allowedFrameSize);
+<a class="jxr_linenumber" name="349" href="#349">349</a>                 <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> writePromise = ctx.newPromise();
+<a class="jxr_linenumber" name="350" href="#350">350</a>                 writePromise.addListener(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="351" href="#351">351</a>                 <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> toWrite = queue.remove(writeableData, writePromise);
+<a class="jxr_linenumber" name="352" href="#352">352</a> 
+<a class="jxr_linenumber" name="353" href="#353">353</a>                 <strong class="jxr_keyword">int</strong> writeablePadding = Math.min(allowedFrameSize - writeableData, padding);
+<a class="jxr_linenumber" name="354" href="#354">354</a>                 padding -= writeablePadding;
+<a class="jxr_linenumber" name="355" href="#355">355</a>                 allowedBytes -= writeableData + writeablePadding;
+<a class="jxr_linenumber" name="356" href="#356">356</a>                 frameWriter().writeData(ctx, stream.id(), toWrite, writeablePadding,
+<a class="jxr_linenumber" name="357" href="#357">357</a>                         endOfStream &amp;&amp; size() == 0, writePromise);
+<a class="jxr_linenumber" name="358" href="#358">358</a>             } <strong class="jxr_keyword">while</strong> (size() &gt; 0 &amp;&amp; allowedBytes &gt; 0);
+<a class="jxr_linenumber" name="359" href="#359">359</a>         }
+<a class="jxr_linenumber" name="360" href="#360">360</a> 
+<a class="jxr_linenumber" name="361" href="#361">361</a>         @Override
+<a class="jxr_linenumber" name="362" href="#362">362</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> merge(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2RemoteFlowController.FlowControlled next) {
+<a class="jxr_linenumber" name="363" href="#363">363</a>             <strong class="jxr_keyword">if</strong> (FlowControlledData.<strong class="jxr_keyword">class</strong> != next.getClass()) {
+<a class="jxr_linenumber" name="364" href="#364">364</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="365" href="#365">365</a>             }
+<a class="jxr_linenumber" name="366" href="#366">366</a>             <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledData</a> nextData = (FlowControlledData) next;
+<a class="jxr_linenumber" name="367" href="#367">367</a>             nextData.queue.copyTo(queue);
+<a class="jxr_linenumber" name="368" href="#368">368</a>             <em class="jxr_comment">// Given that we're merging data into a frame it doesn't really make sense to accumulate padding.</em>
+<a class="jxr_linenumber" name="369" href="#369">369</a>             padding = Math.max(padding, nextData.padding);
+<a class="jxr_linenumber" name="370" href="#370">370</a>             endOfStream = nextData.endOfStream;
+<a class="jxr_linenumber" name="371" href="#371">371</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="372" href="#372">372</a>         }
+<a class="jxr_linenumber" name="373" href="#373">373</a>     }
+<a class="jxr_linenumber" name="374" href="#374">374</a> 
+<a class="jxr_linenumber" name="375" href="#375">375</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="376" href="#376">376</a> <em class="jxr_javadoccomment">     * Wrap headers so they can be written subject to flow-control. While headers do not have cost against the</em>
+<a class="jxr_linenumber" name="377" href="#377">377</a> <em class="jxr_javadoccomment">     * flow-control window their order with respect to other frames must be maintained, hence if a DATA frame is</em>
+<a class="jxr_linenumber" name="378" href="#378">378</a> <em class="jxr_javadoccomment">     * blocked on flow-control a HEADER frame must wait until this frame has been written.</em>
+<a class="jxr_linenumber" name="379" href="#379">379</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="380" href="#380">380</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledHeaders</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a> {
+<a class="jxr_linenumber" name="381" href="#381">381</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2Headers headers;
+<a class="jxr_linenumber" name="382" href="#382">382</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> streamDependency;
+<a class="jxr_linenumber" name="383" href="#383">383</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">short</strong> weight;
+<a class="jxr_linenumber" name="384" href="#384">384</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> exclusive;
+<a class="jxr_linenumber" name="385" href="#385">385</a> 
+<a class="jxr_linenumber" name="386" href="#386">386</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledHeaders</a>(Http2Stream stream, Http2Headers headers, <strong class="jxr_keyword">int</strong> streamDependency, <strong class="jxr_keyword">short</strong> weight,
+<a class="jxr_linenumber" name="387" href="#387">387</a>                 <strong class="jxr_keyword">boolean</strong> exclusive, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="388" href="#388">388</a>             <strong class="jxr_keyword">super</strong>(stream, padding, endOfStream, promise);
+<a class="jxr_linenumber" name="389" href="#389">389</a>             <strong class="jxr_keyword">this</strong>.headers = headers;
+<a class="jxr_linenumber" name="390" href="#390">390</a>             <strong class="jxr_keyword">this</strong>.streamDependency = streamDependency;
+<a class="jxr_linenumber" name="391" href="#391">391</a>             <strong class="jxr_keyword">this</strong>.weight = weight;
+<a class="jxr_linenumber" name="392" href="#392">392</a>             <strong class="jxr_keyword">this</strong>.exclusive = exclusive;
+<a class="jxr_linenumber" name="393" href="#393">393</a>         }
+<a class="jxr_linenumber" name="394" href="#394">394</a> 
+<a class="jxr_linenumber" name="395" href="#395">395</a>         @Override
+<a class="jxr_linenumber" name="396" href="#396">396</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> size() {
+<a class="jxr_linenumber" name="397" href="#397">397</a>             <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="398" href="#398">398</a>         }
+<a class="jxr_linenumber" name="399" href="#399">399</a> 
+<a class="jxr_linenumber" name="400" href="#400">400</a>         @Override
+<a class="jxr_linenumber" name="401" href="#401">401</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> error(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="402" href="#402">402</a>             <strong class="jxr_keyword">if</strong> (ctx != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="403" href="#403">403</a>                 lifecycleManager.onException(ctx, cause);
+<a class="jxr_linenumber" name="404" href="#404">404</a>             }
+<a class="jxr_linenumber" name="405" href="#405">405</a>             promise.tryFailure(cause);
+<a class="jxr_linenumber" name="406" href="#406">406</a>         }
+<a class="jxr_linenumber" name="407" href="#407">407</a> 
+<a class="jxr_linenumber" name="408" href="#408">408</a>         @Override
+<a class="jxr_linenumber" name="409" href="#409">409</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> allowedBytes) {
+<a class="jxr_linenumber" name="410" href="#410">410</a>             <strong class="jxr_keyword">if</strong> (promise.isVoid()) {
+<a class="jxr_linenumber" name="411" href="#411">411</a>                 promise = ctx.newPromise();
+<a class="jxr_linenumber" name="412" href="#412">412</a>             }
+<a class="jxr_linenumber" name="413" href="#413">413</a>             promise.addListener(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="414" href="#414">414</a> 
+<a class="jxr_linenumber" name="415" href="#415">415</a>             frameWriter().writeHeaders(ctx, stream.id(), headers, streamDependency, weight, exclusive,
+<a class="jxr_linenumber" name="416" href="#416">416</a>                     padding, endOfStream, promise);
+<a class="jxr_linenumber" name="417" href="#417">417</a>         }
+<a class="jxr_linenumber" name="418" href="#418">418</a> 
+<a class="jxr_linenumber" name="419" href="#419">419</a>         @Override
+<a class="jxr_linenumber" name="420" href="#420">420</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> merge(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2RemoteFlowController.FlowControlled next) {
+<a class="jxr_linenumber" name="421" href="#421">421</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="422" href="#422">422</a>         }
+<a class="jxr_linenumber" name="423" href="#423">423</a>     }
+<a class="jxr_linenumber" name="424" href="#424">424</a> 
+<a class="jxr_linenumber" name="425" href="#425">425</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="426" href="#426">426</a> <em class="jxr_javadoccomment">     * Common base type for payloads to deliver via flow-control.</em>
+<a class="jxr_linenumber" name="427" href="#427">427</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="428" href="#428">428</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a> <strong class="jxr_keyword">implements</strong> Http2RemoteFlowController.FlowControlled,
+<a class="jxr_linenumber" name="429" href="#429">429</a>             <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> {
+<a class="jxr_linenumber" name="430" href="#430">430</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> Http2Stream stream;
+<a class="jxr_linenumber" name="431" href="#431">431</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
+<a class="jxr_linenumber" name="432" href="#432">432</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> endOfStream;
+<a class="jxr_linenumber" name="433" href="#433">433</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> padding;
+<a class="jxr_linenumber" name="434" href="#434">434</a> 
+<a class="jxr_linenumber" name="435" href="#435">435</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.html">FlowControlledBase</a>(<strong class="jxr_keyword">final</strong> Http2Stream stream, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream,
+<a class="jxr_linenumber" name="436" href="#436">436</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="437" href="#437">437</a>             <strong class="jxr_keyword">if</strong> (padding &lt; 0) {
+<a class="jxr_linenumber" name="438" href="#438">438</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"padding must be &gt;= 0"</span>);
+<a class="jxr_linenumber" name="439" href="#439">439</a>             }
+<a class="jxr_linenumber" name="440" href="#440">440</a>             <strong class="jxr_keyword">this</strong>.padding = padding;
+<a class="jxr_linenumber" name="441" href="#441">441</a>             <strong class="jxr_keyword">this</strong>.endOfStream = endOfStream;
+<a class="jxr_linenumber" name="442" href="#442">442</a>             <strong class="jxr_keyword">this</strong>.stream = stream;
+<a class="jxr_linenumber" name="443" href="#443">443</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
+<a class="jxr_linenumber" name="444" href="#444">444</a>         }
+<a class="jxr_linenumber" name="445" href="#445">445</a> 
+<a class="jxr_linenumber" name="446" href="#446">446</a>         @Override
+<a class="jxr_linenumber" name="447" href="#447">447</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> writeComplete() {
+<a class="jxr_linenumber" name="448" href="#448">448</a>             <strong class="jxr_keyword">if</strong> (endOfStream) {
+<a class="jxr_linenumber" name="449" href="#449">449</a>                 lifecycleManager.closeStreamLocal(stream, promise);
+<a class="jxr_linenumber" name="450" href="#450">450</a>             }
+<a class="jxr_linenumber" name="451" href="#451">451</a>         }
+<a class="jxr_linenumber" name="452" href="#452">452</a> 
+<a class="jxr_linenumber" name="453" href="#453">453</a>         @Override
+<a class="jxr_linenumber" name="454" href="#454">454</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="455" href="#455">455</a>             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="456" href="#456">456</a>                 error(flowController().channelHandlerContext(), future.cause());
+<a class="jxr_linenumber" name="457" href="#457">457</a>             }
+<a class="jxr_linenumber" name="458" href="#458">458</a>         }
+<a class="jxr_linenumber" name="459" href="#459">459</a>     }
+<a class="jxr_linenumber" name="460" href="#460">460</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
