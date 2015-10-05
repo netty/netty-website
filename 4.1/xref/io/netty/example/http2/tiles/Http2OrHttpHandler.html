@@ -66,26 +66,22 @@
 <a class="jxr_linenumber" name="56" href="#56">56</a>  
 <a class="jxr_linenumber" name="57" href="#57">57</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> configureHttp2(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
 <a class="jxr_linenumber" name="58" href="#58">58</a>          DefaultHttp2Connection connection = <strong class="jxr_keyword">new</strong> DefaultHttp2Connection(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="59" href="#59">59</a>          DefaultHttp2FrameWriter writer = <strong class="jxr_keyword">new</strong> DefaultHttp2FrameWriter();
-<a class="jxr_linenumber" name="60" href="#60">60</a>          DefaultHttp2FrameReader reader = <strong class="jxr_keyword">new</strong> DefaultHttp2FrameReader();
-<a class="jxr_linenumber" name="61" href="#61">61</a>          InboundHttp2ToHttpAdapter listener = <strong class="jxr_keyword">new</strong> InboundHttp2ToHttpAdapter.Builder(connection)
-<a class="jxr_linenumber" name="62" href="#62">62</a>                  .propagateSettings(<strong class="jxr_keyword">true</strong>).validateHttpHeaders(false).maxContentLength(MAX_CONTENT_LENGTH).build();
-<a class="jxr_linenumber" name="63" href="#63">63</a>  
-<a class="jxr_linenumber" name="64" href="#64">64</a>          ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> HttpToHttp2ConnectionHandler(
-<a class="jxr_linenumber" name="65" href="#65">65</a>                  connection,
-<a class="jxr_linenumber" name="66" href="#66">66</a>                  <em class="jxr_comment">// Loggers can be activated for debugging purposes</em>
-<a class="jxr_linenumber" name="67" href="#67">67</a>                  <em class="jxr_comment">// new Http2InboundFrameLogger(reader, TilesHttp2ToHttpHandler.logger),</em>
-<a class="jxr_linenumber" name="68" href="#68">68</a>                  <em class="jxr_comment">// new Http2OutboundFrameLogger(writer, TilesHttp2ToHttpHandler.logger)</em>
-<a class="jxr_linenumber" name="69" href="#69">69</a>                  reader, writer, listener));
-<a class="jxr_linenumber" name="70" href="#70">70</a>          ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> Http2RequestHandler());
-<a class="jxr_linenumber" name="71" href="#71">71</a>      }
-<a class="jxr_linenumber" name="72" href="#72">72</a>  
-<a class="jxr_linenumber" name="73" href="#73">73</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> configureHttp1(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="74" href="#74">74</a>          ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> HttpServerCodec(),
-<a class="jxr_linenumber" name="75" href="#75">75</a>                                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/HttpObjectAggregator.html">HttpObjectAggregator</a>(MAX_CONTENT_LENGTH),
-<a class="jxr_linenumber" name="76" href="#76">76</a>                                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/example/http2/tiles/FallbackRequestHandler.html">FallbackRequestHandler</a>());
-<a class="jxr_linenumber" name="77" href="#77">77</a>      }
-<a class="jxr_linenumber" name="78" href="#78">78</a>  }
+<a class="jxr_linenumber" name="59" href="#59">59</a>          InboundHttp2ToHttpAdapter listener = <strong class="jxr_keyword">new</strong> InboundHttp2ToHttpAdapter.Builder(connection)
+<a class="jxr_linenumber" name="60" href="#60">60</a>                  .propagateSettings(<strong class="jxr_keyword">true</strong>).validateHttpHeaders(false).maxContentLength(MAX_CONTENT_LENGTH).build();
+<a class="jxr_linenumber" name="61" href="#61">61</a>  
+<a class="jxr_linenumber" name="62" href="#62">62</a>          ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> HttpToHttp2ConnectionHandler.Builder()
+<a class="jxr_linenumber" name="63" href="#63">63</a>                  .frameListener(listener)
+<a class="jxr_linenumber" name="64" href="#64">64</a>                  <em class="jxr_comment">// .frameLogger(TilesHttp2ToHttpHandler.logger)</em>
+<a class="jxr_linenumber" name="65" href="#65">65</a>                  .build(connection));
+<a class="jxr_linenumber" name="66" href="#66">66</a>          ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> Http2RequestHandler());
+<a class="jxr_linenumber" name="67" href="#67">67</a>      }
+<a class="jxr_linenumber" name="68" href="#68">68</a>  
+<a class="jxr_linenumber" name="69" href="#69">69</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> configureHttp1(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="70" href="#70">70</a>          ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> HttpServerCodec(),
+<a class="jxr_linenumber" name="71" href="#71">71</a>                                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/HttpObjectAggregator.html">HttpObjectAggregator</a>(MAX_CONTENT_LENGTH),
+<a class="jxr_linenumber" name="72" href="#72">72</a>                                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/example/http2/tiles/FallbackRequestHandler.html">FallbackRequestHandler</a>());
+<a class="jxr_linenumber" name="73" href="#73">73</a>      }
+<a class="jxr_linenumber" name="74" href="#74">74</a>  }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
