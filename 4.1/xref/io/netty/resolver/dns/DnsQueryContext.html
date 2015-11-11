@@ -41,180 +41,178 @@
 <a class="jxr_linenumber" name="31" href="#31">31</a>  <strong class="jxr_keyword">import</strong> io.netty.util.concurrent.ScheduledFuture;
 <a class="jxr_linenumber" name="32" href="#32">32</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.OneTimeTask;
 <a class="jxr_linenumber" name="33" href="#33">33</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.StringUtil;
-<a class="jxr_linenumber" name="34" href="#34">34</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.ThreadLocalRandom;
-<a class="jxr_linenumber" name="35" href="#35">35</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLogger;
-<a class="jxr_linenumber" name="36" href="#36">36</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLoggerFactory;
-<a class="jxr_linenumber" name="37" href="#37">37</a>  
-<a class="jxr_linenumber" name="38" href="#38">38</a>  <strong class="jxr_keyword">import</strong> java.net.InetSocketAddress;
-<a class="jxr_linenumber" name="39" href="#39">39</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.TimeUnit;
-<a class="jxr_linenumber" name="40" href="#40">40</a>  
-<a class="jxr_linenumber" name="41" href="#41">41</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/resolver/dns/DnsQueryContext.html">DnsQueryContext</a> {
-<a class="jxr_linenumber" name="42" href="#42">42</a>  
-<a class="jxr_linenumber" name="43" href="#43">43</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/logging/InternalLogger.html">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DnsQueryContext.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="44" href="#44">44</a>  
-<a class="jxr_linenumber" name="45" href="#45">45</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolver.html">DnsNameResolver</a> parent;
-<a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Promise&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; promise;
-<a class="jxr_linenumber" name="47" href="#47">47</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> id;
-<a class="jxr_linenumber" name="48" href="#48">48</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question;
-<a class="jxr_linenumber" name="49" href="#49">49</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsRecord.html">DnsRecord</a> optResource;
-<a class="jxr_linenumber" name="50" href="#50">50</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> InetSocketAddress nameServerAddr;
-<a class="jxr_linenumber" name="51" href="#51">51</a>  
-<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> recursionDesired;
-<a class="jxr_linenumber" name="53" href="#53">53</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> ScheduledFuture&lt;?&gt; timeoutFuture;
-<a class="jxr_linenumber" name="54" href="#54">54</a>  
-<a class="jxr_linenumber" name="55" href="#55">55</a>      <a href="../../../../io/netty/resolver/dns/DnsQueryContext.html">DnsQueryContext</a>(<a href="../../../../io/netty/resolver/dns/DnsNameResolver.html">DnsNameResolver</a> parent,
-<a class="jxr_linenumber" name="56" href="#56">56</a>                      InetSocketAddress nameServerAddr,
-<a class="jxr_linenumber" name="57" href="#57">57</a>                      <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question, Promise&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; promise) {
-<a class="jxr_linenumber" name="58" href="#58">58</a>  
-<a class="jxr_linenumber" name="59" href="#59">59</a>          <strong class="jxr_keyword">this</strong>.parent = parent;
-<a class="jxr_linenumber" name="60" href="#60">60</a>          <strong class="jxr_keyword">this</strong>.nameServerAddr = nameServerAddr;
-<a class="jxr_linenumber" name="61" href="#61">61</a>          <strong class="jxr_keyword">this</strong>.question = question;
-<a class="jxr_linenumber" name="62" href="#62">62</a>          <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="63" href="#63">63</a>  
-<a class="jxr_linenumber" name="64" href="#64">64</a>          id = allocateId();
-<a class="jxr_linenumber" name="65" href="#65">65</a>          recursionDesired = parent.isRecursionDesired();
-<a class="jxr_linenumber" name="66" href="#66">66</a>          optResource = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DefaultDnsRawRecord.html">DefaultDnsRawRecord</a>(
-<a class="jxr_linenumber" name="67" href="#67">67</a>                  StringUtil.EMPTY_STRING, DnsRecordType.OPT, parent.maxPayloadSize(), 0, Unpooled.EMPTY_BUFFER);
-<a class="jxr_linenumber" name="68" href="#68">68</a>      }
-<a class="jxr_linenumber" name="69" href="#69">69</a>  
-<a class="jxr_linenumber" name="70" href="#70">70</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> allocateId() {
-<a class="jxr_linenumber" name="71" href="#71">71</a>          <strong class="jxr_keyword">int</strong> id = ThreadLocalRandom.current().nextInt(parent.promises.length());
-<a class="jxr_linenumber" name="72" href="#72">72</a>          <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxTries = parent.promises.length() &lt;&lt; 1;
-<a class="jxr_linenumber" name="73" href="#73">73</a>          <strong class="jxr_keyword">int</strong> tries = 0;
-<a class="jxr_linenumber" name="74" href="#74">74</a>          <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="75" href="#75">75</a>              <strong class="jxr_keyword">if</strong> (parent.promises.compareAndSet(id, <strong class="jxr_keyword">null</strong>, <strong class="jxr_keyword">this</strong>)) {
-<a class="jxr_linenumber" name="76" href="#76">76</a>                  <strong class="jxr_keyword">return</strong> id;
-<a class="jxr_linenumber" name="77" href="#77">77</a>              }
-<a class="jxr_linenumber" name="78" href="#78">78</a>  
-<a class="jxr_linenumber" name="79" href="#79">79</a>              id = id + 1 &amp; 0xFFFF;
+<a class="jxr_linenumber" name="34" href="#34">34</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLogger;
+<a class="jxr_linenumber" name="35" href="#35">35</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLoggerFactory;
+<a class="jxr_linenumber" name="36" href="#36">36</a>  
+<a class="jxr_linenumber" name="37" href="#37">37</a>  <strong class="jxr_keyword">import</strong> java.net.InetSocketAddress;
+<a class="jxr_linenumber" name="38" href="#38">38</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.TimeUnit;
+<a class="jxr_linenumber" name="39" href="#39">39</a>  
+<a class="jxr_linenumber" name="40" href="#40">40</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/resolver/dns/DnsQueryContext.html">DnsQueryContext</a> {
+<a class="jxr_linenumber" name="41" href="#41">41</a>  
+<a class="jxr_linenumber" name="42" href="#42">42</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/logging/InternalLogger.html">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DnsQueryContext.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="43" href="#43">43</a>  
+<a class="jxr_linenumber" name="44" href="#44">44</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolver.html">DnsNameResolver</a> parent;
+<a class="jxr_linenumber" name="45" href="#45">45</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Promise&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; promise;
+<a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> id;
+<a class="jxr_linenumber" name="47" href="#47">47</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question;
+<a class="jxr_linenumber" name="48" href="#48">48</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsRecord.html">DnsRecord</a> optResource;
+<a class="jxr_linenumber" name="49" href="#49">49</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> InetSocketAddress nameServerAddr;
+<a class="jxr_linenumber" name="50" href="#50">50</a>  
+<a class="jxr_linenumber" name="51" href="#51">51</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> recursionDesired;
+<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> ScheduledFuture&lt;?&gt; timeoutFuture;
+<a class="jxr_linenumber" name="53" href="#53">53</a>  
+<a class="jxr_linenumber" name="54" href="#54">54</a>      <a href="../../../../io/netty/resolver/dns/DnsQueryContext.html">DnsQueryContext</a>(<a href="../../../../io/netty/resolver/dns/DnsNameResolver.html">DnsNameResolver</a> parent,
+<a class="jxr_linenumber" name="55" href="#55">55</a>                      InetSocketAddress nameServerAddr,
+<a class="jxr_linenumber" name="56" href="#56">56</a>                      <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question, Promise&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; promise) {
+<a class="jxr_linenumber" name="57" href="#57">57</a>  
+<a class="jxr_linenumber" name="58" href="#58">58</a>          <strong class="jxr_keyword">this</strong>.parent = parent;
+<a class="jxr_linenumber" name="59" href="#59">59</a>          <strong class="jxr_keyword">this</strong>.nameServerAddr = nameServerAddr;
+<a class="jxr_linenumber" name="60" href="#60">60</a>          <strong class="jxr_keyword">this</strong>.question = question;
+<a class="jxr_linenumber" name="61" href="#61">61</a>          <strong class="jxr_keyword">this</strong>.promise = promise;
+<a class="jxr_linenumber" name="62" href="#62">62</a>          recursionDesired = parent.isRecursionDesired();
+<a class="jxr_linenumber" name="63" href="#63">63</a>          id = parent.queryContextManager.add(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="64" href="#64">64</a>  
+<a class="jxr_linenumber" name="65" href="#65">65</a>          <strong class="jxr_keyword">if</strong> (parent.isOptResourceEnabled()) {
+<a class="jxr_linenumber" name="66" href="#66">66</a>              optResource = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DefaultDnsRawRecord.html">DefaultDnsRawRecord</a>(
+<a class="jxr_linenumber" name="67" href="#67">67</a>                      StringUtil.EMPTY_STRING, DnsRecordType.OPT, parent.maxPayloadSize(), 0, Unpooled.EMPTY_BUFFER);
+<a class="jxr_linenumber" name="68" href="#68">68</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="69" href="#69">69</a>              optResource = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="70" href="#70">70</a>          }
+<a class="jxr_linenumber" name="71" href="#71">71</a>      }
+<a class="jxr_linenumber" name="72" href="#72">72</a>  
+<a class="jxr_linenumber" name="73" href="#73">73</a>      InetSocketAddress nameServerAddr() {
+<a class="jxr_linenumber" name="74" href="#74">74</a>          <strong class="jxr_keyword">return</strong> nameServerAddr;
+<a class="jxr_linenumber" name="75" href="#75">75</a>      }
+<a class="jxr_linenumber" name="76" href="#76">76</a>  
+<a class="jxr_linenumber" name="77" href="#77">77</a>      <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question() {
+<a class="jxr_linenumber" name="78" href="#78">78</a>          <strong class="jxr_keyword">return</strong> question;
+<a class="jxr_linenumber" name="79" href="#79">79</a>      }
 <a class="jxr_linenumber" name="80" href="#80">80</a>  
-<a class="jxr_linenumber" name="81" href="#81">81</a>              <strong class="jxr_keyword">if</strong> (++ tries &gt;= maxTries) {
-<a class="jxr_linenumber" name="82" href="#82">82</a>                  <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"query ID space exhausted: "</span> + question);
-<a class="jxr_linenumber" name="83" href="#83">83</a>              }
-<a class="jxr_linenumber" name="84" href="#84">84</a>          }
-<a class="jxr_linenumber" name="85" href="#85">85</a>      }
-<a class="jxr_linenumber" name="86" href="#86">86</a>  
-<a class="jxr_linenumber" name="87" href="#87">87</a>      <strong class="jxr_keyword">void</strong> query() {
-<a class="jxr_linenumber" name="88" href="#88">88</a>          <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question = <strong class="jxr_keyword">this</strong>.question;
-<a class="jxr_linenumber" name="89" href="#89">89</a>          <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DatagramDnsQuery.html">DatagramDnsQuery</a> query = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DatagramDnsQuery.html">DatagramDnsQuery</a>(<strong class="jxr_keyword">null</strong>, nameServerAddr, id);
-<a class="jxr_linenumber" name="90" href="#90">90</a>          query.setRecursionDesired(recursionDesired);
-<a class="jxr_linenumber" name="91" href="#91">91</a>          query.setRecord(DnsSection.QUESTION, question);
-<a class="jxr_linenumber" name="92" href="#92">92</a>          query.setRecord(DnsSection.ADDITIONAL, optResource);
-<a class="jxr_linenumber" name="93" href="#93">93</a>  
-<a class="jxr_linenumber" name="94" href="#94">94</a>          <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="95" href="#95">95</a>              logger.debug(<span class="jxr_string">"{} WRITE: [{}: {}], {}"</span>, parent.ch, id, nameServerAddr, question);
-<a class="jxr_linenumber" name="96" href="#96">96</a>          }
+<a class="jxr_linenumber" name="81" href="#81">81</a>      <strong class="jxr_keyword">void</strong> query() {
+<a class="jxr_linenumber" name="82" href="#82">82</a>          <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuestion.html">DnsQuestion</a> question = question();
+<a class="jxr_linenumber" name="83" href="#83">83</a>          <strong class="jxr_keyword">final</strong> InetSocketAddress nameServerAddr = nameServerAddr();
+<a class="jxr_linenumber" name="84" href="#84">84</a>          <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DatagramDnsQuery.html">DatagramDnsQuery</a> query = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DatagramDnsQuery.html">DatagramDnsQuery</a>(<strong class="jxr_keyword">null</strong>, nameServerAddr, id);
+<a class="jxr_linenumber" name="85" href="#85">85</a>          query.setRecursionDesired(recursionDesired);
+<a class="jxr_linenumber" name="86" href="#86">86</a>          query.setRecord(DnsSection.QUESTION, question);
+<a class="jxr_linenumber" name="87" href="#87">87</a>          <strong class="jxr_keyword">if</strong> (optResource != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="88" href="#88">88</a>              query.setRecord(DnsSection.ADDITIONAL, optResource);
+<a class="jxr_linenumber" name="89" href="#89">89</a>          }
+<a class="jxr_linenumber" name="90" href="#90">90</a>  
+<a class="jxr_linenumber" name="91" href="#91">91</a>          <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="92" href="#92">92</a>              logger.debug(<span class="jxr_string">"{} WRITE: [{}: {}], {}"</span>, parent.ch, id, nameServerAddr, question);
+<a class="jxr_linenumber" name="93" href="#93">93</a>          }
+<a class="jxr_linenumber" name="94" href="#94">94</a>  
+<a class="jxr_linenumber" name="95" href="#95">95</a>          sendQuery(query);
+<a class="jxr_linenumber" name="96" href="#96">96</a>      }
 <a class="jxr_linenumber" name="97" href="#97">97</a>  
-<a class="jxr_linenumber" name="98" href="#98">98</a>          sendQuery(query);
-<a class="jxr_linenumber" name="99" href="#99">99</a>      }
-<a class="jxr_linenumber" name="100" href="#100">100</a> 
-<a class="jxr_linenumber" name="101" href="#101">101</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> sendQuery(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuery.html">DnsQuery</a> query) {
-<a class="jxr_linenumber" name="102" href="#102">102</a>         <strong class="jxr_keyword">if</strong> (parent.bindFuture.isDone()) {
-<a class="jxr_linenumber" name="103" href="#103">103</a>             writeQuery(query);
-<a class="jxr_linenumber" name="104" href="#104">104</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="105" href="#105">105</a>             parent.bindFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="106" href="#106">106</a>                 @Override
-<a class="jxr_linenumber" name="107" href="#107">107</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="108" href="#108">108</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
-<a class="jxr_linenumber" name="109" href="#109">109</a>                         writeQuery(query);
-<a class="jxr_linenumber" name="110" href="#110">110</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="111" href="#111">111</a>                         promise.tryFailure(future.cause());
-<a class="jxr_linenumber" name="112" href="#112">112</a>                     }
-<a class="jxr_linenumber" name="113" href="#113">113</a>                 }
-<a class="jxr_linenumber" name="114" href="#114">114</a>             });
-<a class="jxr_linenumber" name="115" href="#115">115</a>         }
-<a class="jxr_linenumber" name="116" href="#116">116</a>     }
-<a class="jxr_linenumber" name="117" href="#117">117</a> 
-<a class="jxr_linenumber" name="118" href="#118">118</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeQuery(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuery.html">DnsQuery</a> query) {
-<a class="jxr_linenumber" name="119" href="#119">119</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> writeFuture = parent.ch.writeAndFlush(query);
-<a class="jxr_linenumber" name="120" href="#120">120</a>         <strong class="jxr_keyword">if</strong> (writeFuture.isDone()) {
-<a class="jxr_linenumber" name="121" href="#121">121</a>             onQueryWriteCompletion(writeFuture);
-<a class="jxr_linenumber" name="122" href="#122">122</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="123" href="#123">123</a>             writeFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="124" href="#124">124</a>                 @Override
-<a class="jxr_linenumber" name="125" href="#125">125</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="126" href="#126">126</a>                     onQueryWriteCompletion(writeFuture);
-<a class="jxr_linenumber" name="127" href="#127">127</a>                 }
-<a class="jxr_linenumber" name="128" href="#128">128</a>             });
-<a class="jxr_linenumber" name="129" href="#129">129</a>         }
-<a class="jxr_linenumber" name="130" href="#130">130</a>     }
-<a class="jxr_linenumber" name="131" href="#131">131</a> 
-<a class="jxr_linenumber" name="132" href="#132">132</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> onQueryWriteCompletion(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> writeFuture) {
-<a class="jxr_linenumber" name="133" href="#133">133</a>         <strong class="jxr_keyword">if</strong> (!writeFuture.isSuccess()) {
-<a class="jxr_linenumber" name="134" href="#134">134</a>             setFailure(<span class="jxr_string">"failed to send a query"</span>, writeFuture.cause());
-<a class="jxr_linenumber" name="135" href="#135">135</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="136" href="#136">136</a>         }
-<a class="jxr_linenumber" name="137" href="#137">137</a> 
-<a class="jxr_linenumber" name="138" href="#138">138</a>         <em class="jxr_comment">// Schedule a query timeout task if necessary.</em>
-<a class="jxr_linenumber" name="139" href="#139">139</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> queryTimeoutMillis = parent.queryTimeoutMillis();
-<a class="jxr_linenumber" name="140" href="#140">140</a>         <strong class="jxr_keyword">if</strong> (queryTimeoutMillis &gt; 0) {
-<a class="jxr_linenumber" name="141" href="#141">141</a>             timeoutFuture = parent.ch.eventLoop().schedule(<strong class="jxr_keyword">new</strong> OneTimeTask() {
-<a class="jxr_linenumber" name="142" href="#142">142</a>                 @Override
-<a class="jxr_linenumber" name="143" href="#143">143</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="144" href="#144">144</a>                     <strong class="jxr_keyword">if</strong> (promise.isDone()) {
-<a class="jxr_linenumber" name="145" href="#145">145</a>                         <em class="jxr_comment">// Received a response before the query times out.</em>
-<a class="jxr_linenumber" name="146" href="#146">146</a>                         <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="147" href="#147">147</a>                     }
-<a class="jxr_linenumber" name="148" href="#148">148</a> 
-<a class="jxr_linenumber" name="149" href="#149">149</a>                     setFailure(<span class="jxr_string">"query timed out after "</span> + queryTimeoutMillis + <span class="jxr_string">" milliseconds"</span>, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="150" href="#150">150</a>                 }
-<a class="jxr_linenumber" name="151" href="#151">151</a>             }, queryTimeoutMillis, TimeUnit.MILLISECONDS);
-<a class="jxr_linenumber" name="152" href="#152">152</a>         }
-<a class="jxr_linenumber" name="153" href="#153">153</a>     }
-<a class="jxr_linenumber" name="154" href="#154">154</a> 
-<a class="jxr_linenumber" name="155" href="#155">155</a>     <strong class="jxr_keyword">void</strong> finish(AddressedEnvelope&lt;? <strong class="jxr_keyword">extends</strong> DnsResponse, InetSocketAddress&gt; envelope) {
-<a class="jxr_linenumber" name="156" href="#156">156</a>         <a href="../../../../io/netty/handler/codec/dns/DnsResponse.html">DnsResponse</a> res = envelope.content();
-<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">if</strong> (res.count(DnsSection.QUESTION) != 1) {
-<a class="jxr_linenumber" name="158" href="#158">158</a>             logger.warn(<span class="jxr_string">"Received a DNS response with invalid number of questions: {}"</span>, envelope);
-<a class="jxr_linenumber" name="159" href="#159">159</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="160" href="#160">160</a>         }
-<a class="jxr_linenumber" name="161" href="#161">161</a> 
-<a class="jxr_linenumber" name="162" href="#162">162</a>         <strong class="jxr_keyword">if</strong> (!question.equals(res.recordAt(DnsSection.QUESTION))) {
-<a class="jxr_linenumber" name="163" href="#163">163</a>             logger.warn(<span class="jxr_string">"Received a mismatching DNS response: {}"</span>, envelope);
-<a class="jxr_linenumber" name="164" href="#164">164</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="165" href="#165">165</a>         }
+<a class="jxr_linenumber" name="98" href="#98">98</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> sendQuery(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuery.html">DnsQuery</a> query) {
+<a class="jxr_linenumber" name="99" href="#99">99</a>          <strong class="jxr_keyword">if</strong> (parent.bindFuture.isDone()) {
+<a class="jxr_linenumber" name="100" href="#100">100</a>             writeQuery(query);
+<a class="jxr_linenumber" name="101" href="#101">101</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="102" href="#102">102</a>             parent.bindFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="103" href="#103">103</a>                 @Override
+<a class="jxr_linenumber" name="104" href="#104">104</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="105" href="#105">105</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
+<a class="jxr_linenumber" name="106" href="#106">106</a>                         writeQuery(query);
+<a class="jxr_linenumber" name="107" href="#107">107</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="108" href="#108">108</a>                         promise.tryFailure(future.cause());
+<a class="jxr_linenumber" name="109" href="#109">109</a>                     }
+<a class="jxr_linenumber" name="110" href="#110">110</a>                 }
+<a class="jxr_linenumber" name="111" href="#111">111</a>             });
+<a class="jxr_linenumber" name="112" href="#112">112</a>         }
+<a class="jxr_linenumber" name="113" href="#113">113</a>     }
+<a class="jxr_linenumber" name="114" href="#114">114</a> 
+<a class="jxr_linenumber" name="115" href="#115">115</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeQuery(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsQuery.html">DnsQuery</a> query) {
+<a class="jxr_linenumber" name="116" href="#116">116</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> writeFuture = parent.ch.writeAndFlush(query);
+<a class="jxr_linenumber" name="117" href="#117">117</a>         <strong class="jxr_keyword">if</strong> (writeFuture.isDone()) {
+<a class="jxr_linenumber" name="118" href="#118">118</a>             onQueryWriteCompletion(writeFuture);
+<a class="jxr_linenumber" name="119" href="#119">119</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="120" href="#120">120</a>             writeFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="121" href="#121">121</a>                 @Override
+<a class="jxr_linenumber" name="122" href="#122">122</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="123" href="#123">123</a>                     onQueryWriteCompletion(writeFuture);
+<a class="jxr_linenumber" name="124" href="#124">124</a>                 }
+<a class="jxr_linenumber" name="125" href="#125">125</a>             });
+<a class="jxr_linenumber" name="126" href="#126">126</a>         }
+<a class="jxr_linenumber" name="127" href="#127">127</a>     }
+<a class="jxr_linenumber" name="128" href="#128">128</a> 
+<a class="jxr_linenumber" name="129" href="#129">129</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> onQueryWriteCompletion(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> writeFuture) {
+<a class="jxr_linenumber" name="130" href="#130">130</a>         <strong class="jxr_keyword">if</strong> (!writeFuture.isSuccess()) {
+<a class="jxr_linenumber" name="131" href="#131">131</a>             setFailure(<span class="jxr_string">"failed to send a query"</span>, writeFuture.cause());
+<a class="jxr_linenumber" name="132" href="#132">132</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="133" href="#133">133</a>         }
+<a class="jxr_linenumber" name="134" href="#134">134</a> 
+<a class="jxr_linenumber" name="135" href="#135">135</a>         <em class="jxr_comment">// Schedule a query timeout task if necessary.</em>
+<a class="jxr_linenumber" name="136" href="#136">136</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> queryTimeoutMillis = parent.queryTimeoutMillis();
+<a class="jxr_linenumber" name="137" href="#137">137</a>         <strong class="jxr_keyword">if</strong> (queryTimeoutMillis &gt; 0) {
+<a class="jxr_linenumber" name="138" href="#138">138</a>             timeoutFuture = parent.ch.eventLoop().schedule(<strong class="jxr_keyword">new</strong> OneTimeTask() {
+<a class="jxr_linenumber" name="139" href="#139">139</a>                 @Override
+<a class="jxr_linenumber" name="140" href="#140">140</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="141" href="#141">141</a>                     <strong class="jxr_keyword">if</strong> (promise.isDone()) {
+<a class="jxr_linenumber" name="142" href="#142">142</a>                         <em class="jxr_comment">// Received a response before the query times out.</em>
+<a class="jxr_linenumber" name="143" href="#143">143</a>                         <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="144" href="#144">144</a>                     }
+<a class="jxr_linenumber" name="145" href="#145">145</a> 
+<a class="jxr_linenumber" name="146" href="#146">146</a>                     setFailure(<span class="jxr_string">"query timed out after "</span> + queryTimeoutMillis + <span class="jxr_string">" milliseconds"</span>, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="147" href="#147">147</a>                 }
+<a class="jxr_linenumber" name="148" href="#148">148</a>             }, queryTimeoutMillis, TimeUnit.MILLISECONDS);
+<a class="jxr_linenumber" name="149" href="#149">149</a>         }
+<a class="jxr_linenumber" name="150" href="#150">150</a>     }
+<a class="jxr_linenumber" name="151" href="#151">151</a> 
+<a class="jxr_linenumber" name="152" href="#152">152</a>     <strong class="jxr_keyword">void</strong> finish(AddressedEnvelope&lt;? <strong class="jxr_keyword">extends</strong> DnsResponse, InetSocketAddress&gt; envelope) {
+<a class="jxr_linenumber" name="153" href="#153">153</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsResponse.html">DnsResponse</a> res = envelope.content();
+<a class="jxr_linenumber" name="154" href="#154">154</a>         <strong class="jxr_keyword">if</strong> (res.count(DnsSection.QUESTION) != 1) {
+<a class="jxr_linenumber" name="155" href="#155">155</a>             logger.warn(<span class="jxr_string">"Received a DNS response with invalid number of questions: {}"</span>, envelope);
+<a class="jxr_linenumber" name="156" href="#156">156</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="157" href="#157">157</a>         }
+<a class="jxr_linenumber" name="158" href="#158">158</a> 
+<a class="jxr_linenumber" name="159" href="#159">159</a>         <strong class="jxr_keyword">if</strong> (!question().equals(res.recordAt(DnsSection.QUESTION))) {
+<a class="jxr_linenumber" name="160" href="#160">160</a>             logger.warn(<span class="jxr_string">"Received a mismatching DNS response: {}"</span>, envelope);
+<a class="jxr_linenumber" name="161" href="#161">161</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="162" href="#162">162</a>         }
+<a class="jxr_linenumber" name="163" href="#163">163</a> 
+<a class="jxr_linenumber" name="164" href="#164">164</a>         setSuccess(envelope);
+<a class="jxr_linenumber" name="165" href="#165">165</a>     }
 <a class="jxr_linenumber" name="166" href="#166">166</a> 
-<a class="jxr_linenumber" name="167" href="#167">167</a>         setSuccess(envelope);
-<a class="jxr_linenumber" name="168" href="#168">168</a>     }
+<a class="jxr_linenumber" name="167" href="#167">167</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setSuccess(AddressedEnvelope&lt;? <strong class="jxr_keyword">extends</strong> DnsResponse, InetSocketAddress&gt; envelope) {
+<a class="jxr_linenumber" name="168" href="#168">168</a>         parent.queryContextManager.remove(nameServerAddr(), id);
 <a class="jxr_linenumber" name="169" href="#169">169</a> 
-<a class="jxr_linenumber" name="170" href="#170">170</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setSuccess(AddressedEnvelope&lt;? <strong class="jxr_keyword">extends</strong> DnsResponse, InetSocketAddress&gt; envelope) {
-<a class="jxr_linenumber" name="171" href="#171">171</a>         parent.promises.set(id, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="172" href="#172">172</a> 
-<a class="jxr_linenumber" name="173" href="#173">173</a>         <em class="jxr_comment">// Cancel the timeout task.</em>
-<a class="jxr_linenumber" name="174" href="#174">174</a>         <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutFuture = <strong class="jxr_keyword">this</strong>.timeoutFuture;
-<a class="jxr_linenumber" name="175" href="#175">175</a>         <strong class="jxr_keyword">if</strong> (timeoutFuture != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="176" href="#176">176</a>             timeoutFuture.cancel(false);
-<a class="jxr_linenumber" name="177" href="#177">177</a>         }
-<a class="jxr_linenumber" name="178" href="#178">178</a> 
-<a class="jxr_linenumber" name="179" href="#179">179</a>         Promise&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; promise = <strong class="jxr_keyword">this</strong>.promise;
-<a class="jxr_linenumber" name="180" href="#180">180</a>         <strong class="jxr_keyword">if</strong> (promise.setUncancellable()) {
-<a class="jxr_linenumber" name="181" href="#181">181</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="182" href="#182">182</a>             AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt; castResponse =
-<a class="jxr_linenumber" name="183" href="#183">183</a>                     (AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;) envelope.retain();
-<a class="jxr_linenumber" name="184" href="#184">184</a>             promise.setSuccess(castResponse);
-<a class="jxr_linenumber" name="185" href="#185">185</a>         }
-<a class="jxr_linenumber" name="186" href="#186">186</a>     }
-<a class="jxr_linenumber" name="187" href="#187">187</a> 
-<a class="jxr_linenumber" name="188" href="#188">188</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setFailure(String message, Throwable cause) {
-<a class="jxr_linenumber" name="189" href="#189">189</a>         parent.promises.set(id, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="190" href="#190">190</a> 
-<a class="jxr_linenumber" name="191" href="#191">191</a>         <strong class="jxr_keyword">final</strong> StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(message.length() + 64);
-<a class="jxr_linenumber" name="192" href="#192">192</a>         buf.append('[')
-<a class="jxr_linenumber" name="193" href="#193">193</a>            .append(nameServerAddr)
-<a class="jxr_linenumber" name="194" href="#194">194</a>            .append(<span class="jxr_string">"] "</span>)
-<a class="jxr_linenumber" name="195" href="#195">195</a>            .append(message)
-<a class="jxr_linenumber" name="196" href="#196">196</a>            .append(<span class="jxr_string">" (no stack trace available)"</span>);
-<a class="jxr_linenumber" name="197" href="#197">197</a> 
-<a class="jxr_linenumber" name="198" href="#198">198</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolverException.html">DnsNameResolverException</a> e;
-<a class="jxr_linenumber" name="199" href="#199">199</a>         <strong class="jxr_keyword">if</strong> (cause != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="200" href="#200">200</a>             e = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolverException.html">DnsNameResolverException</a>(nameServerAddr, question, buf.toString(), cause);
-<a class="jxr_linenumber" name="201" href="#201">201</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="202" href="#202">202</a>             e = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolverException.html">DnsNameResolverException</a>(nameServerAddr, question, buf.toString());
-<a class="jxr_linenumber" name="203" href="#203">203</a>         }
-<a class="jxr_linenumber" name="204" href="#204">204</a> 
-<a class="jxr_linenumber" name="205" href="#205">205</a>         promise.tryFailure(e);
-<a class="jxr_linenumber" name="206" href="#206">206</a>     }
-<a class="jxr_linenumber" name="207" href="#207">207</a> }
+<a class="jxr_linenumber" name="170" href="#170">170</a>         <em class="jxr_comment">// Cancel the timeout task.</em>
+<a class="jxr_linenumber" name="171" href="#171">171</a>         <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutFuture = <strong class="jxr_keyword">this</strong>.timeoutFuture;
+<a class="jxr_linenumber" name="172" href="#172">172</a>         <strong class="jxr_keyword">if</strong> (timeoutFuture != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="173" href="#173">173</a>             timeoutFuture.cancel(false);
+<a class="jxr_linenumber" name="174" href="#174">174</a>         }
+<a class="jxr_linenumber" name="175" href="#175">175</a> 
+<a class="jxr_linenumber" name="176" href="#176">176</a>         Promise&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; promise = <strong class="jxr_keyword">this</strong>.promise;
+<a class="jxr_linenumber" name="177" href="#177">177</a>         <strong class="jxr_keyword">if</strong> (promise.setUncancellable()) {
+<a class="jxr_linenumber" name="178" href="#178">178</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="179" href="#179">179</a>             AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt; castResponse =
+<a class="jxr_linenumber" name="180" href="#180">180</a>                     (AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;) envelope.retain();
+<a class="jxr_linenumber" name="181" href="#181">181</a>             promise.setSuccess(castResponse);
+<a class="jxr_linenumber" name="182" href="#182">182</a>         }
+<a class="jxr_linenumber" name="183" href="#183">183</a>     }
+<a class="jxr_linenumber" name="184" href="#184">184</a> 
+<a class="jxr_linenumber" name="185" href="#185">185</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setFailure(String message, Throwable cause) {
+<a class="jxr_linenumber" name="186" href="#186">186</a>         <strong class="jxr_keyword">final</strong> InetSocketAddress nameServerAddr = nameServerAddr();
+<a class="jxr_linenumber" name="187" href="#187">187</a>         parent.queryContextManager.remove(nameServerAddr, id);
+<a class="jxr_linenumber" name="188" href="#188">188</a> 
+<a class="jxr_linenumber" name="189" href="#189">189</a>         <strong class="jxr_keyword">final</strong> StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(message.length() + 64);
+<a class="jxr_linenumber" name="190" href="#190">190</a>         buf.append('[')
+<a class="jxr_linenumber" name="191" href="#191">191</a>            .append(nameServerAddr)
+<a class="jxr_linenumber" name="192" href="#192">192</a>            .append(<span class="jxr_string">"] "</span>)
+<a class="jxr_linenumber" name="193" href="#193">193</a>            .append(message)
+<a class="jxr_linenumber" name="194" href="#194">194</a>            .append(<span class="jxr_string">" (no stack trace available)"</span>);
+<a class="jxr_linenumber" name="195" href="#195">195</a> 
+<a class="jxr_linenumber" name="196" href="#196">196</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolverException.html">DnsNameResolverException</a> e;
+<a class="jxr_linenumber" name="197" href="#197">197</a>         <strong class="jxr_keyword">if</strong> (cause != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="198" href="#198">198</a>             e = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolverException.html">DnsNameResolverException</a>(nameServerAddr, question(), buf.toString(), cause);
+<a class="jxr_linenumber" name="199" href="#199">199</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="200" href="#200">200</a>             e = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/resolver/dns/DnsNameResolverException.html">DnsNameResolverException</a>(nameServerAddr, question(), buf.toString());
+<a class="jxr_linenumber" name="201" href="#201">201</a>         }
+<a class="jxr_linenumber" name="202" href="#202">202</a> 
+<a class="jxr_linenumber" name="203" href="#203">203</a>         promise.tryFailure(e);
+<a class="jxr_linenumber" name="204" href="#204">204</a>     }
+<a class="jxr_linenumber" name="205" href="#205">205</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
