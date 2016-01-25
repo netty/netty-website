@@ -376,65 +376,67 @@
 <a class="jxr_linenumber" name="366" href="#366">366</a>                         fd().shutdown(<strong class="jxr_keyword">true</strong>, false);
 <a class="jxr_linenumber" name="367" href="#367">367</a>                         clearEpollIn0();
 <a class="jxr_linenumber" name="368" href="#368">368</a>                         pipeline().fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
-<a class="jxr_linenumber" name="369" href="#369">369</a>                     } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="370" href="#370">370</a>                         pipeline().fireExceptionCaught(e);
-<a class="jxr_linenumber" name="371" href="#371">371</a>                         close(voidPromise());
-<a class="jxr_linenumber" name="372" href="#372">372</a>                     }
-<a class="jxr_linenumber" name="373" href="#373">373</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="374" href="#374">374</a>                     close(voidPromise());
-<a class="jxr_linenumber" name="375" href="#375">375</a>                 }
-<a class="jxr_linenumber" name="376" href="#376">376</a>             }
-<a class="jxr_linenumber" name="377" href="#377">377</a>         }
-<a class="jxr_linenumber" name="378" href="#378">378</a> 
-<a class="jxr_linenumber" name="379" href="#379">379</a>         @Override
-<a class="jxr_linenumber" name="380" href="#380">380</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/channel/epoll/EpollRecvByteAllocatorHandle.html">EpollRecvByteAllocatorHandle</a> recvBufAllocHandle() {
-<a class="jxr_linenumber" name="381" href="#381">381</a>             <strong class="jxr_keyword">if</strong> (allocHandle == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="382" href="#382">382</a>                 allocHandle = newEpollHandle(<strong class="jxr_keyword">super</strong>.recvBufAllocHandle());
-<a class="jxr_linenumber" name="383" href="#383">383</a>             }
-<a class="jxr_linenumber" name="384" href="#384">384</a>             <strong class="jxr_keyword">return</strong> allocHandle;
-<a class="jxr_linenumber" name="385" href="#385">385</a>         }
-<a class="jxr_linenumber" name="386" href="#386">386</a> 
-<a class="jxr_linenumber" name="387" href="#387">387</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="388" href="#388">388</a> <em class="jxr_javadoccomment">         * Create a new {@EpollRecvByteAllocatorHandle} instance.</em>
-<a class="jxr_linenumber" name="389" href="#389">389</a> <em class="jxr_javadoccomment">         * @param handle The handle to wrap with EPOLL specific logic.</em>
-<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="391" href="#391">391</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a href="../../../../io/netty/channel/epoll/EpollRecvByteAllocatorHandle.html">EpollRecvByteAllocatorHandle</a> newEpollHandle(RecvByteBufAllocator.Handle handle);
-<a class="jxr_linenumber" name="392" href="#392">392</a> 
-<a class="jxr_linenumber" name="393" href="#393">393</a>         @Override
-<a class="jxr_linenumber" name="394" href="#394">394</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> flush0() {
-<a class="jxr_linenumber" name="395" href="#395">395</a>             <em class="jxr_comment">// Flush immediately only when there's no pending flush.</em>
-<a class="jxr_linenumber" name="396" href="#396">396</a>             <em class="jxr_comment">// If there's a pending flush operation, event loop will call forceFlush() later,</em>
-<a class="jxr_linenumber" name="397" href="#397">397</a>             <em class="jxr_comment">// and thus there's no need to call it now.</em>
-<a class="jxr_linenumber" name="398" href="#398">398</a>             <strong class="jxr_keyword">if</strong> (isFlagSet(Native.EPOLLOUT)) {
-<a class="jxr_linenumber" name="399" href="#399">399</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="400" href="#400">400</a>             }
-<a class="jxr_linenumber" name="401" href="#401">401</a>             <strong class="jxr_keyword">super</strong>.flush0();
-<a class="jxr_linenumber" name="402" href="#402">402</a>         }
-<a class="jxr_linenumber" name="403" href="#403">403</a> 
-<a class="jxr_linenumber" name="404" href="#404">404</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="405" href="#405">405</a> <em class="jxr_javadoccomment">         * Called once a EPOLLOUT event is ready to be processed</em>
-<a class="jxr_linenumber" name="406" href="#406">406</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="407" href="#407">407</a>         <strong class="jxr_keyword">void</strong> epollOutReady() {
-<a class="jxr_linenumber" name="408" href="#408">408</a>             <strong class="jxr_keyword">if</strong> (fd().isOutputShutdown()) {
-<a class="jxr_linenumber" name="409" href="#409">409</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="410" href="#410">410</a>             }
-<a class="jxr_linenumber" name="411" href="#411">411</a>             <em class="jxr_comment">// directly call super.flush0() to force a flush now</em>
-<a class="jxr_linenumber" name="412" href="#412">412</a>             <strong class="jxr_keyword">super</strong>.flush0();
-<a class="jxr_linenumber" name="413" href="#413">413</a>         }
-<a class="jxr_linenumber" name="414" href="#414">414</a> 
-<a class="jxr_linenumber" name="415" href="#415">415</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> clearEpollIn0() {
-<a class="jxr_linenumber" name="416" href="#416">416</a>             assert eventLoop().inEventLoop();
-<a class="jxr_linenumber" name="417" href="#417">417</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="418" href="#418">418</a>                 clearFlag(readFlag);
-<a class="jxr_linenumber" name="419" href="#419">419</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="420" href="#420">420</a>                 <em class="jxr_comment">// When this happens there is something completely wrong with either the filedescriptor or epoll,</em>
-<a class="jxr_linenumber" name="421" href="#421">421</a>                 <em class="jxr_comment">// so fire the exception through the pipeline and close the Channel.</em>
-<a class="jxr_linenumber" name="422" href="#422">422</a>                 pipeline().fireExceptionCaught(e);
-<a class="jxr_linenumber" name="423" href="#423">423</a>                 unsafe().close(unsafe().voidPromise());
-<a class="jxr_linenumber" name="424" href="#424">424</a>             }
-<a class="jxr_linenumber" name="425" href="#425">425</a>         }
-<a class="jxr_linenumber" name="426" href="#426">426</a>     }
-<a class="jxr_linenumber" name="427" href="#427">427</a> }
+<a class="jxr_linenumber" name="369" href="#369">369</a>                     } <strong class="jxr_keyword">catch</strong> (IOException ignored) {
+<a class="jxr_linenumber" name="370" href="#370">370</a>                         <em class="jxr_comment">// We attempted to shutdown and failed, which means the input has already effectively been</em>
+<a class="jxr_linenumber" name="371" href="#371">371</a>                         <em class="jxr_comment">// shutdown.</em>
+<a class="jxr_linenumber" name="372" href="#372">372</a>                         pipeline().fireUserEventTriggered(ChannelInputShutdownEvent.INSTANCE);
+<a class="jxr_linenumber" name="373" href="#373">373</a>                         close(voidPromise());
+<a class="jxr_linenumber" name="374" href="#374">374</a>                     }
+<a class="jxr_linenumber" name="375" href="#375">375</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="376" href="#376">376</a>                     close(voidPromise());
+<a class="jxr_linenumber" name="377" href="#377">377</a>                 }
+<a class="jxr_linenumber" name="378" href="#378">378</a>             }
+<a class="jxr_linenumber" name="379" href="#379">379</a>         }
+<a class="jxr_linenumber" name="380" href="#380">380</a> 
+<a class="jxr_linenumber" name="381" href="#381">381</a>         @Override
+<a class="jxr_linenumber" name="382" href="#382">382</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/channel/epoll/EpollRecvByteAllocatorHandle.html">EpollRecvByteAllocatorHandle</a> recvBufAllocHandle() {
+<a class="jxr_linenumber" name="383" href="#383">383</a>             <strong class="jxr_keyword">if</strong> (allocHandle == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="384" href="#384">384</a>                 allocHandle = newEpollHandle(<strong class="jxr_keyword">super</strong>.recvBufAllocHandle());
+<a class="jxr_linenumber" name="385" href="#385">385</a>             }
+<a class="jxr_linenumber" name="386" href="#386">386</a>             <strong class="jxr_keyword">return</strong> allocHandle;
+<a class="jxr_linenumber" name="387" href="#387">387</a>         }
+<a class="jxr_linenumber" name="388" href="#388">388</a> 
+<a class="jxr_linenumber" name="389" href="#389">389</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">         * Create a new {@EpollRecvByteAllocatorHandle} instance.</em>
+<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">         * @param handle The handle to wrap with EPOLL specific logic.</em>
+<a class="jxr_linenumber" name="392" href="#392">392</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="393" href="#393">393</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a href="../../../../io/netty/channel/epoll/EpollRecvByteAllocatorHandle.html">EpollRecvByteAllocatorHandle</a> newEpollHandle(RecvByteBufAllocator.Handle handle);
+<a class="jxr_linenumber" name="394" href="#394">394</a> 
+<a class="jxr_linenumber" name="395" href="#395">395</a>         @Override
+<a class="jxr_linenumber" name="396" href="#396">396</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> flush0() {
+<a class="jxr_linenumber" name="397" href="#397">397</a>             <em class="jxr_comment">// Flush immediately only when there's no pending flush.</em>
+<a class="jxr_linenumber" name="398" href="#398">398</a>             <em class="jxr_comment">// If there's a pending flush operation, event loop will call forceFlush() later,</em>
+<a class="jxr_linenumber" name="399" href="#399">399</a>             <em class="jxr_comment">// and thus there's no need to call it now.</em>
+<a class="jxr_linenumber" name="400" href="#400">400</a>             <strong class="jxr_keyword">if</strong> (isFlagSet(Native.EPOLLOUT)) {
+<a class="jxr_linenumber" name="401" href="#401">401</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="402" href="#402">402</a>             }
+<a class="jxr_linenumber" name="403" href="#403">403</a>             <strong class="jxr_keyword">super</strong>.flush0();
+<a class="jxr_linenumber" name="404" href="#404">404</a>         }
+<a class="jxr_linenumber" name="405" href="#405">405</a> 
+<a class="jxr_linenumber" name="406" href="#406">406</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="407" href="#407">407</a> <em class="jxr_javadoccomment">         * Called once a EPOLLOUT event is ready to be processed</em>
+<a class="jxr_linenumber" name="408" href="#408">408</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="409" href="#409">409</a>         <strong class="jxr_keyword">void</strong> epollOutReady() {
+<a class="jxr_linenumber" name="410" href="#410">410</a>             <strong class="jxr_keyword">if</strong> (fd().isOutputShutdown()) {
+<a class="jxr_linenumber" name="411" href="#411">411</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="412" href="#412">412</a>             }
+<a class="jxr_linenumber" name="413" href="#413">413</a>             <em class="jxr_comment">// directly call super.flush0() to force a flush now</em>
+<a class="jxr_linenumber" name="414" href="#414">414</a>             <strong class="jxr_keyword">super</strong>.flush0();
+<a class="jxr_linenumber" name="415" href="#415">415</a>         }
+<a class="jxr_linenumber" name="416" href="#416">416</a> 
+<a class="jxr_linenumber" name="417" href="#417">417</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> clearEpollIn0() {
+<a class="jxr_linenumber" name="418" href="#418">418</a>             assert eventLoop().inEventLoop();
+<a class="jxr_linenumber" name="419" href="#419">419</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="420" href="#420">420</a>                 clearFlag(readFlag);
+<a class="jxr_linenumber" name="421" href="#421">421</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="422" href="#422">422</a>                 <em class="jxr_comment">// When this happens there is something completely wrong with either the filedescriptor or epoll,</em>
+<a class="jxr_linenumber" name="423" href="#423">423</a>                 <em class="jxr_comment">// so fire the exception through the pipeline and close the Channel.</em>
+<a class="jxr_linenumber" name="424" href="#424">424</a>                 pipeline().fireExceptionCaught(e);
+<a class="jxr_linenumber" name="425" href="#425">425</a>                 unsafe().close(unsafe().voidPromise());
+<a class="jxr_linenumber" name="426" href="#426">426</a>             }
+<a class="jxr_linenumber" name="427" href="#427">427</a>         }
+<a class="jxr_linenumber" name="428" href="#428">428</a>     }
+<a class="jxr_linenumber" name="429" href="#429">429</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

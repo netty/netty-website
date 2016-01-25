@@ -26,8 +26,8 @@
 <a class="jxr_linenumber" name="16" href="#16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.codec.memcache.binary;
 <a class="jxr_linenumber" name="17" href="#17">17</a>  
 <a class="jxr_linenumber" name="18" href="#18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
-<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerAppender;
-<a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.CombinedChannelDuplexHandler;
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.PrematureChannelClosureException;
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.memcache.LastMemcacheContent;
 <a class="jxr_linenumber" name="23" href="#23">23</a>  
@@ -45,37 +45,37 @@
 <a class="jxr_linenumber" name="35" href="#35">35</a>  <em class="jxr_javadoccomment"> * content, which defaults to 8192. This chunk size is the maximum, so if smaller chunks arrive they</em>
 <a class="jxr_linenumber" name="36" href="#36">36</a>  <em class="jxr_javadoccomment"> * will be passed up the pipeline and not queued up to the chunk size.</em>
 <a class="jxr_linenumber" name="37" href="#37">37</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="38" href="#38">38</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../../io/netty/channel/ChannelHandlerAppender.html">ChannelHandlerAppender</a> {
-<a class="jxr_linenumber" name="39" href="#39">39</a>  
-<a class="jxr_linenumber" name="40" href="#40">40</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> failOnMissingResponse;
-<a class="jxr_linenumber" name="41" href="#41">41</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> AtomicLong requestResponseCounter = <strong class="jxr_keyword">new</strong> AtomicLong();
-<a class="jxr_linenumber" name="42" href="#42">42</a>  
-<a class="jxr_linenumber" name="43" href="#43">43</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="44" href="#44">44</a>  <em class="jxr_javadoccomment">     * Create a new {@link BinaryMemcacheClientCodec} with the default settings applied.</em>
-<a class="jxr_linenumber" name="45" href="#45">45</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a>() {
-<a class="jxr_linenumber" name="47" href="#47">47</a>          <strong class="jxr_keyword">this</strong>(AbstractBinaryMemcacheDecoder.DEFAULT_MAX_CHUNK_SIZE);
-<a class="jxr_linenumber" name="48" href="#48">48</a>      }
-<a class="jxr_linenumber" name="49" href="#49">49</a>  
-<a class="jxr_linenumber" name="50" href="#50">50</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="51" href="#51">51</a>  <em class="jxr_javadoccomment">     * Create a new {@link BinaryMemcacheClientCodec} and set a custom chunk size.</em>
-<a class="jxr_linenumber" name="52" href="#52">52</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="53" href="#53">53</a>  <em class="jxr_javadoccomment">     * @param decodeChunkSize the maximum chunk size.</em>
-<a class="jxr_linenumber" name="54" href="#54">54</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="55" href="#55">55</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a>(<strong class="jxr_keyword">int</strong> decodeChunkSize) {
-<a class="jxr_linenumber" name="56" href="#56">56</a>          <strong class="jxr_keyword">this</strong>(decodeChunkSize, false);
-<a class="jxr_linenumber" name="57" href="#57">57</a>      }
-<a class="jxr_linenumber" name="58" href="#58">58</a>  
-<a class="jxr_linenumber" name="59" href="#59">59</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="60" href="#60">60</a>  <em class="jxr_javadoccomment">     * Create a new {@link BinaryMemcacheClientCodec} with custom settings.</em>
-<a class="jxr_linenumber" name="61" href="#61">61</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="62" href="#62">62</a>  <em class="jxr_javadoccomment">     * @param decodeChunkSize       the maximum chunk size.</em>
-<a class="jxr_linenumber" name="63" href="#63">63</a>  <em class="jxr_javadoccomment">     * @param failOnMissingResponse report if after close there are outstanding requests.</em>
-<a class="jxr_linenumber" name="64" href="#64">64</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="65" href="#65">65</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a>(<strong class="jxr_keyword">int</strong> decodeChunkSize, <strong class="jxr_keyword">boolean</strong> failOnMissingResponse) {
-<a class="jxr_linenumber" name="66" href="#66">66</a>          <strong class="jxr_keyword">this</strong>.failOnMissingResponse = failOnMissingResponse;
-<a class="jxr_linenumber" name="67" href="#67">67</a>          add(<strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">Decoder</a>(decodeChunkSize));
-<a class="jxr_linenumber" name="68" href="#68">68</a>          add(<strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/ByteToMessageCodec.html">Encoder</a>());
+<a class="jxr_linenumber" name="38" href="#38">38</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a> <strong class="jxr_keyword">extends</strong>
+<a class="jxr_linenumber" name="39" href="#39">39</a>          CombinedChannelDuplexHandler&lt;BinaryMemcacheResponseDecoder, BinaryMemcacheRequestEncoder&gt; {
+<a class="jxr_linenumber" name="40" href="#40">40</a>  
+<a class="jxr_linenumber" name="41" href="#41">41</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> failOnMissingResponse;
+<a class="jxr_linenumber" name="42" href="#42">42</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> AtomicLong requestResponseCounter = <strong class="jxr_keyword">new</strong> AtomicLong();
+<a class="jxr_linenumber" name="43" href="#43">43</a>  
+<a class="jxr_linenumber" name="44" href="#44">44</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="45" href="#45">45</a>  <em class="jxr_javadoccomment">     * Create a new {@link BinaryMemcacheClientCodec} with the default settings applied.</em>
+<a class="jxr_linenumber" name="46" href="#46">46</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="47" href="#47">47</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a>() {
+<a class="jxr_linenumber" name="48" href="#48">48</a>          <strong class="jxr_keyword">this</strong>(AbstractBinaryMemcacheDecoder.DEFAULT_MAX_CHUNK_SIZE);
+<a class="jxr_linenumber" name="49" href="#49">49</a>      }
+<a class="jxr_linenumber" name="50" href="#50">50</a>  
+<a class="jxr_linenumber" name="51" href="#51">51</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="52" href="#52">52</a>  <em class="jxr_javadoccomment">     * Create a new {@link BinaryMemcacheClientCodec} and set a custom chunk size.</em>
+<a class="jxr_linenumber" name="53" href="#53">53</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="54" href="#54">54</a>  <em class="jxr_javadoccomment">     * @param decodeChunkSize the maximum chunk size.</em>
+<a class="jxr_linenumber" name="55" href="#55">55</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="56" href="#56">56</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a>(<strong class="jxr_keyword">int</strong> decodeChunkSize) {
+<a class="jxr_linenumber" name="57" href="#57">57</a>          <strong class="jxr_keyword">this</strong>(decodeChunkSize, false);
+<a class="jxr_linenumber" name="58" href="#58">58</a>      }
+<a class="jxr_linenumber" name="59" href="#59">59</a>  
+<a class="jxr_linenumber" name="60" href="#60">60</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="61" href="#61">61</a>  <em class="jxr_javadoccomment">     * Create a new {@link BinaryMemcacheClientCodec} with custom settings.</em>
+<a class="jxr_linenumber" name="62" href="#62">62</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="63" href="#63">63</a>  <em class="jxr_javadoccomment">     * @param decodeChunkSize       the maximum chunk size.</em>
+<a class="jxr_linenumber" name="64" href="#64">64</a>  <em class="jxr_javadoccomment">     * @param failOnMissingResponse report if after close there are outstanding requests.</em>
+<a class="jxr_linenumber" name="65" href="#65">65</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="66" href="#66">66</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">BinaryMemcacheClientCodec</a>(<strong class="jxr_keyword">int</strong> decodeChunkSize, <strong class="jxr_keyword">boolean</strong> failOnMissingResponse) {
+<a class="jxr_linenumber" name="67" href="#67">67</a>          <strong class="jxr_keyword">this</strong>.failOnMissingResponse = failOnMissingResponse;
+<a class="jxr_linenumber" name="68" href="#68">68</a>          init(<strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.html">Decoder</a>(decodeChunkSize), <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/ByteToMessageCodec.html">Encoder</a>());
 <a class="jxr_linenumber" name="69" href="#69">69</a>      }
 <a class="jxr_linenumber" name="70" href="#70">70</a>  
 <a class="jxr_linenumber" name="71" href="#71">71</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/handler/codec/ByteToMessageCodec.html">Encoder</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../../io/netty/handler/codec/memcache/binary/BinaryMemcacheRequestEncoder.html">BinaryMemcacheRequestEncoder</a> {
