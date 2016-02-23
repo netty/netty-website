@@ -15,16 +15,21 @@ end
 class RelativeSiteUrl
   def execute(site)
     for p in site.pages
-      if p.simple_name == '404'
-        # Use the absolute path for 404
-        p.site_url = site.base_url
+      p.site_url = RelativeSiteUrl.get(site, p)
+    end
+  end
+
+  def self.get(site, page)
+    if page.simple_name == '404'
+      # Use the absolute path for 404
+      raise 'site.base_url should never be localhost: ' + site.base_url unless site.base_url.index('localhost').nil?
+      page.site_url = site.base_url
+    else
+      page.output_path_depth = page.output_path.count('/\\') - 1;
+      if page.output_path_depth == 0
+        page.site_url = '.'
       else
-        p.output_path_depth = p.output_path.count('/\\') - 1;
-        if p.output_path_depth == 0
-          p.site_url = '.'
-        else
-          p.site_url = '../' * (p.output_path_depth - 1) + '..'
-        end
+        page.site_url = '../' * (page.output_path_depth - 1) + '..'
       end
     end
   end
@@ -71,12 +76,12 @@ class ReleaseInfo
   end
 
   module Release
-    def example_url(name = nil)
+    def example_url(page, name = nil)
       if self.major_version > 3
         if name.nil?
           'https://github.com/netty/netty/tree/' + self.branch + '/example/src/main/java/io/netty/example'
         else
-          site.base_url + '/' + self.simple_version + '/xref/io/netty/example/' + name + '/package-summary.html'
+          RelativeSiteUrl.get(self.site, page) + '/' + self.simple_version + '/xref/io/netty/example/' + name + '/package-summary.html'
         end
       else
         # The WorldClock example was LocalTime in 3.
@@ -87,7 +92,7 @@ class ReleaseInfo
         if name.nil?
           'https://github.com/netty/netty/tree/' + self.branch + '/src/main/java/org/jboss/netty/example'
         else
-          site.base_url + '/' + self.simple_version + '/xref/org/jboss/netty/example/' + name + '/package-summary.html'
+          RelativeSiteUrl.get(self.site, page) + '/' + self.simple_version + '/xref/org/jboss/netty/example/' + name + '/package-summary.html'
         end
       end
     end
@@ -121,8 +126,8 @@ Awestruct::Extensions::Pipeline.new do
   extension Awestruct::Extensions::Disqus.new()
 
   # Register our own extensions
-  extension ReleaseInfo.new()
   extension RelativeSiteUrl.new()
+  extension ReleaseInfo.new()
   extension ShortenedLinkGenerator.new()
 
   # Put the Atomizer extension last so that it has all the custom properties populated by our extensions.
