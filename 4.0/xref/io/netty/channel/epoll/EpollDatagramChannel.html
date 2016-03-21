@@ -512,119 +512,121 @@
 <a class="jxr_linenumber" name="502" href="#502">502</a>                     EpollDatagramChannel.<strong class="jxr_keyword">this</strong>.local = fd().localAddress();
 <a class="jxr_linenumber" name="503" href="#503">503</a>                     success = <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="504" href="#504">504</a> 
-<a class="jxr_linenumber" name="505" href="#505">505</a>                     <em class="jxr_comment">// Regardless if the connection attempt was cancelled, channelActive() event should be triggered,</em>
-<a class="jxr_linenumber" name="506" href="#506">506</a>                     <em class="jxr_comment">// because what happened is what happened.</em>
-<a class="jxr_linenumber" name="507" href="#507">507</a>                     <strong class="jxr_keyword">if</strong> (!wasActive &amp;&amp; isActive()) {
-<a class="jxr_linenumber" name="508" href="#508">508</a>                         pipeline().fireChannelActive();
-<a class="jxr_linenumber" name="509" href="#509">509</a>                     }
-<a class="jxr_linenumber" name="510" href="#510">510</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="511" href="#511">511</a>                     <strong class="jxr_keyword">if</strong> (!success) {
-<a class="jxr_linenumber" name="512" href="#512">512</a>                         doClose();
-<a class="jxr_linenumber" name="513" href="#513">513</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="514" href="#514">514</a>                         channelPromise.setSuccess();
-<a class="jxr_linenumber" name="515" href="#515">515</a>                         connected = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="516" href="#516">516</a>                     }
-<a class="jxr_linenumber" name="517" href="#517">517</a>                 }
-<a class="jxr_linenumber" name="518" href="#518">518</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="519" href="#519">519</a>                 channelPromise.setFailure(cause);
-<a class="jxr_linenumber" name="520" href="#520">520</a>             }
-<a class="jxr_linenumber" name="521" href="#521">521</a>         }
-<a class="jxr_linenumber" name="522" href="#522">522</a> 
-<a class="jxr_linenumber" name="523" href="#523">523</a>         @Override
-<a class="jxr_linenumber" name="524" href="#524">524</a>         <strong class="jxr_keyword">void</strong> epollInReady() {
-<a class="jxr_linenumber" name="525" href="#525">525</a>             assert eventLoop().inEventLoop();
-<a class="jxr_linenumber" name="526" href="#526">526</a>             <strong class="jxr_keyword">if</strong> (fd().isInputShutdown()) {
-<a class="jxr_linenumber" name="527" href="#527">527</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="528" href="#528">528</a>             }
-<a class="jxr_linenumber" name="529" href="#529">529</a>             <a href="../../../../io/netty/channel/socket/DatagramChannelConfig.html">DatagramChannelConfig</a> config = config();
-<a class="jxr_linenumber" name="530" href="#530">530</a>             <strong class="jxr_keyword">boolean</strong> edgeTriggered = isFlagSet(Native.EPOLLET);
-<a class="jxr_linenumber" name="531" href="#531">531</a> 
-<a class="jxr_linenumber" name="532" href="#532">532</a>             <strong class="jxr_keyword">if</strong> (!readPending &amp;&amp; !edgeTriggered &amp;&amp; !config.isAutoRead()) {
-<a class="jxr_linenumber" name="533" href="#533">533</a>                 <em class="jxr_comment">// ChannelConfig.setAutoRead(false) was called in the meantime</em>
-<a class="jxr_linenumber" name="534" href="#534">534</a>                 clearEpollIn0();
-<a class="jxr_linenumber" name="535" href="#535">535</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="536" href="#536">536</a>             }
-<a class="jxr_linenumber" name="537" href="#537">537</a> 
-<a class="jxr_linenumber" name="538" href="#538">538</a>             RecvByteBufAllocator.Handle allocHandle = <strong class="jxr_keyword">this</strong>.allocHandle;
-<a class="jxr_linenumber" name="539" href="#539">539</a>             <strong class="jxr_keyword">if</strong> (allocHandle == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="540" href="#540">540</a>                 <strong class="jxr_keyword">this</strong>.allocHandle = allocHandle = config.getRecvByteBufAllocator().newHandle();
-<a class="jxr_linenumber" name="541" href="#541">541</a>             }
-<a class="jxr_linenumber" name="542" href="#542">542</a> 
-<a class="jxr_linenumber" name="543" href="#543">543</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
-<a class="jxr_linenumber" name="544" href="#544">544</a>             Throwable exception = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="545" href="#545">545</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="546" href="#546">546</a>                 <em class="jxr_comment">// if edgeTriggered is used we need to read all messages as we are not notified again otherwise.</em>
-<a class="jxr_linenumber" name="547" href="#547">547</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxMessagesPerRead = edgeTriggered
-<a class="jxr_linenumber" name="548" href="#548">548</a>                         ? Integer.MAX_VALUE : config.getMaxMessagesPerRead();
-<a class="jxr_linenumber" name="549" href="#549">549</a>                 <strong class="jxr_keyword">int</strong> messages = 0;
-<a class="jxr_linenumber" name="550" href="#550">550</a>                 <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="551" href="#551">551</a>                     <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="552" href="#552">552</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="553" href="#553">553</a>                         data = allocHandle.allocate(config.getAllocator());
-<a class="jxr_linenumber" name="554" href="#554">554</a>                         <strong class="jxr_keyword">int</strong> writerIndex = data.writerIndex();
-<a class="jxr_linenumber" name="555" href="#555">555</a>                         <a href="../../../../io/netty/channel/unix/DatagramSocketAddress.html">DatagramSocketAddress</a> remoteAddress;
-<a class="jxr_linenumber" name="556" href="#556">556</a>                         <strong class="jxr_keyword">if</strong> (data.hasMemoryAddress()) {
-<a class="jxr_linenumber" name="557" href="#557">557</a>                             <em class="jxr_comment">// has a memory address so use optimized call</em>
-<a class="jxr_linenumber" name="558" href="#558">558</a>                             remoteAddress = fd().recvFromAddress(data.memoryAddress(), data.writerIndex(),
-<a class="jxr_linenumber" name="559" href="#559">559</a>                                     data.capacity());
-<a class="jxr_linenumber" name="560" href="#560">560</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="561" href="#561">561</a>                             ByteBuffer nioData = data.internalNioBuffer(data.writerIndex(), data.writableBytes());
-<a class="jxr_linenumber" name="562" href="#562">562</a>                             remoteAddress = fd().recvFrom(nioData, nioData.position(), nioData.limit());
-<a class="jxr_linenumber" name="563" href="#563">563</a>                         }
-<a class="jxr_linenumber" name="564" href="#564">564</a> 
-<a class="jxr_linenumber" name="565" href="#565">565</a>                         <strong class="jxr_keyword">if</strong> (remoteAddress == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="566" href="#566">566</a>                             <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="567" href="#567">567</a>                         }
-<a class="jxr_linenumber" name="568" href="#568">568</a> 
-<a class="jxr_linenumber" name="569" href="#569">569</a>                         <strong class="jxr_keyword">int</strong> readBytes = remoteAddress.receivedAmount();
-<a class="jxr_linenumber" name="570" href="#570">570</a>                         data.writerIndex(data.writerIndex() + readBytes);
-<a class="jxr_linenumber" name="571" href="#571">571</a>                         allocHandle.record(readBytes);
-<a class="jxr_linenumber" name="572" href="#572">572</a>                         readPending = false;
-<a class="jxr_linenumber" name="573" href="#573">573</a> 
-<a class="jxr_linenumber" name="574" href="#574">574</a>                         readBuf.add(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/socket/DatagramPacket.html">DatagramPacket</a>(data, (InetSocketAddress) localAddress(), remoteAddress));
-<a class="jxr_linenumber" name="575" href="#575">575</a>                         data = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="576" href="#576">576</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="577" href="#577">577</a>                         <em class="jxr_comment">// We do not break from the loop here and remember the last exception,</em>
-<a class="jxr_linenumber" name="578" href="#578">578</a>                         <em class="jxr_comment">// because we need to consume everything from the socket used with epoll ET.</em>
-<a class="jxr_linenumber" name="579" href="#579">579</a>                         exception = t;
-<a class="jxr_linenumber" name="580" href="#580">580</a>                     } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="581" href="#581">581</a>                         <strong class="jxr_keyword">if</strong> (data != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="582" href="#582">582</a>                             data.release();
-<a class="jxr_linenumber" name="583" href="#583">583</a>                         }
-<a class="jxr_linenumber" name="584" href="#584">584</a>                         <strong class="jxr_keyword">if</strong> (!edgeTriggered &amp;&amp; !config.isAutoRead()) {
-<a class="jxr_linenumber" name="585" href="#585">585</a>                             <em class="jxr_comment">// This is not using EPOLLET so we can stop reading</em>
-<a class="jxr_linenumber" name="586" href="#586">586</a>                             <em class="jxr_comment">// ASAP as we will get notified again later with</em>
-<a class="jxr_linenumber" name="587" href="#587">587</a>                             <em class="jxr_comment">// pending data</em>
-<a class="jxr_linenumber" name="588" href="#588">588</a>                             <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="589" href="#589">589</a>                         }
-<a class="jxr_linenumber" name="590" href="#590">590</a>                     }
-<a class="jxr_linenumber" name="591" href="#591">591</a>                 } <strong class="jxr_keyword">while</strong> (++ messages &lt; maxMessagesPerRead || isRdHup());
-<a class="jxr_linenumber" name="592" href="#592">592</a> 
-<a class="jxr_linenumber" name="593" href="#593">593</a>                 <strong class="jxr_keyword">int</strong> size = readBuf.size();
-<a class="jxr_linenumber" name="594" href="#594">594</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
-<a class="jxr_linenumber" name="595" href="#595">595</a>                     pipeline.fireChannelRead(readBuf.get(i));
-<a class="jxr_linenumber" name="596" href="#596">596</a>                 }
-<a class="jxr_linenumber" name="597" href="#597">597</a> 
-<a class="jxr_linenumber" name="598" href="#598">598</a>                 readBuf.clear();
-<a class="jxr_linenumber" name="599" href="#599">599</a>                 pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="600" href="#600">600</a> 
-<a class="jxr_linenumber" name="601" href="#601">601</a>                 <strong class="jxr_keyword">if</strong> (exception != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="602" href="#602">602</a>                     pipeline.fireExceptionCaught(exception);
-<a class="jxr_linenumber" name="603" href="#603">603</a>                 }
-<a class="jxr_linenumber" name="604" href="#604">604</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="605" href="#605">605</a>                 <em class="jxr_comment">// Check if there is a readPending which was not processed yet.</em>
-<a class="jxr_linenumber" name="606" href="#606">606</a>                 <em class="jxr_comment">// This could be for two reasons:</em>
-<a class="jxr_linenumber" name="607" href="#607">607</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</em>
-<a class="jxr_linenumber" name="608" href="#608">608</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</em>
-<a class="jxr_linenumber" name="609" href="#609">609</a>                 <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="610" href="#610">610</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2254</em>
-<a class="jxr_linenumber" name="611" href="#611">611</a>                 <strong class="jxr_keyword">if</strong> (!readPending &amp;&amp; !config.isAutoRead()) {
-<a class="jxr_linenumber" name="612" href="#612">612</a>                     clearEpollIn();
-<a class="jxr_linenumber" name="613" href="#613">613</a>                 }
-<a class="jxr_linenumber" name="614" href="#614">614</a>             }
-<a class="jxr_linenumber" name="615" href="#615">615</a>         }
-<a class="jxr_linenumber" name="616" href="#616">616</a>     }
-<a class="jxr_linenumber" name="617" href="#617">617</a> }
+<a class="jxr_linenumber" name="505" href="#505">505</a>                     <em class="jxr_comment">// First notify the promise before notifying the handler.</em>
+<a class="jxr_linenumber" name="506" href="#506">506</a>                     channelPromise.trySuccess();
+<a class="jxr_linenumber" name="507" href="#507">507</a> 
+<a class="jxr_linenumber" name="508" href="#508">508</a>                     <em class="jxr_comment">// Regardless if the connection attempt was cancelled, channelActive() event should be triggered,</em>
+<a class="jxr_linenumber" name="509" href="#509">509</a>                     <em class="jxr_comment">// because what happened is what happened.</em>
+<a class="jxr_linenumber" name="510" href="#510">510</a>                     <strong class="jxr_keyword">if</strong> (!wasActive &amp;&amp; isActive()) {
+<a class="jxr_linenumber" name="511" href="#511">511</a>                         pipeline().fireChannelActive();
+<a class="jxr_linenumber" name="512" href="#512">512</a>                     }
+<a class="jxr_linenumber" name="513" href="#513">513</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="514" href="#514">514</a>                     <strong class="jxr_keyword">if</strong> (!success) {
+<a class="jxr_linenumber" name="515" href="#515">515</a>                         doClose();
+<a class="jxr_linenumber" name="516" href="#516">516</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="517" href="#517">517</a>                         connected = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="518" href="#518">518</a>                     }
+<a class="jxr_linenumber" name="519" href="#519">519</a>                 }
+<a class="jxr_linenumber" name="520" href="#520">520</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="521" href="#521">521</a>                 channelPromise.tryFailure(cause);
+<a class="jxr_linenumber" name="522" href="#522">522</a>             }
+<a class="jxr_linenumber" name="523" href="#523">523</a>         }
+<a class="jxr_linenumber" name="524" href="#524">524</a> 
+<a class="jxr_linenumber" name="525" href="#525">525</a>         @Override
+<a class="jxr_linenumber" name="526" href="#526">526</a>         <strong class="jxr_keyword">void</strong> epollInReady() {
+<a class="jxr_linenumber" name="527" href="#527">527</a>             assert eventLoop().inEventLoop();
+<a class="jxr_linenumber" name="528" href="#528">528</a>             <strong class="jxr_keyword">if</strong> (fd().isInputShutdown()) {
+<a class="jxr_linenumber" name="529" href="#529">529</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="530" href="#530">530</a>             }
+<a class="jxr_linenumber" name="531" href="#531">531</a>             <a href="../../../../io/netty/channel/socket/DatagramChannelConfig.html">DatagramChannelConfig</a> config = config();
+<a class="jxr_linenumber" name="532" href="#532">532</a>             <strong class="jxr_keyword">boolean</strong> edgeTriggered = isFlagSet(Native.EPOLLET);
+<a class="jxr_linenumber" name="533" href="#533">533</a> 
+<a class="jxr_linenumber" name="534" href="#534">534</a>             <strong class="jxr_keyword">if</strong> (!readPending &amp;&amp; !edgeTriggered &amp;&amp; !config.isAutoRead()) {
+<a class="jxr_linenumber" name="535" href="#535">535</a>                 <em class="jxr_comment">// ChannelConfig.setAutoRead(false) was called in the meantime</em>
+<a class="jxr_linenumber" name="536" href="#536">536</a>                 clearEpollIn0();
+<a class="jxr_linenumber" name="537" href="#537">537</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="538" href="#538">538</a>             }
+<a class="jxr_linenumber" name="539" href="#539">539</a> 
+<a class="jxr_linenumber" name="540" href="#540">540</a>             RecvByteBufAllocator.Handle allocHandle = <strong class="jxr_keyword">this</strong>.allocHandle;
+<a class="jxr_linenumber" name="541" href="#541">541</a>             <strong class="jxr_keyword">if</strong> (allocHandle == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="542" href="#542">542</a>                 <strong class="jxr_keyword">this</strong>.allocHandle = allocHandle = config.getRecvByteBufAllocator().newHandle();
+<a class="jxr_linenumber" name="543" href="#543">543</a>             }
+<a class="jxr_linenumber" name="544" href="#544">544</a> 
+<a class="jxr_linenumber" name="545" href="#545">545</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = pipeline();
+<a class="jxr_linenumber" name="546" href="#546">546</a>             Throwable exception = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="547" href="#547">547</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="548" href="#548">548</a>                 <em class="jxr_comment">// if edgeTriggered is used we need to read all messages as we are not notified again otherwise.</em>
+<a class="jxr_linenumber" name="549" href="#549">549</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxMessagesPerRead = edgeTriggered
+<a class="jxr_linenumber" name="550" href="#550">550</a>                         ? Integer.MAX_VALUE : config.getMaxMessagesPerRead();
+<a class="jxr_linenumber" name="551" href="#551">551</a>                 <strong class="jxr_keyword">int</strong> messages = 0;
+<a class="jxr_linenumber" name="552" href="#552">552</a>                 <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="553" href="#553">553</a>                     <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="554" href="#554">554</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="555" href="#555">555</a>                         data = allocHandle.allocate(config.getAllocator());
+<a class="jxr_linenumber" name="556" href="#556">556</a>                         <strong class="jxr_keyword">int</strong> writerIndex = data.writerIndex();
+<a class="jxr_linenumber" name="557" href="#557">557</a>                         <a href="../../../../io/netty/channel/unix/DatagramSocketAddress.html">DatagramSocketAddress</a> remoteAddress;
+<a class="jxr_linenumber" name="558" href="#558">558</a>                         <strong class="jxr_keyword">if</strong> (data.hasMemoryAddress()) {
+<a class="jxr_linenumber" name="559" href="#559">559</a>                             <em class="jxr_comment">// has a memory address so use optimized call</em>
+<a class="jxr_linenumber" name="560" href="#560">560</a>                             remoteAddress = fd().recvFromAddress(data.memoryAddress(), data.writerIndex(),
+<a class="jxr_linenumber" name="561" href="#561">561</a>                                     data.capacity());
+<a class="jxr_linenumber" name="562" href="#562">562</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="563" href="#563">563</a>                             ByteBuffer nioData = data.internalNioBuffer(data.writerIndex(), data.writableBytes());
+<a class="jxr_linenumber" name="564" href="#564">564</a>                             remoteAddress = fd().recvFrom(nioData, nioData.position(), nioData.limit());
+<a class="jxr_linenumber" name="565" href="#565">565</a>                         }
+<a class="jxr_linenumber" name="566" href="#566">566</a> 
+<a class="jxr_linenumber" name="567" href="#567">567</a>                         <strong class="jxr_keyword">if</strong> (remoteAddress == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="568" href="#568">568</a>                             <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="569" href="#569">569</a>                         }
+<a class="jxr_linenumber" name="570" href="#570">570</a> 
+<a class="jxr_linenumber" name="571" href="#571">571</a>                         <strong class="jxr_keyword">int</strong> readBytes = remoteAddress.receivedAmount();
+<a class="jxr_linenumber" name="572" href="#572">572</a>                         data.writerIndex(data.writerIndex() + readBytes);
+<a class="jxr_linenumber" name="573" href="#573">573</a>                         allocHandle.record(readBytes);
+<a class="jxr_linenumber" name="574" href="#574">574</a>                         readPending = false;
+<a class="jxr_linenumber" name="575" href="#575">575</a> 
+<a class="jxr_linenumber" name="576" href="#576">576</a>                         readBuf.add(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/socket/DatagramPacket.html">DatagramPacket</a>(data, (InetSocketAddress) localAddress(), remoteAddress));
+<a class="jxr_linenumber" name="577" href="#577">577</a>                         data = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="578" href="#578">578</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="579" href="#579">579</a>                         <em class="jxr_comment">// We do not break from the loop here and remember the last exception,</em>
+<a class="jxr_linenumber" name="580" href="#580">580</a>                         <em class="jxr_comment">// because we need to consume everything from the socket used with epoll ET.</em>
+<a class="jxr_linenumber" name="581" href="#581">581</a>                         exception = t;
+<a class="jxr_linenumber" name="582" href="#582">582</a>                     } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="583" href="#583">583</a>                         <strong class="jxr_keyword">if</strong> (data != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="584" href="#584">584</a>                             data.release();
+<a class="jxr_linenumber" name="585" href="#585">585</a>                         }
+<a class="jxr_linenumber" name="586" href="#586">586</a>                         <strong class="jxr_keyword">if</strong> (!edgeTriggered &amp;&amp; !config.isAutoRead()) {
+<a class="jxr_linenumber" name="587" href="#587">587</a>                             <em class="jxr_comment">// This is not using EPOLLET so we can stop reading</em>
+<a class="jxr_linenumber" name="588" href="#588">588</a>                             <em class="jxr_comment">// ASAP as we will get notified again later with</em>
+<a class="jxr_linenumber" name="589" href="#589">589</a>                             <em class="jxr_comment">// pending data</em>
+<a class="jxr_linenumber" name="590" href="#590">590</a>                             <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="591" href="#591">591</a>                         }
+<a class="jxr_linenumber" name="592" href="#592">592</a>                     }
+<a class="jxr_linenumber" name="593" href="#593">593</a>                 } <strong class="jxr_keyword">while</strong> (++ messages &lt; maxMessagesPerRead || isRdHup());
+<a class="jxr_linenumber" name="594" href="#594">594</a> 
+<a class="jxr_linenumber" name="595" href="#595">595</a>                 <strong class="jxr_keyword">int</strong> size = readBuf.size();
+<a class="jxr_linenumber" name="596" href="#596">596</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
+<a class="jxr_linenumber" name="597" href="#597">597</a>                     pipeline.fireChannelRead(readBuf.get(i));
+<a class="jxr_linenumber" name="598" href="#598">598</a>                 }
+<a class="jxr_linenumber" name="599" href="#599">599</a> 
+<a class="jxr_linenumber" name="600" href="#600">600</a>                 readBuf.clear();
+<a class="jxr_linenumber" name="601" href="#601">601</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="602" href="#602">602</a> 
+<a class="jxr_linenumber" name="603" href="#603">603</a>                 <strong class="jxr_keyword">if</strong> (exception != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="604" href="#604">604</a>                     pipeline.fireExceptionCaught(exception);
+<a class="jxr_linenumber" name="605" href="#605">605</a>                 }
+<a class="jxr_linenumber" name="606" href="#606">606</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="607" href="#607">607</a>                 <em class="jxr_comment">// Check if there is a readPending which was not processed yet.</em>
+<a class="jxr_linenumber" name="608" href="#608">608</a>                 <em class="jxr_comment">// This could be for two reasons:</em>
+<a class="jxr_linenumber" name="609" href="#609">609</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</em>
+<a class="jxr_linenumber" name="610" href="#610">610</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</em>
+<a class="jxr_linenumber" name="611" href="#611">611</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="612" href="#612">612</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2254</em>
+<a class="jxr_linenumber" name="613" href="#613">613</a>                 <strong class="jxr_keyword">if</strong> (!readPending &amp;&amp; !config.isAutoRead()) {
+<a class="jxr_linenumber" name="614" href="#614">614</a>                     clearEpollIn();
+<a class="jxr_linenumber" name="615" href="#615">615</a>                 }
+<a class="jxr_linenumber" name="616" href="#616">616</a>             }
+<a class="jxr_linenumber" name="617" href="#617">617</a>         }
+<a class="jxr_linenumber" name="618" href="#618">618</a>     }
+<a class="jxr_linenumber" name="619" href="#619">619</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
