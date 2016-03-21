@@ -77,7 +77,7 @@
 <a class="jxr_linenumber" name="67" href="#67">67</a>  <em class="jxr_javadoccomment"> * // In your {@link ChannelInitializer}:</em>
 <a class="jxr_linenumber" name="68" href="#68">68</a>  <em class="jxr_javadoccomment"> * {@link ChannelPipeline} p = channel.pipeline();</em>
 <a class="jxr_linenumber" name="69" href="#69">69</a>  <em class="jxr_javadoccomment"> * {@link SslContext} sslCtx = {@link SslContextBuilder#forServer(File, File) SslContextBuilder.forServer(...)}.build();</em>
-<a class="jxr_linenumber" name="70" href="#70">70</a>  <em class="jxr_javadoccomment"> * p.addLast("ssl", {@link #newEngine(ByteBufAllocator) sslCtx.newEngine(channel.alloc())});</em>
+<a class="jxr_linenumber" name="70" href="#70">70</a>  <em class="jxr_javadoccomment"> * p.addLast("ssl", {@link #newHandler(ByteBufAllocator) sslCtx.newHandler(channel.alloc())});</em>
 <a class="jxr_linenumber" name="71" href="#71">71</a>  <em class="jxr_javadoccomment"> * ...</em>
 <a class="jxr_linenumber" name="72" href="#72">72</a>  <em class="jxr_javadoccomment"> * &lt;/pre&gt;</em>
 <a class="jxr_linenumber" name="73" href="#73">73</a>  <em class="jxr_javadoccomment"> *</em>
@@ -86,7 +86,7 @@
 <a class="jxr_linenumber" name="76" href="#76">76</a>  <em class="jxr_javadoccomment"> * // In your {@link ChannelInitializer}:</em>
 <a class="jxr_linenumber" name="77" href="#77">77</a>  <em class="jxr_javadoccomment"> * {@link ChannelPipeline} p = channel.pipeline();</em>
 <a class="jxr_linenumber" name="78" href="#78">78</a>  <em class="jxr_javadoccomment"> * {@link SslContext} sslCtx = {@link SslContextBuilder#forClient() SslContextBuilder.forClient()}.build();</em>
-<a class="jxr_linenumber" name="79" href="#79">79</a>  <em class="jxr_javadoccomment"> * p.addLast("ssl", {@link #newEngine(ByteBufAllocator, String, int) sslCtx.newEngine(channel.alloc(), host, port)});</em>
+<a class="jxr_linenumber" name="79" href="#79">79</a>  <em class="jxr_javadoccomment"> * p.addLast("ssl", {@link #newHandler(ByteBufAllocator, String, int) sslCtx.newHandler(channel.alloc(), host, port)});</em>
 <a class="jxr_linenumber" name="80" href="#80">80</a>  <em class="jxr_javadoccomment"> * ...</em>
 <a class="jxr_linenumber" name="81" href="#81">81</a>  <em class="jxr_javadoccomment"> * &lt;/pre&gt;</em>
 <a class="jxr_linenumber" name="82" href="#82">82</a>  <em class="jxr_javadoccomment"> */</em>
@@ -866,7 +866,7 @@
 <a class="jxr_linenumber" name="856" href="#856">856</a>     <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="857" href="#857">857</a> <em class="jxr_javadoccomment">     * Generates a key specification for an (encrypted) private key.</em>
 <a class="jxr_linenumber" name="858" href="#858">858</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="859" href="#859">859</a> <em class="jxr_javadoccomment">     * @param password characters, if {@code null} or empty an unencrypted key is assumed</em>
+<a class="jxr_linenumber" name="859" href="#859">859</a> <em class="jxr_javadoccomment">     * @param password characters, if {@code null} an unencrypted key is assumed</em>
 <a class="jxr_linenumber" name="860" href="#860">860</a> <em class="jxr_javadoccomment">     * @param key bytes of the DER encoded private key</em>
 <a class="jxr_linenumber" name="861" href="#861">861</a> <em class="jxr_javadoccomment">     *</em>
 <a class="jxr_linenumber" name="862" href="#862">862</a> <em class="jxr_javadoccomment">     * @return a key specification</em>
@@ -883,7 +883,7 @@
 <a class="jxr_linenumber" name="873" href="#873">873</a>             <strong class="jxr_keyword">throws</strong> IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeySpecException,
 <a class="jxr_linenumber" name="874" href="#874">874</a>             InvalidKeyException, InvalidAlgorithmParameterException {
 <a class="jxr_linenumber" name="875" href="#875">875</a> 
-<a class="jxr_linenumber" name="876" href="#876">876</a>         <strong class="jxr_keyword">if</strong> (password == <strong class="jxr_keyword">null</strong> || password.length == 0) {
+<a class="jxr_linenumber" name="876" href="#876">876</a>         <strong class="jxr_keyword">if</strong> (password == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="877" href="#877">877</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PKCS8EncodedKeySpec(key);
 <a class="jxr_linenumber" name="878" href="#878">878</a>         }
 <a class="jxr_linenumber" name="879" href="#879">879</a> 
@@ -943,91 +943,88 @@
 <a class="jxr_linenumber" name="933" href="#933">933</a>         byte[] encodedKey = <strong class="jxr_keyword">new</strong> byte[encodedKeyBuf.readableBytes()];
 <a class="jxr_linenumber" name="934" href="#934">934</a>         encodedKeyBuf.readBytes(encodedKey).release();
 <a class="jxr_linenumber" name="935" href="#935">935</a> 
-<a class="jxr_linenumber" name="936" href="#936">936</a>         PKCS8EncodedKeySpec encodedKeySpec = generateKeySpec(keyPassword == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : keyPassword.toCharArray(),
-<a class="jxr_linenumber" name="937" href="#937">937</a>                                                              encodedKey);
-<a class="jxr_linenumber" name="938" href="#938">938</a> 
-<a class="jxr_linenumber" name="939" href="#939">939</a>         PrivateKey key;
-<a class="jxr_linenumber" name="940" href="#940">940</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="941" href="#941">941</a>             key = KeyFactory.getInstance(<span class="jxr_string">"RSA"</span>).generatePrivate(encodedKeySpec);
-<a class="jxr_linenumber" name="942" href="#942">942</a>         } <strong class="jxr_keyword">catch</strong> (InvalidKeySpecException ignore) {
-<a class="jxr_linenumber" name="943" href="#943">943</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="944" href="#944">944</a>                 key = KeyFactory.getInstance(<span class="jxr_string">"DSA"</span>).generatePrivate(encodedKeySpec);
-<a class="jxr_linenumber" name="945" href="#945">945</a>             } <strong class="jxr_keyword">catch</strong> (InvalidKeySpecException ignore2) {
-<a class="jxr_linenumber" name="946" href="#946">946</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="947" href="#947">947</a>                     key = KeyFactory.getInstance(<span class="jxr_string">"EC"</span>).generatePrivate(encodedKeySpec);
-<a class="jxr_linenumber" name="948" href="#948">948</a>                 } <strong class="jxr_keyword">catch</strong> (InvalidKeySpecException e) {
-<a class="jxr_linenumber" name="949" href="#949">949</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InvalidKeySpecException(<span class="jxr_string">"Neither RSA, DSA nor EC worked"</span>, e);
-<a class="jxr_linenumber" name="950" href="#950">950</a>                 }
-<a class="jxr_linenumber" name="951" href="#951">951</a>             }
-<a class="jxr_linenumber" name="952" href="#952">952</a>         }
-<a class="jxr_linenumber" name="953" href="#953">953</a>         <strong class="jxr_keyword">return</strong> key;
-<a class="jxr_linenumber" name="954" href="#954">954</a>     }
-<a class="jxr_linenumber" name="955" href="#955">955</a> 
-<a class="jxr_linenumber" name="956" href="#956">956</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="957" href="#957">957</a> <em class="jxr_javadoccomment">     * Build a {@link TrustManagerFactory} from a certificate chain file.</em>
-<a class="jxr_linenumber" name="958" href="#958">958</a> <em class="jxr_javadoccomment">     * @param certChainFile The certificate file to build from.</em>
-<a class="jxr_linenumber" name="959" href="#959">959</a> <em class="jxr_javadoccomment">     * @param trustManagerFactory The existing {@link TrustManagerFactory} that will be used if not {@code null}.</em>
-<a class="jxr_linenumber" name="960" href="#960">960</a> <em class="jxr_javadoccomment">     * @return A {@link TrustManagerFactory} which contains the certificates in {@code certChainFile}</em>
-<a class="jxr_linenumber" name="961" href="#961">961</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="962" href="#962">962</a>     @Deprecated
-<a class="jxr_linenumber" name="963" href="#963">963</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> TrustManagerFactory buildTrustManagerFactory(
-<a class="jxr_linenumber" name="964" href="#964">964</a>             File certChainFile, TrustManagerFactory trustManagerFactory)
-<a class="jxr_linenumber" name="965" href="#965">965</a>             <strong class="jxr_keyword">throws</strong> NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException {
-<a class="jxr_linenumber" name="966" href="#966">966</a>         X509Certificate[] x509Certs = toX509Certificates(certChainFile);
+<a class="jxr_linenumber" name="936" href="#936">936</a>         PKCS8EncodedKeySpec encodedKeySpec = generateKeySpec(
+<a class="jxr_linenumber" name="937" href="#937">937</a>                 keyPassword == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : keyPassword.toCharArray(), encodedKey);
+<a class="jxr_linenumber" name="938" href="#938">938</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="939" href="#939">939</a>             <strong class="jxr_keyword">return</strong> KeyFactory.getInstance(<span class="jxr_string">"RSA"</span>).generatePrivate(encodedKeySpec);
+<a class="jxr_linenumber" name="940" href="#940">940</a>         } <strong class="jxr_keyword">catch</strong> (InvalidKeySpecException ignore) {
+<a class="jxr_linenumber" name="941" href="#941">941</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="942" href="#942">942</a>                 <strong class="jxr_keyword">return</strong> KeyFactory.getInstance(<span class="jxr_string">"DSA"</span>).generatePrivate(encodedKeySpec);
+<a class="jxr_linenumber" name="943" href="#943">943</a>             } <strong class="jxr_keyword">catch</strong> (InvalidKeySpecException ignore2) {
+<a class="jxr_linenumber" name="944" href="#944">944</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="945" href="#945">945</a>                     <strong class="jxr_keyword">return</strong>  KeyFactory.getInstance(<span class="jxr_string">"EC"</span>).generatePrivate(encodedKeySpec);
+<a class="jxr_linenumber" name="946" href="#946">946</a>                 } <strong class="jxr_keyword">catch</strong> (InvalidKeySpecException e) {
+<a class="jxr_linenumber" name="947" href="#947">947</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InvalidKeySpecException(<span class="jxr_string">"Neither RSA, DSA nor EC worked"</span>, e);
+<a class="jxr_linenumber" name="948" href="#948">948</a>                 }
+<a class="jxr_linenumber" name="949" href="#949">949</a>             }
+<a class="jxr_linenumber" name="950" href="#950">950</a>         }
+<a class="jxr_linenumber" name="951" href="#951">951</a>     }
+<a class="jxr_linenumber" name="952" href="#952">952</a> 
+<a class="jxr_linenumber" name="953" href="#953">953</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="954" href="#954">954</a> <em class="jxr_javadoccomment">     * Build a {@link TrustManagerFactory} from a certificate chain file.</em>
+<a class="jxr_linenumber" name="955" href="#955">955</a> <em class="jxr_javadoccomment">     * @param certChainFile The certificate file to build from.</em>
+<a class="jxr_linenumber" name="956" href="#956">956</a> <em class="jxr_javadoccomment">     * @param trustManagerFactory The existing {@link TrustManagerFactory} that will be used if not {@code null}.</em>
+<a class="jxr_linenumber" name="957" href="#957">957</a> <em class="jxr_javadoccomment">     * @return A {@link TrustManagerFactory} which contains the certificates in {@code certChainFile}</em>
+<a class="jxr_linenumber" name="958" href="#958">958</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="959" href="#959">959</a>     @Deprecated
+<a class="jxr_linenumber" name="960" href="#960">960</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> TrustManagerFactory buildTrustManagerFactory(
+<a class="jxr_linenumber" name="961" href="#961">961</a>             File certChainFile, TrustManagerFactory trustManagerFactory)
+<a class="jxr_linenumber" name="962" href="#962">962</a>             <strong class="jxr_keyword">throws</strong> NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException {
+<a class="jxr_linenumber" name="963" href="#963">963</a>         X509Certificate[] x509Certs = toX509Certificates(certChainFile);
+<a class="jxr_linenumber" name="964" href="#964">964</a> 
+<a class="jxr_linenumber" name="965" href="#965">965</a>         <strong class="jxr_keyword">return</strong> buildTrustManagerFactory(x509Certs, trustManagerFactory);
+<a class="jxr_linenumber" name="966" href="#966">966</a>     }
 <a class="jxr_linenumber" name="967" href="#967">967</a> 
-<a class="jxr_linenumber" name="968" href="#968">968</a>         <strong class="jxr_keyword">return</strong> buildTrustManagerFactory(x509Certs, trustManagerFactory);
-<a class="jxr_linenumber" name="969" href="#969">969</a>     }
-<a class="jxr_linenumber" name="970" href="#970">970</a> 
-<a class="jxr_linenumber" name="971" href="#971">971</a>     <strong class="jxr_keyword">static</strong> X509Certificate[] toX509Certificates(File file) <strong class="jxr_keyword">throws</strong> CertificateException {
-<a class="jxr_linenumber" name="972" href="#972">972</a>         <strong class="jxr_keyword">if</strong> (file == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="973" href="#973">973</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="974" href="#974">974</a>         }
-<a class="jxr_linenumber" name="975" href="#975">975</a>         <strong class="jxr_keyword">return</strong> getCertificatesFromBuffers(PemReader.readCertificates(file));
-<a class="jxr_linenumber" name="976" href="#976">976</a>     }
-<a class="jxr_linenumber" name="977" href="#977">977</a> 
-<a class="jxr_linenumber" name="978" href="#978">978</a>     <strong class="jxr_keyword">static</strong> X509Certificate[] toX509Certificates(InputStream in) <strong class="jxr_keyword">throws</strong> CertificateException {
-<a class="jxr_linenumber" name="979" href="#979">979</a>         <strong class="jxr_keyword">if</strong> (in == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="980" href="#980">980</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="981" href="#981">981</a>         }
-<a class="jxr_linenumber" name="982" href="#982">982</a>         <strong class="jxr_keyword">return</strong> getCertificatesFromBuffers(PemReader.readCertificates(in));
-<a class="jxr_linenumber" name="983" href="#983">983</a>     }
-<a class="jxr_linenumber" name="984" href="#984">984</a> 
-<a class="jxr_linenumber" name="985" href="#985">985</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> X509Certificate[] getCertificatesFromBuffers(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a>[] certs) <strong class="jxr_keyword">throws</strong> CertificateException {
-<a class="jxr_linenumber" name="986" href="#986">986</a>         CertificateFactory cf = CertificateFactory.getInstance(<span class="jxr_string">"X.509"</span>);
-<a class="jxr_linenumber" name="987" href="#987">987</a>         X509Certificate[] x509Certs = <strong class="jxr_keyword">new</strong> X509Certificate[certs.length];
-<a class="jxr_linenumber" name="988" href="#988">988</a> 
-<a class="jxr_linenumber" name="989" href="#989">989</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="990" href="#990">990</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; certs.length; i++) {
-<a class="jxr_linenumber" name="991" href="#991">991</a>                 x509Certs[i] = (X509Certificate) cf.generateCertificate(<strong class="jxr_keyword">new</strong> ByteBufInputStream(certs[i]));
-<a class="jxr_linenumber" name="992" href="#992">992</a>             }
-<a class="jxr_linenumber" name="993" href="#993">993</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="994" href="#994">994</a>             <strong class="jxr_keyword">for</strong> (ByteBuf buf: certs) {
-<a class="jxr_linenumber" name="995" href="#995">995</a>                 buf.release();
-<a class="jxr_linenumber" name="996" href="#996">996</a>             }
-<a class="jxr_linenumber" name="997" href="#997">997</a>         }
-<a class="jxr_linenumber" name="998" href="#998">998</a>         <strong class="jxr_keyword">return</strong> x509Certs;
-<a class="jxr_linenumber" name="999" href="#999">999</a>     }
-<a class="jxr_linenumber" name="1000" href="#1000">1000</a> 
-<a class="jxr_linenumber" name="1001" href="#1001">1001</a>     <strong class="jxr_keyword">static</strong> TrustManagerFactory buildTrustManagerFactory(
-<a class="jxr_linenumber" name="1002" href="#1002">1002</a>             X509Certificate[] certChain, TrustManagerFactory trustManagerFactory)
-<a class="jxr_linenumber" name="1003" href="#1003">1003</a>             <strong class="jxr_keyword">throws</strong> NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException {
-<a class="jxr_linenumber" name="1004" href="#1004">1004</a>         KeyStore ks = KeyStore.getInstance(<span class="jxr_string">"JKS"</span>);
-<a class="jxr_linenumber" name="1005" href="#1005">1005</a>         ks.load(<strong class="jxr_keyword">null</strong>, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="1006" href="#1006">1006</a> 
-<a class="jxr_linenumber" name="1007" href="#1007">1007</a>         <strong class="jxr_keyword">for</strong> (X509Certificate cert: certChain) {
-<a class="jxr_linenumber" name="1008" href="#1008">1008</a>             X500Principal principal = cert.getSubjectX500Principal();
-<a class="jxr_linenumber" name="1009" href="#1009">1009</a>             ks.setCertificateEntry(principal.getName(<span class="jxr_string">"RFC2253"</span>), cert);
-<a class="jxr_linenumber" name="1010" href="#1010">1010</a>         }
-<a class="jxr_linenumber" name="1011" href="#1011">1011</a> 
-<a class="jxr_linenumber" name="1012" href="#1012">1012</a>         <em class="jxr_comment">// Set up trust manager factory to use our key store.</em>
-<a class="jxr_linenumber" name="1013" href="#1013">1013</a>         <strong class="jxr_keyword">if</strong> (trustManagerFactory == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1014" href="#1014">1014</a>             trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-<a class="jxr_linenumber" name="1015" href="#1015">1015</a>         }
-<a class="jxr_linenumber" name="1016" href="#1016">1016</a>         trustManagerFactory.init(ks);
-<a class="jxr_linenumber" name="1017" href="#1017">1017</a> 
-<a class="jxr_linenumber" name="1018" href="#1018">1018</a>         <strong class="jxr_keyword">return</strong> trustManagerFactory;
-<a class="jxr_linenumber" name="1019" href="#1019">1019</a>     }
-<a class="jxr_linenumber" name="1020" href="#1020">1020</a> }
+<a class="jxr_linenumber" name="968" href="#968">968</a>     <strong class="jxr_keyword">static</strong> X509Certificate[] toX509Certificates(File file) <strong class="jxr_keyword">throws</strong> CertificateException {
+<a class="jxr_linenumber" name="969" href="#969">969</a>         <strong class="jxr_keyword">if</strong> (file == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="970" href="#970">970</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="971" href="#971">971</a>         }
+<a class="jxr_linenumber" name="972" href="#972">972</a>         <strong class="jxr_keyword">return</strong> getCertificatesFromBuffers(PemReader.readCertificates(file));
+<a class="jxr_linenumber" name="973" href="#973">973</a>     }
+<a class="jxr_linenumber" name="974" href="#974">974</a> 
+<a class="jxr_linenumber" name="975" href="#975">975</a>     <strong class="jxr_keyword">static</strong> X509Certificate[] toX509Certificates(InputStream in) <strong class="jxr_keyword">throws</strong> CertificateException {
+<a class="jxr_linenumber" name="976" href="#976">976</a>         <strong class="jxr_keyword">if</strong> (in == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="977" href="#977">977</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="978" href="#978">978</a>         }
+<a class="jxr_linenumber" name="979" href="#979">979</a>         <strong class="jxr_keyword">return</strong> getCertificatesFromBuffers(PemReader.readCertificates(in));
+<a class="jxr_linenumber" name="980" href="#980">980</a>     }
+<a class="jxr_linenumber" name="981" href="#981">981</a> 
+<a class="jxr_linenumber" name="982" href="#982">982</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> X509Certificate[] getCertificatesFromBuffers(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a>[] certs) <strong class="jxr_keyword">throws</strong> CertificateException {
+<a class="jxr_linenumber" name="983" href="#983">983</a>         CertificateFactory cf = CertificateFactory.getInstance(<span class="jxr_string">"X.509"</span>);
+<a class="jxr_linenumber" name="984" href="#984">984</a>         X509Certificate[] x509Certs = <strong class="jxr_keyword">new</strong> X509Certificate[certs.length];
+<a class="jxr_linenumber" name="985" href="#985">985</a> 
+<a class="jxr_linenumber" name="986" href="#986">986</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="987" href="#987">987</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; certs.length; i++) {
+<a class="jxr_linenumber" name="988" href="#988">988</a>                 x509Certs[i] = (X509Certificate) cf.generateCertificate(<strong class="jxr_keyword">new</strong> ByteBufInputStream(certs[i]));
+<a class="jxr_linenumber" name="989" href="#989">989</a>             }
+<a class="jxr_linenumber" name="990" href="#990">990</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="991" href="#991">991</a>             <strong class="jxr_keyword">for</strong> (ByteBuf buf: certs) {
+<a class="jxr_linenumber" name="992" href="#992">992</a>                 buf.release();
+<a class="jxr_linenumber" name="993" href="#993">993</a>             }
+<a class="jxr_linenumber" name="994" href="#994">994</a>         }
+<a class="jxr_linenumber" name="995" href="#995">995</a>         <strong class="jxr_keyword">return</strong> x509Certs;
+<a class="jxr_linenumber" name="996" href="#996">996</a>     }
+<a class="jxr_linenumber" name="997" href="#997">997</a> 
+<a class="jxr_linenumber" name="998" href="#998">998</a>     <strong class="jxr_keyword">static</strong> TrustManagerFactory buildTrustManagerFactory(
+<a class="jxr_linenumber" name="999" href="#999">999</a>             X509Certificate[] certChain, TrustManagerFactory trustManagerFactory)
+<a class="jxr_linenumber" name="1000" href="#1000">1000</a>             <strong class="jxr_keyword">throws</strong> NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException {
+<a class="jxr_linenumber" name="1001" href="#1001">1001</a>         KeyStore ks = KeyStore.getInstance(<span class="jxr_string">"JKS"</span>);
+<a class="jxr_linenumber" name="1002" href="#1002">1002</a>         ks.load(<strong class="jxr_keyword">null</strong>, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="1003" href="#1003">1003</a> 
+<a class="jxr_linenumber" name="1004" href="#1004">1004</a>         <strong class="jxr_keyword">for</strong> (X509Certificate cert: certChain) {
+<a class="jxr_linenumber" name="1005" href="#1005">1005</a>             X500Principal principal = cert.getSubjectX500Principal();
+<a class="jxr_linenumber" name="1006" href="#1006">1006</a>             ks.setCertificateEntry(principal.getName(<span class="jxr_string">"RFC2253"</span>), cert);
+<a class="jxr_linenumber" name="1007" href="#1007">1007</a>         }
+<a class="jxr_linenumber" name="1008" href="#1008">1008</a> 
+<a class="jxr_linenumber" name="1009" href="#1009">1009</a>         <em class="jxr_comment">// Set up trust manager factory to use our key store.</em>
+<a class="jxr_linenumber" name="1010" href="#1010">1010</a>         <strong class="jxr_keyword">if</strong> (trustManagerFactory == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1011" href="#1011">1011</a>             trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+<a class="jxr_linenumber" name="1012" href="#1012">1012</a>         }
+<a class="jxr_linenumber" name="1013" href="#1013">1013</a>         trustManagerFactory.init(ks);
+<a class="jxr_linenumber" name="1014" href="#1014">1014</a> 
+<a class="jxr_linenumber" name="1015" href="#1015">1015</a>         <strong class="jxr_keyword">return</strong> trustManagerFactory;
+<a class="jxr_linenumber" name="1016" href="#1016">1016</a>     }
+<a class="jxr_linenumber" name="1017" href="#1017">1017</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

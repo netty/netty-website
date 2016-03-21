@@ -449,29 +449,33 @@
 <a class="jxr_linenumber" name="439" href="#439">439</a> <em class="jxr_javadoccomment">     * override this for some special cleanup operation.</em>
 <a class="jxr_linenumber" name="440" href="#440">440</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="441" href="#441">441</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> decodeLast(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="442" href="#442">442</a>         decode(ctx, in, out);
-<a class="jxr_linenumber" name="443" href="#443">443</a>     }
-<a class="jxr_linenumber" name="444" href="#444">444</a> 
-<a class="jxr_linenumber" name="445" href="#445">445</a>     <strong class="jxr_keyword">static</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> expandCumulation(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <strong class="jxr_keyword">int</strong> readable) {
-<a class="jxr_linenumber" name="446" href="#446">446</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> oldCumulation = cumulation;
-<a class="jxr_linenumber" name="447" href="#447">447</a>         cumulation = alloc.buffer(oldCumulation.readableBytes() + readable);
-<a class="jxr_linenumber" name="448" href="#448">448</a>         cumulation.writeBytes(oldCumulation);
-<a class="jxr_linenumber" name="449" href="#449">449</a>         oldCumulation.release();
-<a class="jxr_linenumber" name="450" href="#450">450</a>         <strong class="jxr_keyword">return</strong> cumulation;
-<a class="jxr_linenumber" name="451" href="#451">451</a>     }
-<a class="jxr_linenumber" name="452" href="#452">452</a> 
-<a class="jxr_linenumber" name="453" href="#453">453</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="454" href="#454">454</a> <em class="jxr_javadoccomment">     * Cumulate {@link ByteBuf}s.</em>
-<a class="jxr_linenumber" name="455" href="#455">455</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="456" href="#456">456</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">interface</strong> <a href="../../../../io/netty/handler/codec/ByteToMessageDecoder.html">Cumulator</a> {
-<a class="jxr_linenumber" name="457" href="#457">457</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="458" href="#458">458</a> <em class="jxr_javadoccomment">         * Cumulate the given {@link ByteBuf}s and return the {@link ByteBuf} that holds the cumulated bytes.</em>
-<a class="jxr_linenumber" name="459" href="#459">459</a> <em class="jxr_javadoccomment">         * The implementation is responsible to correctly handle the life-cycle of the given {@link ByteBuf}s and so</em>
-<a class="jxr_linenumber" name="460" href="#460">460</a> <em class="jxr_javadoccomment">         * call {@link ByteBuf#release()} if a {@link ByteBuf} is fully consumed.</em>
-<a class="jxr_linenumber" name="461" href="#461">461</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="462" href="#462">462</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulate(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in);
-<a class="jxr_linenumber" name="463" href="#463">463</a>     }
-<a class="jxr_linenumber" name="464" href="#464">464</a> }
+<a class="jxr_linenumber" name="442" href="#442">442</a>         <strong class="jxr_keyword">if</strong> (in.isReadable()) {
+<a class="jxr_linenumber" name="443" href="#443">443</a>             <em class="jxr_comment">// Only call decode() if there is something left in the buffer to decode.</em>
+<a class="jxr_linenumber" name="444" href="#444">444</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/4386</em>
+<a class="jxr_linenumber" name="445" href="#445">445</a>             decode(ctx, in, out);
+<a class="jxr_linenumber" name="446" href="#446">446</a>         }
+<a class="jxr_linenumber" name="447" href="#447">447</a>     }
+<a class="jxr_linenumber" name="448" href="#448">448</a> 
+<a class="jxr_linenumber" name="449" href="#449">449</a>     <strong class="jxr_keyword">static</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> expandCumulation(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <strong class="jxr_keyword">int</strong> readable) {
+<a class="jxr_linenumber" name="450" href="#450">450</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> oldCumulation = cumulation;
+<a class="jxr_linenumber" name="451" href="#451">451</a>         cumulation = alloc.buffer(oldCumulation.readableBytes() + readable);
+<a class="jxr_linenumber" name="452" href="#452">452</a>         cumulation.writeBytes(oldCumulation);
+<a class="jxr_linenumber" name="453" href="#453">453</a>         oldCumulation.release();
+<a class="jxr_linenumber" name="454" href="#454">454</a>         <strong class="jxr_keyword">return</strong> cumulation;
+<a class="jxr_linenumber" name="455" href="#455">455</a>     }
+<a class="jxr_linenumber" name="456" href="#456">456</a> 
+<a class="jxr_linenumber" name="457" href="#457">457</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="458" href="#458">458</a> <em class="jxr_javadoccomment">     * Cumulate {@link ByteBuf}s.</em>
+<a class="jxr_linenumber" name="459" href="#459">459</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="460" href="#460">460</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">interface</strong> <a href="../../../../io/netty/handler/codec/ByteToMessageDecoder.html">Cumulator</a> {
+<a class="jxr_linenumber" name="461" href="#461">461</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="462" href="#462">462</a> <em class="jxr_javadoccomment">         * Cumulate the given {@link ByteBuf}s and return the {@link ByteBuf} that holds the cumulated bytes.</em>
+<a class="jxr_linenumber" name="463" href="#463">463</a> <em class="jxr_javadoccomment">         * The implementation is responsible to correctly handle the life-cycle of the given {@link ByteBuf}s and so</em>
+<a class="jxr_linenumber" name="464" href="#464">464</a> <em class="jxr_javadoccomment">         * call {@link ByteBuf#release()} if a {@link ByteBuf} is fully consumed.</em>
+<a class="jxr_linenumber" name="465" href="#465">465</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="466" href="#466">466</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulate(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in);
+<a class="jxr_linenumber" name="467" href="#467">467</a>     }
+<a class="jxr_linenumber" name="468" href="#468">468</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

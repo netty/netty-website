@@ -293,258 +293,260 @@
 <a class="jxr_linenumber" name="283" href="#283">283</a>         <strong class="jxr_keyword">final</strong> String name = question.name().toLowerCase(Locale.US);
 <a class="jxr_linenumber" name="284" href="#284">284</a>         String resolved = name;
 <a class="jxr_linenumber" name="285" href="#285">285</a>         <strong class="jxr_keyword">boolean</strong> found = false;
-<a class="jxr_linenumber" name="286" href="#286">286</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="287" href="#287">287</a>             String next = cnames.get(resolved);
-<a class="jxr_linenumber" name="288" href="#288">288</a>             <strong class="jxr_keyword">if</strong> (next != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="289" href="#289">289</a>                 found = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="290" href="#290">290</a>                 resolved = next;
-<a class="jxr_linenumber" name="291" href="#291">291</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="292" href="#292">292</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="293" href="#293">293</a>             }
-<a class="jxr_linenumber" name="294" href="#294">294</a>         }
-<a class="jxr_linenumber" name="295" href="#295">295</a> 
-<a class="jxr_linenumber" name="296" href="#296">296</a>         <strong class="jxr_keyword">if</strong> (found) {
-<a class="jxr_linenumber" name="297" href="#297">297</a>             followCname(response.sender(), name, resolved);
-<a class="jxr_linenumber" name="298" href="#298">298</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (trace &amp;&amp; traceEnabled) {
-<a class="jxr_linenumber" name="299" href="#299">299</a>             addTrace(response.sender(), <span class="jxr_string">"no matching CNAME record found"</span>);
-<a class="jxr_linenumber" name="300" href="#300">300</a>         }
-<a class="jxr_linenumber" name="301" href="#301">301</a>     }
-<a class="jxr_linenumber" name="302" href="#302">302</a> 
-<a class="jxr_linenumber" name="303" href="#303">303</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Map&lt;String, String&gt; buildAliasMap(<a href="../../../../io/netty/handler/codec/dns/DnsResponse.html">DnsResponse</a> response) {
-<a class="jxr_linenumber" name="304" href="#304">304</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> answerCount = response.count(DnsSection.ANSWER);
-<a class="jxr_linenumber" name="305" href="#305">305</a>         Map&lt;String, String&gt; cnames = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="306" href="#306">306</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; answerCount; i ++) {
-<a class="jxr_linenumber" name="307" href="#307">307</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsRecord.html">DnsRecord</a> r = response.recordAt(DnsSection.ANSWER, i);
-<a class="jxr_linenumber" name="308" href="#308">308</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsRecordType.html">DnsRecordType</a> type = r.type();
-<a class="jxr_linenumber" name="309" href="#309">309</a>             <strong class="jxr_keyword">if</strong> (type != DnsRecordType.CNAME) {
-<a class="jxr_linenumber" name="310" href="#310">310</a>                 <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="311" href="#311">311</a>             }
-<a class="jxr_linenumber" name="312" href="#312">312</a> 
-<a class="jxr_linenumber" name="313" href="#313">313</a>             <strong class="jxr_keyword">if</strong> (!(r instanceof DnsRawRecord)) {
-<a class="jxr_linenumber" name="314" href="#314">314</a>                 <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="315" href="#315">315</a>             }
-<a class="jxr_linenumber" name="316" href="#316">316</a> 
-<a class="jxr_linenumber" name="317" href="#317">317</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> recordContent = ((ByteBufHolder) r).content();
-<a class="jxr_linenumber" name="318" href="#318">318</a>             <strong class="jxr_keyword">final</strong> String domainName = decodeDomainName(recordContent);
-<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">if</strong> (domainName == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="320" href="#320">320</a>                 <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="321" href="#321">321</a>             }
-<a class="jxr_linenumber" name="322" href="#322">322</a> 
-<a class="jxr_linenumber" name="323" href="#323">323</a>             <strong class="jxr_keyword">if</strong> (cnames == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="324" href="#324">324</a>                 cnames = <strong class="jxr_keyword">new</strong> HashMap&lt;String, String&gt;();
-<a class="jxr_linenumber" name="325" href="#325">325</a>             }
-<a class="jxr_linenumber" name="326" href="#326">326</a> 
-<a class="jxr_linenumber" name="327" href="#327">327</a>             cnames.put(r.name().toLowerCase(Locale.US), domainName.toLowerCase(Locale.US));
-<a class="jxr_linenumber" name="328" href="#328">328</a>         }
-<a class="jxr_linenumber" name="329" href="#329">329</a> 
-<a class="jxr_linenumber" name="330" href="#330">330</a>         <strong class="jxr_keyword">return</strong> cnames != <strong class="jxr_keyword">null</strong>? cnames : Collections.&lt;String, String&gt;emptyMap();
-<a class="jxr_linenumber" name="331" href="#331">331</a>     }
-<a class="jxr_linenumber" name="332" href="#332">332</a> 
-<a class="jxr_linenumber" name="333" href="#333">333</a>     <strong class="jxr_keyword">void</strong> tryToFinishResolve() {
-<a class="jxr_linenumber" name="334" href="#334">334</a>         <strong class="jxr_keyword">if</strong> (!queriesInProgress.isEmpty()) {
-<a class="jxr_linenumber" name="335" href="#335">335</a>             <em class="jxr_comment">// There are still some queries we did not receive responses for.</em>
-<a class="jxr_linenumber" name="336" href="#336">336</a>             <strong class="jxr_keyword">if</strong> (gotPreferredAddress()) {
-<a class="jxr_linenumber" name="337" href="#337">337</a>                 <em class="jxr_comment">// But it's OK to finish the resolution process if we got a resolved address of the preferred type.</em>
-<a class="jxr_linenumber" name="338" href="#338">338</a>                 finishResolve();
-<a class="jxr_linenumber" name="339" href="#339">339</a>             }
-<a class="jxr_linenumber" name="340" href="#340">340</a> 
-<a class="jxr_linenumber" name="341" href="#341">341</a>             <em class="jxr_comment">// We did not get any resolved address of the preferred type, so we can't finish the resolution process.</em>
-<a class="jxr_linenumber" name="342" href="#342">342</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="343" href="#343">343</a>         }
-<a class="jxr_linenumber" name="344" href="#344">344</a> 
-<a class="jxr_linenumber" name="345" href="#345">345</a>         <em class="jxr_comment">// There are no queries left to try.</em>
-<a class="jxr_linenumber" name="346" href="#346">346</a>         <strong class="jxr_keyword">if</strong> (resolvedEntries == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="347" href="#347">347</a>             <em class="jxr_comment">// .. and we could not find any A/AAAA records.</em>
-<a class="jxr_linenumber" name="348" href="#348">348</a>             <strong class="jxr_keyword">if</strong> (!triedCNAME) {
-<a class="jxr_linenumber" name="349" href="#349">349</a>                 <em class="jxr_comment">// As the last resort, try to query CNAME, just in case the name server has it.</em>
-<a class="jxr_linenumber" name="350" href="#350">350</a>                 triedCNAME = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="351" href="#351">351</a>                 query(nameServerAddrs.next(), <strong class="jxr_keyword">new</strong> DefaultDnsQuestion(hostname, DnsRecordType.CNAME));
-<a class="jxr_linenumber" name="352" href="#352">352</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="353" href="#353">353</a>             }
-<a class="jxr_linenumber" name="354" href="#354">354</a>         }
-<a class="jxr_linenumber" name="355" href="#355">355</a> 
-<a class="jxr_linenumber" name="356" href="#356">356</a>         <em class="jxr_comment">// We have at least one resolved address or tried CNAME as the last resort..</em>
-<a class="jxr_linenumber" name="357" href="#357">357</a>         finishResolve();
-<a class="jxr_linenumber" name="358" href="#358">358</a>     }
-<a class="jxr_linenumber" name="359" href="#359">359</a> 
-<a class="jxr_linenumber" name="360" href="#360">360</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> gotPreferredAddress() {
-<a class="jxr_linenumber" name="361" href="#361">361</a>         <strong class="jxr_keyword">if</strong> (resolvedEntries == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="362" href="#362">362</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="363" href="#363">363</a>         }
-<a class="jxr_linenumber" name="364" href="#364">364</a> 
-<a class="jxr_linenumber" name="365" href="#365">365</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> size = resolvedEntries.size();
-<a class="jxr_linenumber" name="366" href="#366">366</a>         <strong class="jxr_keyword">switch</strong> (resolveAddressTypes[0]) {
-<a class="jxr_linenumber" name="367" href="#367">367</a>         <strong class="jxr_keyword">case</strong> IPv4:
-<a class="jxr_linenumber" name="368" href="#368">368</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
-<a class="jxr_linenumber" name="369" href="#369">369</a>                 <strong class="jxr_keyword">if</strong> (resolvedEntries.get(i).address() instanceof Inet4Address) {
-<a class="jxr_linenumber" name="370" href="#370">370</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="371" href="#371">371</a>                 }
-<a class="jxr_linenumber" name="372" href="#372">372</a>             }
-<a class="jxr_linenumber" name="373" href="#373">373</a>             <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="374" href="#374">374</a>         <strong class="jxr_keyword">case</strong> IPv6:
-<a class="jxr_linenumber" name="375" href="#375">375</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
-<a class="jxr_linenumber" name="376" href="#376">376</a>                 <strong class="jxr_keyword">if</strong> (resolvedEntries.get(i).address() instanceof Inet6Address) {
-<a class="jxr_linenumber" name="377" href="#377">377</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="378" href="#378">378</a>                 }
-<a class="jxr_linenumber" name="379" href="#379">379</a>             }
-<a class="jxr_linenumber" name="380" href="#380">380</a>             <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="381" href="#381">381</a>         }
-<a class="jxr_linenumber" name="382" href="#382">382</a> 
-<a class="jxr_linenumber" name="383" href="#383">383</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="384" href="#384">384</a>     }
-<a class="jxr_linenumber" name="385" href="#385">385</a> 
-<a class="jxr_linenumber" name="386" href="#386">386</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> finishResolve() {
-<a class="jxr_linenumber" name="387" href="#387">387</a>         <strong class="jxr_keyword">if</strong> (!queriesInProgress.isEmpty()) {
-<a class="jxr_linenumber" name="388" href="#388">388</a>             <em class="jxr_comment">// If there are queries in progress, we should cancel it because we already finished the resolution.</em>
-<a class="jxr_linenumber" name="389" href="#389">389</a>             <strong class="jxr_keyword">for</strong> (Iterator&lt;Future&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt;&gt; i = queriesInProgress.iterator();
-<a class="jxr_linenumber" name="390" href="#390">390</a>                  i.hasNext();) {
-<a class="jxr_linenumber" name="391" href="#391">391</a>                 Future&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; f = i.next();
-<a class="jxr_linenumber" name="392" href="#392">392</a>                 i.remove();
-<a class="jxr_linenumber" name="393" href="#393">393</a> 
-<a class="jxr_linenumber" name="394" href="#394">394</a>                 <strong class="jxr_keyword">if</strong> (!f.cancel(false)) {
-<a class="jxr_linenumber" name="395" href="#395">395</a>                     f.addListener(RELEASE_RESPONSE);
-<a class="jxr_linenumber" name="396" href="#396">396</a>                 }
-<a class="jxr_linenumber" name="397" href="#397">397</a>             }
-<a class="jxr_linenumber" name="398" href="#398">398</a>         }
-<a class="jxr_linenumber" name="399" href="#399">399</a> 
-<a class="jxr_linenumber" name="400" href="#400">400</a>         <strong class="jxr_keyword">if</strong> (resolvedEntries != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="401" href="#401">401</a>             <em class="jxr_comment">// Found at least one resolved address.</em>
-<a class="jxr_linenumber" name="402" href="#402">402</a>             <strong class="jxr_keyword">for</strong> (InternetProtocolFamily f: resolveAddressTypes) {
-<a class="jxr_linenumber" name="403" href="#403">403</a>                 <strong class="jxr_keyword">if</strong> (finishResolve(f.addressType(), resolvedEntries)) {
-<a class="jxr_linenumber" name="404" href="#404">404</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="405" href="#405">405</a>                 }
-<a class="jxr_linenumber" name="406" href="#406">406</a>             }
-<a class="jxr_linenumber" name="407" href="#407">407</a>         }
-<a class="jxr_linenumber" name="408" href="#408">408</a> 
-<a class="jxr_linenumber" name="409" href="#409">409</a>         <em class="jxr_comment">// No resolved address found.</em>
-<a class="jxr_linenumber" name="410" href="#410">410</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> tries = maxAllowedQueries - allowedQueries;
-<a class="jxr_linenumber" name="411" href="#411">411</a>         <strong class="jxr_keyword">final</strong> StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(64);
-<a class="jxr_linenumber" name="412" href="#412">412</a> 
-<a class="jxr_linenumber" name="413" href="#413">413</a>         buf.append(<span class="jxr_string">"failed to resolve "</span>);
-<a class="jxr_linenumber" name="414" href="#414">414</a>         buf.append(hostname);
-<a class="jxr_linenumber" name="415" href="#415">415</a> 
-<a class="jxr_linenumber" name="416" href="#416">416</a>         <strong class="jxr_keyword">if</strong> (tries &gt; 1) {
-<a class="jxr_linenumber" name="417" href="#417">417</a>             buf.append(<span class="jxr_string">" after "</span>);
-<a class="jxr_linenumber" name="418" href="#418">418</a>             buf.append(tries);
-<a class="jxr_linenumber" name="419" href="#419">419</a>             <strong class="jxr_keyword">if</strong> (trace != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="420" href="#420">420</a>                 buf.append(<span class="jxr_string">" queries:"</span>);
-<a class="jxr_linenumber" name="421" href="#421">421</a>                 buf.append(trace);
-<a class="jxr_linenumber" name="422" href="#422">422</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="423" href="#423">423</a>                 buf.append(<span class="jxr_string">" queries"</span>);
-<a class="jxr_linenumber" name="424" href="#424">424</a>             }
-<a class="jxr_linenumber" name="425" href="#425">425</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="426" href="#426">426</a>             <strong class="jxr_keyword">if</strong> (trace != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="427" href="#427">427</a>                 buf.append(':');
-<a class="jxr_linenumber" name="428" href="#428">428</a>                 buf.append(trace);
-<a class="jxr_linenumber" name="429" href="#429">429</a>             }
-<a class="jxr_linenumber" name="430" href="#430">430</a>         }
-<a class="jxr_linenumber" name="431" href="#431">431</a> 
-<a class="jxr_linenumber" name="432" href="#432">432</a>         <strong class="jxr_keyword">final</strong> UnknownHostException cause = <strong class="jxr_keyword">new</strong> UnknownHostException(buf.toString());
+<a class="jxr_linenumber" name="286" href="#286">286</a>         <strong class="jxr_keyword">while</strong> (!cnames.isEmpty()) { <em class="jxr_comment">// Do not attempt to call Map.remove() when the Map is empty</em>
+<a class="jxr_linenumber" name="287" href="#287">287</a>                                     <em class="jxr_comment">// because it can be Collections.emptyMap()</em>
+<a class="jxr_linenumber" name="288" href="#288">288</a>                                     <em class="jxr_comment">// whose remove() throws a UnsupportedOperationException.</em>
+<a class="jxr_linenumber" name="289" href="#289">289</a>             <strong class="jxr_keyword">final</strong> String next = cnames.remove(resolved);
+<a class="jxr_linenumber" name="290" href="#290">290</a>             <strong class="jxr_keyword">if</strong> (next != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="291" href="#291">291</a>                 found = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="292" href="#292">292</a>                 resolved = next;
+<a class="jxr_linenumber" name="293" href="#293">293</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="294" href="#294">294</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="295" href="#295">295</a>             }
+<a class="jxr_linenumber" name="296" href="#296">296</a>         }
+<a class="jxr_linenumber" name="297" href="#297">297</a> 
+<a class="jxr_linenumber" name="298" href="#298">298</a>         <strong class="jxr_keyword">if</strong> (found) {
+<a class="jxr_linenumber" name="299" href="#299">299</a>             followCname(response.sender(), name, resolved);
+<a class="jxr_linenumber" name="300" href="#300">300</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (trace &amp;&amp; traceEnabled) {
+<a class="jxr_linenumber" name="301" href="#301">301</a>             addTrace(response.sender(), <span class="jxr_string">"no matching CNAME record found"</span>);
+<a class="jxr_linenumber" name="302" href="#302">302</a>         }
+<a class="jxr_linenumber" name="303" href="#303">303</a>     }
+<a class="jxr_linenumber" name="304" href="#304">304</a> 
+<a class="jxr_linenumber" name="305" href="#305">305</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Map&lt;String, String&gt; buildAliasMap(<a href="../../../../io/netty/handler/codec/dns/DnsResponse.html">DnsResponse</a> response) {
+<a class="jxr_linenumber" name="306" href="#306">306</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> answerCount = response.count(DnsSection.ANSWER);
+<a class="jxr_linenumber" name="307" href="#307">307</a>         Map&lt;String, String&gt; cnames = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="308" href="#308">308</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; answerCount; i ++) {
+<a class="jxr_linenumber" name="309" href="#309">309</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsRecord.html">DnsRecord</a> r = response.recordAt(DnsSection.ANSWER, i);
+<a class="jxr_linenumber" name="310" href="#310">310</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/codec/dns/DnsRecordType.html">DnsRecordType</a> type = r.type();
+<a class="jxr_linenumber" name="311" href="#311">311</a>             <strong class="jxr_keyword">if</strong> (type != DnsRecordType.CNAME) {
+<a class="jxr_linenumber" name="312" href="#312">312</a>                 <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="313" href="#313">313</a>             }
+<a class="jxr_linenumber" name="314" href="#314">314</a> 
+<a class="jxr_linenumber" name="315" href="#315">315</a>             <strong class="jxr_keyword">if</strong> (!(r instanceof DnsRawRecord)) {
+<a class="jxr_linenumber" name="316" href="#316">316</a>                 <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="317" href="#317">317</a>             }
+<a class="jxr_linenumber" name="318" href="#318">318</a> 
+<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> recordContent = ((ByteBufHolder) r).content();
+<a class="jxr_linenumber" name="320" href="#320">320</a>             <strong class="jxr_keyword">final</strong> String domainName = decodeDomainName(recordContent);
+<a class="jxr_linenumber" name="321" href="#321">321</a>             <strong class="jxr_keyword">if</strong> (domainName == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="322" href="#322">322</a>                 <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="323" href="#323">323</a>             }
+<a class="jxr_linenumber" name="324" href="#324">324</a> 
+<a class="jxr_linenumber" name="325" href="#325">325</a>             <strong class="jxr_keyword">if</strong> (cnames == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="326" href="#326">326</a>                 cnames = <strong class="jxr_keyword">new</strong> HashMap&lt;String, String&gt;();
+<a class="jxr_linenumber" name="327" href="#327">327</a>             }
+<a class="jxr_linenumber" name="328" href="#328">328</a> 
+<a class="jxr_linenumber" name="329" href="#329">329</a>             cnames.put(r.name().toLowerCase(Locale.US), domainName.toLowerCase(Locale.US));
+<a class="jxr_linenumber" name="330" href="#330">330</a>         }
+<a class="jxr_linenumber" name="331" href="#331">331</a> 
+<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">return</strong> cnames != <strong class="jxr_keyword">null</strong>? cnames : Collections.&lt;String, String&gt;emptyMap();
+<a class="jxr_linenumber" name="333" href="#333">333</a>     }
+<a class="jxr_linenumber" name="334" href="#334">334</a> 
+<a class="jxr_linenumber" name="335" href="#335">335</a>     <strong class="jxr_keyword">void</strong> tryToFinishResolve() {
+<a class="jxr_linenumber" name="336" href="#336">336</a>         <strong class="jxr_keyword">if</strong> (!queriesInProgress.isEmpty()) {
+<a class="jxr_linenumber" name="337" href="#337">337</a>             <em class="jxr_comment">// There are still some queries we did not receive responses for.</em>
+<a class="jxr_linenumber" name="338" href="#338">338</a>             <strong class="jxr_keyword">if</strong> (gotPreferredAddress()) {
+<a class="jxr_linenumber" name="339" href="#339">339</a>                 <em class="jxr_comment">// But it's OK to finish the resolution process if we got a resolved address of the preferred type.</em>
+<a class="jxr_linenumber" name="340" href="#340">340</a>                 finishResolve();
+<a class="jxr_linenumber" name="341" href="#341">341</a>             }
+<a class="jxr_linenumber" name="342" href="#342">342</a> 
+<a class="jxr_linenumber" name="343" href="#343">343</a>             <em class="jxr_comment">// We did not get any resolved address of the preferred type, so we can't finish the resolution process.</em>
+<a class="jxr_linenumber" name="344" href="#344">344</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="345" href="#345">345</a>         }
+<a class="jxr_linenumber" name="346" href="#346">346</a> 
+<a class="jxr_linenumber" name="347" href="#347">347</a>         <em class="jxr_comment">// There are no queries left to try.</em>
+<a class="jxr_linenumber" name="348" href="#348">348</a>         <strong class="jxr_keyword">if</strong> (resolvedEntries == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="349" href="#349">349</a>             <em class="jxr_comment">// .. and we could not find any A/AAAA records.</em>
+<a class="jxr_linenumber" name="350" href="#350">350</a>             <strong class="jxr_keyword">if</strong> (!triedCNAME) {
+<a class="jxr_linenumber" name="351" href="#351">351</a>                 <em class="jxr_comment">// As the last resort, try to query CNAME, just in case the name server has it.</em>
+<a class="jxr_linenumber" name="352" href="#352">352</a>                 triedCNAME = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="353" href="#353">353</a>                 query(nameServerAddrs.next(), <strong class="jxr_keyword">new</strong> DefaultDnsQuestion(hostname, DnsRecordType.CNAME));
+<a class="jxr_linenumber" name="354" href="#354">354</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="355" href="#355">355</a>             }
+<a class="jxr_linenumber" name="356" href="#356">356</a>         }
+<a class="jxr_linenumber" name="357" href="#357">357</a> 
+<a class="jxr_linenumber" name="358" href="#358">358</a>         <em class="jxr_comment">// We have at least one resolved address or tried CNAME as the last resort..</em>
+<a class="jxr_linenumber" name="359" href="#359">359</a>         finishResolve();
+<a class="jxr_linenumber" name="360" href="#360">360</a>     }
+<a class="jxr_linenumber" name="361" href="#361">361</a> 
+<a class="jxr_linenumber" name="362" href="#362">362</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> gotPreferredAddress() {
+<a class="jxr_linenumber" name="363" href="#363">363</a>         <strong class="jxr_keyword">if</strong> (resolvedEntries == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="364" href="#364">364</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="365" href="#365">365</a>         }
+<a class="jxr_linenumber" name="366" href="#366">366</a> 
+<a class="jxr_linenumber" name="367" href="#367">367</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> size = resolvedEntries.size();
+<a class="jxr_linenumber" name="368" href="#368">368</a>         <strong class="jxr_keyword">switch</strong> (resolveAddressTypes[0]) {
+<a class="jxr_linenumber" name="369" href="#369">369</a>         <strong class="jxr_keyword">case</strong> IPv4:
+<a class="jxr_linenumber" name="370" href="#370">370</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
+<a class="jxr_linenumber" name="371" href="#371">371</a>                 <strong class="jxr_keyword">if</strong> (resolvedEntries.get(i).address() instanceof Inet4Address) {
+<a class="jxr_linenumber" name="372" href="#372">372</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="373" href="#373">373</a>                 }
+<a class="jxr_linenumber" name="374" href="#374">374</a>             }
+<a class="jxr_linenumber" name="375" href="#375">375</a>             <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="376" href="#376">376</a>         <strong class="jxr_keyword">case</strong> IPv6:
+<a class="jxr_linenumber" name="377" href="#377">377</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
+<a class="jxr_linenumber" name="378" href="#378">378</a>                 <strong class="jxr_keyword">if</strong> (resolvedEntries.get(i).address() instanceof Inet6Address) {
+<a class="jxr_linenumber" name="379" href="#379">379</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="380" href="#380">380</a>                 }
+<a class="jxr_linenumber" name="381" href="#381">381</a>             }
+<a class="jxr_linenumber" name="382" href="#382">382</a>             <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="383" href="#383">383</a>         }
+<a class="jxr_linenumber" name="384" href="#384">384</a> 
+<a class="jxr_linenumber" name="385" href="#385">385</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="386" href="#386">386</a>     }
+<a class="jxr_linenumber" name="387" href="#387">387</a> 
+<a class="jxr_linenumber" name="388" href="#388">388</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> finishResolve() {
+<a class="jxr_linenumber" name="389" href="#389">389</a>         <strong class="jxr_keyword">if</strong> (!queriesInProgress.isEmpty()) {
+<a class="jxr_linenumber" name="390" href="#390">390</a>             <em class="jxr_comment">// If there are queries in progress, we should cancel it because we already finished the resolution.</em>
+<a class="jxr_linenumber" name="391" href="#391">391</a>             <strong class="jxr_keyword">for</strong> (Iterator&lt;Future&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt;&gt; i = queriesInProgress.iterator();
+<a class="jxr_linenumber" name="392" href="#392">392</a>                  i.hasNext();) {
+<a class="jxr_linenumber" name="393" href="#393">393</a>                 Future&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt; f = i.next();
+<a class="jxr_linenumber" name="394" href="#394">394</a>                 i.remove();
+<a class="jxr_linenumber" name="395" href="#395">395</a> 
+<a class="jxr_linenumber" name="396" href="#396">396</a>                 <strong class="jxr_keyword">if</strong> (!f.cancel(false)) {
+<a class="jxr_linenumber" name="397" href="#397">397</a>                     f.addListener(RELEASE_RESPONSE);
+<a class="jxr_linenumber" name="398" href="#398">398</a>                 }
+<a class="jxr_linenumber" name="399" href="#399">399</a>             }
+<a class="jxr_linenumber" name="400" href="#400">400</a>         }
+<a class="jxr_linenumber" name="401" href="#401">401</a> 
+<a class="jxr_linenumber" name="402" href="#402">402</a>         <strong class="jxr_keyword">if</strong> (resolvedEntries != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="403" href="#403">403</a>             <em class="jxr_comment">// Found at least one resolved address.</em>
+<a class="jxr_linenumber" name="404" href="#404">404</a>             <strong class="jxr_keyword">for</strong> (InternetProtocolFamily f: resolveAddressTypes) {
+<a class="jxr_linenumber" name="405" href="#405">405</a>                 <strong class="jxr_keyword">if</strong> (finishResolve(f.addressType(), resolvedEntries)) {
+<a class="jxr_linenumber" name="406" href="#406">406</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="407" href="#407">407</a>                 }
+<a class="jxr_linenumber" name="408" href="#408">408</a>             }
+<a class="jxr_linenumber" name="409" href="#409">409</a>         }
+<a class="jxr_linenumber" name="410" href="#410">410</a> 
+<a class="jxr_linenumber" name="411" href="#411">411</a>         <em class="jxr_comment">// No resolved address found.</em>
+<a class="jxr_linenumber" name="412" href="#412">412</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> tries = maxAllowedQueries - allowedQueries;
+<a class="jxr_linenumber" name="413" href="#413">413</a>         <strong class="jxr_keyword">final</strong> StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(64);
+<a class="jxr_linenumber" name="414" href="#414">414</a> 
+<a class="jxr_linenumber" name="415" href="#415">415</a>         buf.append(<span class="jxr_string">"failed to resolve "</span>);
+<a class="jxr_linenumber" name="416" href="#416">416</a>         buf.append(hostname);
+<a class="jxr_linenumber" name="417" href="#417">417</a> 
+<a class="jxr_linenumber" name="418" href="#418">418</a>         <strong class="jxr_keyword">if</strong> (tries &gt; 1) {
+<a class="jxr_linenumber" name="419" href="#419">419</a>             buf.append(<span class="jxr_string">" after "</span>);
+<a class="jxr_linenumber" name="420" href="#420">420</a>             buf.append(tries);
+<a class="jxr_linenumber" name="421" href="#421">421</a>             <strong class="jxr_keyword">if</strong> (trace != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="422" href="#422">422</a>                 buf.append(<span class="jxr_string">" queries:"</span>);
+<a class="jxr_linenumber" name="423" href="#423">423</a>                 buf.append(trace);
+<a class="jxr_linenumber" name="424" href="#424">424</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="425" href="#425">425</a>                 buf.append(<span class="jxr_string">" queries"</span>);
+<a class="jxr_linenumber" name="426" href="#426">426</a>             }
+<a class="jxr_linenumber" name="427" href="#427">427</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="428" href="#428">428</a>             <strong class="jxr_keyword">if</strong> (trace != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="429" href="#429">429</a>                 buf.append(':');
+<a class="jxr_linenumber" name="430" href="#430">430</a>                 buf.append(trace);
+<a class="jxr_linenumber" name="431" href="#431">431</a>             }
+<a class="jxr_linenumber" name="432" href="#432">432</a>         }
 <a class="jxr_linenumber" name="433" href="#433">433</a> 
-<a class="jxr_linenumber" name="434" href="#434">434</a>         resolveCache.cache(hostname, cause, parent.ch.eventLoop());
-<a class="jxr_linenumber" name="435" href="#435">435</a>         promise.tryFailure(cause);
-<a class="jxr_linenumber" name="436" href="#436">436</a>     }
-<a class="jxr_linenumber" name="437" href="#437">437</a> 
-<a class="jxr_linenumber" name="438" href="#438">438</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> finishResolve(
-<a class="jxr_linenumber" name="439" href="#439">439</a>             Class&lt;? <strong class="jxr_keyword">extends</strong> InetAddress&gt; addressType, List&lt;DnsCacheEntry&gt; resolvedEntries);
-<a class="jxr_linenumber" name="440" href="#440">440</a> 
-<a class="jxr_linenumber" name="441" href="#441">441</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="442" href="#442">442</a> <em class="jxr_javadoccomment">     * Adapted from {@link DefaultDnsRecordDecoder#decodeName(ByteBuf)}.</em>
-<a class="jxr_linenumber" name="443" href="#443">443</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="444" href="#444">444</a>     <strong class="jxr_keyword">static</strong> String decodeDomainName(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
-<a class="jxr_linenumber" name="445" href="#445">445</a>         buf.markReaderIndex();
-<a class="jxr_linenumber" name="446" href="#446">446</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="447" href="#447">447</a>             <strong class="jxr_keyword">int</strong> position = -1;
-<a class="jxr_linenumber" name="448" href="#448">448</a>             <strong class="jxr_keyword">int</strong> checked = 0;
-<a class="jxr_linenumber" name="449" href="#449">449</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = buf.writerIndex();
-<a class="jxr_linenumber" name="450" href="#450">450</a>             <strong class="jxr_keyword">final</strong> StringBuilder name = <strong class="jxr_keyword">new</strong> StringBuilder(buf.readableBytes() &lt;&lt; 1);
-<a class="jxr_linenumber" name="451" href="#451">451</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> len = buf.readUnsignedByte(); buf.isReadable() &amp;&amp; len != 0; len = buf.readUnsignedByte()) {
-<a class="jxr_linenumber" name="452" href="#452">452</a>                 <strong class="jxr_keyword">boolean</strong> pointer = (len &amp; 0xc0) == 0xc0;
-<a class="jxr_linenumber" name="453" href="#453">453</a>                 <strong class="jxr_keyword">if</strong> (pointer) {
-<a class="jxr_linenumber" name="454" href="#454">454</a>                     <strong class="jxr_keyword">if</strong> (position == -1) {
-<a class="jxr_linenumber" name="455" href="#455">455</a>                         position = buf.readerIndex() + 1;
-<a class="jxr_linenumber" name="456" href="#456">456</a>                     }
-<a class="jxr_linenumber" name="457" href="#457">457</a> 
-<a class="jxr_linenumber" name="458" href="#458">458</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> next = (len &amp; 0x3f) &lt;&lt; 8 | buf.readUnsignedByte();
-<a class="jxr_linenumber" name="459" href="#459">459</a>                     <strong class="jxr_keyword">if</strong> (next &gt;= end) {
-<a class="jxr_linenumber" name="460" href="#460">460</a>                         <em class="jxr_comment">// Should not happen.</em>
-<a class="jxr_linenumber" name="461" href="#461">461</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="462" href="#462">462</a>                     }
-<a class="jxr_linenumber" name="463" href="#463">463</a>                     buf.readerIndex(next);
-<a class="jxr_linenumber" name="464" href="#464">464</a> 
-<a class="jxr_linenumber" name="465" href="#465">465</a>                     <em class="jxr_comment">// check for loops</em>
-<a class="jxr_linenumber" name="466" href="#466">466</a>                     checked += 2;
-<a class="jxr_linenumber" name="467" href="#467">467</a>                     <strong class="jxr_keyword">if</strong> (checked &gt;= end) {
-<a class="jxr_linenumber" name="468" href="#468">468</a>                         <em class="jxr_comment">// Name contains a loop; give up.</em>
-<a class="jxr_linenumber" name="469" href="#469">469</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="470" href="#470">470</a>                     }
-<a class="jxr_linenumber" name="471" href="#471">471</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="472" href="#472">472</a>                     name.append(buf.toString(buf.readerIndex(), len, CharsetUtil.UTF_8)).append('.');
-<a class="jxr_linenumber" name="473" href="#473">473</a>                     buf.skipBytes(len);
-<a class="jxr_linenumber" name="474" href="#474">474</a>                 }
-<a class="jxr_linenumber" name="475" href="#475">475</a>             }
-<a class="jxr_linenumber" name="476" href="#476">476</a> 
-<a class="jxr_linenumber" name="477" href="#477">477</a>             <strong class="jxr_keyword">if</strong> (position != -1) {
-<a class="jxr_linenumber" name="478" href="#478">478</a>                 buf.readerIndex(position);
-<a class="jxr_linenumber" name="479" href="#479">479</a>             }
-<a class="jxr_linenumber" name="480" href="#480">480</a> 
-<a class="jxr_linenumber" name="481" href="#481">481</a>             <strong class="jxr_keyword">if</strong> (name.length() == 0) {
-<a class="jxr_linenumber" name="482" href="#482">482</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="483" href="#483">483</a>             }
-<a class="jxr_linenumber" name="484" href="#484">484</a> 
-<a class="jxr_linenumber" name="485" href="#485">485</a>             <strong class="jxr_keyword">return</strong> name.substring(0, name.length() - 1);
-<a class="jxr_linenumber" name="486" href="#486">486</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="487" href="#487">487</a>             buf.resetReaderIndex();
-<a class="jxr_linenumber" name="488" href="#488">488</a>         }
-<a class="jxr_linenumber" name="489" href="#489">489</a>     }
-<a class="jxr_linenumber" name="490" href="#490">490</a> 
-<a class="jxr_linenumber" name="491" href="#491">491</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> followCname(InetSocketAddress nameServerAddr, String name, String cname) {
+<a class="jxr_linenumber" name="434" href="#434">434</a>         <strong class="jxr_keyword">final</strong> UnknownHostException cause = <strong class="jxr_keyword">new</strong> UnknownHostException(buf.toString());
+<a class="jxr_linenumber" name="435" href="#435">435</a> 
+<a class="jxr_linenumber" name="436" href="#436">436</a>         resolveCache.cache(hostname, cause, parent.ch.eventLoop());
+<a class="jxr_linenumber" name="437" href="#437">437</a>         promise.tryFailure(cause);
+<a class="jxr_linenumber" name="438" href="#438">438</a>     }
+<a class="jxr_linenumber" name="439" href="#439">439</a> 
+<a class="jxr_linenumber" name="440" href="#440">440</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> finishResolve(
+<a class="jxr_linenumber" name="441" href="#441">441</a>             Class&lt;? <strong class="jxr_keyword">extends</strong> InetAddress&gt; addressType, List&lt;DnsCacheEntry&gt; resolvedEntries);
+<a class="jxr_linenumber" name="442" href="#442">442</a> 
+<a class="jxr_linenumber" name="443" href="#443">443</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="444" href="#444">444</a> <em class="jxr_javadoccomment">     * Adapted from {@link DefaultDnsRecordDecoder#decodeName(ByteBuf)}.</em>
+<a class="jxr_linenumber" name="445" href="#445">445</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="446" href="#446">446</a>     <strong class="jxr_keyword">static</strong> String decodeDomainName(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
+<a class="jxr_linenumber" name="447" href="#447">447</a>         buf.markReaderIndex();
+<a class="jxr_linenumber" name="448" href="#448">448</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="449" href="#449">449</a>             <strong class="jxr_keyword">int</strong> position = -1;
+<a class="jxr_linenumber" name="450" href="#450">450</a>             <strong class="jxr_keyword">int</strong> checked = 0;
+<a class="jxr_linenumber" name="451" href="#451">451</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = buf.writerIndex();
+<a class="jxr_linenumber" name="452" href="#452">452</a>             <strong class="jxr_keyword">final</strong> StringBuilder name = <strong class="jxr_keyword">new</strong> StringBuilder(buf.readableBytes() &lt;&lt; 1);
+<a class="jxr_linenumber" name="453" href="#453">453</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> len = buf.readUnsignedByte(); buf.isReadable() &amp;&amp; len != 0; len = buf.readUnsignedByte()) {
+<a class="jxr_linenumber" name="454" href="#454">454</a>                 <strong class="jxr_keyword">boolean</strong> pointer = (len &amp; 0xc0) == 0xc0;
+<a class="jxr_linenumber" name="455" href="#455">455</a>                 <strong class="jxr_keyword">if</strong> (pointer) {
+<a class="jxr_linenumber" name="456" href="#456">456</a>                     <strong class="jxr_keyword">if</strong> (position == -1) {
+<a class="jxr_linenumber" name="457" href="#457">457</a>                         position = buf.readerIndex() + 1;
+<a class="jxr_linenumber" name="458" href="#458">458</a>                     }
+<a class="jxr_linenumber" name="459" href="#459">459</a> 
+<a class="jxr_linenumber" name="460" href="#460">460</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> next = (len &amp; 0x3f) &lt;&lt; 8 | buf.readUnsignedByte();
+<a class="jxr_linenumber" name="461" href="#461">461</a>                     <strong class="jxr_keyword">if</strong> (next &gt;= end) {
+<a class="jxr_linenumber" name="462" href="#462">462</a>                         <em class="jxr_comment">// Should not happen.</em>
+<a class="jxr_linenumber" name="463" href="#463">463</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="464" href="#464">464</a>                     }
+<a class="jxr_linenumber" name="465" href="#465">465</a>                     buf.readerIndex(next);
+<a class="jxr_linenumber" name="466" href="#466">466</a> 
+<a class="jxr_linenumber" name="467" href="#467">467</a>                     <em class="jxr_comment">// check for loops</em>
+<a class="jxr_linenumber" name="468" href="#468">468</a>                     checked += 2;
+<a class="jxr_linenumber" name="469" href="#469">469</a>                     <strong class="jxr_keyword">if</strong> (checked &gt;= end) {
+<a class="jxr_linenumber" name="470" href="#470">470</a>                         <em class="jxr_comment">// Name contains a loop; give up.</em>
+<a class="jxr_linenumber" name="471" href="#471">471</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="472" href="#472">472</a>                     }
+<a class="jxr_linenumber" name="473" href="#473">473</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="474" href="#474">474</a>                     name.append(buf.toString(buf.readerIndex(), len, CharsetUtil.UTF_8)).append('.');
+<a class="jxr_linenumber" name="475" href="#475">475</a>                     buf.skipBytes(len);
+<a class="jxr_linenumber" name="476" href="#476">476</a>                 }
+<a class="jxr_linenumber" name="477" href="#477">477</a>             }
+<a class="jxr_linenumber" name="478" href="#478">478</a> 
+<a class="jxr_linenumber" name="479" href="#479">479</a>             <strong class="jxr_keyword">if</strong> (position != -1) {
+<a class="jxr_linenumber" name="480" href="#480">480</a>                 buf.readerIndex(position);
+<a class="jxr_linenumber" name="481" href="#481">481</a>             }
+<a class="jxr_linenumber" name="482" href="#482">482</a> 
+<a class="jxr_linenumber" name="483" href="#483">483</a>             <strong class="jxr_keyword">if</strong> (name.length() == 0) {
+<a class="jxr_linenumber" name="484" href="#484">484</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="485" href="#485">485</a>             }
+<a class="jxr_linenumber" name="486" href="#486">486</a> 
+<a class="jxr_linenumber" name="487" href="#487">487</a>             <strong class="jxr_keyword">return</strong> name.substring(0, name.length() - 1);
+<a class="jxr_linenumber" name="488" href="#488">488</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="489" href="#489">489</a>             buf.resetReaderIndex();
+<a class="jxr_linenumber" name="490" href="#490">490</a>         }
+<a class="jxr_linenumber" name="491" href="#491">491</a>     }
 <a class="jxr_linenumber" name="492" href="#492">492</a> 
-<a class="jxr_linenumber" name="493" href="#493">493</a>         <strong class="jxr_keyword">if</strong> (traceEnabled) {
-<a class="jxr_linenumber" name="494" href="#494">494</a>             <strong class="jxr_keyword">if</strong> (trace == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="495" href="#495">495</a>                 trace = <strong class="jxr_keyword">new</strong> StringBuilder(128);
-<a class="jxr_linenumber" name="496" href="#496">496</a>             }
-<a class="jxr_linenumber" name="497" href="#497">497</a> 
-<a class="jxr_linenumber" name="498" href="#498">498</a>             trace.append(StringUtil.NEWLINE);
-<a class="jxr_linenumber" name="499" href="#499">499</a>             trace.append(<span class="jxr_string">"\tfrom "</span>);
-<a class="jxr_linenumber" name="500" href="#500">500</a>             trace.append(nameServerAddr);
-<a class="jxr_linenumber" name="501" href="#501">501</a>             trace.append(<span class="jxr_string">": "</span>);
-<a class="jxr_linenumber" name="502" href="#502">502</a>             trace.append(name);
-<a class="jxr_linenumber" name="503" href="#503">503</a>             trace.append(<span class="jxr_string">" CNAME "</span>);
-<a class="jxr_linenumber" name="504" href="#504">504</a>             trace.append(cname);
-<a class="jxr_linenumber" name="505" href="#505">505</a>         }
-<a class="jxr_linenumber" name="506" href="#506">506</a> 
-<a class="jxr_linenumber" name="507" href="#507">507</a>         <strong class="jxr_keyword">final</strong> InetSocketAddress nextAddr = nameServerAddrs.next();
-<a class="jxr_linenumber" name="508" href="#508">508</a>         query(nextAddr, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DefaultDnsQuestion.html">DefaultDnsQuestion</a>(cname, DnsRecordType.A));
-<a class="jxr_linenumber" name="509" href="#509">509</a>         query(nextAddr, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DefaultDnsQuestion.html">DefaultDnsQuestion</a>(cname, DnsRecordType.AAAA));
-<a class="jxr_linenumber" name="510" href="#510">510</a>     }
-<a class="jxr_linenumber" name="511" href="#511">511</a> 
-<a class="jxr_linenumber" name="512" href="#512">512</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addTrace(InetSocketAddress nameServerAddr, String msg) {
-<a class="jxr_linenumber" name="513" href="#513">513</a>         assert traceEnabled;
-<a class="jxr_linenumber" name="514" href="#514">514</a> 
-<a class="jxr_linenumber" name="515" href="#515">515</a>         <strong class="jxr_keyword">if</strong> (trace == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="516" href="#516">516</a>             trace = <strong class="jxr_keyword">new</strong> StringBuilder(128);
-<a class="jxr_linenumber" name="517" href="#517">517</a>         }
-<a class="jxr_linenumber" name="518" href="#518">518</a> 
-<a class="jxr_linenumber" name="519" href="#519">519</a>         trace.append(StringUtil.NEWLINE);
-<a class="jxr_linenumber" name="520" href="#520">520</a>         trace.append(<span class="jxr_string">"\tfrom "</span>);
-<a class="jxr_linenumber" name="521" href="#521">521</a>         trace.append(nameServerAddr);
-<a class="jxr_linenumber" name="522" href="#522">522</a>         trace.append(<span class="jxr_string">": "</span>);
-<a class="jxr_linenumber" name="523" href="#523">523</a>         trace.append(msg);
-<a class="jxr_linenumber" name="524" href="#524">524</a>     }
-<a class="jxr_linenumber" name="525" href="#525">525</a> 
-<a class="jxr_linenumber" name="526" href="#526">526</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addTrace(Throwable cause) {
-<a class="jxr_linenumber" name="527" href="#527">527</a>         assert traceEnabled;
-<a class="jxr_linenumber" name="528" href="#528">528</a> 
-<a class="jxr_linenumber" name="529" href="#529">529</a>         <strong class="jxr_keyword">if</strong> (trace == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="530" href="#530">530</a>             trace = <strong class="jxr_keyword">new</strong> StringBuilder(128);
-<a class="jxr_linenumber" name="531" href="#531">531</a>         }
-<a class="jxr_linenumber" name="532" href="#532">532</a> 
-<a class="jxr_linenumber" name="533" href="#533">533</a>         trace.append(StringUtil.NEWLINE);
-<a class="jxr_linenumber" name="534" href="#534">534</a>         trace.append(<span class="jxr_string">"Caused by: "</span>);
-<a class="jxr_linenumber" name="535" href="#535">535</a>         trace.append(cause);
-<a class="jxr_linenumber" name="536" href="#536">536</a>     }
-<a class="jxr_linenumber" name="537" href="#537">537</a> }
+<a class="jxr_linenumber" name="493" href="#493">493</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> followCname(InetSocketAddress nameServerAddr, String name, String cname) {
+<a class="jxr_linenumber" name="494" href="#494">494</a> 
+<a class="jxr_linenumber" name="495" href="#495">495</a>         <strong class="jxr_keyword">if</strong> (traceEnabled) {
+<a class="jxr_linenumber" name="496" href="#496">496</a>             <strong class="jxr_keyword">if</strong> (trace == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="497" href="#497">497</a>                 trace = <strong class="jxr_keyword">new</strong> StringBuilder(128);
+<a class="jxr_linenumber" name="498" href="#498">498</a>             }
+<a class="jxr_linenumber" name="499" href="#499">499</a> 
+<a class="jxr_linenumber" name="500" href="#500">500</a>             trace.append(StringUtil.NEWLINE);
+<a class="jxr_linenumber" name="501" href="#501">501</a>             trace.append(<span class="jxr_string">"\tfrom "</span>);
+<a class="jxr_linenumber" name="502" href="#502">502</a>             trace.append(nameServerAddr);
+<a class="jxr_linenumber" name="503" href="#503">503</a>             trace.append(<span class="jxr_string">": "</span>);
+<a class="jxr_linenumber" name="504" href="#504">504</a>             trace.append(name);
+<a class="jxr_linenumber" name="505" href="#505">505</a>             trace.append(<span class="jxr_string">" CNAME "</span>);
+<a class="jxr_linenumber" name="506" href="#506">506</a>             trace.append(cname);
+<a class="jxr_linenumber" name="507" href="#507">507</a>         }
+<a class="jxr_linenumber" name="508" href="#508">508</a> 
+<a class="jxr_linenumber" name="509" href="#509">509</a>         <strong class="jxr_keyword">final</strong> InetSocketAddress nextAddr = nameServerAddrs.next();
+<a class="jxr_linenumber" name="510" href="#510">510</a>         query(nextAddr, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DefaultDnsQuestion.html">DefaultDnsQuestion</a>(cname, DnsRecordType.A));
+<a class="jxr_linenumber" name="511" href="#511">511</a>         query(nextAddr, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/dns/DefaultDnsQuestion.html">DefaultDnsQuestion</a>(cname, DnsRecordType.AAAA));
+<a class="jxr_linenumber" name="512" href="#512">512</a>     }
+<a class="jxr_linenumber" name="513" href="#513">513</a> 
+<a class="jxr_linenumber" name="514" href="#514">514</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addTrace(InetSocketAddress nameServerAddr, String msg) {
+<a class="jxr_linenumber" name="515" href="#515">515</a>         assert traceEnabled;
+<a class="jxr_linenumber" name="516" href="#516">516</a> 
+<a class="jxr_linenumber" name="517" href="#517">517</a>         <strong class="jxr_keyword">if</strong> (trace == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="518" href="#518">518</a>             trace = <strong class="jxr_keyword">new</strong> StringBuilder(128);
+<a class="jxr_linenumber" name="519" href="#519">519</a>         }
+<a class="jxr_linenumber" name="520" href="#520">520</a> 
+<a class="jxr_linenumber" name="521" href="#521">521</a>         trace.append(StringUtil.NEWLINE);
+<a class="jxr_linenumber" name="522" href="#522">522</a>         trace.append(<span class="jxr_string">"\tfrom "</span>);
+<a class="jxr_linenumber" name="523" href="#523">523</a>         trace.append(nameServerAddr);
+<a class="jxr_linenumber" name="524" href="#524">524</a>         trace.append(<span class="jxr_string">": "</span>);
+<a class="jxr_linenumber" name="525" href="#525">525</a>         trace.append(msg);
+<a class="jxr_linenumber" name="526" href="#526">526</a>     }
+<a class="jxr_linenumber" name="527" href="#527">527</a> 
+<a class="jxr_linenumber" name="528" href="#528">528</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addTrace(Throwable cause) {
+<a class="jxr_linenumber" name="529" href="#529">529</a>         assert traceEnabled;
+<a class="jxr_linenumber" name="530" href="#530">530</a> 
+<a class="jxr_linenumber" name="531" href="#531">531</a>         <strong class="jxr_keyword">if</strong> (trace == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="532" href="#532">532</a>             trace = <strong class="jxr_keyword">new</strong> StringBuilder(128);
+<a class="jxr_linenumber" name="533" href="#533">533</a>         }
+<a class="jxr_linenumber" name="534" href="#534">534</a> 
+<a class="jxr_linenumber" name="535" href="#535">535</a>         trace.append(StringUtil.NEWLINE);
+<a class="jxr_linenumber" name="536" href="#536">536</a>         trace.append(<span class="jxr_string">"Caused by: "</span>);
+<a class="jxr_linenumber" name="537" href="#537">537</a>         trace.append(cause);
+<a class="jxr_linenumber" name="538" href="#538">538</a>     }
+<a class="jxr_linenumber" name="539" href="#539">539</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
