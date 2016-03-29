@@ -31,371 +31,372 @@
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.MessageToMessageEncoder;
 <a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.util.CharsetUtil;
-<a class="jxr_linenumber" name="24" href="#24">24</a>  
-<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> java.util.List;
-<a class="jxr_linenumber" name="26" href="#26">26</a>  
-<a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.handler.codec.mqtt.MqttCodecUtil.*;
-<a class="jxr_linenumber" name="28" href="#28">28</a>  
-<a class="jxr_linenumber" name="29" href="#29">29</a>  <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="30" href="#30">30</a>  <em class="jxr_javadoccomment"> * Encodes Mqtt messages into bytes following the protocl specification v3.1</em>
-<a class="jxr_linenumber" name="31" href="#31">31</a>  <em class="jxr_javadoccomment"> * as described here &lt;a href="<a href="http://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html" target="alexandria_uri">http://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html</a>"&gt;MQTTV3.1&lt;/a&gt;</em>
-<a class="jxr_linenumber" name="32" href="#32">32</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="33" href="#33">33</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a> <strong class="jxr_keyword">extends</strong> MessageToMessageEncoder&lt;MqttMessage&gt; {
-<a class="jxr_linenumber" name="34" href="#34">34</a>  
-<a class="jxr_linenumber" name="35" href="#35">35</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a> DEFAUL_ENCODER = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a>();
-<a class="jxr_linenumber" name="36" href="#36">36</a>  
-<a class="jxr_linenumber" name="37" href="#37">37</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> byte[] EMPTY = <strong class="jxr_keyword">new</strong> byte[0];
-<a class="jxr_linenumber" name="38" href="#38">38</a>  
-<a class="jxr_linenumber" name="39" href="#39">39</a>      @Override
-<a class="jxr_linenumber" name="40" href="#40">40</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encode(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> msg, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="41" href="#41">41</a>          out.add(doEncode(ctx.alloc(), msg));
-<a class="jxr_linenumber" name="42" href="#42">42</a>      }
-<a class="jxr_linenumber" name="43" href="#43">43</a>  
-<a class="jxr_linenumber" name="44" href="#44">44</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="45" href="#45">45</a>  <em class="jxr_javadoccomment">     * This is the main encoding method.</em>
-<a class="jxr_linenumber" name="46" href="#46">46</a>  <em class="jxr_javadoccomment">     * It's only visible for testing.</em>
-<a class="jxr_linenumber" name="47" href="#47">47</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="48" href="#48">48</a>  <em class="jxr_javadoccomment">     * @param byteBufAllocator Allocates ByteBuf</em>
-<a class="jxr_linenumber" name="49" href="#49">49</a>  <em class="jxr_javadoccomment">     * @param message MQTT message to encode</em>
-<a class="jxr_linenumber" name="50" href="#50">50</a>  <em class="jxr_javadoccomment">     * @return ByteBuf with encoded bytes</em>
-<a class="jxr_linenumber" name="51" href="#51">51</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> doEncode(<a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator, <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> message) {
-<a class="jxr_linenumber" name="53" href="#53">53</a>  
-<a class="jxr_linenumber" name="54" href="#54">54</a>          <strong class="jxr_keyword">switch</strong> (message.fixedHeader().messageType()) {
-<a class="jxr_linenumber" name="55" href="#55">55</a>              <strong class="jxr_keyword">case</strong> CONNECT:
-<a class="jxr_linenumber" name="56" href="#56">56</a>                  <strong class="jxr_keyword">return</strong> encodeConnectMessage(byteBufAllocator, (MqttConnectMessage) message);
-<a class="jxr_linenumber" name="57" href="#57">57</a>  
-<a class="jxr_linenumber" name="58" href="#58">58</a>              <strong class="jxr_keyword">case</strong> CONNACK:
-<a class="jxr_linenumber" name="59" href="#59">59</a>                  <strong class="jxr_keyword">return</strong> encodeConnAckMessage(byteBufAllocator, (MqttConnAckMessage) message);
-<a class="jxr_linenumber" name="60" href="#60">60</a>  
-<a class="jxr_linenumber" name="61" href="#61">61</a>              <strong class="jxr_keyword">case</strong> PUBLISH:
-<a class="jxr_linenumber" name="62" href="#62">62</a>                  <strong class="jxr_keyword">return</strong> encodePublishMessage(byteBufAllocator, (MqttPublishMessage) message);
-<a class="jxr_linenumber" name="63" href="#63">63</a>  
-<a class="jxr_linenumber" name="64" href="#64">64</a>              <strong class="jxr_keyword">case</strong> SUBSCRIBE:
-<a class="jxr_linenumber" name="65" href="#65">65</a>                  <strong class="jxr_keyword">return</strong> encodeSubscribeMessage(byteBufAllocator, (MqttSubscribeMessage) message);
-<a class="jxr_linenumber" name="66" href="#66">66</a>  
-<a class="jxr_linenumber" name="67" href="#67">67</a>              <strong class="jxr_keyword">case</strong> UNSUBSCRIBE:
-<a class="jxr_linenumber" name="68" href="#68">68</a>                  <strong class="jxr_keyword">return</strong> encodeUnsubscribeMessage(byteBufAllocator, (MqttUnsubscribeMessage) message);
-<a class="jxr_linenumber" name="69" href="#69">69</a>  
-<a class="jxr_linenumber" name="70" href="#70">70</a>              <strong class="jxr_keyword">case</strong> SUBACK:
-<a class="jxr_linenumber" name="71" href="#71">71</a>                  <strong class="jxr_keyword">return</strong> encodeSubAckMessage(byteBufAllocator, (MqttSubAckMessage) message);
-<a class="jxr_linenumber" name="72" href="#72">72</a>  
-<a class="jxr_linenumber" name="73" href="#73">73</a>              <strong class="jxr_keyword">case</strong> UNSUBACK:
-<a class="jxr_linenumber" name="74" href="#74">74</a>              <strong class="jxr_keyword">case</strong> PUBACK:
-<a class="jxr_linenumber" name="75" href="#75">75</a>              <strong class="jxr_keyword">case</strong> PUBREC:
-<a class="jxr_linenumber" name="76" href="#76">76</a>              <strong class="jxr_keyword">case</strong> PUBREL:
-<a class="jxr_linenumber" name="77" href="#77">77</a>              <strong class="jxr_keyword">case</strong> PUBCOMP:
-<a class="jxr_linenumber" name="78" href="#78">78</a>                  <strong class="jxr_keyword">return</strong> encodeMessageWithOnlySingleByteFixedHeaderAndMessageId(byteBufAllocator, message);
-<a class="jxr_linenumber" name="79" href="#79">79</a>  
-<a class="jxr_linenumber" name="80" href="#80">80</a>              <strong class="jxr_keyword">case</strong> PINGREQ:
-<a class="jxr_linenumber" name="81" href="#81">81</a>              <strong class="jxr_keyword">case</strong> PINGRESP:
-<a class="jxr_linenumber" name="82" href="#82">82</a>              <strong class="jxr_keyword">case</strong> DISCONNECT:
-<a class="jxr_linenumber" name="83" href="#83">83</a>                  <strong class="jxr_keyword">return</strong> encodeMessageWithOnlySingleByteFixedHeader(byteBufAllocator, message);
-<a class="jxr_linenumber" name="84" href="#84">84</a>  
-<a class="jxr_linenumber" name="85" href="#85">85</a>              <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="86" href="#86">86</a>                  <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="87" href="#87">87</a>                          <span class="jxr_string">"Unknown message type: "</span> + message.fixedHeader().messageType().value());
-<a class="jxr_linenumber" name="88" href="#88">88</a>          }
-<a class="jxr_linenumber" name="89" href="#89">89</a>      }
-<a class="jxr_linenumber" name="90" href="#90">90</a>  
-<a class="jxr_linenumber" name="91" href="#91">91</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeConnectMessage(
-<a class="jxr_linenumber" name="92" href="#92">92</a>              <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="93" href="#93">93</a>              <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectMessage.html">MqttConnectMessage</a> message) {
-<a class="jxr_linenumber" name="94" href="#94">94</a>          <strong class="jxr_keyword">int</strong> payloadBufferSize = 0;
-<a class="jxr_linenumber" name="95" href="#95">95</a>  
-<a class="jxr_linenumber" name="96" href="#96">96</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
-<a class="jxr_linenumber" name="97" href="#97">97</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectVariableHeader.html">MqttConnectVariableHeader</a> variableHeader = message.variableHeader();
-<a class="jxr_linenumber" name="98" href="#98">98</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectPayload.html">MqttConnectPayload</a> payload = message.payload();
-<a class="jxr_linenumber" name="99" href="#99">99</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttVersion.html">MqttVersion</a> mqttVersion = MqttVersion.fromProtocolNameAndLevel(variableHeader.name(),
-<a class="jxr_linenumber" name="100" href="#100">100</a>                 (byte) variableHeader.version());
-<a class="jxr_linenumber" name="101" href="#101">101</a> 
-<a class="jxr_linenumber" name="102" href="#102">102</a>         <em class="jxr_comment">// Client id</em>
-<a class="jxr_linenumber" name="103" href="#103">103</a>         String clientIdentifier = payload.clientIdentifier();
-<a class="jxr_linenumber" name="104" href="#104">104</a>         <strong class="jxr_keyword">if</strong> (!isValidClientId(mqttVersion, clientIdentifier)) {
-<a class="jxr_linenumber" name="105" href="#105">105</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttIdentifierRejectedException.html">MqttIdentifierRejectedException</a>(<span class="jxr_string">"invalid clientIdentifier: "</span> + clientIdentifier);
-<a class="jxr_linenumber" name="106" href="#106">106</a>         }
-<a class="jxr_linenumber" name="107" href="#107">107</a>         byte[] clientIdentifierBytes = encodeStringUtf8(clientIdentifier);
-<a class="jxr_linenumber" name="108" href="#108">108</a>         payloadBufferSize += 2 + clientIdentifierBytes.length;
-<a class="jxr_linenumber" name="109" href="#109">109</a> 
-<a class="jxr_linenumber" name="110" href="#110">110</a>         <em class="jxr_comment">// Will topic and message</em>
-<a class="jxr_linenumber" name="111" href="#111">111</a>         String willTopic = payload.willTopic();
-<a class="jxr_linenumber" name="112" href="#112">112</a>         byte[] willTopicBytes = willTopic != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(willTopic) : EMPTY;
-<a class="jxr_linenumber" name="113" href="#113">113</a>         String willMessage = payload.willMessage();
-<a class="jxr_linenumber" name="114" href="#114">114</a>         byte[] willMessageBytes = willMessage != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(willMessage) : EMPTY;
-<a class="jxr_linenumber" name="115" href="#115">115</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillFlag()) {
-<a class="jxr_linenumber" name="116" href="#116">116</a>             payloadBufferSize += 2 + willTopicBytes.length;
-<a class="jxr_linenumber" name="117" href="#117">117</a>             payloadBufferSize += 2 + willMessageBytes.length;
-<a class="jxr_linenumber" name="118" href="#118">118</a>         }
-<a class="jxr_linenumber" name="119" href="#119">119</a> 
-<a class="jxr_linenumber" name="120" href="#120">120</a>         String userName = payload.userName();
-<a class="jxr_linenumber" name="121" href="#121">121</a>         byte[] userNameBytes = userName != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(userName) : EMPTY;
-<a class="jxr_linenumber" name="122" href="#122">122</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasUserName()) {
-<a class="jxr_linenumber" name="123" href="#123">123</a>             payloadBufferSize += 2 + userNameBytes.length;
-<a class="jxr_linenumber" name="124" href="#124">124</a>         }
-<a class="jxr_linenumber" name="125" href="#125">125</a> 
-<a class="jxr_linenumber" name="126" href="#126">126</a>         String password = payload.password();
-<a class="jxr_linenumber" name="127" href="#127">127</a>         byte[] passwordBytes = password != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(password) : EMPTY;
-<a class="jxr_linenumber" name="128" href="#128">128</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasPassword()) {
-<a class="jxr_linenumber" name="129" href="#129">129</a>             payloadBufferSize += 2 + passwordBytes.length;
-<a class="jxr_linenumber" name="130" href="#130">130</a>         }
-<a class="jxr_linenumber" name="131" href="#131">131</a> 
-<a class="jxr_linenumber" name="132" href="#132">132</a>         <em class="jxr_comment">// Fixed header</em>
-<a class="jxr_linenumber" name="133" href="#133">133</a>         byte[] protocolNameBytes = mqttVersion.protocolNameBytes();
-<a class="jxr_linenumber" name="134" href="#134">134</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2 + protocolNameBytes.length + 4;
-<a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
-<a class="jxr_linenumber" name="136" href="#136">136</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
-<a class="jxr_linenumber" name="137" href="#137">137</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
-<a class="jxr_linenumber" name="138" href="#138">138</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
-<a class="jxr_linenumber" name="139" href="#139">139</a>         writeVariableLengthInt(buf, variablePartSize);
-<a class="jxr_linenumber" name="140" href="#140">140</a> 
-<a class="jxr_linenumber" name="141" href="#141">141</a>         buf.writeShort(protocolNameBytes.length);
-<a class="jxr_linenumber" name="142" href="#142">142</a>         buf.writeBytes(protocolNameBytes);
-<a class="jxr_linenumber" name="143" href="#143">143</a> 
-<a class="jxr_linenumber" name="144" href="#144">144</a>         buf.writeByte(variableHeader.version());
-<a class="jxr_linenumber" name="145" href="#145">145</a>         buf.writeByte(getConnVariableHeaderFlag(variableHeader));
-<a class="jxr_linenumber" name="146" href="#146">146</a>         buf.writeShort(variableHeader.keepAliveTimeSeconds());
-<a class="jxr_linenumber" name="147" href="#147">147</a> 
-<a class="jxr_linenumber" name="148" href="#148">148</a>         <em class="jxr_comment">// Payload</em>
-<a class="jxr_linenumber" name="149" href="#149">149</a>         buf.writeShort(clientIdentifierBytes.length);
-<a class="jxr_linenumber" name="150" href="#150">150</a>         buf.writeBytes(clientIdentifierBytes, 0, clientIdentifierBytes.length);
-<a class="jxr_linenumber" name="151" href="#151">151</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillFlag()) {
-<a class="jxr_linenumber" name="152" href="#152">152</a>             buf.writeShort(willTopicBytes.length);
-<a class="jxr_linenumber" name="153" href="#153">153</a>             buf.writeBytes(willTopicBytes, 0, willTopicBytes.length);
-<a class="jxr_linenumber" name="154" href="#154">154</a>             buf.writeShort(willMessageBytes.length);
-<a class="jxr_linenumber" name="155" href="#155">155</a>             buf.writeBytes(willMessageBytes, 0, willMessageBytes.length);
-<a class="jxr_linenumber" name="156" href="#156">156</a>         }
-<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasUserName()) {
-<a class="jxr_linenumber" name="158" href="#158">158</a>             buf.writeShort(userNameBytes.length);
-<a class="jxr_linenumber" name="159" href="#159">159</a>             buf.writeBytes(userNameBytes, 0, userNameBytes.length);
-<a class="jxr_linenumber" name="160" href="#160">160</a>         }
-<a class="jxr_linenumber" name="161" href="#161">161</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasPassword()) {
-<a class="jxr_linenumber" name="162" href="#162">162</a>             buf.writeShort(passwordBytes.length);
-<a class="jxr_linenumber" name="163" href="#163">163</a>             buf.writeBytes(passwordBytes, 0, passwordBytes.length);
-<a class="jxr_linenumber" name="164" href="#164">164</a>         }
-<a class="jxr_linenumber" name="165" href="#165">165</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="166" href="#166">166</a>     }
-<a class="jxr_linenumber" name="167" href="#167">167</a> 
-<a class="jxr_linenumber" name="168" href="#168">168</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getConnVariableHeaderFlag(<a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectVariableHeader.html">MqttConnectVariableHeader</a> variableHeader) {
-<a class="jxr_linenumber" name="169" href="#169">169</a>         <strong class="jxr_keyword">int</strong> flagByte = 0;
-<a class="jxr_linenumber" name="170" href="#170">170</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasUserName()) {
-<a class="jxr_linenumber" name="171" href="#171">171</a>             flagByte |= 0x80;
-<a class="jxr_linenumber" name="172" href="#172">172</a>         }
-<a class="jxr_linenumber" name="173" href="#173">173</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasPassword()) {
-<a class="jxr_linenumber" name="174" href="#174">174</a>             flagByte |= 0x40;
-<a class="jxr_linenumber" name="175" href="#175">175</a>         }
-<a class="jxr_linenumber" name="176" href="#176">176</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillRetain()) {
-<a class="jxr_linenumber" name="177" href="#177">177</a>             flagByte |= 0x20;
-<a class="jxr_linenumber" name="178" href="#178">178</a>         }
-<a class="jxr_linenumber" name="179" href="#179">179</a>         flagByte |= (variableHeader.willQos() &amp; 0x03) &lt;&lt; 3;
-<a class="jxr_linenumber" name="180" href="#180">180</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillFlag()) {
-<a class="jxr_linenumber" name="181" href="#181">181</a>             flagByte |= 0x04;
-<a class="jxr_linenumber" name="182" href="#182">182</a>         }
-<a class="jxr_linenumber" name="183" href="#183">183</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isCleanSession()) {
-<a class="jxr_linenumber" name="184" href="#184">184</a>             flagByte |= 0x02;
-<a class="jxr_linenumber" name="185" href="#185">185</a>         }
-<a class="jxr_linenumber" name="186" href="#186">186</a>         <strong class="jxr_keyword">return</strong> flagByte;
-<a class="jxr_linenumber" name="187" href="#187">187</a>     }
-<a class="jxr_linenumber" name="188" href="#188">188</a> 
-<a class="jxr_linenumber" name="189" href="#189">189</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeConnAckMessage(
-<a class="jxr_linenumber" name="190" href="#190">190</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="191" href="#191">191</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnAckMessage.html">MqttConnAckMessage</a> message) {
-<a class="jxr_linenumber" name="192" href="#192">192</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(4);
-<a class="jxr_linenumber" name="193" href="#193">193</a>         buf.writeByte(getFixedHeaderByte1(message.fixedHeader()));
-<a class="jxr_linenumber" name="194" href="#194">194</a>         buf.writeByte(2);
-<a class="jxr_linenumber" name="195" href="#195">195</a>         buf.writeByte(message.variableHeader().isSessionPresent() ? 0x01 : 0x00);
-<a class="jxr_linenumber" name="196" href="#196">196</a>         buf.writeByte(message.variableHeader().connectReturnCode().byteValue());
-<a class="jxr_linenumber" name="197" href="#197">197</a> 
-<a class="jxr_linenumber" name="198" href="#198">198</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="199" href="#199">199</a>     }
-<a class="jxr_linenumber" name="200" href="#200">200</a> 
-<a class="jxr_linenumber" name="201" href="#201">201</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeSubscribeMessage(
-<a class="jxr_linenumber" name="202" href="#202">202</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="203" href="#203">203</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttSubscribeMessage.html">MqttSubscribeMessage</a> message) {
-<a class="jxr_linenumber" name="204" href="#204">204</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2;
-<a class="jxr_linenumber" name="205" href="#205">205</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = 0;
-<a class="jxr_linenumber" name="206" href="#206">206</a> 
-<a class="jxr_linenumber" name="207" href="#207">207</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
-<a class="jxr_linenumber" name="208" href="#208">208</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.html">MqttMessageIdVariableHeader</a> variableHeader = message.variableHeader();
-<a class="jxr_linenumber" name="209" href="#209">209</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttSubscribePayload.html">MqttSubscribePayload</a> payload = message.payload();
-<a class="jxr_linenumber" name="210" href="#210">210</a> 
-<a class="jxr_linenumber" name="211" href="#211">211</a>         <strong class="jxr_keyword">for</strong> (MqttTopicSubscription topic : payload.topicSubscriptions()) {
-<a class="jxr_linenumber" name="212" href="#212">212</a>             String topicName = topic.topicName();
-<a class="jxr_linenumber" name="213" href="#213">213</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
-<a class="jxr_linenumber" name="214" href="#214">214</a>             payloadBufferSize += 2 + topicNameBytes.length;
-<a class="jxr_linenumber" name="215" href="#215">215</a>             payloadBufferSize += 1;
-<a class="jxr_linenumber" name="216" href="#216">216</a>         }
-<a class="jxr_linenumber" name="217" href="#217">217</a> 
-<a class="jxr_linenumber" name="218" href="#218">218</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
-<a class="jxr_linenumber" name="219" href="#219">219</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
-<a class="jxr_linenumber" name="220" href="#220">220</a> 
-<a class="jxr_linenumber" name="221" href="#221">221</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
-<a class="jxr_linenumber" name="222" href="#222">222</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
-<a class="jxr_linenumber" name="223" href="#223">223</a>         writeVariableLengthInt(buf, variablePartSize);
-<a class="jxr_linenumber" name="224" href="#224">224</a> 
-<a class="jxr_linenumber" name="225" href="#225">225</a>         <em class="jxr_comment">// Variable Header</em>
-<a class="jxr_linenumber" name="226" href="#226">226</a>         <strong class="jxr_keyword">int</strong> messageId = variableHeader.messageId();
-<a class="jxr_linenumber" name="227" href="#227">227</a>         buf.writeShort(messageId);
-<a class="jxr_linenumber" name="228" href="#228">228</a> 
-<a class="jxr_linenumber" name="229" href="#229">229</a>         <em class="jxr_comment">// Payload</em>
-<a class="jxr_linenumber" name="230" href="#230">230</a>         <strong class="jxr_keyword">for</strong> (MqttTopicSubscription topic : payload.topicSubscriptions()) {
-<a class="jxr_linenumber" name="231" href="#231">231</a>             String topicName = topic.topicName();
-<a class="jxr_linenumber" name="232" href="#232">232</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
-<a class="jxr_linenumber" name="233" href="#233">233</a>             buf.writeShort(topicNameBytes.length);
-<a class="jxr_linenumber" name="234" href="#234">234</a>             buf.writeBytes(topicNameBytes, 0, topicNameBytes.length);
-<a class="jxr_linenumber" name="235" href="#235">235</a>             buf.writeByte(topic.qualityOfService().value());
-<a class="jxr_linenumber" name="236" href="#236">236</a>         }
-<a class="jxr_linenumber" name="237" href="#237">237</a> 
-<a class="jxr_linenumber" name="238" href="#238">238</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="239" href="#239">239</a>     }
-<a class="jxr_linenumber" name="240" href="#240">240</a> 
-<a class="jxr_linenumber" name="241" href="#241">241</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeUnsubscribeMessage(
-<a class="jxr_linenumber" name="242" href="#242">242</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="243" href="#243">243</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttUnsubscribeMessage.html">MqttUnsubscribeMessage</a> message) {
-<a class="jxr_linenumber" name="244" href="#244">244</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2;
-<a class="jxr_linenumber" name="245" href="#245">245</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = 0;
-<a class="jxr_linenumber" name="246" href="#246">246</a> 
-<a class="jxr_linenumber" name="247" href="#247">247</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
-<a class="jxr_linenumber" name="248" href="#248">248</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.html">MqttMessageIdVariableHeader</a> variableHeader = message.variableHeader();
-<a class="jxr_linenumber" name="249" href="#249">249</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttUnsubscribePayload.html">MqttUnsubscribePayload</a> payload = message.payload();
-<a class="jxr_linenumber" name="250" href="#250">250</a> 
-<a class="jxr_linenumber" name="251" href="#251">251</a>         <strong class="jxr_keyword">for</strong> (String topicName : payload.topics()) {
-<a class="jxr_linenumber" name="252" href="#252">252</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
-<a class="jxr_linenumber" name="253" href="#253">253</a>             payloadBufferSize += 2 + topicNameBytes.length;
-<a class="jxr_linenumber" name="254" href="#254">254</a>         }
-<a class="jxr_linenumber" name="255" href="#255">255</a> 
-<a class="jxr_linenumber" name="256" href="#256">256</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
-<a class="jxr_linenumber" name="257" href="#257">257</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
-<a class="jxr_linenumber" name="258" href="#258">258</a> 
-<a class="jxr_linenumber" name="259" href="#259">259</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
-<a class="jxr_linenumber" name="260" href="#260">260</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
-<a class="jxr_linenumber" name="261" href="#261">261</a>         writeVariableLengthInt(buf, variablePartSize);
-<a class="jxr_linenumber" name="262" href="#262">262</a> 
-<a class="jxr_linenumber" name="263" href="#263">263</a>         <em class="jxr_comment">// Variable Header</em>
-<a class="jxr_linenumber" name="264" href="#264">264</a>         <strong class="jxr_keyword">int</strong> messageId = variableHeader.messageId();
-<a class="jxr_linenumber" name="265" href="#265">265</a>         buf.writeShort(messageId);
-<a class="jxr_linenumber" name="266" href="#266">266</a> 
-<a class="jxr_linenumber" name="267" href="#267">267</a>         <em class="jxr_comment">// Payload</em>
-<a class="jxr_linenumber" name="268" href="#268">268</a>         <strong class="jxr_keyword">for</strong> (String topicName : payload.topics()) {
-<a class="jxr_linenumber" name="269" href="#269">269</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
-<a class="jxr_linenumber" name="270" href="#270">270</a>             buf.writeShort(topicNameBytes.length);
-<a class="jxr_linenumber" name="271" href="#271">271</a>             buf.writeBytes(topicNameBytes, 0, topicNameBytes.length);
-<a class="jxr_linenumber" name="272" href="#272">272</a>         }
-<a class="jxr_linenumber" name="273" href="#273">273</a> 
-<a class="jxr_linenumber" name="274" href="#274">274</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="275" href="#275">275</a>     }
-<a class="jxr_linenumber" name="276" href="#276">276</a> 
-<a class="jxr_linenumber" name="277" href="#277">277</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeSubAckMessage(
-<a class="jxr_linenumber" name="278" href="#278">278</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="279" href="#279">279</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttSubAckMessage.html">MqttSubAckMessage</a> message) {
-<a class="jxr_linenumber" name="280" href="#280">280</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2;
-<a class="jxr_linenumber" name="281" href="#281">281</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = message.payload().grantedQoSLevels().size();
-<a class="jxr_linenumber" name="282" href="#282">282</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
-<a class="jxr_linenumber" name="283" href="#283">283</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
-<a class="jxr_linenumber" name="284" href="#284">284</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
-<a class="jxr_linenumber" name="285" href="#285">285</a>         buf.writeByte(getFixedHeaderByte1(message.fixedHeader()));
-<a class="jxr_linenumber" name="286" href="#286">286</a>         writeVariableLengthInt(buf, variablePartSize);
-<a class="jxr_linenumber" name="287" href="#287">287</a>         buf.writeShort(message.variableHeader().messageId());
-<a class="jxr_linenumber" name="288" href="#288">288</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> qos : message.payload().grantedQoSLevels()) {
-<a class="jxr_linenumber" name="289" href="#289">289</a>             buf.writeByte(qos);
-<a class="jxr_linenumber" name="290" href="#290">290</a>         }
-<a class="jxr_linenumber" name="291" href="#291">291</a> 
-<a class="jxr_linenumber" name="292" href="#292">292</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="293" href="#293">293</a>     }
-<a class="jxr_linenumber" name="294" href="#294">294</a> 
-<a class="jxr_linenumber" name="295" href="#295">295</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodePublishMessage(
-<a class="jxr_linenumber" name="296" href="#296">296</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="297" href="#297">297</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttPublishMessage.html">MqttPublishMessage</a> message) {
-<a class="jxr_linenumber" name="298" href="#298">298</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
-<a class="jxr_linenumber" name="299" href="#299">299</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttPublishVariableHeader.html">MqttPublishVariableHeader</a> variableHeader = message.variableHeader();
-<a class="jxr_linenumber" name="300" href="#300">300</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload = message.payload().duplicate();
-<a class="jxr_linenumber" name="301" href="#301">301</a> 
-<a class="jxr_linenumber" name="302" href="#302">302</a>         String topicName = variableHeader.topicName();
-<a class="jxr_linenumber" name="303" href="#303">303</a>         byte[] topicNameBytes = encodeStringUtf8(topicName);
-<a class="jxr_linenumber" name="304" href="#304">304</a> 
-<a class="jxr_linenumber" name="305" href="#305">305</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2 + topicNameBytes.length +
-<a class="jxr_linenumber" name="306" href="#306">306</a>                 (mqttFixedHeader.qosLevel().value() &gt; 0 ? 2 : 0);
-<a class="jxr_linenumber" name="307" href="#307">307</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = payload.readableBytes();
-<a class="jxr_linenumber" name="308" href="#308">308</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
-<a class="jxr_linenumber" name="309" href="#309">309</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
-<a class="jxr_linenumber" name="310" href="#310">310</a> 
-<a class="jxr_linenumber" name="311" href="#311">311</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
-<a class="jxr_linenumber" name="312" href="#312">312</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
-<a class="jxr_linenumber" name="313" href="#313">313</a>         writeVariableLengthInt(buf, variablePartSize);
-<a class="jxr_linenumber" name="314" href="#314">314</a>         buf.writeShort(topicNameBytes.length);
-<a class="jxr_linenumber" name="315" href="#315">315</a>         buf.writeBytes(topicNameBytes);
-<a class="jxr_linenumber" name="316" href="#316">316</a>         <strong class="jxr_keyword">if</strong> (mqttFixedHeader.qosLevel().value() &gt; 0) {
-<a class="jxr_linenumber" name="317" href="#317">317</a>             buf.writeShort(variableHeader.messageId());
-<a class="jxr_linenumber" name="318" href="#318">318</a>         }
-<a class="jxr_linenumber" name="319" href="#319">319</a>         buf.writeBytes(payload);
-<a class="jxr_linenumber" name="320" href="#320">320</a> 
-<a class="jxr_linenumber" name="321" href="#321">321</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="322" href="#322">322</a>     }
-<a class="jxr_linenumber" name="323" href="#323">323</a> 
-<a class="jxr_linenumber" name="324" href="#324">324</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeMessageWithOnlySingleByteFixedHeaderAndMessageId(
-<a class="jxr_linenumber" name="325" href="#325">325</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="326" href="#326">326</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> message) {
-<a class="jxr_linenumber" name="327" href="#327">327</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
-<a class="jxr_linenumber" name="328" href="#328">328</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.html">MqttMessageIdVariableHeader</a> variableHeader = (MqttMessageIdVariableHeader) message.variableHeader();
-<a class="jxr_linenumber" name="329" href="#329">329</a>         <strong class="jxr_keyword">int</strong> msgId = variableHeader.messageId();
-<a class="jxr_linenumber" name="330" href="#330">330</a> 
-<a class="jxr_linenumber" name="331" href="#331">331</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2; <em class="jxr_comment">// variable part only has a message id</em>
-<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variableHeaderBufferSize);
-<a class="jxr_linenumber" name="333" href="#333">333</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variableHeaderBufferSize);
-<a class="jxr_linenumber" name="334" href="#334">334</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
-<a class="jxr_linenumber" name="335" href="#335">335</a>         writeVariableLengthInt(buf, variableHeaderBufferSize);
-<a class="jxr_linenumber" name="336" href="#336">336</a>         buf.writeShort(msgId);
-<a class="jxr_linenumber" name="337" href="#337">337</a> 
-<a class="jxr_linenumber" name="338" href="#338">338</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="339" href="#339">339</a>     }
-<a class="jxr_linenumber" name="340" href="#340">340</a> 
-<a class="jxr_linenumber" name="341" href="#341">341</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeMessageWithOnlySingleByteFixedHeader(
-<a class="jxr_linenumber" name="342" href="#342">342</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
-<a class="jxr_linenumber" name="343" href="#343">343</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> message) {
-<a class="jxr_linenumber" name="344" href="#344">344</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
-<a class="jxr_linenumber" name="345" href="#345">345</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(2);
-<a class="jxr_linenumber" name="346" href="#346">346</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
-<a class="jxr_linenumber" name="347" href="#347">347</a>         buf.writeByte(0);
-<a class="jxr_linenumber" name="348" href="#348">348</a> 
-<a class="jxr_linenumber" name="349" href="#349">349</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="350" href="#350">350</a>     }
-<a class="jxr_linenumber" name="351" href="#351">351</a> 
-<a class="jxr_linenumber" name="352" href="#352">352</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getFixedHeaderByte1(<a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> header) {
-<a class="jxr_linenumber" name="353" href="#353">353</a>         <strong class="jxr_keyword">int</strong> ret = 0;
-<a class="jxr_linenumber" name="354" href="#354">354</a>         ret |= header.messageType().value() &lt;&lt; 4;
-<a class="jxr_linenumber" name="355" href="#355">355</a>         <strong class="jxr_keyword">if</strong> (header.isDup()) {
-<a class="jxr_linenumber" name="356" href="#356">356</a>             ret |= 0x08;
-<a class="jxr_linenumber" name="357" href="#357">357</a>         }
-<a class="jxr_linenumber" name="358" href="#358">358</a>         ret |= header.qosLevel().value() &lt;&lt; 1;
-<a class="jxr_linenumber" name="359" href="#359">359</a>         <strong class="jxr_keyword">if</strong> (header.isRetain()) {
-<a class="jxr_linenumber" name="360" href="#360">360</a>             ret |= 0x01;
-<a class="jxr_linenumber" name="361" href="#361">361</a>         }
-<a class="jxr_linenumber" name="362" href="#362">362</a>         <strong class="jxr_keyword">return</strong> ret;
-<a class="jxr_linenumber" name="363" href="#363">363</a>     }
-<a class="jxr_linenumber" name="364" href="#364">364</a> 
-<a class="jxr_linenumber" name="365" href="#365">365</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeVariableLengthInt(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> num) {
-<a class="jxr_linenumber" name="366" href="#366">366</a>         <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="367" href="#367">367</a>             <strong class="jxr_keyword">int</strong> digit = num % 128;
-<a class="jxr_linenumber" name="368" href="#368">368</a>             num /= 128;
-<a class="jxr_linenumber" name="369" href="#369">369</a>             <strong class="jxr_keyword">if</strong> (num &gt; 0) {
-<a class="jxr_linenumber" name="370" href="#370">370</a>                 digit |= 0x80;
-<a class="jxr_linenumber" name="371" href="#371">371</a>             }
-<a class="jxr_linenumber" name="372" href="#372">372</a>             buf.writeByte(digit);
-<a class="jxr_linenumber" name="373" href="#373">373</a>         } <strong class="jxr_keyword">while</strong> (num &gt; 0);
-<a class="jxr_linenumber" name="374" href="#374">374</a>     }
-<a class="jxr_linenumber" name="375" href="#375">375</a> 
-<a class="jxr_linenumber" name="376" href="#376">376</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getVariableLengthInt(<strong class="jxr_keyword">int</strong> num) {
-<a class="jxr_linenumber" name="377" href="#377">377</a>         <strong class="jxr_keyword">int</strong> count = 0;
-<a class="jxr_linenumber" name="378" href="#378">378</a>         <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="379" href="#379">379</a>             num /= 128;
-<a class="jxr_linenumber" name="380" href="#380">380</a>             count++;
-<a class="jxr_linenumber" name="381" href="#381">381</a>         } <strong class="jxr_keyword">while</strong> (num &gt; 0);
-<a class="jxr_linenumber" name="382" href="#382">382</a>         <strong class="jxr_keyword">return</strong> count;
-<a class="jxr_linenumber" name="383" href="#383">383</a>     }
-<a class="jxr_linenumber" name="384" href="#384">384</a> 
-<a class="jxr_linenumber" name="385" href="#385">385</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte[] encodeStringUtf8(String s) {
-<a class="jxr_linenumber" name="386" href="#386">386</a>       <strong class="jxr_keyword">return</strong> s.getBytes(CharsetUtil.UTF_8);
-<a class="jxr_linenumber" name="387" href="#387">387</a>     }
-<a class="jxr_linenumber" name="388" href="#388">388</a> }
+<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.EmptyArrays;
+<a class="jxr_linenumber" name="25" href="#25">25</a>  
+<a class="jxr_linenumber" name="26" href="#26">26</a>  <strong class="jxr_keyword">import</strong> java.util.List;
+<a class="jxr_linenumber" name="27" href="#27">27</a>  
+<a class="jxr_linenumber" name="28" href="#28">28</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.handler.codec.mqtt.MqttCodecUtil.*;
+<a class="jxr_linenumber" name="29" href="#29">29</a>  
+<a class="jxr_linenumber" name="30" href="#30">30</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="31" href="#31">31</a>  <em class="jxr_javadoccomment"> * Encodes Mqtt messages into bytes following the protocol specification v3.1</em>
+<a class="jxr_linenumber" name="32" href="#32">32</a>  <em class="jxr_javadoccomment"> * as described here &lt;a href="<a href="http://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html" target="alexandria_uri">http://public.dhe.ibm.com/software/dw/webservices/ws-mqtt/mqtt-v3r1.html</a>"&gt;MQTTV3.1&lt;/a&gt;</em>
+<a class="jxr_linenumber" name="33" href="#33">33</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="34" href="#34">34</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a> <strong class="jxr_keyword">extends</strong> MessageToMessageEncoder&lt;MqttMessage&gt; {
+<a class="jxr_linenumber" name="35" href="#35">35</a>  
+<a class="jxr_linenumber" name="36" href="#36">36</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a> INSTANCE = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a>();
+<a class="jxr_linenumber" name="37" href="#37">37</a>  
+<a class="jxr_linenumber" name="38" href="#38">38</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttEncoder.html">MqttEncoder</a>() { }
+<a class="jxr_linenumber" name="39" href="#39">39</a>  
+<a class="jxr_linenumber" name="40" href="#40">40</a>      @Override
+<a class="jxr_linenumber" name="41" href="#41">41</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encode(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> msg, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="42" href="#42">42</a>          out.add(doEncode(ctx.alloc(), msg));
+<a class="jxr_linenumber" name="43" href="#43">43</a>      }
+<a class="jxr_linenumber" name="44" href="#44">44</a>  
+<a class="jxr_linenumber" name="45" href="#45">45</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="46" href="#46">46</a>  <em class="jxr_javadoccomment">     * This is the main encoding method.</em>
+<a class="jxr_linenumber" name="47" href="#47">47</a>  <em class="jxr_javadoccomment">     * It's only visible for testing.</em>
+<a class="jxr_linenumber" name="48" href="#48">48</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="49" href="#49">49</a>  <em class="jxr_javadoccomment">     * @param byteBufAllocator Allocates ByteBuf</em>
+<a class="jxr_linenumber" name="50" href="#50">50</a>  <em class="jxr_javadoccomment">     * @param message MQTT message to encode</em>
+<a class="jxr_linenumber" name="51" href="#51">51</a>  <em class="jxr_javadoccomment">     * @return ByteBuf with encoded bytes</em>
+<a class="jxr_linenumber" name="52" href="#52">52</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="53" href="#53">53</a>      <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> doEncode(<a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator, <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> message) {
+<a class="jxr_linenumber" name="54" href="#54">54</a>  
+<a class="jxr_linenumber" name="55" href="#55">55</a>          <strong class="jxr_keyword">switch</strong> (message.fixedHeader().messageType()) {
+<a class="jxr_linenumber" name="56" href="#56">56</a>              <strong class="jxr_keyword">case</strong> CONNECT:
+<a class="jxr_linenumber" name="57" href="#57">57</a>                  <strong class="jxr_keyword">return</strong> encodeConnectMessage(byteBufAllocator, (MqttConnectMessage) message);
+<a class="jxr_linenumber" name="58" href="#58">58</a>  
+<a class="jxr_linenumber" name="59" href="#59">59</a>              <strong class="jxr_keyword">case</strong> CONNACK:
+<a class="jxr_linenumber" name="60" href="#60">60</a>                  <strong class="jxr_keyword">return</strong> encodeConnAckMessage(byteBufAllocator, (MqttConnAckMessage) message);
+<a class="jxr_linenumber" name="61" href="#61">61</a>  
+<a class="jxr_linenumber" name="62" href="#62">62</a>              <strong class="jxr_keyword">case</strong> PUBLISH:
+<a class="jxr_linenumber" name="63" href="#63">63</a>                  <strong class="jxr_keyword">return</strong> encodePublishMessage(byteBufAllocator, (MqttPublishMessage) message);
+<a class="jxr_linenumber" name="64" href="#64">64</a>  
+<a class="jxr_linenumber" name="65" href="#65">65</a>              <strong class="jxr_keyword">case</strong> SUBSCRIBE:
+<a class="jxr_linenumber" name="66" href="#66">66</a>                  <strong class="jxr_keyword">return</strong> encodeSubscribeMessage(byteBufAllocator, (MqttSubscribeMessage) message);
+<a class="jxr_linenumber" name="67" href="#67">67</a>  
+<a class="jxr_linenumber" name="68" href="#68">68</a>              <strong class="jxr_keyword">case</strong> UNSUBSCRIBE:
+<a class="jxr_linenumber" name="69" href="#69">69</a>                  <strong class="jxr_keyword">return</strong> encodeUnsubscribeMessage(byteBufAllocator, (MqttUnsubscribeMessage) message);
+<a class="jxr_linenumber" name="70" href="#70">70</a>  
+<a class="jxr_linenumber" name="71" href="#71">71</a>              <strong class="jxr_keyword">case</strong> SUBACK:
+<a class="jxr_linenumber" name="72" href="#72">72</a>                  <strong class="jxr_keyword">return</strong> encodeSubAckMessage(byteBufAllocator, (MqttSubAckMessage) message);
+<a class="jxr_linenumber" name="73" href="#73">73</a>  
+<a class="jxr_linenumber" name="74" href="#74">74</a>              <strong class="jxr_keyword">case</strong> UNSUBACK:
+<a class="jxr_linenumber" name="75" href="#75">75</a>              <strong class="jxr_keyword">case</strong> PUBACK:
+<a class="jxr_linenumber" name="76" href="#76">76</a>              <strong class="jxr_keyword">case</strong> PUBREC:
+<a class="jxr_linenumber" name="77" href="#77">77</a>              <strong class="jxr_keyword">case</strong> PUBREL:
+<a class="jxr_linenumber" name="78" href="#78">78</a>              <strong class="jxr_keyword">case</strong> PUBCOMP:
+<a class="jxr_linenumber" name="79" href="#79">79</a>                  <strong class="jxr_keyword">return</strong> encodeMessageWithOnlySingleByteFixedHeaderAndMessageId(byteBufAllocator, message);
+<a class="jxr_linenumber" name="80" href="#80">80</a>  
+<a class="jxr_linenumber" name="81" href="#81">81</a>              <strong class="jxr_keyword">case</strong> PINGREQ:
+<a class="jxr_linenumber" name="82" href="#82">82</a>              <strong class="jxr_keyword">case</strong> PINGRESP:
+<a class="jxr_linenumber" name="83" href="#83">83</a>              <strong class="jxr_keyword">case</strong> DISCONNECT:
+<a class="jxr_linenumber" name="84" href="#84">84</a>                  <strong class="jxr_keyword">return</strong> encodeMessageWithOnlySingleByteFixedHeader(byteBufAllocator, message);
+<a class="jxr_linenumber" name="85" href="#85">85</a>  
+<a class="jxr_linenumber" name="86" href="#86">86</a>              <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="87" href="#87">87</a>                  <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="88" href="#88">88</a>                          <span class="jxr_string">"Unknown message type: "</span> + message.fixedHeader().messageType().value());
+<a class="jxr_linenumber" name="89" href="#89">89</a>          }
+<a class="jxr_linenumber" name="90" href="#90">90</a>      }
+<a class="jxr_linenumber" name="91" href="#91">91</a>  
+<a class="jxr_linenumber" name="92" href="#92">92</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeConnectMessage(
+<a class="jxr_linenumber" name="93" href="#93">93</a>              <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="94" href="#94">94</a>              <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectMessage.html">MqttConnectMessage</a> message) {
+<a class="jxr_linenumber" name="95" href="#95">95</a>          <strong class="jxr_keyword">int</strong> payloadBufferSize = 0;
+<a class="jxr_linenumber" name="96" href="#96">96</a>  
+<a class="jxr_linenumber" name="97" href="#97">97</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
+<a class="jxr_linenumber" name="98" href="#98">98</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectVariableHeader.html">MqttConnectVariableHeader</a> variableHeader = message.variableHeader();
+<a class="jxr_linenumber" name="99" href="#99">99</a>          <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectPayload.html">MqttConnectPayload</a> payload = message.payload();
+<a class="jxr_linenumber" name="100" href="#100">100</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttVersion.html">MqttVersion</a> mqttVersion = MqttVersion.fromProtocolNameAndLevel(variableHeader.name(),
+<a class="jxr_linenumber" name="101" href="#101">101</a>                 (byte) variableHeader.version());
+<a class="jxr_linenumber" name="102" href="#102">102</a> 
+<a class="jxr_linenumber" name="103" href="#103">103</a>         <em class="jxr_comment">// Client id</em>
+<a class="jxr_linenumber" name="104" href="#104">104</a>         String clientIdentifier = payload.clientIdentifier();
+<a class="jxr_linenumber" name="105" href="#105">105</a>         <strong class="jxr_keyword">if</strong> (!isValidClientId(mqttVersion, clientIdentifier)) {
+<a class="jxr_linenumber" name="106" href="#106">106</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/mqtt/MqttIdentifierRejectedException.html">MqttIdentifierRejectedException</a>(<span class="jxr_string">"invalid clientIdentifier: "</span> + clientIdentifier);
+<a class="jxr_linenumber" name="107" href="#107">107</a>         }
+<a class="jxr_linenumber" name="108" href="#108">108</a>         byte[] clientIdentifierBytes = encodeStringUtf8(clientIdentifier);
+<a class="jxr_linenumber" name="109" href="#109">109</a>         payloadBufferSize += 2 + clientIdentifierBytes.length;
+<a class="jxr_linenumber" name="110" href="#110">110</a> 
+<a class="jxr_linenumber" name="111" href="#111">111</a>         <em class="jxr_comment">// Will topic and message</em>
+<a class="jxr_linenumber" name="112" href="#112">112</a>         String willTopic = payload.willTopic();
+<a class="jxr_linenumber" name="113" href="#113">113</a>         byte[] willTopicBytes = willTopic != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(willTopic) : EmptyArrays.EMPTY_BYTES;
+<a class="jxr_linenumber" name="114" href="#114">114</a>         String willMessage = payload.willMessage();
+<a class="jxr_linenumber" name="115" href="#115">115</a>         byte[] willMessageBytes = willMessage != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(willMessage) : EmptyArrays.EMPTY_BYTES;
+<a class="jxr_linenumber" name="116" href="#116">116</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillFlag()) {
+<a class="jxr_linenumber" name="117" href="#117">117</a>             payloadBufferSize += 2 + willTopicBytes.length;
+<a class="jxr_linenumber" name="118" href="#118">118</a>             payloadBufferSize += 2 + willMessageBytes.length;
+<a class="jxr_linenumber" name="119" href="#119">119</a>         }
+<a class="jxr_linenumber" name="120" href="#120">120</a> 
+<a class="jxr_linenumber" name="121" href="#121">121</a>         String userName = payload.userName();
+<a class="jxr_linenumber" name="122" href="#122">122</a>         byte[] userNameBytes = userName != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(userName) : EmptyArrays.EMPTY_BYTES;
+<a class="jxr_linenumber" name="123" href="#123">123</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasUserName()) {
+<a class="jxr_linenumber" name="124" href="#124">124</a>             payloadBufferSize += 2 + userNameBytes.length;
+<a class="jxr_linenumber" name="125" href="#125">125</a>         }
+<a class="jxr_linenumber" name="126" href="#126">126</a> 
+<a class="jxr_linenumber" name="127" href="#127">127</a>         String password = payload.password();
+<a class="jxr_linenumber" name="128" href="#128">128</a>         byte[] passwordBytes = password != <strong class="jxr_keyword">null</strong> ? encodeStringUtf8(password) : EmptyArrays.EMPTY_BYTES;
+<a class="jxr_linenumber" name="129" href="#129">129</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasPassword()) {
+<a class="jxr_linenumber" name="130" href="#130">130</a>             payloadBufferSize += 2 + passwordBytes.length;
+<a class="jxr_linenumber" name="131" href="#131">131</a>         }
+<a class="jxr_linenumber" name="132" href="#132">132</a> 
+<a class="jxr_linenumber" name="133" href="#133">133</a>         <em class="jxr_comment">// Fixed header</em>
+<a class="jxr_linenumber" name="134" href="#134">134</a>         byte[] protocolNameBytes = mqttVersion.protocolNameBytes();
+<a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2 + protocolNameBytes.length + 4;
+<a class="jxr_linenumber" name="136" href="#136">136</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
+<a class="jxr_linenumber" name="137" href="#137">137</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
+<a class="jxr_linenumber" name="138" href="#138">138</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
+<a class="jxr_linenumber" name="139" href="#139">139</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
+<a class="jxr_linenumber" name="140" href="#140">140</a>         writeVariableLengthInt(buf, variablePartSize);
+<a class="jxr_linenumber" name="141" href="#141">141</a> 
+<a class="jxr_linenumber" name="142" href="#142">142</a>         buf.writeShort(protocolNameBytes.length);
+<a class="jxr_linenumber" name="143" href="#143">143</a>         buf.writeBytes(protocolNameBytes);
+<a class="jxr_linenumber" name="144" href="#144">144</a> 
+<a class="jxr_linenumber" name="145" href="#145">145</a>         buf.writeByte(variableHeader.version());
+<a class="jxr_linenumber" name="146" href="#146">146</a>         buf.writeByte(getConnVariableHeaderFlag(variableHeader));
+<a class="jxr_linenumber" name="147" href="#147">147</a>         buf.writeShort(variableHeader.keepAliveTimeSeconds());
+<a class="jxr_linenumber" name="148" href="#148">148</a> 
+<a class="jxr_linenumber" name="149" href="#149">149</a>         <em class="jxr_comment">// Payload</em>
+<a class="jxr_linenumber" name="150" href="#150">150</a>         buf.writeShort(clientIdentifierBytes.length);
+<a class="jxr_linenumber" name="151" href="#151">151</a>         buf.writeBytes(clientIdentifierBytes, 0, clientIdentifierBytes.length);
+<a class="jxr_linenumber" name="152" href="#152">152</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillFlag()) {
+<a class="jxr_linenumber" name="153" href="#153">153</a>             buf.writeShort(willTopicBytes.length);
+<a class="jxr_linenumber" name="154" href="#154">154</a>             buf.writeBytes(willTopicBytes, 0, willTopicBytes.length);
+<a class="jxr_linenumber" name="155" href="#155">155</a>             buf.writeShort(willMessageBytes.length);
+<a class="jxr_linenumber" name="156" href="#156">156</a>             buf.writeBytes(willMessageBytes, 0, willMessageBytes.length);
+<a class="jxr_linenumber" name="157" href="#157">157</a>         }
+<a class="jxr_linenumber" name="158" href="#158">158</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasUserName()) {
+<a class="jxr_linenumber" name="159" href="#159">159</a>             buf.writeShort(userNameBytes.length);
+<a class="jxr_linenumber" name="160" href="#160">160</a>             buf.writeBytes(userNameBytes, 0, userNameBytes.length);
+<a class="jxr_linenumber" name="161" href="#161">161</a>         }
+<a class="jxr_linenumber" name="162" href="#162">162</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasPassword()) {
+<a class="jxr_linenumber" name="163" href="#163">163</a>             buf.writeShort(passwordBytes.length);
+<a class="jxr_linenumber" name="164" href="#164">164</a>             buf.writeBytes(passwordBytes, 0, passwordBytes.length);
+<a class="jxr_linenumber" name="165" href="#165">165</a>         }
+<a class="jxr_linenumber" name="166" href="#166">166</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="167" href="#167">167</a>     }
+<a class="jxr_linenumber" name="168" href="#168">168</a> 
+<a class="jxr_linenumber" name="169" href="#169">169</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getConnVariableHeaderFlag(<a href="../../../../../io/netty/handler/codec/mqtt/MqttConnectVariableHeader.html">MqttConnectVariableHeader</a> variableHeader) {
+<a class="jxr_linenumber" name="170" href="#170">170</a>         <strong class="jxr_keyword">int</strong> flagByte = 0;
+<a class="jxr_linenumber" name="171" href="#171">171</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasUserName()) {
+<a class="jxr_linenumber" name="172" href="#172">172</a>             flagByte |= 0x80;
+<a class="jxr_linenumber" name="173" href="#173">173</a>         }
+<a class="jxr_linenumber" name="174" href="#174">174</a>         <strong class="jxr_keyword">if</strong> (variableHeader.hasPassword()) {
+<a class="jxr_linenumber" name="175" href="#175">175</a>             flagByte |= 0x40;
+<a class="jxr_linenumber" name="176" href="#176">176</a>         }
+<a class="jxr_linenumber" name="177" href="#177">177</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillRetain()) {
+<a class="jxr_linenumber" name="178" href="#178">178</a>             flagByte |= 0x20;
+<a class="jxr_linenumber" name="179" href="#179">179</a>         }
+<a class="jxr_linenumber" name="180" href="#180">180</a>         flagByte |= (variableHeader.willQos() &amp; 0x03) &lt;&lt; 3;
+<a class="jxr_linenumber" name="181" href="#181">181</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isWillFlag()) {
+<a class="jxr_linenumber" name="182" href="#182">182</a>             flagByte |= 0x04;
+<a class="jxr_linenumber" name="183" href="#183">183</a>         }
+<a class="jxr_linenumber" name="184" href="#184">184</a>         <strong class="jxr_keyword">if</strong> (variableHeader.isCleanSession()) {
+<a class="jxr_linenumber" name="185" href="#185">185</a>             flagByte |= 0x02;
+<a class="jxr_linenumber" name="186" href="#186">186</a>         }
+<a class="jxr_linenumber" name="187" href="#187">187</a>         <strong class="jxr_keyword">return</strong> flagByte;
+<a class="jxr_linenumber" name="188" href="#188">188</a>     }
+<a class="jxr_linenumber" name="189" href="#189">189</a> 
+<a class="jxr_linenumber" name="190" href="#190">190</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeConnAckMessage(
+<a class="jxr_linenumber" name="191" href="#191">191</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="192" href="#192">192</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttConnAckMessage.html">MqttConnAckMessage</a> message) {
+<a class="jxr_linenumber" name="193" href="#193">193</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(4);
+<a class="jxr_linenumber" name="194" href="#194">194</a>         buf.writeByte(getFixedHeaderByte1(message.fixedHeader()));
+<a class="jxr_linenumber" name="195" href="#195">195</a>         buf.writeByte(2);
+<a class="jxr_linenumber" name="196" href="#196">196</a>         buf.writeByte(message.variableHeader().isSessionPresent() ? 0x01 : 0x00);
+<a class="jxr_linenumber" name="197" href="#197">197</a>         buf.writeByte(message.variableHeader().connectReturnCode().byteValue());
+<a class="jxr_linenumber" name="198" href="#198">198</a> 
+<a class="jxr_linenumber" name="199" href="#199">199</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="200" href="#200">200</a>     }
+<a class="jxr_linenumber" name="201" href="#201">201</a> 
+<a class="jxr_linenumber" name="202" href="#202">202</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeSubscribeMessage(
+<a class="jxr_linenumber" name="203" href="#203">203</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="204" href="#204">204</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttSubscribeMessage.html">MqttSubscribeMessage</a> message) {
+<a class="jxr_linenumber" name="205" href="#205">205</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2;
+<a class="jxr_linenumber" name="206" href="#206">206</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = 0;
+<a class="jxr_linenumber" name="207" href="#207">207</a> 
+<a class="jxr_linenumber" name="208" href="#208">208</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
+<a class="jxr_linenumber" name="209" href="#209">209</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.html">MqttMessageIdVariableHeader</a> variableHeader = message.variableHeader();
+<a class="jxr_linenumber" name="210" href="#210">210</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttSubscribePayload.html">MqttSubscribePayload</a> payload = message.payload();
+<a class="jxr_linenumber" name="211" href="#211">211</a> 
+<a class="jxr_linenumber" name="212" href="#212">212</a>         <strong class="jxr_keyword">for</strong> (MqttTopicSubscription topic : payload.topicSubscriptions()) {
+<a class="jxr_linenumber" name="213" href="#213">213</a>             String topicName = topic.topicName();
+<a class="jxr_linenumber" name="214" href="#214">214</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
+<a class="jxr_linenumber" name="215" href="#215">215</a>             payloadBufferSize += 2 + topicNameBytes.length;
+<a class="jxr_linenumber" name="216" href="#216">216</a>             payloadBufferSize += 1;
+<a class="jxr_linenumber" name="217" href="#217">217</a>         }
+<a class="jxr_linenumber" name="218" href="#218">218</a> 
+<a class="jxr_linenumber" name="219" href="#219">219</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
+<a class="jxr_linenumber" name="220" href="#220">220</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
+<a class="jxr_linenumber" name="221" href="#221">221</a> 
+<a class="jxr_linenumber" name="222" href="#222">222</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
+<a class="jxr_linenumber" name="223" href="#223">223</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
+<a class="jxr_linenumber" name="224" href="#224">224</a>         writeVariableLengthInt(buf, variablePartSize);
+<a class="jxr_linenumber" name="225" href="#225">225</a> 
+<a class="jxr_linenumber" name="226" href="#226">226</a>         <em class="jxr_comment">// Variable Header</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a>         <strong class="jxr_keyword">int</strong> messageId = variableHeader.messageId();
+<a class="jxr_linenumber" name="228" href="#228">228</a>         buf.writeShort(messageId);
+<a class="jxr_linenumber" name="229" href="#229">229</a> 
+<a class="jxr_linenumber" name="230" href="#230">230</a>         <em class="jxr_comment">// Payload</em>
+<a class="jxr_linenumber" name="231" href="#231">231</a>         <strong class="jxr_keyword">for</strong> (MqttTopicSubscription topic : payload.topicSubscriptions()) {
+<a class="jxr_linenumber" name="232" href="#232">232</a>             String topicName = topic.topicName();
+<a class="jxr_linenumber" name="233" href="#233">233</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
+<a class="jxr_linenumber" name="234" href="#234">234</a>             buf.writeShort(topicNameBytes.length);
+<a class="jxr_linenumber" name="235" href="#235">235</a>             buf.writeBytes(topicNameBytes, 0, topicNameBytes.length);
+<a class="jxr_linenumber" name="236" href="#236">236</a>             buf.writeByte(topic.qualityOfService().value());
+<a class="jxr_linenumber" name="237" href="#237">237</a>         }
+<a class="jxr_linenumber" name="238" href="#238">238</a> 
+<a class="jxr_linenumber" name="239" href="#239">239</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="240" href="#240">240</a>     }
+<a class="jxr_linenumber" name="241" href="#241">241</a> 
+<a class="jxr_linenumber" name="242" href="#242">242</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeUnsubscribeMessage(
+<a class="jxr_linenumber" name="243" href="#243">243</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="244" href="#244">244</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttUnsubscribeMessage.html">MqttUnsubscribeMessage</a> message) {
+<a class="jxr_linenumber" name="245" href="#245">245</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2;
+<a class="jxr_linenumber" name="246" href="#246">246</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = 0;
+<a class="jxr_linenumber" name="247" href="#247">247</a> 
+<a class="jxr_linenumber" name="248" href="#248">248</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
+<a class="jxr_linenumber" name="249" href="#249">249</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.html">MqttMessageIdVariableHeader</a> variableHeader = message.variableHeader();
+<a class="jxr_linenumber" name="250" href="#250">250</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttUnsubscribePayload.html">MqttUnsubscribePayload</a> payload = message.payload();
+<a class="jxr_linenumber" name="251" href="#251">251</a> 
+<a class="jxr_linenumber" name="252" href="#252">252</a>         <strong class="jxr_keyword">for</strong> (String topicName : payload.topics()) {
+<a class="jxr_linenumber" name="253" href="#253">253</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
+<a class="jxr_linenumber" name="254" href="#254">254</a>             payloadBufferSize += 2 + topicNameBytes.length;
+<a class="jxr_linenumber" name="255" href="#255">255</a>         }
+<a class="jxr_linenumber" name="256" href="#256">256</a> 
+<a class="jxr_linenumber" name="257" href="#257">257</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
+<a class="jxr_linenumber" name="258" href="#258">258</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
+<a class="jxr_linenumber" name="259" href="#259">259</a> 
+<a class="jxr_linenumber" name="260" href="#260">260</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
+<a class="jxr_linenumber" name="261" href="#261">261</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
+<a class="jxr_linenumber" name="262" href="#262">262</a>         writeVariableLengthInt(buf, variablePartSize);
+<a class="jxr_linenumber" name="263" href="#263">263</a> 
+<a class="jxr_linenumber" name="264" href="#264">264</a>         <em class="jxr_comment">// Variable Header</em>
+<a class="jxr_linenumber" name="265" href="#265">265</a>         <strong class="jxr_keyword">int</strong> messageId = variableHeader.messageId();
+<a class="jxr_linenumber" name="266" href="#266">266</a>         buf.writeShort(messageId);
+<a class="jxr_linenumber" name="267" href="#267">267</a> 
+<a class="jxr_linenumber" name="268" href="#268">268</a>         <em class="jxr_comment">// Payload</em>
+<a class="jxr_linenumber" name="269" href="#269">269</a>         <strong class="jxr_keyword">for</strong> (String topicName : payload.topics()) {
+<a class="jxr_linenumber" name="270" href="#270">270</a>             byte[] topicNameBytes = encodeStringUtf8(topicName);
+<a class="jxr_linenumber" name="271" href="#271">271</a>             buf.writeShort(topicNameBytes.length);
+<a class="jxr_linenumber" name="272" href="#272">272</a>             buf.writeBytes(topicNameBytes, 0, topicNameBytes.length);
+<a class="jxr_linenumber" name="273" href="#273">273</a>         }
+<a class="jxr_linenumber" name="274" href="#274">274</a> 
+<a class="jxr_linenumber" name="275" href="#275">275</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="276" href="#276">276</a>     }
+<a class="jxr_linenumber" name="277" href="#277">277</a> 
+<a class="jxr_linenumber" name="278" href="#278">278</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeSubAckMessage(
+<a class="jxr_linenumber" name="279" href="#279">279</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="280" href="#280">280</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttSubAckMessage.html">MqttSubAckMessage</a> message) {
+<a class="jxr_linenumber" name="281" href="#281">281</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2;
+<a class="jxr_linenumber" name="282" href="#282">282</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = message.payload().grantedQoSLevels().size();
+<a class="jxr_linenumber" name="283" href="#283">283</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
+<a class="jxr_linenumber" name="284" href="#284">284</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
+<a class="jxr_linenumber" name="285" href="#285">285</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
+<a class="jxr_linenumber" name="286" href="#286">286</a>         buf.writeByte(getFixedHeaderByte1(message.fixedHeader()));
+<a class="jxr_linenumber" name="287" href="#287">287</a>         writeVariableLengthInt(buf, variablePartSize);
+<a class="jxr_linenumber" name="288" href="#288">288</a>         buf.writeShort(message.variableHeader().messageId());
+<a class="jxr_linenumber" name="289" href="#289">289</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> qos : message.payload().grantedQoSLevels()) {
+<a class="jxr_linenumber" name="290" href="#290">290</a>             buf.writeByte(qos);
+<a class="jxr_linenumber" name="291" href="#291">291</a>         }
+<a class="jxr_linenumber" name="292" href="#292">292</a> 
+<a class="jxr_linenumber" name="293" href="#293">293</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="294" href="#294">294</a>     }
+<a class="jxr_linenumber" name="295" href="#295">295</a> 
+<a class="jxr_linenumber" name="296" href="#296">296</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodePublishMessage(
+<a class="jxr_linenumber" name="297" href="#297">297</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="298" href="#298">298</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttPublishMessage.html">MqttPublishMessage</a> message) {
+<a class="jxr_linenumber" name="299" href="#299">299</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
+<a class="jxr_linenumber" name="300" href="#300">300</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttPublishVariableHeader.html">MqttPublishVariableHeader</a> variableHeader = message.variableHeader();
+<a class="jxr_linenumber" name="301" href="#301">301</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload = message.payload().duplicate();
+<a class="jxr_linenumber" name="302" href="#302">302</a> 
+<a class="jxr_linenumber" name="303" href="#303">303</a>         String topicName = variableHeader.topicName();
+<a class="jxr_linenumber" name="304" href="#304">304</a>         byte[] topicNameBytes = encodeStringUtf8(topicName);
+<a class="jxr_linenumber" name="305" href="#305">305</a> 
+<a class="jxr_linenumber" name="306" href="#306">306</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2 + topicNameBytes.length +
+<a class="jxr_linenumber" name="307" href="#307">307</a>                 (mqttFixedHeader.qosLevel().value() &gt; 0 ? 2 : 0);
+<a class="jxr_linenumber" name="308" href="#308">308</a>         <strong class="jxr_keyword">int</strong> payloadBufferSize = payload.readableBytes();
+<a class="jxr_linenumber" name="309" href="#309">309</a>         <strong class="jxr_keyword">int</strong> variablePartSize = variableHeaderBufferSize + payloadBufferSize;
+<a class="jxr_linenumber" name="310" href="#310">310</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variablePartSize);
+<a class="jxr_linenumber" name="311" href="#311">311</a> 
+<a class="jxr_linenumber" name="312" href="#312">312</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variablePartSize);
+<a class="jxr_linenumber" name="313" href="#313">313</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
+<a class="jxr_linenumber" name="314" href="#314">314</a>         writeVariableLengthInt(buf, variablePartSize);
+<a class="jxr_linenumber" name="315" href="#315">315</a>         buf.writeShort(topicNameBytes.length);
+<a class="jxr_linenumber" name="316" href="#316">316</a>         buf.writeBytes(topicNameBytes);
+<a class="jxr_linenumber" name="317" href="#317">317</a>         <strong class="jxr_keyword">if</strong> (mqttFixedHeader.qosLevel().value() &gt; 0) {
+<a class="jxr_linenumber" name="318" href="#318">318</a>             buf.writeShort(variableHeader.messageId());
+<a class="jxr_linenumber" name="319" href="#319">319</a>         }
+<a class="jxr_linenumber" name="320" href="#320">320</a>         buf.writeBytes(payload);
+<a class="jxr_linenumber" name="321" href="#321">321</a> 
+<a class="jxr_linenumber" name="322" href="#322">322</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="323" href="#323">323</a>     }
+<a class="jxr_linenumber" name="324" href="#324">324</a> 
+<a class="jxr_linenumber" name="325" href="#325">325</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeMessageWithOnlySingleByteFixedHeaderAndMessageId(
+<a class="jxr_linenumber" name="326" href="#326">326</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="327" href="#327">327</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> message) {
+<a class="jxr_linenumber" name="328" href="#328">328</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
+<a class="jxr_linenumber" name="329" href="#329">329</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.html">MqttMessageIdVariableHeader</a> variableHeader = (MqttMessageIdVariableHeader) message.variableHeader();
+<a class="jxr_linenumber" name="330" href="#330">330</a>         <strong class="jxr_keyword">int</strong> msgId = variableHeader.messageId();
+<a class="jxr_linenumber" name="331" href="#331">331</a> 
+<a class="jxr_linenumber" name="332" href="#332">332</a>         <strong class="jxr_keyword">int</strong> variableHeaderBufferSize = 2; <em class="jxr_comment">// variable part only has a message id</em>
+<a class="jxr_linenumber" name="333" href="#333">333</a>         <strong class="jxr_keyword">int</strong> fixedHeaderBufferSize = 1 + getVariableLengthInt(variableHeaderBufferSize);
+<a class="jxr_linenumber" name="334" href="#334">334</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(fixedHeaderBufferSize + variableHeaderBufferSize);
+<a class="jxr_linenumber" name="335" href="#335">335</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
+<a class="jxr_linenumber" name="336" href="#336">336</a>         writeVariableLengthInt(buf, variableHeaderBufferSize);
+<a class="jxr_linenumber" name="337" href="#337">337</a>         buf.writeShort(msgId);
+<a class="jxr_linenumber" name="338" href="#338">338</a> 
+<a class="jxr_linenumber" name="339" href="#339">339</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="340" href="#340">340</a>     }
+<a class="jxr_linenumber" name="341" href="#341">341</a> 
+<a class="jxr_linenumber" name="342" href="#342">342</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> encodeMessageWithOnlySingleByteFixedHeader(
+<a class="jxr_linenumber" name="343" href="#343">343</a>             <a href="../../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> byteBufAllocator,
+<a class="jxr_linenumber" name="344" href="#344">344</a>             <a href="../../../../../io/netty/handler/codec/mqtt/MqttMessage.html">MqttMessage</a> message) {
+<a class="jxr_linenumber" name="345" href="#345">345</a>         <a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> mqttFixedHeader = message.fixedHeader();
+<a class="jxr_linenumber" name="346" href="#346">346</a>         <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = byteBufAllocator.buffer(2);
+<a class="jxr_linenumber" name="347" href="#347">347</a>         buf.writeByte(getFixedHeaderByte1(mqttFixedHeader));
+<a class="jxr_linenumber" name="348" href="#348">348</a>         buf.writeByte(0);
+<a class="jxr_linenumber" name="349" href="#349">349</a> 
+<a class="jxr_linenumber" name="350" href="#350">350</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="351" href="#351">351</a>     }
+<a class="jxr_linenumber" name="352" href="#352">352</a> 
+<a class="jxr_linenumber" name="353" href="#353">353</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getFixedHeaderByte1(<a href="../../../../../io/netty/handler/codec/mqtt/MqttFixedHeader.html">MqttFixedHeader</a> header) {
+<a class="jxr_linenumber" name="354" href="#354">354</a>         <strong class="jxr_keyword">int</strong> ret = 0;
+<a class="jxr_linenumber" name="355" href="#355">355</a>         ret |= header.messageType().value() &lt;&lt; 4;
+<a class="jxr_linenumber" name="356" href="#356">356</a>         <strong class="jxr_keyword">if</strong> (header.isDup()) {
+<a class="jxr_linenumber" name="357" href="#357">357</a>             ret |= 0x08;
+<a class="jxr_linenumber" name="358" href="#358">358</a>         }
+<a class="jxr_linenumber" name="359" href="#359">359</a>         ret |= header.qosLevel().value() &lt;&lt; 1;
+<a class="jxr_linenumber" name="360" href="#360">360</a>         <strong class="jxr_keyword">if</strong> (header.isRetain()) {
+<a class="jxr_linenumber" name="361" href="#361">361</a>             ret |= 0x01;
+<a class="jxr_linenumber" name="362" href="#362">362</a>         }
+<a class="jxr_linenumber" name="363" href="#363">363</a>         <strong class="jxr_keyword">return</strong> ret;
+<a class="jxr_linenumber" name="364" href="#364">364</a>     }
+<a class="jxr_linenumber" name="365" href="#365">365</a> 
+<a class="jxr_linenumber" name="366" href="#366">366</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeVariableLengthInt(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> num) {
+<a class="jxr_linenumber" name="367" href="#367">367</a>         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="368" href="#368">368</a>             <strong class="jxr_keyword">int</strong> digit = num % 128;
+<a class="jxr_linenumber" name="369" href="#369">369</a>             num /= 128;
+<a class="jxr_linenumber" name="370" href="#370">370</a>             <strong class="jxr_keyword">if</strong> (num &gt; 0) {
+<a class="jxr_linenumber" name="371" href="#371">371</a>                 digit |= 0x80;
+<a class="jxr_linenumber" name="372" href="#372">372</a>             }
+<a class="jxr_linenumber" name="373" href="#373">373</a>             buf.writeByte(digit);
+<a class="jxr_linenumber" name="374" href="#374">374</a>         } <strong class="jxr_keyword">while</strong> (num &gt; 0);
+<a class="jxr_linenumber" name="375" href="#375">375</a>     }
+<a class="jxr_linenumber" name="376" href="#376">376</a> 
+<a class="jxr_linenumber" name="377" href="#377">377</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getVariableLengthInt(<strong class="jxr_keyword">int</strong> num) {
+<a class="jxr_linenumber" name="378" href="#378">378</a>         <strong class="jxr_keyword">int</strong> count = 0;
+<a class="jxr_linenumber" name="379" href="#379">379</a>         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="380" href="#380">380</a>             num /= 128;
+<a class="jxr_linenumber" name="381" href="#381">381</a>             count++;
+<a class="jxr_linenumber" name="382" href="#382">382</a>         } <strong class="jxr_keyword">while</strong> (num &gt; 0);
+<a class="jxr_linenumber" name="383" href="#383">383</a>         <strong class="jxr_keyword">return</strong> count;
+<a class="jxr_linenumber" name="384" href="#384">384</a>     }
+<a class="jxr_linenumber" name="385" href="#385">385</a> 
+<a class="jxr_linenumber" name="386" href="#386">386</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte[] encodeStringUtf8(String s) {
+<a class="jxr_linenumber" name="387" href="#387">387</a>       <strong class="jxr_keyword">return</strong> s.getBytes(CharsetUtil.UTF_8);
+<a class="jxr_linenumber" name="388" href="#388">388</a>     }
+<a class="jxr_linenumber" name="389" href="#389">389</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
