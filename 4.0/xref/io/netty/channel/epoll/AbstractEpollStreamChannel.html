@@ -650,7 +650,7 @@
 <a class="jxr_linenumber" name="640" href="#640">640</a>         }
 <a class="jxr_linenumber" name="641" href="#641">641</a>     }
 <a class="jxr_linenumber" name="642" href="#642">642</a> 
-<a class="jxr_linenumber" name="643" href="#643">643</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> safeClosePipe(<a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> fd) {
+<a class="jxr_linenumber" name="643" href="#643">643</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> safeClosePipe(<a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> fd) {
 <a class="jxr_linenumber" name="644" href="#644">644</a>         <strong class="jxr_keyword">if</strong> (fd != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="645" href="#645">645</a>             <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="646" href="#646">646</a>                 fd.close();
@@ -909,263 +909,278 @@
 <a class="jxr_linenumber" name="899" href="#899">899</a>                         <em class="jxr_comment">// pending data</em>
 <a class="jxr_linenumber" name="900" href="#900">900</a>                         <strong class="jxr_keyword">break</strong>;
 <a class="jxr_linenumber" name="901" href="#901">901</a>                     }
-<a class="jxr_linenumber" name="902" href="#902">902</a>                 } <strong class="jxr_keyword">while</strong> (++ messages &lt; maxMessagesPerRead || isRdHup());
-<a class="jxr_linenumber" name="903" href="#903">903</a> 
-<a class="jxr_linenumber" name="904" href="#904">904</a>                 pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="905" href="#905">905</a>                 allocHandle.record(totalReadAmount);
-<a class="jxr_linenumber" name="906" href="#906">906</a> 
-<a class="jxr_linenumber" name="907" href="#907">907</a>                 <strong class="jxr_keyword">if</strong> (close) {
-<a class="jxr_linenumber" name="908" href="#908">908</a>                     shutdownInput();
-<a class="jxr_linenumber" name="909" href="#909">909</a>                     close = false;
-<a class="jxr_linenumber" name="910" href="#910">910</a>                 }
-<a class="jxr_linenumber" name="911" href="#911">911</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="912" href="#912">912</a>                 <strong class="jxr_keyword">boolean</strong> closed = handleReadException(pipeline, byteBuf, t, close);
-<a class="jxr_linenumber" name="913" href="#913">913</a>                 <strong class="jxr_keyword">if</strong> (!closed) {
-<a class="jxr_linenumber" name="914" href="#914">914</a>                     <em class="jxr_comment">// trigger a read again as there may be something left to read and because of epoll ET we</em>
-<a class="jxr_linenumber" name="915" href="#915">915</a>                     <em class="jxr_comment">// will not get notified again until we read everything from the socket</em>
-<a class="jxr_linenumber" name="916" href="#916">916</a>                     eventLoop().execute(<strong class="jxr_keyword">new</strong> OneTimeTask() {
-<a class="jxr_linenumber" name="917" href="#917">917</a>                         @Override
-<a class="jxr_linenumber" name="918" href="#918">918</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="919" href="#919">919</a>                             epollInReady();
-<a class="jxr_linenumber" name="920" href="#920">920</a>                         }
-<a class="jxr_linenumber" name="921" href="#921">921</a>                     });
-<a class="jxr_linenumber" name="922" href="#922">922</a>                 }
-<a class="jxr_linenumber" name="923" href="#923">923</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="924" href="#924">924</a>                 <em class="jxr_comment">// Check if there is a readPending which was not processed yet.</em>
-<a class="jxr_linenumber" name="925" href="#925">925</a>                 <em class="jxr_comment">// This could be for two reasons:</em>
-<a class="jxr_linenumber" name="926" href="#926">926</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</em>
-<a class="jxr_linenumber" name="927" href="#927">927</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</em>
-<a class="jxr_linenumber" name="928" href="#928">928</a>                 <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="929" href="#929">929</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2254</em>
-<a class="jxr_linenumber" name="930" href="#930">930</a>                 <strong class="jxr_keyword">if</strong> (!readPending &amp;&amp; !config.isAutoRead()) {
-<a class="jxr_linenumber" name="931" href="#931">931</a>                     clearEpollIn0();
-<a class="jxr_linenumber" name="932" href="#932">932</a>                 }
-<a class="jxr_linenumber" name="933" href="#933">933</a>             }
-<a class="jxr_linenumber" name="934" href="#934">934</a>         }
-<a class="jxr_linenumber" name="935" href="#935">935</a>     }
-<a class="jxr_linenumber" name="936" href="#936">936</a> 
-<a class="jxr_linenumber" name="937" href="#937">937</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addToSpliceQueue(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> task) {
-<a class="jxr_linenumber" name="938" href="#938">938</a>         <a href="../../../../io/netty/channel/EventLoop.html">EventLoop</a> eventLoop = eventLoop();
-<a class="jxr_linenumber" name="939" href="#939">939</a>         <strong class="jxr_keyword">if</strong> (eventLoop.inEventLoop()) {
-<a class="jxr_linenumber" name="940" href="#940">940</a>             addToSpliceQueue0(task);
-<a class="jxr_linenumber" name="941" href="#941">941</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="942" href="#942">942</a>             eventLoop.execute(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
-<a class="jxr_linenumber" name="943" href="#943">943</a>                 @Override
-<a class="jxr_linenumber" name="944" href="#944">944</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="945" href="#945">945</a>                     addToSpliceQueue0(task);
-<a class="jxr_linenumber" name="946" href="#946">946</a>                 }
-<a class="jxr_linenumber" name="947" href="#947">947</a>             });
-<a class="jxr_linenumber" name="948" href="#948">948</a>         }
-<a class="jxr_linenumber" name="949" href="#949">949</a>     }
-<a class="jxr_linenumber" name="950" href="#950">950</a> 
-<a class="jxr_linenumber" name="951" href="#951">951</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addToSpliceQueue0(<a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> task) {
-<a class="jxr_linenumber" name="952" href="#952">952</a>         <strong class="jxr_keyword">if</strong> (spliceQueue == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="953" href="#953">953</a>             spliceQueue = PlatformDependent.newMpscQueue();
-<a class="jxr_linenumber" name="954" href="#954">954</a>         }
-<a class="jxr_linenumber" name="955" href="#955">955</a>         spliceQueue.add(task);
-<a class="jxr_linenumber" name="956" href="#956">956</a>     }
-<a class="jxr_linenumber" name="957" href="#957">957</a> 
-<a class="jxr_linenumber" name="958" href="#958">958</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> <strong class="jxr_keyword">extends</strong> MpscLinkedQueueNode&lt;SpliceInTask&gt; {
-<a class="jxr_linenumber" name="959" href="#959">959</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
-<a class="jxr_linenumber" name="960" href="#960">960</a>         <strong class="jxr_keyword">int</strong> len;
-<a class="jxr_linenumber" name="961" href="#961">961</a> 
-<a class="jxr_linenumber" name="962" href="#962">962</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a>(<strong class="jxr_keyword">int</strong> len, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="963" href="#963">963</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="964" href="#964">964</a>             <strong class="jxr_keyword">this</strong>.len = len;
-<a class="jxr_linenumber" name="965" href="#965">965</a>         }
-<a class="jxr_linenumber" name="966" href="#966">966</a> 
-<a class="jxr_linenumber" name="967" href="#967">967</a>         @Override
-<a class="jxr_linenumber" name="968" href="#968">968</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> value() {
-<a class="jxr_linenumber" name="969" href="#969">969</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="970" href="#970">970</a>         }
-<a class="jxr_linenumber" name="971" href="#971">971</a> 
-<a class="jxr_linenumber" name="972" href="#972">972</a>         <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> spliceIn(RecvByteBufAllocator.Handle handle) <strong class="jxr_keyword">throws</strong> IOException;
-<a class="jxr_linenumber" name="973" href="#973">973</a> 
-<a class="jxr_linenumber" name="974" href="#974">974</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> spliceIn(<a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeOut, RecvByteBufAllocator.Handle handle) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="975" href="#975">975</a>             <em class="jxr_comment">// calculate the maximum amount of data we are allowed to splice</em>
-<a class="jxr_linenumber" name="976" href="#976">976</a>             <strong class="jxr_keyword">int</strong> length = Math.min(handle.guess(), len);
-<a class="jxr_linenumber" name="977" href="#977">977</a>             <strong class="jxr_keyword">int</strong> splicedIn = 0;
-<a class="jxr_linenumber" name="978" href="#978">978</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="979" href="#979">979</a>                 <em class="jxr_comment">// Splicing until there is nothing left to splice.</em>
-<a class="jxr_linenumber" name="980" href="#980">980</a>                 <strong class="jxr_keyword">int</strong> localSplicedIn = Native.splice(fd().intValue(), -1, pipeOut.intValue(), -1, length);
-<a class="jxr_linenumber" name="981" href="#981">981</a>                 <strong class="jxr_keyword">if</strong> (localSplicedIn == 0) {
-<a class="jxr_linenumber" name="982" href="#982">982</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="983" href="#983">983</a>                 }
-<a class="jxr_linenumber" name="984" href="#984">984</a>                 splicedIn += localSplicedIn;
-<a class="jxr_linenumber" name="985" href="#985">985</a>                 length -= localSplicedIn;
-<a class="jxr_linenumber" name="986" href="#986">986</a>             }
-<a class="jxr_linenumber" name="987" href="#987">987</a> 
-<a class="jxr_linenumber" name="988" href="#988">988</a>             <em class="jxr_comment">// record the number of bytes we spliced before</em>
-<a class="jxr_linenumber" name="989" href="#989">989</a>             handle.record(splicedIn);
-<a class="jxr_linenumber" name="990" href="#990">990</a>             <strong class="jxr_keyword">return</strong> splicedIn;
-<a class="jxr_linenumber" name="991" href="#991">991</a>         }
-<a class="jxr_linenumber" name="992" href="#992">992</a>     }
-<a class="jxr_linenumber" name="993" href="#993">993</a> 
-<a class="jxr_linenumber" name="994" href="#994">994</a>     <em class="jxr_comment">// Let it directly implement channelFutureListener as well to reduce object creation.</em>
-<a class="jxr_linenumber" name="995" href="#995">995</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInChannelTask</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> <strong class="jxr_keyword">implements</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> {
-<a class="jxr_linenumber" name="996" href="#996">996</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch;
-<a class="jxr_linenumber" name="997" href="#997">997</a> 
-<a class="jxr_linenumber" name="998" href="#998">998</a>         <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInChannelTask</a>(<a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch, <strong class="jxr_keyword">int</strong> len, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="999" href="#999">999</a>             <strong class="jxr_keyword">super</strong>(len, promise);
-<a class="jxr_linenumber" name="1000" href="#1000">1000</a>             <strong class="jxr_keyword">this</strong>.ch = ch;
-<a class="jxr_linenumber" name="1001" href="#1001">1001</a>         }
+<a class="jxr_linenumber" name="902" href="#902">902</a> 
+<a class="jxr_linenumber" name="903" href="#903">903</a>                     <strong class="jxr_keyword">if</strong> (fd().isInputShutdown()) {
+<a class="jxr_linenumber" name="904" href="#904">904</a>                         <em class="jxr_comment">// We need to do this for two reasons:</em>
+<a class="jxr_linenumber" name="905" href="#905">905</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="906" href="#906">906</a>                         <em class="jxr_comment">// - If the input was shutdown in between (which may be the case when the user did it in the</em>
+<a class="jxr_linenumber" name="907" href="#907">907</a>                         <em class="jxr_comment">//   fireChannelRead(...) method we should not try to read again to not produce any</em>
+<a class="jxr_linenumber" name="908" href="#908">908</a>                         <em class="jxr_comment">//   miss-leading exceptions.</em>
+<a class="jxr_linenumber" name="909" href="#909">909</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="910" href="#910">910</a>                         <em class="jxr_comment">// - If the user closes the channel we need to ensure we not try to read from it again as</em>
+<a class="jxr_linenumber" name="911" href="#911">911</a>                         <em class="jxr_comment">//   the filedescriptor may be re-used already by the OS if the system is handling a lot of</em>
+<a class="jxr_linenumber" name="912" href="#912">912</a>                         <em class="jxr_comment">//   concurrent connections and so needs a lot of filedescriptors. If not do this we risk</em>
+<a class="jxr_linenumber" name="913" href="#913">913</a>                         <em class="jxr_comment">//   reading data from a filedescriptor that belongs to another socket then the socket that</em>
+<a class="jxr_linenumber" name="914" href="#914">914</a>                         <em class="jxr_comment">//   was "wrapped" by this Channel implementation.</em>
+<a class="jxr_linenumber" name="915" href="#915">915</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="916" href="#916">916</a>                     }
+<a class="jxr_linenumber" name="917" href="#917">917</a>                 } <strong class="jxr_keyword">while</strong> (++ messages &lt; maxMessagesPerRead || isRdHup());
+<a class="jxr_linenumber" name="918" href="#918">918</a> 
+<a class="jxr_linenumber" name="919" href="#919">919</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="920" href="#920">920</a>                 allocHandle.record(totalReadAmount);
+<a class="jxr_linenumber" name="921" href="#921">921</a> 
+<a class="jxr_linenumber" name="922" href="#922">922</a>                 <strong class="jxr_keyword">if</strong> (close) {
+<a class="jxr_linenumber" name="923" href="#923">923</a>                     shutdownInput();
+<a class="jxr_linenumber" name="924" href="#924">924</a>                     close = false;
+<a class="jxr_linenumber" name="925" href="#925">925</a>                 }
+<a class="jxr_linenumber" name="926" href="#926">926</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="927" href="#927">927</a>                 <strong class="jxr_keyword">boolean</strong> closed = handleReadException(pipeline, byteBuf, t, close);
+<a class="jxr_linenumber" name="928" href="#928">928</a>                 <strong class="jxr_keyword">if</strong> (!closed) {
+<a class="jxr_linenumber" name="929" href="#929">929</a>                     <em class="jxr_comment">// trigger a read again as there may be something left to read and because of epoll ET we</em>
+<a class="jxr_linenumber" name="930" href="#930">930</a>                     <em class="jxr_comment">// will not get notified again until we read everything from the socket</em>
+<a class="jxr_linenumber" name="931" href="#931">931</a>                     eventLoop().execute(<strong class="jxr_keyword">new</strong> OneTimeTask() {
+<a class="jxr_linenumber" name="932" href="#932">932</a>                         @Override
+<a class="jxr_linenumber" name="933" href="#933">933</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="934" href="#934">934</a>                             epollInReady();
+<a class="jxr_linenumber" name="935" href="#935">935</a>                         }
+<a class="jxr_linenumber" name="936" href="#936">936</a>                     });
+<a class="jxr_linenumber" name="937" href="#937">937</a>                 }
+<a class="jxr_linenumber" name="938" href="#938">938</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="939" href="#939">939</a>                 <em class="jxr_comment">// Check if there is a readPending which was not processed yet.</em>
+<a class="jxr_linenumber" name="940" href="#940">940</a>                 <em class="jxr_comment">// This could be for two reasons:</em>
+<a class="jxr_linenumber" name="941" href="#941">941</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</em>
+<a class="jxr_linenumber" name="942" href="#942">942</a>                 <em class="jxr_comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</em>
+<a class="jxr_linenumber" name="943" href="#943">943</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="944" href="#944">944</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/2254</em>
+<a class="jxr_linenumber" name="945" href="#945">945</a>                 <strong class="jxr_keyword">if</strong> (!readPending &amp;&amp; !config.isAutoRead()) {
+<a class="jxr_linenumber" name="946" href="#946">946</a>                     clearEpollIn0();
+<a class="jxr_linenumber" name="947" href="#947">947</a>                 }
+<a class="jxr_linenumber" name="948" href="#948">948</a>             }
+<a class="jxr_linenumber" name="949" href="#949">949</a>         }
+<a class="jxr_linenumber" name="950" href="#950">950</a>     }
+<a class="jxr_linenumber" name="951" href="#951">951</a> 
+<a class="jxr_linenumber" name="952" href="#952">952</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addToSpliceQueue(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> task) {
+<a class="jxr_linenumber" name="953" href="#953">953</a>         <a href="../../../../io/netty/channel/EventLoop.html">EventLoop</a> eventLoop = eventLoop();
+<a class="jxr_linenumber" name="954" href="#954">954</a>         <strong class="jxr_keyword">if</strong> (eventLoop.inEventLoop()) {
+<a class="jxr_linenumber" name="955" href="#955">955</a>             addToSpliceQueue0(task);
+<a class="jxr_linenumber" name="956" href="#956">956</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="957" href="#957">957</a>             eventLoop.execute(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
+<a class="jxr_linenumber" name="958" href="#958">958</a>                 @Override
+<a class="jxr_linenumber" name="959" href="#959">959</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="960" href="#960">960</a>                     addToSpliceQueue0(task);
+<a class="jxr_linenumber" name="961" href="#961">961</a>                 }
+<a class="jxr_linenumber" name="962" href="#962">962</a>             });
+<a class="jxr_linenumber" name="963" href="#963">963</a>         }
+<a class="jxr_linenumber" name="964" href="#964">964</a>     }
+<a class="jxr_linenumber" name="965" href="#965">965</a> 
+<a class="jxr_linenumber" name="966" href="#966">966</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addToSpliceQueue0(<a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> task) {
+<a class="jxr_linenumber" name="967" href="#967">967</a>         <strong class="jxr_keyword">if</strong> (spliceQueue == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="968" href="#968">968</a>             spliceQueue = PlatformDependent.newMpscQueue();
+<a class="jxr_linenumber" name="969" href="#969">969</a>         }
+<a class="jxr_linenumber" name="970" href="#970">970</a>         spliceQueue.add(task);
+<a class="jxr_linenumber" name="971" href="#971">971</a>     }
+<a class="jxr_linenumber" name="972" href="#972">972</a> 
+<a class="jxr_linenumber" name="973" href="#973">973</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> <strong class="jxr_keyword">extends</strong> MpscLinkedQueueNode&lt;SpliceInTask&gt; {
+<a class="jxr_linenumber" name="974" href="#974">974</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
+<a class="jxr_linenumber" name="975" href="#975">975</a>         <strong class="jxr_keyword">int</strong> len;
+<a class="jxr_linenumber" name="976" href="#976">976</a> 
+<a class="jxr_linenumber" name="977" href="#977">977</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a>(<strong class="jxr_keyword">int</strong> len, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="978" href="#978">978</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
+<a class="jxr_linenumber" name="979" href="#979">979</a>             <strong class="jxr_keyword">this</strong>.len = len;
+<a class="jxr_linenumber" name="980" href="#980">980</a>         }
+<a class="jxr_linenumber" name="981" href="#981">981</a> 
+<a class="jxr_linenumber" name="982" href="#982">982</a>         @Override
+<a class="jxr_linenumber" name="983" href="#983">983</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> value() {
+<a class="jxr_linenumber" name="984" href="#984">984</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="985" href="#985">985</a>         }
+<a class="jxr_linenumber" name="986" href="#986">986</a> 
+<a class="jxr_linenumber" name="987" href="#987">987</a>         <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> spliceIn(RecvByteBufAllocator.Handle handle);
+<a class="jxr_linenumber" name="988" href="#988">988</a> 
+<a class="jxr_linenumber" name="989" href="#989">989</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> spliceIn(<a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeOut, RecvByteBufAllocator.Handle handle) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="990" href="#990">990</a>             <em class="jxr_comment">// calculate the maximum amount of data we are allowed to splice</em>
+<a class="jxr_linenumber" name="991" href="#991">991</a>             <strong class="jxr_keyword">int</strong> length = Math.min(handle.guess(), len);
+<a class="jxr_linenumber" name="992" href="#992">992</a>             <strong class="jxr_keyword">int</strong> splicedIn = 0;
+<a class="jxr_linenumber" name="993" href="#993">993</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="994" href="#994">994</a>                 <em class="jxr_comment">// Splicing until there is nothing left to splice.</em>
+<a class="jxr_linenumber" name="995" href="#995">995</a>                 <strong class="jxr_keyword">int</strong> localSplicedIn = Native.splice(fd().intValue(), -1, pipeOut.intValue(), -1, length);
+<a class="jxr_linenumber" name="996" href="#996">996</a>                 <strong class="jxr_keyword">if</strong> (localSplicedIn == 0) {
+<a class="jxr_linenumber" name="997" href="#997">997</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="998" href="#998">998</a>                 }
+<a class="jxr_linenumber" name="999" href="#999">999</a>                 splicedIn += localSplicedIn;
+<a class="jxr_linenumber" name="1000" href="#1000">1000</a>                 length -= localSplicedIn;
+<a class="jxr_linenumber" name="1001" href="#1001">1001</a>             }
 <a class="jxr_linenumber" name="1002" href="#1002">1002</a> 
-<a class="jxr_linenumber" name="1003" href="#1003">1003</a>         @Override
-<a class="jxr_linenumber" name="1004" href="#1004">1004</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1005" href="#1005">1005</a>             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="1006" href="#1006">1006</a>                 promise.setFailure(future.cause());
-<a class="jxr_linenumber" name="1007" href="#1007">1007</a>             }
-<a class="jxr_linenumber" name="1008" href="#1008">1008</a>         }
-<a class="jxr_linenumber" name="1009" href="#1009">1009</a> 
-<a class="jxr_linenumber" name="1010" href="#1010">1010</a>         @Override
-<a class="jxr_linenumber" name="1011" href="#1011">1011</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> spliceIn(RecvByteBufAllocator.Handle handle) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="1012" href="#1012">1012</a>             assert ch.eventLoop().inEventLoop();
-<a class="jxr_linenumber" name="1013" href="#1013">1013</a>             <strong class="jxr_keyword">if</strong> (len == 0) {
-<a class="jxr_linenumber" name="1014" href="#1014">1014</a>                 promise.setSuccess();
-<a class="jxr_linenumber" name="1015" href="#1015">1015</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1016" href="#1016">1016</a>             }
-<a class="jxr_linenumber" name="1017" href="#1017">1017</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1018" href="#1018">1018</a>                 <em class="jxr_comment">// We create the pipe on the target channel as this will allow us to just handle pending writes</em>
-<a class="jxr_linenumber" name="1019" href="#1019">1019</a>                 <em class="jxr_comment">// later in a correct fashion without get into any ordering issues when spliceTo(...) is called</em>
-<a class="jxr_linenumber" name="1020" href="#1020">1020</a>                 <em class="jxr_comment">// on multiple Channels pointing to one target Channel.</em>
-<a class="jxr_linenumber" name="1021" href="#1021">1021</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeOut = ch.pipeOut;
-<a class="jxr_linenumber" name="1022" href="#1022">1022</a>                 <strong class="jxr_keyword">if</strong> (pipeOut == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1023" href="#1023">1023</a>                     <em class="jxr_comment">// Create a new pipe as non was created before.</em>
-<a class="jxr_linenumber" name="1024" href="#1024">1024</a>                     <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a>[] pipe = pipe();
-<a class="jxr_linenumber" name="1025" href="#1025">1025</a>                     ch.pipeIn = pipe[0];
-<a class="jxr_linenumber" name="1026" href="#1026">1026</a>                     pipeOut = ch.pipeOut = pipe[1];
-<a class="jxr_linenumber" name="1027" href="#1027">1027</a>                 }
-<a class="jxr_linenumber" name="1028" href="#1028">1028</a> 
-<a class="jxr_linenumber" name="1029" href="#1029">1029</a>                 <strong class="jxr_keyword">int</strong> splicedIn = spliceIn(pipeOut, handle);
-<a class="jxr_linenumber" name="1030" href="#1030">1030</a>                 <strong class="jxr_keyword">if</strong> (splicedIn &gt; 0) {
-<a class="jxr_linenumber" name="1031" href="#1031">1031</a>                     <em class="jxr_comment">// Integer.MAX_VALUE is a special value which will result in splice forever.</em>
-<a class="jxr_linenumber" name="1032" href="#1032">1032</a>                     <strong class="jxr_keyword">if</strong> (len != Integer.MAX_VALUE) {
-<a class="jxr_linenumber" name="1033" href="#1033">1033</a>                         len -= splicedIn;
-<a class="jxr_linenumber" name="1034" href="#1034">1034</a>                     }
-<a class="jxr_linenumber" name="1035" href="#1035">1035</a> 
-<a class="jxr_linenumber" name="1036" href="#1036">1036</a>                     <em class="jxr_comment">// Depending on if we are done with splicing inbound data we set the right promise for the</em>
-<a class="jxr_linenumber" name="1037" href="#1037">1037</a>                     <em class="jxr_comment">// outbound splicing.</em>
-<a class="jxr_linenumber" name="1038" href="#1038">1038</a>                     <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> splicePromise;
-<a class="jxr_linenumber" name="1039" href="#1039">1039</a>                     <strong class="jxr_keyword">if</strong> (len == 0) {
-<a class="jxr_linenumber" name="1040" href="#1040">1040</a>                         splicePromise = promise;
-<a class="jxr_linenumber" name="1041" href="#1041">1041</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                         splicePromise = ch.newPromise().addListener(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="1043" href="#1043">1043</a>                     }
-<a class="jxr_linenumber" name="1044" href="#1044">1044</a> 
-<a class="jxr_linenumber" name="1045" href="#1045">1045</a>                     <strong class="jxr_keyword">boolean</strong> autoRead = config().isAutoRead();
-<a class="jxr_linenumber" name="1046" href="#1046">1046</a> 
-<a class="jxr_linenumber" name="1047" href="#1047">1047</a>                     <em class="jxr_comment">// Just call unsafe().write(...) and flush() as we not want to traverse the whole pipeline for this</em>
-<a class="jxr_linenumber" name="1048" href="#1048">1048</a>                     <em class="jxr_comment">// case.</em>
-<a class="jxr_linenumber" name="1049" href="#1049">1049</a>                     ch.unsafe().write(<strong class="jxr_keyword">new</strong> SpliceOutTask(ch, splicedIn, autoRead), splicePromise);
-<a class="jxr_linenumber" name="1050" href="#1050">1050</a>                     ch.unsafe().flush();
-<a class="jxr_linenumber" name="1051" href="#1051">1051</a>                     <strong class="jxr_keyword">if</strong> (autoRead &amp;&amp; !splicePromise.isDone()) {
-<a class="jxr_linenumber" name="1052" href="#1052">1052</a>                         <em class="jxr_comment">// Write was not done which means the target channel was not writable. In this case we need to</em>
-<a class="jxr_linenumber" name="1053" href="#1053">1053</a>                         <em class="jxr_comment">// disable reading until we are done with splicing to the target channel because:</em>
-<a class="jxr_linenumber" name="1054" href="#1054">1054</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="1055" href="#1055">1055</a>                         <em class="jxr_comment">// - The user may want to to trigger another splice operation once the splicing was complete.</em>
-<a class="jxr_linenumber" name="1056" href="#1056">1056</a>                         config().setAutoRead(false);
-<a class="jxr_linenumber" name="1057" href="#1057">1057</a>                     }
-<a class="jxr_linenumber" name="1058" href="#1058">1058</a>                 }
+<a class="jxr_linenumber" name="1003" href="#1003">1003</a>             <em class="jxr_comment">// record the number of bytes we spliced before</em>
+<a class="jxr_linenumber" name="1004" href="#1004">1004</a>             handle.record(splicedIn);
+<a class="jxr_linenumber" name="1005" href="#1005">1005</a>             <strong class="jxr_keyword">return</strong> splicedIn;
+<a class="jxr_linenumber" name="1006" href="#1006">1006</a>         }
+<a class="jxr_linenumber" name="1007" href="#1007">1007</a>     }
+<a class="jxr_linenumber" name="1008" href="#1008">1008</a> 
+<a class="jxr_linenumber" name="1009" href="#1009">1009</a>     <em class="jxr_comment">// Let it directly implement channelFutureListener as well to reduce object creation.</em>
+<a class="jxr_linenumber" name="1010" href="#1010">1010</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInChannelTask</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> <strong class="jxr_keyword">implements</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> {
+<a class="jxr_linenumber" name="1011" href="#1011">1011</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch;
+<a class="jxr_linenumber" name="1012" href="#1012">1012</a> 
+<a class="jxr_linenumber" name="1013" href="#1013">1013</a>         <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInChannelTask</a>(<a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch, <strong class="jxr_keyword">int</strong> len, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1014" href="#1014">1014</a>             <strong class="jxr_keyword">super</strong>(len, promise);
+<a class="jxr_linenumber" name="1015" href="#1015">1015</a>             <strong class="jxr_keyword">this</strong>.ch = ch;
+<a class="jxr_linenumber" name="1016" href="#1016">1016</a>         }
+<a class="jxr_linenumber" name="1017" href="#1017">1017</a> 
+<a class="jxr_linenumber" name="1018" href="#1018">1018</a>         @Override
+<a class="jxr_linenumber" name="1019" href="#1019">1019</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1020" href="#1020">1020</a>             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="1021" href="#1021">1021</a>                 promise.setFailure(future.cause());
+<a class="jxr_linenumber" name="1022" href="#1022">1022</a>             }
+<a class="jxr_linenumber" name="1023" href="#1023">1023</a>         }
+<a class="jxr_linenumber" name="1024" href="#1024">1024</a> 
+<a class="jxr_linenumber" name="1025" href="#1025">1025</a>         @Override
+<a class="jxr_linenumber" name="1026" href="#1026">1026</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> spliceIn(RecvByteBufAllocator.Handle handle) {
+<a class="jxr_linenumber" name="1027" href="#1027">1027</a>             assert ch.eventLoop().inEventLoop();
+<a class="jxr_linenumber" name="1028" href="#1028">1028</a>             <strong class="jxr_keyword">if</strong> (len == 0) {
+<a class="jxr_linenumber" name="1029" href="#1029">1029</a>                 promise.setSuccess();
+<a class="jxr_linenumber" name="1030" href="#1030">1030</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1031" href="#1031">1031</a>             }
+<a class="jxr_linenumber" name="1032" href="#1032">1032</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1033" href="#1033">1033</a>                 <em class="jxr_comment">// We create the pipe on the target channel as this will allow us to just handle pending writes</em>
+<a class="jxr_linenumber" name="1034" href="#1034">1034</a>                 <em class="jxr_comment">// later in a correct fashion without get into any ordering issues when spliceTo(...) is called</em>
+<a class="jxr_linenumber" name="1035" href="#1035">1035</a>                 <em class="jxr_comment">// on multiple Channels pointing to one target Channel.</em>
+<a class="jxr_linenumber" name="1036" href="#1036">1036</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeOut = ch.pipeOut;
+<a class="jxr_linenumber" name="1037" href="#1037">1037</a>                 <strong class="jxr_keyword">if</strong> (pipeOut == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1038" href="#1038">1038</a>                     <em class="jxr_comment">// Create a new pipe as non was created before.</em>
+<a class="jxr_linenumber" name="1039" href="#1039">1039</a>                     <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a>[] pipe = pipe();
+<a class="jxr_linenumber" name="1040" href="#1040">1040</a>                     ch.pipeIn = pipe[0];
+<a class="jxr_linenumber" name="1041" href="#1041">1041</a>                     pipeOut = ch.pipeOut = pipe[1];
+<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                 }
+<a class="jxr_linenumber" name="1043" href="#1043">1043</a> 
+<a class="jxr_linenumber" name="1044" href="#1044">1044</a>                 <strong class="jxr_keyword">int</strong> splicedIn = spliceIn(pipeOut, handle);
+<a class="jxr_linenumber" name="1045" href="#1045">1045</a>                 <strong class="jxr_keyword">if</strong> (splicedIn &gt; 0) {
+<a class="jxr_linenumber" name="1046" href="#1046">1046</a>                     <em class="jxr_comment">// Integer.MAX_VALUE is a special value which will result in splice forever.</em>
+<a class="jxr_linenumber" name="1047" href="#1047">1047</a>                     <strong class="jxr_keyword">if</strong> (len != Integer.MAX_VALUE) {
+<a class="jxr_linenumber" name="1048" href="#1048">1048</a>                         len -= splicedIn;
+<a class="jxr_linenumber" name="1049" href="#1049">1049</a>                     }
+<a class="jxr_linenumber" name="1050" href="#1050">1050</a> 
+<a class="jxr_linenumber" name="1051" href="#1051">1051</a>                     <em class="jxr_comment">// Depending on if we are done with splicing inbound data we set the right promise for the</em>
+<a class="jxr_linenumber" name="1052" href="#1052">1052</a>                     <em class="jxr_comment">// outbound splicing.</em>
+<a class="jxr_linenumber" name="1053" href="#1053">1053</a>                     <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> splicePromise;
+<a class="jxr_linenumber" name="1054" href="#1054">1054</a>                     <strong class="jxr_keyword">if</strong> (len == 0) {
+<a class="jxr_linenumber" name="1055" href="#1055">1055</a>                         splicePromise = promise;
+<a class="jxr_linenumber" name="1056" href="#1056">1056</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1057" href="#1057">1057</a>                         splicePromise = ch.newPromise().addListener(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="1058" href="#1058">1058</a>                     }
 <a class="jxr_linenumber" name="1059" href="#1059">1059</a> 
-<a class="jxr_linenumber" name="1060" href="#1060">1060</a>                 <strong class="jxr_keyword">return</strong> len == 0;
-<a class="jxr_linenumber" name="1061" href="#1061">1061</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="1062" href="#1062">1062</a>                 promise.setFailure(cause);
-<a class="jxr_linenumber" name="1063" href="#1063">1063</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1064" href="#1064">1064</a>             }
-<a class="jxr_linenumber" name="1065" href="#1065">1065</a>         }
-<a class="jxr_linenumber" name="1066" href="#1066">1066</a>     }
-<a class="jxr_linenumber" name="1067" href="#1067">1067</a> 
-<a class="jxr_linenumber" name="1068" href="#1068">1068</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceOutTask</a> {
-<a class="jxr_linenumber" name="1069" href="#1069">1069</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch;
-<a class="jxr_linenumber" name="1070" href="#1070">1070</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> autoRead;
-<a class="jxr_linenumber" name="1071" href="#1071">1071</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> len;
-<a class="jxr_linenumber" name="1072" href="#1072">1072</a> 
-<a class="jxr_linenumber" name="1073" href="#1073">1073</a>         <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceOutTask</a>(<a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch, <strong class="jxr_keyword">int</strong> len, <strong class="jxr_keyword">boolean</strong> autoRead) {
-<a class="jxr_linenumber" name="1074" href="#1074">1074</a>             <strong class="jxr_keyword">this</strong>.ch = ch;
-<a class="jxr_linenumber" name="1075" href="#1075">1075</a>             <strong class="jxr_keyword">this</strong>.len = len;
-<a class="jxr_linenumber" name="1076" href="#1076">1076</a>             <strong class="jxr_keyword">this</strong>.autoRead = autoRead;
-<a class="jxr_linenumber" name="1077" href="#1077">1077</a>         }
-<a class="jxr_linenumber" name="1078" href="#1078">1078</a> 
-<a class="jxr_linenumber" name="1079" href="#1079">1079</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> spliceOut() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1080" href="#1080">1080</a>             assert ch.eventLoop().inEventLoop();
-<a class="jxr_linenumber" name="1081" href="#1081">1081</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1082" href="#1082">1082</a>                 <strong class="jxr_keyword">int</strong> splicedOut = Native.splice(ch.pipeIn.intValue(), -1, ch.fd().intValue(), -1, len);
-<a class="jxr_linenumber" name="1083" href="#1083">1083</a>                 len -= splicedOut;
-<a class="jxr_linenumber" name="1084" href="#1084">1084</a>                 <strong class="jxr_keyword">if</strong> (len == 0) {
-<a class="jxr_linenumber" name="1085" href="#1085">1085</a>                     <strong class="jxr_keyword">if</strong> (autoRead) {
-<a class="jxr_linenumber" name="1086" href="#1086">1086</a>                         <em class="jxr_comment">// AutoRead was used and we spliced everything so start reading again</em>
-<a class="jxr_linenumber" name="1087" href="#1087">1087</a>                         config().setAutoRead(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="1088" href="#1088">1088</a>                     }
-<a class="jxr_linenumber" name="1089" href="#1089">1089</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1090" href="#1090">1090</a>                 }
-<a class="jxr_linenumber" name="1091" href="#1091">1091</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="1092" href="#1092">1092</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="1093" href="#1093">1093</a>                 <strong class="jxr_keyword">if</strong> (autoRead) {
-<a class="jxr_linenumber" name="1094" href="#1094">1094</a>                     <em class="jxr_comment">// AutoRead was used and we spliced everything so start reading again</em>
-<a class="jxr_linenumber" name="1095" href="#1095">1095</a>                     config().setAutoRead(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="1096" href="#1096">1096</a>                 }
-<a class="jxr_linenumber" name="1097" href="#1097">1097</a>                 <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="1098" href="#1098">1098</a>             }
-<a class="jxr_linenumber" name="1099" href="#1099">1099</a>         }
-<a class="jxr_linenumber" name="1100" href="#1100">1100</a>     }
-<a class="jxr_linenumber" name="1101" href="#1101">1101</a> 
-<a class="jxr_linenumber" name="1102" href="#1102">1102</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceFdTask</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> {
-<a class="jxr_linenumber" name="1103" href="#1103">1103</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> fd;
-<a class="jxr_linenumber" name="1104" href="#1104">1104</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
-<a class="jxr_linenumber" name="1105" href="#1105">1105</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> offset;
-<a class="jxr_linenumber" name="1106" href="#1106">1106</a> 
-<a class="jxr_linenumber" name="1107" href="#1107">1107</a>         <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceFdTask</a>(<a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> fd, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> len, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="1108" href="#1108">1108</a>             <strong class="jxr_keyword">super</strong>(len, promise);
-<a class="jxr_linenumber" name="1109" href="#1109">1109</a>             <strong class="jxr_keyword">this</strong>.fd = fd;
-<a class="jxr_linenumber" name="1110" href="#1110">1110</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="1111" href="#1111">1111</a>             <strong class="jxr_keyword">this</strong>.offset = offset;
-<a class="jxr_linenumber" name="1112" href="#1112">1112</a>         }
-<a class="jxr_linenumber" name="1113" href="#1113">1113</a> 
-<a class="jxr_linenumber" name="1114" href="#1114">1114</a>         @Override
-<a class="jxr_linenumber" name="1115" href="#1115">1115</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceFdTask</a> value() {
-<a class="jxr_linenumber" name="1116" href="#1116">1116</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="1117" href="#1117">1117</a>         }
-<a class="jxr_linenumber" name="1118" href="#1118">1118</a> 
-<a class="jxr_linenumber" name="1119" href="#1119">1119</a>         @Override
-<a class="jxr_linenumber" name="1120" href="#1120">1120</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> spliceIn(RecvByteBufAllocator.Handle handle) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="1121" href="#1121">1121</a>             assert eventLoop().inEventLoop();
-<a class="jxr_linenumber" name="1122" href="#1122">1122</a>             <strong class="jxr_keyword">if</strong> (len == 0) {
-<a class="jxr_linenumber" name="1123" href="#1123">1123</a>                 promise.setSuccess();
-<a class="jxr_linenumber" name="1124" href="#1124">1124</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1125" href="#1125">1125</a>             }
-<a class="jxr_linenumber" name="1126" href="#1126">1126</a> 
-<a class="jxr_linenumber" name="1127" href="#1127">1127</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1128" href="#1128">1128</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a>[] pipe = pipe();
-<a class="jxr_linenumber" name="1129" href="#1129">1129</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeIn = pipe[0];
-<a class="jxr_linenumber" name="1130" href="#1130">1130</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeOut = pipe[1];
-<a class="jxr_linenumber" name="1131" href="#1131">1131</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1132" href="#1132">1132</a>                     <strong class="jxr_keyword">int</strong> splicedIn = spliceIn(pipeOut, handle);
-<a class="jxr_linenumber" name="1133" href="#1133">1133</a>                     <strong class="jxr_keyword">if</strong> (splicedIn &gt; 0) {
-<a class="jxr_linenumber" name="1134" href="#1134">1134</a>                         <em class="jxr_comment">// Integer.MAX_VALUE is a special value which will result in splice forever.</em>
-<a class="jxr_linenumber" name="1135" href="#1135">1135</a>                         <strong class="jxr_keyword">if</strong> (len != Integer.MAX_VALUE) {
-<a class="jxr_linenumber" name="1136" href="#1136">1136</a>                             len -= splicedIn;
-<a class="jxr_linenumber" name="1137" href="#1137">1137</a>                         }
-<a class="jxr_linenumber" name="1138" href="#1138">1138</a>                         <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="1139" href="#1139">1139</a>                             <strong class="jxr_keyword">int</strong> splicedOut = Native.splice(pipeIn.intValue(), -1, fd.intValue(), offset, splicedIn);
-<a class="jxr_linenumber" name="1140" href="#1140">1140</a>                             splicedIn -= splicedOut;
-<a class="jxr_linenumber" name="1141" href="#1141">1141</a>                         } <strong class="jxr_keyword">while</strong> (splicedIn &gt; 0);
-<a class="jxr_linenumber" name="1142" href="#1142">1142</a>                         <strong class="jxr_keyword">if</strong> (len == 0) {
-<a class="jxr_linenumber" name="1143" href="#1143">1143</a>                             promise.setSuccess();
-<a class="jxr_linenumber" name="1144" href="#1144">1144</a>                             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1145" href="#1145">1145</a>                         }
-<a class="jxr_linenumber" name="1146" href="#1146">1146</a>                     }
-<a class="jxr_linenumber" name="1147" href="#1147">1147</a>                     <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="1148" href="#1148">1148</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="1149" href="#1149">1149</a>                     safeClosePipe(pipeIn);
-<a class="jxr_linenumber" name="1150" href="#1150">1150</a>                     safeClosePipe(pipeOut);
-<a class="jxr_linenumber" name="1151" href="#1151">1151</a>                 }
-<a class="jxr_linenumber" name="1152" href="#1152">1152</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="1153" href="#1153">1153</a>                 promise.setFailure(cause);
-<a class="jxr_linenumber" name="1154" href="#1154">1154</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1155" href="#1155">1155</a>             }
-<a class="jxr_linenumber" name="1156" href="#1156">1156</a>         }
-<a class="jxr_linenumber" name="1157" href="#1157">1157</a>     }
-<a class="jxr_linenumber" name="1158" href="#1158">1158</a> }
+<a class="jxr_linenumber" name="1060" href="#1060">1060</a>                     <strong class="jxr_keyword">boolean</strong> autoRead = config().isAutoRead();
+<a class="jxr_linenumber" name="1061" href="#1061">1061</a> 
+<a class="jxr_linenumber" name="1062" href="#1062">1062</a>                     <em class="jxr_comment">// Just call unsafe().write(...) and flush() as we not want to traverse the whole pipeline for this</em>
+<a class="jxr_linenumber" name="1063" href="#1063">1063</a>                     <em class="jxr_comment">// case.</em>
+<a class="jxr_linenumber" name="1064" href="#1064">1064</a>                     ch.unsafe().write(<strong class="jxr_keyword">new</strong> SpliceOutTask(ch, splicedIn, autoRead), splicePromise);
+<a class="jxr_linenumber" name="1065" href="#1065">1065</a>                     ch.unsafe().flush();
+<a class="jxr_linenumber" name="1066" href="#1066">1066</a>                     <strong class="jxr_keyword">if</strong> (autoRead &amp;&amp; !splicePromise.isDone()) {
+<a class="jxr_linenumber" name="1067" href="#1067">1067</a>                         <em class="jxr_comment">// Write was not done which means the target channel was not writable. In this case we need to</em>
+<a class="jxr_linenumber" name="1068" href="#1068">1068</a>                         <em class="jxr_comment">// disable reading until we are done with splicing to the target channel because:</em>
+<a class="jxr_linenumber" name="1069" href="#1069">1069</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="1070" href="#1070">1070</a>                         <em class="jxr_comment">// - The user may want to to trigger another splice operation once the splicing was complete.</em>
+<a class="jxr_linenumber" name="1071" href="#1071">1071</a>                         config().setAutoRead(false);
+<a class="jxr_linenumber" name="1072" href="#1072">1072</a>                     }
+<a class="jxr_linenumber" name="1073" href="#1073">1073</a>                 }
+<a class="jxr_linenumber" name="1074" href="#1074">1074</a> 
+<a class="jxr_linenumber" name="1075" href="#1075">1075</a>                 <strong class="jxr_keyword">return</strong> len == 0;
+<a class="jxr_linenumber" name="1076" href="#1076">1076</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="1077" href="#1077">1077</a>                 promise.setFailure(cause);
+<a class="jxr_linenumber" name="1078" href="#1078">1078</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1079" href="#1079">1079</a>             }
+<a class="jxr_linenumber" name="1080" href="#1080">1080</a>         }
+<a class="jxr_linenumber" name="1081" href="#1081">1081</a>     }
+<a class="jxr_linenumber" name="1082" href="#1082">1082</a> 
+<a class="jxr_linenumber" name="1083" href="#1083">1083</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceOutTask</a> {
+<a class="jxr_linenumber" name="1084" href="#1084">1084</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch;
+<a class="jxr_linenumber" name="1085" href="#1085">1085</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> autoRead;
+<a class="jxr_linenumber" name="1086" href="#1086">1086</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> len;
+<a class="jxr_linenumber" name="1087" href="#1087">1087</a> 
+<a class="jxr_linenumber" name="1088" href="#1088">1088</a>         <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceOutTask</a>(<a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">AbstractEpollStreamChannel</a> ch, <strong class="jxr_keyword">int</strong> len, <strong class="jxr_keyword">boolean</strong> autoRead) {
+<a class="jxr_linenumber" name="1089" href="#1089">1089</a>             <strong class="jxr_keyword">this</strong>.ch = ch;
+<a class="jxr_linenumber" name="1090" href="#1090">1090</a>             <strong class="jxr_keyword">this</strong>.len = len;
+<a class="jxr_linenumber" name="1091" href="#1091">1091</a>             <strong class="jxr_keyword">this</strong>.autoRead = autoRead;
+<a class="jxr_linenumber" name="1092" href="#1092">1092</a>         }
+<a class="jxr_linenumber" name="1093" href="#1093">1093</a> 
+<a class="jxr_linenumber" name="1094" href="#1094">1094</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> spliceOut() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1095" href="#1095">1095</a>             assert ch.eventLoop().inEventLoop();
+<a class="jxr_linenumber" name="1096" href="#1096">1096</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1097" href="#1097">1097</a>                 <strong class="jxr_keyword">int</strong> splicedOut = Native.splice(ch.pipeIn.intValue(), -1, ch.fd().intValue(), -1, len);
+<a class="jxr_linenumber" name="1098" href="#1098">1098</a>                 len -= splicedOut;
+<a class="jxr_linenumber" name="1099" href="#1099">1099</a>                 <strong class="jxr_keyword">if</strong> (len == 0) {
+<a class="jxr_linenumber" name="1100" href="#1100">1100</a>                     <strong class="jxr_keyword">if</strong> (autoRead) {
+<a class="jxr_linenumber" name="1101" href="#1101">1101</a>                         <em class="jxr_comment">// AutoRead was used and we spliced everything so start reading again</em>
+<a class="jxr_linenumber" name="1102" href="#1102">1102</a>                         config().setAutoRead(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="1103" href="#1103">1103</a>                     }
+<a class="jxr_linenumber" name="1104" href="#1104">1104</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1105" href="#1105">1105</a>                 }
+<a class="jxr_linenumber" name="1106" href="#1106">1106</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="1107" href="#1107">1107</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="1108" href="#1108">1108</a>                 <strong class="jxr_keyword">if</strong> (autoRead) {
+<a class="jxr_linenumber" name="1109" href="#1109">1109</a>                     <em class="jxr_comment">// AutoRead was used and we spliced everything so start reading again</em>
+<a class="jxr_linenumber" name="1110" href="#1110">1110</a>                     config().setAutoRead(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="1111" href="#1111">1111</a>                 }
+<a class="jxr_linenumber" name="1112" href="#1112">1112</a>                 <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="1113" href="#1113">1113</a>             }
+<a class="jxr_linenumber" name="1114" href="#1114">1114</a>         }
+<a class="jxr_linenumber" name="1115" href="#1115">1115</a>     }
+<a class="jxr_linenumber" name="1116" href="#1116">1116</a> 
+<a class="jxr_linenumber" name="1117" href="#1117">1117</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceFdTask</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceInTask</a> {
+<a class="jxr_linenumber" name="1118" href="#1118">1118</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> fd;
+<a class="jxr_linenumber" name="1119" href="#1119">1119</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
+<a class="jxr_linenumber" name="1120" href="#1120">1120</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> offset;
+<a class="jxr_linenumber" name="1121" href="#1121">1121</a> 
+<a class="jxr_linenumber" name="1122" href="#1122">1122</a>         <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceFdTask</a>(<a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> fd, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> len, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="1123" href="#1123">1123</a>             <strong class="jxr_keyword">super</strong>(len, promise);
+<a class="jxr_linenumber" name="1124" href="#1124">1124</a>             <strong class="jxr_keyword">this</strong>.fd = fd;
+<a class="jxr_linenumber" name="1125" href="#1125">1125</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
+<a class="jxr_linenumber" name="1126" href="#1126">1126</a>             <strong class="jxr_keyword">this</strong>.offset = offset;
+<a class="jxr_linenumber" name="1127" href="#1127">1127</a>         }
+<a class="jxr_linenumber" name="1128" href="#1128">1128</a> 
+<a class="jxr_linenumber" name="1129" href="#1129">1129</a>         @Override
+<a class="jxr_linenumber" name="1130" href="#1130">1130</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/channel/epoll/AbstractEpollStreamChannel.html">SpliceFdTask</a> value() {
+<a class="jxr_linenumber" name="1131" href="#1131">1131</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="1132" href="#1132">1132</a>         }
+<a class="jxr_linenumber" name="1133" href="#1133">1133</a> 
+<a class="jxr_linenumber" name="1134" href="#1134">1134</a>         @Override
+<a class="jxr_linenumber" name="1135" href="#1135">1135</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> spliceIn(RecvByteBufAllocator.Handle handle) {
+<a class="jxr_linenumber" name="1136" href="#1136">1136</a>             assert eventLoop().inEventLoop();
+<a class="jxr_linenumber" name="1137" href="#1137">1137</a>             <strong class="jxr_keyword">if</strong> (len == 0) {
+<a class="jxr_linenumber" name="1138" href="#1138">1138</a>                 promise.setSuccess();
+<a class="jxr_linenumber" name="1139" href="#1139">1139</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1140" href="#1140">1140</a>             }
+<a class="jxr_linenumber" name="1141" href="#1141">1141</a> 
+<a class="jxr_linenumber" name="1142" href="#1142">1142</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1143" href="#1143">1143</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a>[] pipe = pipe();
+<a class="jxr_linenumber" name="1144" href="#1144">1144</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeIn = pipe[0];
+<a class="jxr_linenumber" name="1145" href="#1145">1145</a>                 <a href="../../../../io/netty/channel/unix/FileDescriptor.html">FileDescriptor</a> pipeOut = pipe[1];
+<a class="jxr_linenumber" name="1146" href="#1146">1146</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1147" href="#1147">1147</a>                     <strong class="jxr_keyword">int</strong> splicedIn = spliceIn(pipeOut, handle);
+<a class="jxr_linenumber" name="1148" href="#1148">1148</a>                     <strong class="jxr_keyword">if</strong> (splicedIn &gt; 0) {
+<a class="jxr_linenumber" name="1149" href="#1149">1149</a>                         <em class="jxr_comment">// Integer.MAX_VALUE is a special value which will result in splice forever.</em>
+<a class="jxr_linenumber" name="1150" href="#1150">1150</a>                         <strong class="jxr_keyword">if</strong> (len != Integer.MAX_VALUE) {
+<a class="jxr_linenumber" name="1151" href="#1151">1151</a>                             len -= splicedIn;
+<a class="jxr_linenumber" name="1152" href="#1152">1152</a>                         }
+<a class="jxr_linenumber" name="1153" href="#1153">1153</a>                         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="1154" href="#1154">1154</a>                             <strong class="jxr_keyword">int</strong> splicedOut = Native.splice(pipeIn.intValue(), -1, fd.intValue(), offset, splicedIn);
+<a class="jxr_linenumber" name="1155" href="#1155">1155</a>                             splicedIn -= splicedOut;
+<a class="jxr_linenumber" name="1156" href="#1156">1156</a>                         } <strong class="jxr_keyword">while</strong> (splicedIn &gt; 0);
+<a class="jxr_linenumber" name="1157" href="#1157">1157</a>                         <strong class="jxr_keyword">if</strong> (len == 0) {
+<a class="jxr_linenumber" name="1158" href="#1158">1158</a>                             promise.setSuccess();
+<a class="jxr_linenumber" name="1159" href="#1159">1159</a>                             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1160" href="#1160">1160</a>                         }
+<a class="jxr_linenumber" name="1161" href="#1161">1161</a>                     }
+<a class="jxr_linenumber" name="1162" href="#1162">1162</a>                     <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="1163" href="#1163">1163</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="1164" href="#1164">1164</a>                     safeClosePipe(pipeIn);
+<a class="jxr_linenumber" name="1165" href="#1165">1165</a>                     safeClosePipe(pipeOut);
+<a class="jxr_linenumber" name="1166" href="#1166">1166</a>                 }
+<a class="jxr_linenumber" name="1167" href="#1167">1167</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="1168" href="#1168">1168</a>                 promise.setFailure(cause);
+<a class="jxr_linenumber" name="1169" href="#1169">1169</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1170" href="#1170">1170</a>             }
+<a class="jxr_linenumber" name="1171" href="#1171">1171</a>         }
+<a class="jxr_linenumber" name="1172" href="#1172">1172</a>     }
+<a class="jxr_linenumber" name="1173" href="#1173">1173</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
