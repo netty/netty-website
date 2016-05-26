@@ -353,130 +353,140 @@
 <a class="jxr_linenumber" name="343" href="#343">343</a>         ctx.fireUserEventTriggered(evt);
 <a class="jxr_linenumber" name="344" href="#344">344</a>     }
 <a class="jxr_linenumber" name="345" href="#345">345</a> 
-<a class="jxr_linenumber" name="346" href="#346">346</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">ReaderIdleTimeoutTask</a> <strong class="jxr_keyword">implements</strong> Runnable {
-<a class="jxr_linenumber" name="347" href="#347">347</a> 
-<a class="jxr_linenumber" name="348" href="#348">348</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
-<a class="jxr_linenumber" name="349" href="#349">349</a> 
-<a class="jxr_linenumber" name="350" href="#350">350</a>         <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">ReaderIdleTimeoutTask</a>(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="351" href="#351">351</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="352" href="#352">352</a>         }
-<a class="jxr_linenumber" name="353" href="#353">353</a> 
-<a class="jxr_linenumber" name="354" href="#354">354</a>         @Override
-<a class="jxr_linenumber" name="355" href="#355">355</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="356" href="#356">356</a>             <strong class="jxr_keyword">if</strong> (!ctx.channel().isOpen()) {
-<a class="jxr_linenumber" name="357" href="#357">357</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="358" href="#358">358</a>             }
-<a class="jxr_linenumber" name="359" href="#359">359</a> 
-<a class="jxr_linenumber" name="360" href="#360">360</a>             <strong class="jxr_keyword">long</strong> nextDelay = readerIdleTimeNanos;
-<a class="jxr_linenumber" name="361" href="#361">361</a>             <strong class="jxr_keyword">if</strong> (!reading) {
-<a class="jxr_linenumber" name="362" href="#362">362</a>                 nextDelay -= System.nanoTime() - lastReadTime;
-<a class="jxr_linenumber" name="363" href="#363">363</a>             }
-<a class="jxr_linenumber" name="364" href="#364">364</a> 
-<a class="jxr_linenumber" name="365" href="#365">365</a>             <strong class="jxr_keyword">if</strong> (nextDelay &lt;= 0) {
-<a class="jxr_linenumber" name="366" href="#366">366</a>                 <em class="jxr_comment">// Reader is idle - set a new timeout and notify the callback.</em>
-<a class="jxr_linenumber" name="367" href="#367">367</a>                 readerIdleTimeout =
-<a class="jxr_linenumber" name="368" href="#368">368</a>                     ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, readerIdleTimeNanos, TimeUnit.NANOSECONDS);
-<a class="jxr_linenumber" name="369" href="#369">369</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="370" href="#370">370</a>                     <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> event;
-<a class="jxr_linenumber" name="371" href="#371">371</a>                     <strong class="jxr_keyword">if</strong> (firstReaderIdleEvent) {
-<a class="jxr_linenumber" name="372" href="#372">372</a>                         firstReaderIdleEvent = false;
-<a class="jxr_linenumber" name="373" href="#373">373</a>                         event = IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT;
-<a class="jxr_linenumber" name="374" href="#374">374</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="375" href="#375">375</a>                         event = IdleStateEvent.READER_IDLE_STATE_EVENT;
-<a class="jxr_linenumber" name="376" href="#376">376</a>                     }
-<a class="jxr_linenumber" name="377" href="#377">377</a>                     channelIdle(ctx, event);
-<a class="jxr_linenumber" name="378" href="#378">378</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="379" href="#379">379</a>                     ctx.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="380" href="#380">380</a>                 }
-<a class="jxr_linenumber" name="381" href="#381">381</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="382" href="#382">382</a>                 <em class="jxr_comment">// Read occurred before the timeout - set a new timeout with shorter delay.</em>
-<a class="jxr_linenumber" name="383" href="#383">383</a>                 readerIdleTimeout = ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, nextDelay, TimeUnit.NANOSECONDS);
-<a class="jxr_linenumber" name="384" href="#384">384</a>             }
-<a class="jxr_linenumber" name="385" href="#385">385</a>         }
-<a class="jxr_linenumber" name="386" href="#386">386</a>     }
-<a class="jxr_linenumber" name="387" href="#387">387</a> 
-<a class="jxr_linenumber" name="388" href="#388">388</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">WriterIdleTimeoutTask</a> <strong class="jxr_keyword">implements</strong> Runnable {
-<a class="jxr_linenumber" name="389" href="#389">389</a> 
-<a class="jxr_linenumber" name="390" href="#390">390</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
-<a class="jxr_linenumber" name="391" href="#391">391</a> 
-<a class="jxr_linenumber" name="392" href="#392">392</a>         <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">WriterIdleTimeoutTask</a>(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="393" href="#393">393</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="394" href="#394">394</a>         }
-<a class="jxr_linenumber" name="395" href="#395">395</a> 
-<a class="jxr_linenumber" name="396" href="#396">396</a>         @Override
-<a class="jxr_linenumber" name="397" href="#397">397</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="398" href="#398">398</a>             <strong class="jxr_keyword">if</strong> (!ctx.channel().isOpen()) {
-<a class="jxr_linenumber" name="399" href="#399">399</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="400" href="#400">400</a>             }
+<a class="jxr_linenumber" name="346" href="#346">346</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="347" href="#347">347</a> <em class="jxr_javadoccomment">     * Returns a {@link IdleStateEvent}.</em>
+<a class="jxr_linenumber" name="348" href="#348">348</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="349" href="#349">349</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> newIdleStateEvent(<a href="../../../../io/netty/handler/timeout/IdleState.html">IdleState</a> state, <strong class="jxr_keyword">boolean</strong> first) {
+<a class="jxr_linenumber" name="350" href="#350">350</a>         <strong class="jxr_keyword">switch</strong> (state) {
+<a class="jxr_linenumber" name="351" href="#351">351</a>             <strong class="jxr_keyword">case</strong> ALL_IDLE:
+<a class="jxr_linenumber" name="352" href="#352">352</a>                 <strong class="jxr_keyword">return</strong> first ? IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT : IdleStateEvent.ALL_IDLE_STATE_EVENT;
+<a class="jxr_linenumber" name="353" href="#353">353</a>             <strong class="jxr_keyword">case</strong> READER_IDLE:
+<a class="jxr_linenumber" name="354" href="#354">354</a>                 <strong class="jxr_keyword">return</strong> first ? IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT : IdleStateEvent.READER_IDLE_STATE_EVENT;
+<a class="jxr_linenumber" name="355" href="#355">355</a>             <strong class="jxr_keyword">case</strong> WRITER_IDLE:
+<a class="jxr_linenumber" name="356" href="#356">356</a>                 <strong class="jxr_keyword">return</strong> first ? IdleStateEvent.FIRST_WRITER_IDLE_STATE_EVENT : IdleStateEvent.WRITER_IDLE_STATE_EVENT;
+<a class="jxr_linenumber" name="357" href="#357">357</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="358" href="#358">358</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
+<a class="jxr_linenumber" name="359" href="#359">359</a>         }
+<a class="jxr_linenumber" name="360" href="#360">360</a>     }
+<a class="jxr_linenumber" name="361" href="#361">361</a> 
+<a class="jxr_linenumber" name="362" href="#362">362</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">ReaderIdleTimeoutTask</a> <strong class="jxr_keyword">implements</strong> Runnable {
+<a class="jxr_linenumber" name="363" href="#363">363</a> 
+<a class="jxr_linenumber" name="364" href="#364">364</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
+<a class="jxr_linenumber" name="365" href="#365">365</a> 
+<a class="jxr_linenumber" name="366" href="#366">366</a>         <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">ReaderIdleTimeoutTask</a>(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="367" href="#367">367</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="368" href="#368">368</a>         }
+<a class="jxr_linenumber" name="369" href="#369">369</a> 
+<a class="jxr_linenumber" name="370" href="#370">370</a>         @Override
+<a class="jxr_linenumber" name="371" href="#371">371</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="372" href="#372">372</a>             <strong class="jxr_keyword">if</strong> (!ctx.channel().isOpen()) {
+<a class="jxr_linenumber" name="373" href="#373">373</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="374" href="#374">374</a>             }
+<a class="jxr_linenumber" name="375" href="#375">375</a> 
+<a class="jxr_linenumber" name="376" href="#376">376</a>             <strong class="jxr_keyword">long</strong> nextDelay = readerIdleTimeNanos;
+<a class="jxr_linenumber" name="377" href="#377">377</a>             <strong class="jxr_keyword">if</strong> (!reading) {
+<a class="jxr_linenumber" name="378" href="#378">378</a>                 nextDelay -= System.nanoTime() - lastReadTime;
+<a class="jxr_linenumber" name="379" href="#379">379</a>             }
+<a class="jxr_linenumber" name="380" href="#380">380</a> 
+<a class="jxr_linenumber" name="381" href="#381">381</a>             <strong class="jxr_keyword">if</strong> (nextDelay &lt;= 0) {
+<a class="jxr_linenumber" name="382" href="#382">382</a>                 <em class="jxr_comment">// Reader is idle - set a new timeout and notify the callback.</em>
+<a class="jxr_linenumber" name="383" href="#383">383</a>                 readerIdleTimeout =
+<a class="jxr_linenumber" name="384" href="#384">384</a>                     ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, readerIdleTimeNanos, TimeUnit.NANOSECONDS);
+<a class="jxr_linenumber" name="385" href="#385">385</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="386" href="#386">386</a>                     <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> event = newIdleStateEvent(IdleState.READER_IDLE, firstReaderIdleEvent);
+<a class="jxr_linenumber" name="387" href="#387">387</a>                     <strong class="jxr_keyword">if</strong> (firstReaderIdleEvent) {
+<a class="jxr_linenumber" name="388" href="#388">388</a>                         firstReaderIdleEvent = false;
+<a class="jxr_linenumber" name="389" href="#389">389</a>                     }
+<a class="jxr_linenumber" name="390" href="#390">390</a> 
+<a class="jxr_linenumber" name="391" href="#391">391</a>                     channelIdle(ctx, event);
+<a class="jxr_linenumber" name="392" href="#392">392</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="393" href="#393">393</a>                     ctx.fireExceptionCaught(t);
+<a class="jxr_linenumber" name="394" href="#394">394</a>                 }
+<a class="jxr_linenumber" name="395" href="#395">395</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="396" href="#396">396</a>                 <em class="jxr_comment">// Read occurred before the timeout - set a new timeout with shorter delay.</em>
+<a class="jxr_linenumber" name="397" href="#397">397</a>                 readerIdleTimeout = ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, nextDelay, TimeUnit.NANOSECONDS);
+<a class="jxr_linenumber" name="398" href="#398">398</a>             }
+<a class="jxr_linenumber" name="399" href="#399">399</a>         }
+<a class="jxr_linenumber" name="400" href="#400">400</a>     }
 <a class="jxr_linenumber" name="401" href="#401">401</a> 
-<a class="jxr_linenumber" name="402" href="#402">402</a>             <strong class="jxr_keyword">long</strong> lastWriteTime = IdleStateHandler.<strong class="jxr_keyword">this</strong>.lastWriteTime;
-<a class="jxr_linenumber" name="403" href="#403">403</a>             <strong class="jxr_keyword">long</strong> nextDelay = writerIdleTimeNanos - (System.nanoTime() - lastWriteTime);
-<a class="jxr_linenumber" name="404" href="#404">404</a>             <strong class="jxr_keyword">if</strong> (nextDelay &lt;= 0) {
-<a class="jxr_linenumber" name="405" href="#405">405</a>                 <em class="jxr_comment">// Writer is idle - set a new timeout and notify the callback.</em>
-<a class="jxr_linenumber" name="406" href="#406">406</a>                 writerIdleTimeout = ctx.executor().schedule(
-<a class="jxr_linenumber" name="407" href="#407">407</a>                         <strong class="jxr_keyword">this</strong>, writerIdleTimeNanos, TimeUnit.NANOSECONDS);
-<a class="jxr_linenumber" name="408" href="#408">408</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="409" href="#409">409</a>                     <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> event;
-<a class="jxr_linenumber" name="410" href="#410">410</a>                     <strong class="jxr_keyword">if</strong> (firstWriterIdleEvent) {
-<a class="jxr_linenumber" name="411" href="#411">411</a>                         firstWriterIdleEvent = false;
-<a class="jxr_linenumber" name="412" href="#412">412</a>                         event = IdleStateEvent.FIRST_WRITER_IDLE_STATE_EVENT;
-<a class="jxr_linenumber" name="413" href="#413">413</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="414" href="#414">414</a>                         event = IdleStateEvent.WRITER_IDLE_STATE_EVENT;
-<a class="jxr_linenumber" name="415" href="#415">415</a>                     }
-<a class="jxr_linenumber" name="416" href="#416">416</a>                     channelIdle(ctx, event);
-<a class="jxr_linenumber" name="417" href="#417">417</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="418" href="#418">418</a>                     ctx.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="419" href="#419">419</a>                 }
-<a class="jxr_linenumber" name="420" href="#420">420</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="421" href="#421">421</a>                 <em class="jxr_comment">// Write occurred before the timeout - set a new timeout with shorter delay.</em>
-<a class="jxr_linenumber" name="422" href="#422">422</a>                 writerIdleTimeout = ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, nextDelay, TimeUnit.NANOSECONDS);
-<a class="jxr_linenumber" name="423" href="#423">423</a>             }
-<a class="jxr_linenumber" name="424" href="#424">424</a>         }
-<a class="jxr_linenumber" name="425" href="#425">425</a>     }
-<a class="jxr_linenumber" name="426" href="#426">426</a> 
-<a class="jxr_linenumber" name="427" href="#427">427</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">AllIdleTimeoutTask</a> <strong class="jxr_keyword">implements</strong> Runnable {
-<a class="jxr_linenumber" name="428" href="#428">428</a> 
-<a class="jxr_linenumber" name="429" href="#429">429</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
-<a class="jxr_linenumber" name="430" href="#430">430</a> 
-<a class="jxr_linenumber" name="431" href="#431">431</a>         <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">AllIdleTimeoutTask</a>(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="432" href="#432">432</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="433" href="#433">433</a>         }
-<a class="jxr_linenumber" name="434" href="#434">434</a> 
-<a class="jxr_linenumber" name="435" href="#435">435</a>         @Override
-<a class="jxr_linenumber" name="436" href="#436">436</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="437" href="#437">437</a>             <strong class="jxr_keyword">if</strong> (!ctx.channel().isOpen()) {
-<a class="jxr_linenumber" name="438" href="#438">438</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="439" href="#439">439</a>             }
+<a class="jxr_linenumber" name="402" href="#402">402</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">WriterIdleTimeoutTask</a> <strong class="jxr_keyword">implements</strong> Runnable {
+<a class="jxr_linenumber" name="403" href="#403">403</a> 
+<a class="jxr_linenumber" name="404" href="#404">404</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
+<a class="jxr_linenumber" name="405" href="#405">405</a> 
+<a class="jxr_linenumber" name="406" href="#406">406</a>         <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">WriterIdleTimeoutTask</a>(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="407" href="#407">407</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="408" href="#408">408</a>         }
+<a class="jxr_linenumber" name="409" href="#409">409</a> 
+<a class="jxr_linenumber" name="410" href="#410">410</a>         @Override
+<a class="jxr_linenumber" name="411" href="#411">411</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="412" href="#412">412</a>             <strong class="jxr_keyword">if</strong> (!ctx.channel().isOpen()) {
+<a class="jxr_linenumber" name="413" href="#413">413</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="414" href="#414">414</a>             }
+<a class="jxr_linenumber" name="415" href="#415">415</a> 
+<a class="jxr_linenumber" name="416" href="#416">416</a>             <strong class="jxr_keyword">long</strong> lastWriteTime = IdleStateHandler.<strong class="jxr_keyword">this</strong>.lastWriteTime;
+<a class="jxr_linenumber" name="417" href="#417">417</a>             <strong class="jxr_keyword">long</strong> nextDelay = writerIdleTimeNanos - (System.nanoTime() - lastWriteTime);
+<a class="jxr_linenumber" name="418" href="#418">418</a>             <strong class="jxr_keyword">if</strong> (nextDelay &lt;= 0) {
+<a class="jxr_linenumber" name="419" href="#419">419</a>                 <em class="jxr_comment">// Writer is idle - set a new timeout and notify the callback.</em>
+<a class="jxr_linenumber" name="420" href="#420">420</a>                 writerIdleTimeout = ctx.executor().schedule(
+<a class="jxr_linenumber" name="421" href="#421">421</a>                         <strong class="jxr_keyword">this</strong>, writerIdleTimeNanos, TimeUnit.NANOSECONDS);
+<a class="jxr_linenumber" name="422" href="#422">422</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="423" href="#423">423</a>                     <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> event = newIdleStateEvent(IdleState.WRITER_IDLE, firstWriterIdleEvent);
+<a class="jxr_linenumber" name="424" href="#424">424</a>                     <strong class="jxr_keyword">if</strong> (firstWriterIdleEvent) {
+<a class="jxr_linenumber" name="425" href="#425">425</a>                         firstWriterIdleEvent = false;
+<a class="jxr_linenumber" name="426" href="#426">426</a>                     }
+<a class="jxr_linenumber" name="427" href="#427">427</a> 
+<a class="jxr_linenumber" name="428" href="#428">428</a>                     channelIdle(ctx, event);
+<a class="jxr_linenumber" name="429" href="#429">429</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="430" href="#430">430</a>                     ctx.fireExceptionCaught(t);
+<a class="jxr_linenumber" name="431" href="#431">431</a>                 }
+<a class="jxr_linenumber" name="432" href="#432">432</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="433" href="#433">433</a>                 <em class="jxr_comment">// Write occurred before the timeout - set a new timeout with shorter delay.</em>
+<a class="jxr_linenumber" name="434" href="#434">434</a>                 writerIdleTimeout = ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, nextDelay, TimeUnit.NANOSECONDS);
+<a class="jxr_linenumber" name="435" href="#435">435</a>             }
+<a class="jxr_linenumber" name="436" href="#436">436</a>         }
+<a class="jxr_linenumber" name="437" href="#437">437</a>     }
+<a class="jxr_linenumber" name="438" href="#438">438</a> 
+<a class="jxr_linenumber" name="439" href="#439">439</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">AllIdleTimeoutTask</a> <strong class="jxr_keyword">implements</strong> Runnable {
 <a class="jxr_linenumber" name="440" href="#440">440</a> 
-<a class="jxr_linenumber" name="441" href="#441">441</a>             <strong class="jxr_keyword">long</strong> nextDelay = allIdleTimeNanos;
-<a class="jxr_linenumber" name="442" href="#442">442</a>             <strong class="jxr_keyword">if</strong> (!reading) {
-<a class="jxr_linenumber" name="443" href="#443">443</a>                 nextDelay -= System.nanoTime() - Math.max(lastReadTime, lastWriteTime);
-<a class="jxr_linenumber" name="444" href="#444">444</a>             }
-<a class="jxr_linenumber" name="445" href="#445">445</a>             <strong class="jxr_keyword">if</strong> (nextDelay &lt;= 0) {
-<a class="jxr_linenumber" name="446" href="#446">446</a>                 <em class="jxr_comment">// Both reader and writer are idle - set a new timeout and</em>
-<a class="jxr_linenumber" name="447" href="#447">447</a>                 <em class="jxr_comment">// notify the callback.</em>
-<a class="jxr_linenumber" name="448" href="#448">448</a>                 allIdleTimeout = ctx.executor().schedule(
-<a class="jxr_linenumber" name="449" href="#449">449</a>                         <strong class="jxr_keyword">this</strong>, allIdleTimeNanos, TimeUnit.NANOSECONDS);
-<a class="jxr_linenumber" name="450" href="#450">450</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="451" href="#451">451</a>                     <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> event;
-<a class="jxr_linenumber" name="452" href="#452">452</a>                     <strong class="jxr_keyword">if</strong> (firstAllIdleEvent) {
-<a class="jxr_linenumber" name="453" href="#453">453</a>                         firstAllIdleEvent = false;
-<a class="jxr_linenumber" name="454" href="#454">454</a>                         event = IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT;
-<a class="jxr_linenumber" name="455" href="#455">455</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="456" href="#456">456</a>                         event = IdleStateEvent.ALL_IDLE_STATE_EVENT;
-<a class="jxr_linenumber" name="457" href="#457">457</a>                     }
-<a class="jxr_linenumber" name="458" href="#458">458</a>                     channelIdle(ctx, event);
-<a class="jxr_linenumber" name="459" href="#459">459</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="460" href="#460">460</a>                     ctx.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="461" href="#461">461</a>                 }
-<a class="jxr_linenumber" name="462" href="#462">462</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="463" href="#463">463</a>                 <em class="jxr_comment">// Either read or write occurred before the timeout - set a new</em>
-<a class="jxr_linenumber" name="464" href="#464">464</a>                 <em class="jxr_comment">// timeout with shorter delay.</em>
-<a class="jxr_linenumber" name="465" href="#465">465</a>                 allIdleTimeout = ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, nextDelay, TimeUnit.NANOSECONDS);
-<a class="jxr_linenumber" name="466" href="#466">466</a>             }
-<a class="jxr_linenumber" name="467" href="#467">467</a>         }
-<a class="jxr_linenumber" name="468" href="#468">468</a>     }
-<a class="jxr_linenumber" name="469" href="#469">469</a> }
+<a class="jxr_linenumber" name="441" href="#441">441</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
+<a class="jxr_linenumber" name="442" href="#442">442</a> 
+<a class="jxr_linenumber" name="443" href="#443">443</a>         <a href="../../../../io/netty/handler/timeout/IdleStateHandler.html">AllIdleTimeoutTask</a>(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="444" href="#444">444</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="445" href="#445">445</a>         }
+<a class="jxr_linenumber" name="446" href="#446">446</a> 
+<a class="jxr_linenumber" name="447" href="#447">447</a>         @Override
+<a class="jxr_linenumber" name="448" href="#448">448</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="449" href="#449">449</a>             <strong class="jxr_keyword">if</strong> (!ctx.channel().isOpen()) {
+<a class="jxr_linenumber" name="450" href="#450">450</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="451" href="#451">451</a>             }
+<a class="jxr_linenumber" name="452" href="#452">452</a> 
+<a class="jxr_linenumber" name="453" href="#453">453</a>             <strong class="jxr_keyword">long</strong> nextDelay = allIdleTimeNanos;
+<a class="jxr_linenumber" name="454" href="#454">454</a>             <strong class="jxr_keyword">if</strong> (!reading) {
+<a class="jxr_linenumber" name="455" href="#455">455</a>                 nextDelay -= System.nanoTime() - Math.max(lastReadTime, lastWriteTime);
+<a class="jxr_linenumber" name="456" href="#456">456</a>             }
+<a class="jxr_linenumber" name="457" href="#457">457</a>             <strong class="jxr_keyword">if</strong> (nextDelay &lt;= 0) {
+<a class="jxr_linenumber" name="458" href="#458">458</a>                 <em class="jxr_comment">// Both reader and writer are idle - set a new timeout and</em>
+<a class="jxr_linenumber" name="459" href="#459">459</a>                 <em class="jxr_comment">// notify the callback.</em>
+<a class="jxr_linenumber" name="460" href="#460">460</a>                 allIdleTimeout = ctx.executor().schedule(
+<a class="jxr_linenumber" name="461" href="#461">461</a>                         <strong class="jxr_keyword">this</strong>, allIdleTimeNanos, TimeUnit.NANOSECONDS);
+<a class="jxr_linenumber" name="462" href="#462">462</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="463" href="#463">463</a>                     <a href="../../../../io/netty/handler/timeout/IdleStateEvent.html">IdleStateEvent</a> event = newIdleStateEvent(IdleState.ALL_IDLE, firstAllIdleEvent);
+<a class="jxr_linenumber" name="464" href="#464">464</a>                     <strong class="jxr_keyword">if</strong> (firstAllIdleEvent) {
+<a class="jxr_linenumber" name="465" href="#465">465</a>                         firstAllIdleEvent = false;
+<a class="jxr_linenumber" name="466" href="#466">466</a>                     }
+<a class="jxr_linenumber" name="467" href="#467">467</a> 
+<a class="jxr_linenumber" name="468" href="#468">468</a>                     channelIdle(ctx, event);
+<a class="jxr_linenumber" name="469" href="#469">469</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="470" href="#470">470</a>                     ctx.fireExceptionCaught(t);
+<a class="jxr_linenumber" name="471" href="#471">471</a>                 }
+<a class="jxr_linenumber" name="472" href="#472">472</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="473" href="#473">473</a>                 <em class="jxr_comment">// Either read or write occurred before the timeout - set a new</em>
+<a class="jxr_linenumber" name="474" href="#474">474</a>                 <em class="jxr_comment">// timeout with shorter delay.</em>
+<a class="jxr_linenumber" name="475" href="#475">475</a>                 allIdleTimeout = ctx.executor().schedule(<strong class="jxr_keyword">this</strong>, nextDelay, TimeUnit.NANOSECONDS);
+<a class="jxr_linenumber" name="476" href="#476">476</a>             }
+<a class="jxr_linenumber" name="477" href="#477">477</a>         }
+<a class="jxr_linenumber" name="478" href="#478">478</a>     }
+<a class="jxr_linenumber" name="479" href="#479">479</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

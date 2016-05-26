@@ -187,7 +187,7 @@
 <a class="jxr_linenumber" name="177" href="#177">177</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="178" href="#178">178</a>     @SuppressWarnings(<span class="jxr_string">"UnusedParameters"</span>)
 <a class="jxr_linenumber" name="179" href="#179">179</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> extractObject(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buffer, <strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="180" href="#180">180</a>         <strong class="jxr_keyword">return</strong> buffer.slice(index, length).retain();
+<a class="jxr_linenumber" name="180" href="#180">180</a>         <strong class="jxr_keyword">return</strong> buffer.retainedSlice(index, length);
 <a class="jxr_linenumber" name="181" href="#181">181</a>     }
 <a class="jxr_linenumber" name="182" href="#182">182</a> 
 <a class="jxr_linenumber" name="183" href="#183">183</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> decodeByte(byte c, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, <strong class="jxr_keyword">int</strong> idx) {
@@ -200,28 +200,41 @@
 <a class="jxr_linenumber" name="190" href="#190">190</a>             <em class="jxr_comment">// also contain braces/brackets and that could lead to incorrect results.</em>
 <a class="jxr_linenumber" name="191" href="#191">191</a>             <strong class="jxr_keyword">if</strong> (!insideString) {
 <a class="jxr_linenumber" name="192" href="#192">192</a>                 insideString = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="193" href="#193">193</a>             <em class="jxr_comment">// If the double quote wasn't escaped then this is the end of a string.</em>
-<a class="jxr_linenumber" name="194" href="#194">194</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (in.getByte(idx - 1) != '&#92;&#92;') {
-<a class="jxr_linenumber" name="195" href="#195">195</a>                 insideString = false;
-<a class="jxr_linenumber" name="196" href="#196">196</a>             }
-<a class="jxr_linenumber" name="197" href="#197">197</a>         }
-<a class="jxr_linenumber" name="198" href="#198">198</a>     }
-<a class="jxr_linenumber" name="199" href="#199">199</a> 
-<a class="jxr_linenumber" name="200" href="#200">200</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> initDecoding(byte openingBrace) {
-<a class="jxr_linenumber" name="201" href="#201">201</a>         openBraces = 1;
-<a class="jxr_linenumber" name="202" href="#202">202</a>         <strong class="jxr_keyword">if</strong> (openingBrace == '[' &amp;&amp; streamArrayElements) {
-<a class="jxr_linenumber" name="203" href="#203">203</a>             state = ST_DECODING_ARRAY_STREAM;
-<a class="jxr_linenumber" name="204" href="#204">204</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="205" href="#205">205</a>             state = ST_DECODING_NORMAL;
-<a class="jxr_linenumber" name="206" href="#206">206</a>         }
-<a class="jxr_linenumber" name="207" href="#207">207</a>     }
-<a class="jxr_linenumber" name="208" href="#208">208</a> 
-<a class="jxr_linenumber" name="209" href="#209">209</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> reset() {
-<a class="jxr_linenumber" name="210" href="#210">210</a>         insideString = false;
-<a class="jxr_linenumber" name="211" href="#211">211</a>         state = ST_INIT;
-<a class="jxr_linenumber" name="212" href="#212">212</a>         openBraces = 0;
-<a class="jxr_linenumber" name="213" href="#213">213</a>     }
-<a class="jxr_linenumber" name="214" href="#214">214</a> }
+<a class="jxr_linenumber" name="193" href="#193">193</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="194" href="#194">194</a>                 <strong class="jxr_keyword">int</strong> backslashCount = 0;
+<a class="jxr_linenumber" name="195" href="#195">195</a>                 idx--;
+<a class="jxr_linenumber" name="196" href="#196">196</a>                 <strong class="jxr_keyword">while</strong> (idx &gt;= 0) {
+<a class="jxr_linenumber" name="197" href="#197">197</a>                     <strong class="jxr_keyword">if</strong> (in.getByte(idx) == '&#92;&#92;') {
+<a class="jxr_linenumber" name="198" href="#198">198</a>                         backslashCount++;
+<a class="jxr_linenumber" name="199" href="#199">199</a>                         idx--;
+<a class="jxr_linenumber" name="200" href="#200">200</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="201" href="#201">201</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="202" href="#202">202</a>                     }
+<a class="jxr_linenumber" name="203" href="#203">203</a>                 }
+<a class="jxr_linenumber" name="204" href="#204">204</a>                 <em class="jxr_comment">// The double quote isn't escaped only if there are even "\&quot;s.</em>
+<a class="jxr_linenumber" name="205" href="#205">205</a>                 <strong class="jxr_keyword">if</strong> (backslashCount % 2 == 0) {
+<a class="jxr_linenumber" name="206" href="#206">206</a>                     <em class="jxr_comment">// Since the double quote isn't escaped then this is the end of a string.</em>
+<a class="jxr_linenumber" name="207" href="#207">207</a>                     insideString = false;
+<a class="jxr_linenumber" name="208" href="#208">208</a>                 }
+<a class="jxr_linenumber" name="209" href="#209">209</a>             }
+<a class="jxr_linenumber" name="210" href="#210">210</a>         }
+<a class="jxr_linenumber" name="211" href="#211">211</a>     }
+<a class="jxr_linenumber" name="212" href="#212">212</a> 
+<a class="jxr_linenumber" name="213" href="#213">213</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> initDecoding(byte openingBrace) {
+<a class="jxr_linenumber" name="214" href="#214">214</a>         openBraces = 1;
+<a class="jxr_linenumber" name="215" href="#215">215</a>         <strong class="jxr_keyword">if</strong> (openingBrace == '[' &amp;&amp; streamArrayElements) {
+<a class="jxr_linenumber" name="216" href="#216">216</a>             state = ST_DECODING_ARRAY_STREAM;
+<a class="jxr_linenumber" name="217" href="#217">217</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="218" href="#218">218</a>             state = ST_DECODING_NORMAL;
+<a class="jxr_linenumber" name="219" href="#219">219</a>         }
+<a class="jxr_linenumber" name="220" href="#220">220</a>     }
+<a class="jxr_linenumber" name="221" href="#221">221</a> 
+<a class="jxr_linenumber" name="222" href="#222">222</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> reset() {
+<a class="jxr_linenumber" name="223" href="#223">223</a>         insideString = false;
+<a class="jxr_linenumber" name="224" href="#224">224</a>         state = ST_INIT;
+<a class="jxr_linenumber" name="225" href="#225">225</a>         openBraces = 0;
+<a class="jxr_linenumber" name="226" href="#226">226</a>     }
+<a class="jxr_linenumber" name="227" href="#227">227</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
