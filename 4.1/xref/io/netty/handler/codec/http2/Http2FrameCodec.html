@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_US" lang="en_US">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>Http2FrameCodec xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../../api/io/netty/handler/codec/http2/Http2FrameCodec.html">View Javadoc</a></div><pre>
+
+<a class="jxr_linenumber" name="1" href="#1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="2" href="#2">2</a>   <em class="jxr_comment"> * Copyright 2016 The Netty Project</em>
+<a class="jxr_linenumber" name="3" href="#3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="4" href="#4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="5" href="#5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="6" href="#6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="7" href="#7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="8" href="#8">8</a>   <em class="jxr_comment"> *   <a href="http://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">http://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="9" href="#9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="10" href="#10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="11" href="#11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="12" href="#12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="13" href="#13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="14" href="#14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="15" href="#15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="16" href="#16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.codec.http2;
+<a class="jxr_linenumber" name="17" href="#17">17</a>  
+<a class="jxr_linenumber" name="18" href="#18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
+<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelDuplexHandler;
+<a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelPromise;
+<a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.UnsupportedMessageTypeException;
+<a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.HttpServerUpgradeHandler.UpgradeEvent;
+<a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.ReferenceCountUtil;
+<a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.UnstableApi;
+<a class="jxr_linenumber" name="26" href="#26">26</a>  
+<a class="jxr_linenumber" name="27" href="#27">27</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.handler.logging.LogLevel.INFO;
+<a class="jxr_linenumber" name="28" href="#28">28</a>  
+<a class="jxr_linenumber" name="29" href="#29">29</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="30" href="#30">30</a>  <em class="jxr_javadoccomment"> * An HTTP/2 handler that maps HTTP/2 frames to {@link Http2Frame} objects and vice versa. For every incoming HTTP/2</em>
+<a class="jxr_linenumber" name="31" href="#31">31</a>  <em class="jxr_javadoccomment"> * frame a {@link Http2Frame} object is created and propagated via {@link #channelRead}. Outgoing {@link Http2Frame}</em>
+<a class="jxr_linenumber" name="32" href="#32">32</a>  <em class="jxr_javadoccomment"> * objects received via {@link #write} are converted to the HTTP/2 wire format.</em>
+<a class="jxr_linenumber" name="33" href="#33">33</a>  <em class="jxr_javadoccomment"> *</em>
+<a class="jxr_linenumber" name="34" href="#34">34</a>  <em class="jxr_javadoccomment"> * &lt;p&gt;A change in stream state is propagated through the channel pipeline as a user event via</em>
+<a class="jxr_linenumber" name="35" href="#35">35</a>  <em class="jxr_javadoccomment"> * {@link Http2StreamStateEvent} objects. When a HTTP/2 stream first becomes active a {@link Http2StreamActiveEvent}</em>
+<a class="jxr_linenumber" name="36" href="#36">36</a>  <em class="jxr_javadoccomment"> * and when it gets closed a {@link Http2StreamClosedEvent} is emitted.</em>
+<a class="jxr_linenumber" name="37" href="#37">37</a>  <em class="jxr_javadoccomment"> *</em>
+<a class="jxr_linenumber" name="38" href="#38">38</a>  <em class="jxr_javadoccomment"> * &lt;p&gt;Server-side HTTP to HTTP/2 upgrade is supported in conjunction with {@link Http2ServerUpgradeCodec}; the necessary</em>
+<a class="jxr_linenumber" name="39" href="#39">39</a>  <em class="jxr_javadoccomment"> * HTTP-to-HTTP/2 conversion is performed automatically.</em>
+<a class="jxr_linenumber" name="40" href="#40">40</a>  <em class="jxr_javadoccomment"> *</em>
+<a class="jxr_linenumber" name="41" href="#41">41</a>  <em class="jxr_javadoccomment"> * &lt;p&gt;&lt;em&gt;This API is very immature.&lt;/em&gt; The Http2Connection-based API is currently preferred over</em>
+<a class="jxr_linenumber" name="42" href="#42">42</a>  <em class="jxr_javadoccomment"> * this API. This API is targeted to eventually replace or reduce the need for the Http2Connection-based API.</em>
+<a class="jxr_linenumber" name="43" href="#43">43</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="44" href="#44">44</a>  @UnstableApi
+<a class="jxr_linenumber" name="45" href="#45">45</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> Http2FrameCodec <strong class="jxr_keyword">extends</strong> <a href="../../../../../io/netty/channel/ChannelDuplexHandler.html">ChannelDuplexHandler</a> {
+<a class="jxr_linenumber" name="46" href="#46">46</a>  
+<a class="jxr_linenumber" name="47" href="#47">47</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> Http2FrameLogger HTTP2_FRAME_LOGGER = <strong class="jxr_keyword">new</strong> Http2FrameLogger(INFO, Http2FrameCodec.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="48" href="#48">48</a>  
+<a class="jxr_linenumber" name="49" href="#49">49</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Http2ConnectionHandler http2Handler;
+<a class="jxr_linenumber" name="50" href="#50">50</a>  
+<a class="jxr_linenumber" name="51" href="#51">51</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
+<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> http2HandlerCtx;
+<a class="jxr_linenumber" name="53" href="#53">53</a>  
+<a class="jxr_linenumber" name="54" href="#54">54</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="55" href="#55">55</a>  <em class="jxr_javadoccomment">     * Construct a new handler.</em>
+<a class="jxr_linenumber" name="56" href="#56">56</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="57" href="#57">57</a>  <em class="jxr_javadoccomment">     * @param server {@code true} this is a server</em>
+<a class="jxr_linenumber" name="58" href="#58">58</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="59" href="#59">59</a>      <strong class="jxr_keyword">public</strong> Http2FrameCodec(<strong class="jxr_keyword">boolean</strong> server) {
+<a class="jxr_linenumber" name="60" href="#60">60</a>          <strong class="jxr_keyword">this</strong>(server, <strong class="jxr_keyword">new</strong> DefaultHttp2FrameWriter());
+<a class="jxr_linenumber" name="61" href="#61">61</a>      }
+<a class="jxr_linenumber" name="62" href="#62">62</a>  
+<a class="jxr_linenumber" name="63" href="#63">63</a>      <em class="jxr_comment">// Visible for testing</em>
+<a class="jxr_linenumber" name="64" href="#64">64</a>      Http2FrameCodec(<strong class="jxr_keyword">boolean</strong> server, Http2FrameWriter frameWriter) {
+<a class="jxr_linenumber" name="65" href="#65">65</a>          Http2Connection connection = <strong class="jxr_keyword">new</strong> DefaultHttp2Connection(server);
+<a class="jxr_linenumber" name="66" href="#66">66</a>          frameWriter = <strong class="jxr_keyword">new</strong> Http2OutboundFrameLogger(frameWriter, HTTP2_FRAME_LOGGER);
+<a class="jxr_linenumber" name="67" href="#67">67</a>          Http2ConnectionEncoder encoder = <strong class="jxr_keyword">new</strong> DefaultHttp2ConnectionEncoder(connection, frameWriter);
+<a class="jxr_linenumber" name="68" href="#68">68</a>          Http2FrameReader reader = <strong class="jxr_keyword">new</strong> Http2InboundFrameLogger(<strong class="jxr_keyword">new</strong> DefaultHttp2FrameReader(), HTTP2_FRAME_LOGGER);
+<a class="jxr_linenumber" name="69" href="#69">69</a>          Http2ConnectionDecoder decoder = <strong class="jxr_keyword">new</strong> DefaultHttp2ConnectionDecoder(connection, encoder, reader);
+<a class="jxr_linenumber" name="70" href="#70">70</a>          decoder.frameListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2FrameCodec.html">FrameListener</a>());
+<a class="jxr_linenumber" name="71" href="#71">71</a>          http2Handler = <strong class="jxr_keyword">new</strong> InternalHttp2ConnectionHandler(decoder, encoder, <strong class="jxr_keyword">new</strong> Http2Settings());
+<a class="jxr_linenumber" name="72" href="#72">72</a>          http2Handler.connection().addListener(<strong class="jxr_keyword">new</strong> ConnectionListener());
+<a class="jxr_linenumber" name="73" href="#73">73</a>      }
+<a class="jxr_linenumber" name="74" href="#74">74</a>  
+<a class="jxr_linenumber" name="75" href="#75">75</a>      Http2ConnectionHandler connectionHandler() {
+<a class="jxr_linenumber" name="76" href="#76">76</a>          <strong class="jxr_keyword">return</strong> http2Handler;
+<a class="jxr_linenumber" name="77" href="#77">77</a>      }
+<a class="jxr_linenumber" name="78" href="#78">78</a>  
+<a class="jxr_linenumber" name="79" href="#79">79</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="80" href="#80">80</a>  <em class="jxr_javadoccomment">     * Load any dependencies.</em>
+<a class="jxr_linenumber" name="81" href="#81">81</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="82" href="#82">82</a>      @Override
+<a class="jxr_linenumber" name="83" href="#83">83</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="84" href="#84">84</a>          <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="85" href="#85">85</a>          ctx.pipeline().addBefore(ctx.executor(), ctx.name(), <strong class="jxr_keyword">null</strong>, http2Handler);
+<a class="jxr_linenumber" name="86" href="#86">86</a>          http2HandlerCtx = ctx.pipeline().context(http2Handler);
+<a class="jxr_linenumber" name="87" href="#87">87</a>      }
+<a class="jxr_linenumber" name="88" href="#88">88</a>  
+<a class="jxr_linenumber" name="89" href="#89">89</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="90" href="#90">90</a>  <em class="jxr_javadoccomment">     * Clean up any dependencies.</em>
+<a class="jxr_linenumber" name="91" href="#91">91</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="92" href="#92">92</a>      @Override
+<a class="jxr_linenumber" name="93" href="#93">93</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="94" href="#94">94</a>          ctx.pipeline().remove(http2Handler);
+<a class="jxr_linenumber" name="95" href="#95">95</a>      }
+<a class="jxr_linenumber" name="96" href="#96">96</a>  
+<a class="jxr_linenumber" name="97" href="#97">97</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="98" href="#98">98</a>  <em class="jxr_javadoccomment">     * Handles the cleartext HTTP upgrade event. If an upgrade occurred, sends a simple response via</em>
+<a class="jxr_linenumber" name="99" href="#99">99</a>  <em class="jxr_javadoccomment">     * HTTP/2 on stream 1 (the stream specifically reserved for cleartext HTTP upgrade).</em>
+<a class="jxr_linenumber" name="100" href="#100">100</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="101" href="#101">101</a>     @Override
+<a class="jxr_linenumber" name="102" href="#102">102</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="103" href="#103">103</a>         <strong class="jxr_keyword">if</strong> (!(evt instanceof UpgradeEvent)) {
+<a class="jxr_linenumber" name="104" href="#104">104</a>             <strong class="jxr_keyword">super</strong>.userEventTriggered(ctx, evt);
+<a class="jxr_linenumber" name="105" href="#105">105</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="106" href="#106">106</a>         }
+<a class="jxr_linenumber" name="107" href="#107">107</a> 
+<a class="jxr_linenumber" name="108" href="#108">108</a>         UpgradeEvent upgrade = (UpgradeEvent) evt;
+<a class="jxr_linenumber" name="109" href="#109">109</a>         ctx.fireUserEventTriggered(upgrade.retain());
+<a class="jxr_linenumber" name="110" href="#110">110</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="111" href="#111">111</a>             Http2Stream stream = http2Handler.connection().stream(Http2CodecUtil.HTTP_UPGRADE_STREAM_ID);
+<a class="jxr_linenumber" name="112" href="#112">112</a>             <em class="jxr_comment">// TODO: improve handler/stream lifecycle so that stream isn't active before handler added.</em>
+<a class="jxr_linenumber" name="113" href="#113">113</a>             <em class="jxr_comment">// The stream was already made active, but ctx may have been null so it wasn't initialized.</em>
+<a class="jxr_linenumber" name="114" href="#114">114</a>             <em class="jxr_comment">// https://github.com/netty/netty/issues/4942</em>
+<a class="jxr_linenumber" name="115" href="#115">115</a>             <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2FrameCodec.html">ConnectionListener</a>().onStreamActive(stream);
+<a class="jxr_linenumber" name="116" href="#116">116</a>             upgrade.upgradeRequest().headers().setInt(
+<a class="jxr_linenumber" name="117" href="#117">117</a>                     HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text(), Http2CodecUtil.HTTP_UPGRADE_STREAM_ID);
+<a class="jxr_linenumber" name="118" href="#118">118</a>             <strong class="jxr_keyword">new</strong> InboundHttpToHttp2Adapter(http2Handler.connection(), http2Handler.decoder().frameListener())
+<a class="jxr_linenumber" name="119" href="#119">119</a>                     .channelRead(ctx, upgrade.upgradeRequest().retain());
+<a class="jxr_linenumber" name="120" href="#120">120</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="121" href="#121">121</a>             upgrade.release();
+<a class="jxr_linenumber" name="122" href="#122">122</a>         }
+<a class="jxr_linenumber" name="123" href="#123">123</a>     }
+<a class="jxr_linenumber" name="124" href="#124">124</a> 
+<a class="jxr_linenumber" name="125" href="#125">125</a>     <em class="jxr_comment">// Override this to signal it will never throw an exception.</em>
+<a class="jxr_linenumber" name="126" href="#126">126</a>     @Override
+<a class="jxr_linenumber" name="127" href="#127">127</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="128" href="#128">128</a>         ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="129" href="#129">129</a>     }
+<a class="jxr_linenumber" name="130" href="#130">130</a> 
+<a class="jxr_linenumber" name="131" href="#131">131</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="132" href="#132">132</a> <em class="jxr_javadoccomment">     * Processes all {@link Http2Frame}s. {@link Http2StreamFrame}s may only originate in child</em>
+<a class="jxr_linenumber" name="133" href="#133">133</a> <em class="jxr_javadoccomment">     * streams.</em>
+<a class="jxr_linenumber" name="134" href="#134">134</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="135" href="#135">135</a>     @Override
+<a class="jxr_linenumber" name="136" href="#136">136</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="137" href="#137">137</a>         <strong class="jxr_keyword">if</strong> (!(msg instanceof Http2Frame)) {
+<a class="jxr_linenumber" name="138" href="#138">138</a>             ctx.write(msg, promise);
+<a class="jxr_linenumber" name="139" href="#139">139</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="140" href="#140">140</a>         }
+<a class="jxr_linenumber" name="141" href="#141">141</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="142" href="#142">142</a>             <strong class="jxr_keyword">if</strong> (msg instanceof Http2WindowUpdateFrame) {
+<a class="jxr_linenumber" name="143" href="#143">143</a>                 Http2WindowUpdateFrame frame = (Http2WindowUpdateFrame) msg;
+<a class="jxr_linenumber" name="144" href="#144">144</a>                 consumeBytes(frame.streamId(), frame.windowSizeIncrement());
+<a class="jxr_linenumber" name="145" href="#145">145</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof Http2StreamFrame) {
+<a class="jxr_linenumber" name="146" href="#146">146</a>                 writeStreamFrame((Http2StreamFrame) msg, promise);
+<a class="jxr_linenumber" name="147" href="#147">147</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof Http2GoAwayFrame) {
+<a class="jxr_linenumber" name="148" href="#148">148</a>                 writeGoAwayFrame((Http2GoAwayFrame) msg, promise);
+<a class="jxr_linenumber" name="149" href="#149">149</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="150" href="#150">150</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/UnsupportedMessageTypeException.html">UnsupportedMessageTypeException</a>(msg);
+<a class="jxr_linenumber" name="151" href="#151">151</a>             }
+<a class="jxr_linenumber" name="152" href="#152">152</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="153" href="#153">153</a>             ReferenceCountUtil.release(msg);
+<a class="jxr_linenumber" name="154" href="#154">154</a>         }
+<a class="jxr_linenumber" name="155" href="#155">155</a>     }
+<a class="jxr_linenumber" name="156" href="#156">156</a> 
+<a class="jxr_linenumber" name="157" href="#157">157</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> consumeBytes(<strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> bytes) {
+<a class="jxr_linenumber" name="158" href="#158">158</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="159" href="#159">159</a>             Http2Stream stream = http2Handler.connection().stream(streamId);
+<a class="jxr_linenumber" name="160" href="#160">160</a>             http2Handler.connection().local().flowController()
+<a class="jxr_linenumber" name="161" href="#161">161</a>                         .consumeBytes(stream, bytes);
+<a class="jxr_linenumber" name="162" href="#162">162</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="163" href="#163">163</a>             exceptionCaught(ctx, t);
+<a class="jxr_linenumber" name="164" href="#164">164</a>         }
+<a class="jxr_linenumber" name="165" href="#165">165</a>     }
+<a class="jxr_linenumber" name="166" href="#166">166</a> 
+<a class="jxr_linenumber" name="167" href="#167">167</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeGoAwayFrame(Http2GoAwayFrame frame, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="168" href="#168">168</a>         <strong class="jxr_keyword">if</strong> (frame.lastStreamId() &gt; -1) {
+<a class="jxr_linenumber" name="169" href="#169">169</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Last stream id must not be set on GOAWAY frame"</span>);
+<a class="jxr_linenumber" name="170" href="#170">170</a>         }
+<a class="jxr_linenumber" name="171" href="#171">171</a> 
+<a class="jxr_linenumber" name="172" href="#172">172</a>         <strong class="jxr_keyword">int</strong> lastStreamCreated = http2Handler.connection().remote().lastStreamCreated();
+<a class="jxr_linenumber" name="173" href="#173">173</a>         <strong class="jxr_keyword">int</strong> lastStreamId = lastStreamCreated + frame.extraStreamIds() * 2;
+<a class="jxr_linenumber" name="174" href="#174">174</a>         <em class="jxr_comment">// Check if the computation overflowed.</em>
+<a class="jxr_linenumber" name="175" href="#175">175</a>         <strong class="jxr_keyword">if</strong> (lastStreamId &lt; lastStreamCreated) {
+<a class="jxr_linenumber" name="176" href="#176">176</a>             lastStreamId = Integer.MAX_VALUE;
+<a class="jxr_linenumber" name="177" href="#177">177</a>         }
+<a class="jxr_linenumber" name="178" href="#178">178</a>         http2Handler.goAway(
+<a class="jxr_linenumber" name="179" href="#179">179</a>                 http2HandlerCtx, lastStreamId, frame.errorCode(), frame.content().retain(), promise);
+<a class="jxr_linenumber" name="180" href="#180">180</a>     }
+<a class="jxr_linenumber" name="181" href="#181">181</a> 
+<a class="jxr_linenumber" name="182" href="#182">182</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeStreamFrame(Http2StreamFrame frame, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="183" href="#183">183</a>         <strong class="jxr_keyword">int</strong> streamId = frame.streamId();
+<a class="jxr_linenumber" name="184" href="#184">184</a>         <strong class="jxr_keyword">if</strong> (frame instanceof Http2DataFrame) {
+<a class="jxr_linenumber" name="185" href="#185">185</a>             Http2DataFrame dataFrame = (Http2DataFrame) frame;
+<a class="jxr_linenumber" name="186" href="#186">186</a>             http2Handler.encoder().writeData(http2HandlerCtx, streamId, dataFrame.content().retain(),
+<a class="jxr_linenumber" name="187" href="#187">187</a>                                              dataFrame.padding(), dataFrame.isEndStream(), promise);
+<a class="jxr_linenumber" name="188" href="#188">188</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (frame instanceof Http2HeadersFrame) {
+<a class="jxr_linenumber" name="189" href="#189">189</a>             Http2HeadersFrame headerFrame = (Http2HeadersFrame) frame;
+<a class="jxr_linenumber" name="190" href="#190">190</a>             http2Handler.encoder().writeHeaders(
+<a class="jxr_linenumber" name="191" href="#191">191</a>                     http2HandlerCtx, streamId, headerFrame.headers(), headerFrame.padding(), headerFrame.isEndStream(),
+<a class="jxr_linenumber" name="192" href="#192">192</a>                     promise);
+<a class="jxr_linenumber" name="193" href="#193">193</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (frame instanceof Http2ResetFrame) {
+<a class="jxr_linenumber" name="194" href="#194">194</a>             Http2ResetFrame rstFrame = (Http2ResetFrame) frame;
+<a class="jxr_linenumber" name="195" href="#195">195</a>             http2Handler.resetStream(http2HandlerCtx, streamId, rstFrame.errorCode(), promise);
+<a class="jxr_linenumber" name="196" href="#196">196</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="197" href="#197">197</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/UnsupportedMessageTypeException.html">UnsupportedMessageTypeException</a>(frame);
+<a class="jxr_linenumber" name="198" href="#198">198</a>         }
+<a class="jxr_linenumber" name="199" href="#199">199</a>     }
+<a class="jxr_linenumber" name="200" href="#200">200</a> 
+<a class="jxr_linenumber" name="201" href="#201">201</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2FrameCodec.html">ConnectionListener</a> <strong class="jxr_keyword">extends</strong> Http2ConnectionAdapter {
+<a class="jxr_linenumber" name="202" href="#202">202</a>         @Override
+<a class="jxr_linenumber" name="203" href="#203">203</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onStreamActive(Http2Stream stream) {
+<a class="jxr_linenumber" name="204" href="#204">204</a>             <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="205" href="#205">205</a>                 <em class="jxr_comment">// UPGRADE stream is active before handlerAdded().</em>
+<a class="jxr_linenumber" name="206" href="#206">206</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="207" href="#207">207</a>             }
+<a class="jxr_linenumber" name="208" href="#208">208</a>             ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> Http2StreamActiveEvent(stream.id()));
+<a class="jxr_linenumber" name="209" href="#209">209</a>         }
+<a class="jxr_linenumber" name="210" href="#210">210</a> 
+<a class="jxr_linenumber" name="211" href="#211">211</a>         @Override
+<a class="jxr_linenumber" name="212" href="#212">212</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onStreamClosed(Http2Stream stream) {
+<a class="jxr_linenumber" name="213" href="#213">213</a>             ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> Http2StreamClosedEvent(stream.id()));
+<a class="jxr_linenumber" name="214" href="#214">214</a>         }
+<a class="jxr_linenumber" name="215" href="#215">215</a> 
+<a class="jxr_linenumber" name="216" href="#216">216</a>         @Override
+<a class="jxr_linenumber" name="217" href="#217">217</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onGoAwayReceived(<strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> lastStreamId, <strong class="jxr_keyword">long</strong> errorCode, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData) {
+<a class="jxr_linenumber" name="218" href="#218">218</a>             ctx.fireChannelRead(<strong class="jxr_keyword">new</strong> DefaultHttp2GoAwayFrame(lastStreamId, errorCode, debugData));
+<a class="jxr_linenumber" name="219" href="#219">219</a>         }
+<a class="jxr_linenumber" name="220" href="#220">220</a>     }
+<a class="jxr_linenumber" name="221" href="#221">221</a> 
+<a class="jxr_linenumber" name="222" href="#222">222</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> InternalHttp2ConnectionHandler <strong class="jxr_keyword">extends</strong> Http2ConnectionHandler {
+<a class="jxr_linenumber" name="223" href="#223">223</a>         InternalHttp2ConnectionHandler(Http2ConnectionDecoder decoder, Http2ConnectionEncoder encoder,
+<a class="jxr_linenumber" name="224" href="#224">224</a>                                        Http2Settings initialSettings) {
+<a class="jxr_linenumber" name="225" href="#225">225</a>             <strong class="jxr_keyword">super</strong>(decoder, encoder, initialSettings);
+<a class="jxr_linenumber" name="226" href="#226">226</a>         }
+<a class="jxr_linenumber" name="227" href="#227">227</a> 
+<a class="jxr_linenumber" name="228" href="#228">228</a>         @Override
+<a class="jxr_linenumber" name="229" href="#229">229</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> onStreamError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause,
+<a class="jxr_linenumber" name="230" href="#230">230</a>                                      Http2Exception.StreamException http2Ex) {
+<a class="jxr_linenumber" name="231" href="#231">231</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="232" href="#232">232</a>                 Http2Stream stream = connection().stream(http2Ex.streamId());
+<a class="jxr_linenumber" name="233" href="#233">233</a>                 <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="234" href="#234">234</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="235" href="#235">235</a>                 }
+<a class="jxr_linenumber" name="236" href="#236">236</a>                 ctx.fireExceptionCaught(http2Ex);
+<a class="jxr_linenumber" name="237" href="#237">237</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="238" href="#238">238</a>                 <strong class="jxr_keyword">super</strong>.onStreamError(ctx, cause, http2Ex);
+<a class="jxr_linenumber" name="239" href="#239">239</a>             }
+<a class="jxr_linenumber" name="240" href="#240">240</a>         }
+<a class="jxr_linenumber" name="241" href="#241">241</a>     }
+<a class="jxr_linenumber" name="242" href="#242">242</a> 
+<a class="jxr_linenumber" name="243" href="#243">243</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2FrameCodec.html">FrameListener</a> <strong class="jxr_keyword">extends</strong> Http2FrameAdapter {
+<a class="jxr_linenumber" name="244" href="#244">244</a>         @Override
+<a class="jxr_linenumber" name="245" href="#245">245</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onRstStreamRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode) {
+<a class="jxr_linenumber" name="246" href="#246">246</a>             Http2ResetFrame rstFrame = <strong class="jxr_keyword">new</strong> DefaultHttp2ResetFrame(errorCode);
+<a class="jxr_linenumber" name="247" href="#247">247</a>             rstFrame.setStreamId(streamId);
+<a class="jxr_linenumber" name="248" href="#248">248</a>             ctx.fireChannelRead(rstFrame);
+<a class="jxr_linenumber" name="249" href="#249">249</a>         }
+<a class="jxr_linenumber" name="250" href="#250">250</a> 
+<a class="jxr_linenumber" name="251" href="#251">251</a>         @Override
+<a class="jxr_linenumber" name="252" href="#252">252</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onHeadersRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId,
+<a class="jxr_linenumber" name="253" href="#253">253</a>                                   Http2Headers headers, <strong class="jxr_keyword">int</strong> streamDependency, <strong class="jxr_keyword">short</strong> weight, <strong class="jxr_keyword">boolean</strong>
+<a class="jxr_linenumber" name="254" href="#254">254</a>                                           exclusive, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endStream) {
+<a class="jxr_linenumber" name="255" href="#255">255</a>             onHeadersRead(ctx, streamId, headers, padding, endStream);
+<a class="jxr_linenumber" name="256" href="#256">256</a>         }
+<a class="jxr_linenumber" name="257" href="#257">257</a> 
+<a class="jxr_linenumber" name="258" href="#258">258</a>         @Override
+<a class="jxr_linenumber" name="259" href="#259">259</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onHeadersRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, Http2Headers headers,
+<a class="jxr_linenumber" name="260" href="#260">260</a>                                   <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream) {
+<a class="jxr_linenumber" name="261" href="#261">261</a>             Http2HeadersFrame headersFrame = <strong class="jxr_keyword">new</strong> DefaultHttp2HeadersFrame(headers, endOfStream, padding);
+<a class="jxr_linenumber" name="262" href="#262">262</a>             headersFrame.setStreamId(streamId);
+<a class="jxr_linenumber" name="263" href="#263">263</a>             ctx.fireChannelRead(headersFrame);
+<a class="jxr_linenumber" name="264" href="#264">264</a>         }
+<a class="jxr_linenumber" name="265" href="#265">265</a> 
+<a class="jxr_linenumber" name="266" href="#266">266</a>         @Override
+<a class="jxr_linenumber" name="267" href="#267">267</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> onDataRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data, <strong class="jxr_keyword">int</strong> padding,
+<a class="jxr_linenumber" name="268" href="#268">268</a>                               <strong class="jxr_keyword">boolean</strong> endOfStream) {
+<a class="jxr_linenumber" name="269" href="#269">269</a>             Http2DataFrame dataFrame = <strong class="jxr_keyword">new</strong> DefaultHttp2DataFrame(data.retain(), endOfStream, padding);
+<a class="jxr_linenumber" name="270" href="#270">270</a>             dataFrame.setStreamId(streamId);
+<a class="jxr_linenumber" name="271" href="#271">271</a>             ctx.fireChannelRead(dataFrame);
+<a class="jxr_linenumber" name="272" href="#272">272</a> 
+<a class="jxr_linenumber" name="273" href="#273">273</a>             <em class="jxr_comment">// We return the bytes in bytesConsumed() once the stream channel consumed the bytes.</em>
+<a class="jxr_linenumber" name="274" href="#274">274</a>             <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="275" href="#275">275</a>         }
+<a class="jxr_linenumber" name="276" href="#276">276</a>     }
+<a class="jxr_linenumber" name="277" href="#277">277</a> }
+</pre>
+<hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
+</html>
+

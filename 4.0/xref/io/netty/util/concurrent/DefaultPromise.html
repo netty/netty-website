@@ -26,11 +26,11 @@
 <a class="jxr_linenumber" name="16" href="#16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.util.concurrent;
 <a class="jxr_linenumber" name="17" href="#17">17</a>  
 <a class="jxr_linenumber" name="18" href="#18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.util.Signal;
-<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.EmptyArrays;
-<a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.InternalThreadLocalMap;
-<a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.OneTimeTask;
-<a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.PlatformDependent;
-<a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.StringUtil;
+<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.InternalThreadLocalMap;
+<a class="jxr_linenumber" name="20" href="#20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.PlatformDependent;
+<a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.StringUtil;
+<a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.SystemPropertyUtil;
+<a class="jxr_linenumber" name="23" href="#23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.ThrowableUtil;
 <a class="jxr_linenumber" name="24" href="#24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLogger;
 <a class="jxr_linenumber" name="25" href="#25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLoggerFactory;
 <a class="jxr_linenumber" name="26" href="#26">26</a>  
@@ -45,742 +45,746 @@
 <a class="jxr_linenumber" name="35" href="#35">35</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/logging/InternalLogger.html">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DefaultPromise.<strong class="jxr_keyword">class</strong>);
 <a class="jxr_linenumber" name="36" href="#36">36</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/logging/InternalLogger.html">InternalLogger</a> rejectedExecutionLogger =
 <a class="jxr_linenumber" name="37" href="#37">37</a>              InternalLoggerFactory.getInstance(DefaultPromise.<strong class="jxr_keyword">class</strong>.getName() + <span class="jxr_string">".rejectedExecution"</span>);
-<a class="jxr_linenumber" name="38" href="#38">38</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> MAX_LISTENER_STACK_DEPTH = 8;
-<a class="jxr_linenumber" name="39" href="#39">39</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> AtomicReferenceFieldUpdater&lt;DefaultPromise, Object&gt; RESULT_UPDATER;
-<a class="jxr_linenumber" name="40" href="#40">40</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/Signal.html">Signal</a> SUCCESS = Signal.valueOf(DefaultPromise.<strong class="jxr_keyword">class</strong>.getName() + <span class="jxr_string">".SUCCESS"</span>);
-<a class="jxr_linenumber" name="41" href="#41">41</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/Signal.html">Signal</a> UNCANCELLABLE = Signal.valueOf(DefaultPromise.<strong class="jxr_keyword">class</strong>.getName() + <span class="jxr_string">".UNCANCELLABLE"</span>);
-<a class="jxr_linenumber" name="42" href="#42">42</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a> CANCELLATION_CAUSE_HOLDER = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>(<strong class="jxr_keyword">new</strong> CancellationException());
-<a class="jxr_linenumber" name="43" href="#43">43</a>  
-<a class="jxr_linenumber" name="44" href="#44">44</a>      <strong class="jxr_keyword">static</strong> {
-<a class="jxr_linenumber" name="45" href="#45">45</a>          AtomicReferenceFieldUpdater&lt;DefaultPromise, Object&gt; updater =
-<a class="jxr_linenumber" name="46" href="#46">46</a>                  PlatformDependent.newAtomicReferenceFieldUpdater(DefaultPromise.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"result"</span>);
-<a class="jxr_linenumber" name="47" href="#47">47</a>          RESULT_UPDATER = updater == <strong class="jxr_keyword">null</strong> ? AtomicReferenceFieldUpdater.newUpdater(DefaultPromise.<strong class="jxr_keyword">class</strong>,
-<a class="jxr_linenumber" name="48" href="#48">48</a>                                                                                    Object.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"result"</span>) : updater;
-<a class="jxr_linenumber" name="49" href="#49">49</a>          CANCELLATION_CAUSE_HOLDER.cause.setStackTrace(EmptyArrays.EMPTY_STACK_TRACE);
-<a class="jxr_linenumber" name="50" href="#50">50</a>      }
-<a class="jxr_linenumber" name="51" href="#51">51</a>  
-<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> Object result;
-<a class="jxr_linenumber" name="53" href="#53">53</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor;
-<a class="jxr_linenumber" name="54" href="#54">54</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="55" href="#55">55</a>  <em class="jxr_javadoccomment">     * One or more listeners. Can be a {@link GenericFutureListener} or a {@link DefaultFutureListeners}.</em>
-<a class="jxr_linenumber" name="56" href="#56">56</a>  <em class="jxr_javadoccomment">     * If {@code null}, it means either 1) no listeners were added yet or 2) all listeners were notified.</em>
-<a class="jxr_linenumber" name="57" href="#57">57</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="58" href="#58">58</a>  <em class="jxr_javadoccomment">     * Threading - synchronized(this). We must support adding listeners when there is no EventExecutor.</em>
-<a class="jxr_linenumber" name="59" href="#59">59</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="60" href="#60">60</a>      <strong class="jxr_keyword">private</strong> Object listeners;
-<a class="jxr_linenumber" name="61" href="#61">61</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="62" href="#62">62</a>  <em class="jxr_javadoccomment">     * Threading - synchronized(this). We are required to hold the monitor to use Java's underlying wait()/notifyAll().</em>
-<a class="jxr_linenumber" name="63" href="#63">63</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="64" href="#64">64</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">short</strong> waiters;
-<a class="jxr_linenumber" name="65" href="#65">65</a>  
-<a class="jxr_linenumber" name="66" href="#66">66</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="67" href="#67">67</a>  <em class="jxr_javadoccomment">     * Threading - synchronized(this). We must prevent concurrent notification and FIFO listener notification if the</em>
-<a class="jxr_linenumber" name="68" href="#68">68</a>  <em class="jxr_javadoccomment">     * executor changes.</em>
-<a class="jxr_linenumber" name="69" href="#69">69</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="70" href="#70">70</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> notifyingListeners;
-<a class="jxr_linenumber" name="71" href="#71">71</a>  
-<a class="jxr_linenumber" name="72" href="#72">72</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="73" href="#73">73</a>  <em class="jxr_javadoccomment">     * Creates a new instance.</em>
-<a class="jxr_linenumber" name="74" href="#74">74</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="75" href="#75">75</a>  <em class="jxr_javadoccomment">     * It is preferable to use {@link EventExecutor#newPromise()} to create a new promise</em>
-<a class="jxr_linenumber" name="76" href="#76">76</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="77" href="#77">77</a>  <em class="jxr_javadoccomment">     * @param executor</em>
-<a class="jxr_linenumber" name="78" href="#78">78</a>  <em class="jxr_javadoccomment">     *        the {@link EventExecutor} which is used to notify the promise once it is complete.</em>
-<a class="jxr_linenumber" name="79" href="#79">79</a>  <em class="jxr_javadoccomment">     *        It is assumed this executor will protect against {@link StackOverflowError} exceptions.</em>
-<a class="jxr_linenumber" name="80" href="#80">80</a>  <em class="jxr_javadoccomment">     *        The executor may be used to avoid {@link StackOverflowError} by executing a {@link Runnable} if the stack</em>
-<a class="jxr_linenumber" name="81" href="#81">81</a>  <em class="jxr_javadoccomment">     *        depth exceeds a threshold.</em>
-<a class="jxr_linenumber" name="82" href="#82">82</a>  <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="83" href="#83">83</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="84" href="#84">84</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">DefaultPromise</a>(<a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor) {
-<a class="jxr_linenumber" name="85" href="#85">85</a>          <strong class="jxr_keyword">this</strong>.executor = checkNotNull(executor, <span class="jxr_string">"executor"</span>);
-<a class="jxr_linenumber" name="86" href="#86">86</a>      }
-<a class="jxr_linenumber" name="87" href="#87">87</a>  
-<a class="jxr_linenumber" name="88" href="#88">88</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="89" href="#89">89</a>  <em class="jxr_javadoccomment">     * See {@link #executor()} for expectations of the executor.</em>
-<a class="jxr_linenumber" name="90" href="#90">90</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="91" href="#91">91</a>      <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">DefaultPromise</a>() {
-<a class="jxr_linenumber" name="92" href="#92">92</a>          <em class="jxr_comment">// only for subclasses</em>
-<a class="jxr_linenumber" name="93" href="#93">93</a>          executor = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="94" href="#94">94</a>      }
-<a class="jxr_linenumber" name="95" href="#95">95</a>  
-<a class="jxr_linenumber" name="96" href="#96">96</a>      @Override
-<a class="jxr_linenumber" name="97" href="#97">97</a>      <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; setSuccess(V result) {
-<a class="jxr_linenumber" name="98" href="#98">98</a>          <strong class="jxr_keyword">if</strong> (setSuccess0(result)) {
-<a class="jxr_linenumber" name="99" href="#99">99</a>              notifyListeners();
-<a class="jxr_linenumber" name="100" href="#100">100</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="101" href="#101">101</a>         }
-<a class="jxr_linenumber" name="102" href="#102">102</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"complete already: "</span> + <strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="103" href="#103">103</a>     }
-<a class="jxr_linenumber" name="104" href="#104">104</a> 
-<a class="jxr_linenumber" name="105" href="#105">105</a>     @Override
-<a class="jxr_linenumber" name="106" href="#106">106</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> trySuccess(V result) {
-<a class="jxr_linenumber" name="107" href="#107">107</a>         <strong class="jxr_keyword">if</strong> (setSuccess0(result)) {
-<a class="jxr_linenumber" name="108" href="#108">108</a>             notifyListeners();
-<a class="jxr_linenumber" name="109" href="#109">109</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="110" href="#110">110</a>         }
-<a class="jxr_linenumber" name="111" href="#111">111</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="112" href="#112">112</a>     }
-<a class="jxr_linenumber" name="113" href="#113">113</a> 
-<a class="jxr_linenumber" name="114" href="#114">114</a>     @Override
-<a class="jxr_linenumber" name="115" href="#115">115</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; setFailure(Throwable cause) {
-<a class="jxr_linenumber" name="116" href="#116">116</a>         <strong class="jxr_keyword">if</strong> (setFailure0(cause)) {
-<a class="jxr_linenumber" name="117" href="#117">117</a>             notifyListeners();
-<a class="jxr_linenumber" name="118" href="#118">118</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="119" href="#119">119</a>         }
-<a class="jxr_linenumber" name="120" href="#120">120</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"complete already: "</span> + <strong class="jxr_keyword">this</strong>, cause);
-<a class="jxr_linenumber" name="121" href="#121">121</a>     }
-<a class="jxr_linenumber" name="122" href="#122">122</a> 
-<a class="jxr_linenumber" name="123" href="#123">123</a>     @Override
-<a class="jxr_linenumber" name="124" href="#124">124</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> tryFailure(Throwable cause) {
-<a class="jxr_linenumber" name="125" href="#125">125</a>         <strong class="jxr_keyword">if</strong> (setFailure0(cause)) {
-<a class="jxr_linenumber" name="126" href="#126">126</a>             notifyListeners();
-<a class="jxr_linenumber" name="127" href="#127">127</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="128" href="#128">128</a>         }
-<a class="jxr_linenumber" name="129" href="#129">129</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="130" href="#130">130</a>     }
-<a class="jxr_linenumber" name="131" href="#131">131</a> 
-<a class="jxr_linenumber" name="132" href="#132">132</a>     @Override
-<a class="jxr_linenumber" name="133" href="#133">133</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> setUncancellable() {
-<a class="jxr_linenumber" name="134" href="#134">134</a>         <strong class="jxr_keyword">if</strong> (RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, UNCANCELLABLE)) {
-<a class="jxr_linenumber" name="135" href="#135">135</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="136" href="#136">136</a>         }
-<a class="jxr_linenumber" name="137" href="#137">137</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
-<a class="jxr_linenumber" name="138" href="#138">138</a>         <strong class="jxr_keyword">return</strong> !isDone0(result) || !isCancelled0(result);
-<a class="jxr_linenumber" name="139" href="#139">139</a>     }
-<a class="jxr_linenumber" name="140" href="#140">140</a> 
-<a class="jxr_linenumber" name="141" href="#141">141</a>     @Override
-<a class="jxr_linenumber" name="142" href="#142">142</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isSuccess() {
-<a class="jxr_linenumber" name="143" href="#143">143</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
-<a class="jxr_linenumber" name="144" href="#144">144</a>         <strong class="jxr_keyword">return</strong> result != <strong class="jxr_keyword">null</strong> &amp;&amp; result != UNCANCELLABLE &amp;&amp; !(result instanceof <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>);
-<a class="jxr_linenumber" name="145" href="#145">145</a>     }
-<a class="jxr_linenumber" name="146" href="#146">146</a> 
-<a class="jxr_linenumber" name="147" href="#147">147</a>     @Override
-<a class="jxr_linenumber" name="148" href="#148">148</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCancellable() {
-<a class="jxr_linenumber" name="149" href="#149">149</a>         <strong class="jxr_keyword">return</strong> result == <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="150" href="#150">150</a>     }
-<a class="jxr_linenumber" name="151" href="#151">151</a> 
-<a class="jxr_linenumber" name="152" href="#152">152</a>     @Override
-<a class="jxr_linenumber" name="153" href="#153">153</a>     <strong class="jxr_keyword">public</strong> Throwable cause() {
-<a class="jxr_linenumber" name="154" href="#154">154</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
-<a class="jxr_linenumber" name="155" href="#155">155</a>         <strong class="jxr_keyword">return</strong> (result instanceof CauseHolder) ? ((CauseHolder) result).cause : <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="156" href="#156">156</a>     }
-<a class="jxr_linenumber" name="157" href="#157">157</a> 
-<a class="jxr_linenumber" name="158" href="#158">158</a>     @Override
-<a class="jxr_linenumber" name="159" href="#159">159</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; addListener(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
-<a class="jxr_linenumber" name="160" href="#160">160</a>         checkNotNull(listener, <span class="jxr_string">"listener"</span>);
-<a class="jxr_linenumber" name="161" href="#161">161</a> 
-<a class="jxr_linenumber" name="162" href="#162">162</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="163" href="#163">163</a>             addListener0(listener);
-<a class="jxr_linenumber" name="164" href="#164">164</a>         }
-<a class="jxr_linenumber" name="165" href="#165">165</a> 
-<a class="jxr_linenumber" name="166" href="#166">166</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
-<a class="jxr_linenumber" name="167" href="#167">167</a>             notifyListeners();
-<a class="jxr_linenumber" name="168" href="#168">168</a>         }
-<a class="jxr_linenumber" name="169" href="#169">169</a> 
-<a class="jxr_linenumber" name="170" href="#170">170</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="171" href="#171">171</a>     }
+<a class="jxr_linenumber" name="38" href="#38">38</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> MAX_LISTENER_STACK_DEPTH = Math.min(8,
+<a class="jxr_linenumber" name="39" href="#39">39</a>              SystemPropertyUtil.getInt(<span class="jxr_string">"io.netty.defaultPromise.maxListenerStackDepth"</span>, 8));
+<a class="jxr_linenumber" name="40" href="#40">40</a>      @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
+<a class="jxr_linenumber" name="41" href="#41">41</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> AtomicReferenceFieldUpdater&lt;DefaultPromise, Object&gt; RESULT_UPDATER;
+<a class="jxr_linenumber" name="42" href="#42">42</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/Signal.html">Signal</a> SUCCESS = Signal.valueOf(DefaultPromise.<strong class="jxr_keyword">class</strong>.getName() + <span class="jxr_string">".SUCCESS"</span>);
+<a class="jxr_linenumber" name="43" href="#43">43</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/Signal.html">Signal</a> UNCANCELLABLE = Signal.valueOf(DefaultPromise.<strong class="jxr_keyword">class</strong>.getName() + <span class="jxr_string">".UNCANCELLABLE"</span>);
+<a class="jxr_linenumber" name="44" href="#44">44</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a> CANCELLATION_CAUSE_HOLDER = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>(ThrowableUtil.unknownStackTrace(
+<a class="jxr_linenumber" name="45" href="#45">45</a>              <strong class="jxr_keyword">new</strong> CancellationException(), DefaultPromise.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"cancel(...)"</span>));
+<a class="jxr_linenumber" name="46" href="#46">46</a>  
+<a class="jxr_linenumber" name="47" href="#47">47</a>      <strong class="jxr_keyword">static</strong> {
+<a class="jxr_linenumber" name="48" href="#48">48</a>          @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
+<a class="jxr_linenumber" name="49" href="#49">49</a>          AtomicReferenceFieldUpdater&lt;DefaultPromise, Object&gt; updater =
+<a class="jxr_linenumber" name="50" href="#50">50</a>                  PlatformDependent.newAtomicReferenceFieldUpdater(DefaultPromise.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"result"</span>);
+<a class="jxr_linenumber" name="51" href="#51">51</a>          RESULT_UPDATER = updater == <strong class="jxr_keyword">null</strong> ? AtomicReferenceFieldUpdater.newUpdater(DefaultPromise.<strong class="jxr_keyword">class</strong>,
+<a class="jxr_linenumber" name="52" href="#52">52</a>                                                                                    Object.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"result"</span>) : updater;
+<a class="jxr_linenumber" name="53" href="#53">53</a>      }
+<a class="jxr_linenumber" name="54" href="#54">54</a>  
+<a class="jxr_linenumber" name="55" href="#55">55</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> Object result;
+<a class="jxr_linenumber" name="56" href="#56">56</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor;
+<a class="jxr_linenumber" name="57" href="#57">57</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="58" href="#58">58</a>  <em class="jxr_javadoccomment">     * One or more listeners. Can be a {@link GenericFutureListener} or a {@link DefaultFutureListeners}.</em>
+<a class="jxr_linenumber" name="59" href="#59">59</a>  <em class="jxr_javadoccomment">     * If {@code null}, it means either 1) no listeners were added yet or 2) all listeners were notified.</em>
+<a class="jxr_linenumber" name="60" href="#60">60</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="61" href="#61">61</a>  <em class="jxr_javadoccomment">     * Threading - synchronized(this). We must support adding listeners when there is no EventExecutor.</em>
+<a class="jxr_linenumber" name="62" href="#62">62</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="63" href="#63">63</a>      <strong class="jxr_keyword">private</strong> Object listeners;
+<a class="jxr_linenumber" name="64" href="#64">64</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="65" href="#65">65</a>  <em class="jxr_javadoccomment">     * Threading - synchronized(this). We are required to hold the monitor to use Java's underlying wait()/notifyAll().</em>
+<a class="jxr_linenumber" name="66" href="#66">66</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="67" href="#67">67</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">short</strong> waiters;
+<a class="jxr_linenumber" name="68" href="#68">68</a>  
+<a class="jxr_linenumber" name="69" href="#69">69</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="70" href="#70">70</a>  <em class="jxr_javadoccomment">     * Threading - synchronized(this). We must prevent concurrent notification and FIFO listener notification if the</em>
+<a class="jxr_linenumber" name="71" href="#71">71</a>  <em class="jxr_javadoccomment">     * executor changes.</em>
+<a class="jxr_linenumber" name="72" href="#72">72</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="73" href="#73">73</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> notifyingListeners;
+<a class="jxr_linenumber" name="74" href="#74">74</a>  
+<a class="jxr_linenumber" name="75" href="#75">75</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="76" href="#76">76</a>  <em class="jxr_javadoccomment">     * Creates a new instance.</em>
+<a class="jxr_linenumber" name="77" href="#77">77</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="78" href="#78">78</a>  <em class="jxr_javadoccomment">     * It is preferable to use {@link EventExecutor#newPromise()} to create a new promise</em>
+<a class="jxr_linenumber" name="79" href="#79">79</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="80" href="#80">80</a>  <em class="jxr_javadoccomment">     * @param executor</em>
+<a class="jxr_linenumber" name="81" href="#81">81</a>  <em class="jxr_javadoccomment">     *        the {@link EventExecutor} which is used to notify the promise once it is complete.</em>
+<a class="jxr_linenumber" name="82" href="#82">82</a>  <em class="jxr_javadoccomment">     *        It is assumed this executor will protect against {@link StackOverflowError} exceptions.</em>
+<a class="jxr_linenumber" name="83" href="#83">83</a>  <em class="jxr_javadoccomment">     *        The executor may be used to avoid {@link StackOverflowError} by executing a {@link Runnable} if the stack</em>
+<a class="jxr_linenumber" name="84" href="#84">84</a>  <em class="jxr_javadoccomment">     *        depth exceeds a threshold.</em>
+<a class="jxr_linenumber" name="85" href="#85">85</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="86" href="#86">86</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="87" href="#87">87</a>      <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">DefaultPromise</a>(<a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor) {
+<a class="jxr_linenumber" name="88" href="#88">88</a>          <strong class="jxr_keyword">this</strong>.executor = checkNotNull(executor, <span class="jxr_string">"executor"</span>);
+<a class="jxr_linenumber" name="89" href="#89">89</a>      }
+<a class="jxr_linenumber" name="90" href="#90">90</a>  
+<a class="jxr_linenumber" name="91" href="#91">91</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="92" href="#92">92</a>  <em class="jxr_javadoccomment">     * See {@link #executor()} for expectations of the executor.</em>
+<a class="jxr_linenumber" name="93" href="#93">93</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="94" href="#94">94</a>      <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">DefaultPromise</a>() {
+<a class="jxr_linenumber" name="95" href="#95">95</a>          <em class="jxr_comment">// only for subclasses</em>
+<a class="jxr_linenumber" name="96" href="#96">96</a>          executor = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="97" href="#97">97</a>      }
+<a class="jxr_linenumber" name="98" href="#98">98</a>  
+<a class="jxr_linenumber" name="99" href="#99">99</a>      @Override
+<a class="jxr_linenumber" name="100" href="#100">100</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; setSuccess(V result) {
+<a class="jxr_linenumber" name="101" href="#101">101</a>         <strong class="jxr_keyword">if</strong> (setSuccess0(result)) {
+<a class="jxr_linenumber" name="102" href="#102">102</a>             notifyListeners();
+<a class="jxr_linenumber" name="103" href="#103">103</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="104" href="#104">104</a>         }
+<a class="jxr_linenumber" name="105" href="#105">105</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"complete already: "</span> + <strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="106" href="#106">106</a>     }
+<a class="jxr_linenumber" name="107" href="#107">107</a> 
+<a class="jxr_linenumber" name="108" href="#108">108</a>     @Override
+<a class="jxr_linenumber" name="109" href="#109">109</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> trySuccess(V result) {
+<a class="jxr_linenumber" name="110" href="#110">110</a>         <strong class="jxr_keyword">if</strong> (setSuccess0(result)) {
+<a class="jxr_linenumber" name="111" href="#111">111</a>             notifyListeners();
+<a class="jxr_linenumber" name="112" href="#112">112</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="113" href="#113">113</a>         }
+<a class="jxr_linenumber" name="114" href="#114">114</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="115" href="#115">115</a>     }
+<a class="jxr_linenumber" name="116" href="#116">116</a> 
+<a class="jxr_linenumber" name="117" href="#117">117</a>     @Override
+<a class="jxr_linenumber" name="118" href="#118">118</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; setFailure(Throwable cause) {
+<a class="jxr_linenumber" name="119" href="#119">119</a>         <strong class="jxr_keyword">if</strong> (setFailure0(cause)) {
+<a class="jxr_linenumber" name="120" href="#120">120</a>             notifyListeners();
+<a class="jxr_linenumber" name="121" href="#121">121</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="122" href="#122">122</a>         }
+<a class="jxr_linenumber" name="123" href="#123">123</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"complete already: "</span> + <strong class="jxr_keyword">this</strong>, cause);
+<a class="jxr_linenumber" name="124" href="#124">124</a>     }
+<a class="jxr_linenumber" name="125" href="#125">125</a> 
+<a class="jxr_linenumber" name="126" href="#126">126</a>     @Override
+<a class="jxr_linenumber" name="127" href="#127">127</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> tryFailure(Throwable cause) {
+<a class="jxr_linenumber" name="128" href="#128">128</a>         <strong class="jxr_keyword">if</strong> (setFailure0(cause)) {
+<a class="jxr_linenumber" name="129" href="#129">129</a>             notifyListeners();
+<a class="jxr_linenumber" name="130" href="#130">130</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="131" href="#131">131</a>         }
+<a class="jxr_linenumber" name="132" href="#132">132</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="133" href="#133">133</a>     }
+<a class="jxr_linenumber" name="134" href="#134">134</a> 
+<a class="jxr_linenumber" name="135" href="#135">135</a>     @Override
+<a class="jxr_linenumber" name="136" href="#136">136</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> setUncancellable() {
+<a class="jxr_linenumber" name="137" href="#137">137</a>         <strong class="jxr_keyword">if</strong> (RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, UNCANCELLABLE)) {
+<a class="jxr_linenumber" name="138" href="#138">138</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="139" href="#139">139</a>         }
+<a class="jxr_linenumber" name="140" href="#140">140</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
+<a class="jxr_linenumber" name="141" href="#141">141</a>         <strong class="jxr_keyword">return</strong> !isDone0(result) || !isCancelled0(result);
+<a class="jxr_linenumber" name="142" href="#142">142</a>     }
+<a class="jxr_linenumber" name="143" href="#143">143</a> 
+<a class="jxr_linenumber" name="144" href="#144">144</a>     @Override
+<a class="jxr_linenumber" name="145" href="#145">145</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isSuccess() {
+<a class="jxr_linenumber" name="146" href="#146">146</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
+<a class="jxr_linenumber" name="147" href="#147">147</a>         <strong class="jxr_keyword">return</strong> result != <strong class="jxr_keyword">null</strong> &amp;&amp; result != UNCANCELLABLE &amp;&amp; !(result instanceof <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>);
+<a class="jxr_linenumber" name="148" href="#148">148</a>     }
+<a class="jxr_linenumber" name="149" href="#149">149</a> 
+<a class="jxr_linenumber" name="150" href="#150">150</a>     @Override
+<a class="jxr_linenumber" name="151" href="#151">151</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCancellable() {
+<a class="jxr_linenumber" name="152" href="#152">152</a>         <strong class="jxr_keyword">return</strong> result == <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="153" href="#153">153</a>     }
+<a class="jxr_linenumber" name="154" href="#154">154</a> 
+<a class="jxr_linenumber" name="155" href="#155">155</a>     @Override
+<a class="jxr_linenumber" name="156" href="#156">156</a>     <strong class="jxr_keyword">public</strong> Throwable cause() {
+<a class="jxr_linenumber" name="157" href="#157">157</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
+<a class="jxr_linenumber" name="158" href="#158">158</a>         <strong class="jxr_keyword">return</strong> (result instanceof CauseHolder) ? ((CauseHolder) result).cause : <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="159" href="#159">159</a>     }
+<a class="jxr_linenumber" name="160" href="#160">160</a> 
+<a class="jxr_linenumber" name="161" href="#161">161</a>     @Override
+<a class="jxr_linenumber" name="162" href="#162">162</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; addListener(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
+<a class="jxr_linenumber" name="163" href="#163">163</a>         checkNotNull(listener, <span class="jxr_string">"listener"</span>);
+<a class="jxr_linenumber" name="164" href="#164">164</a> 
+<a class="jxr_linenumber" name="165" href="#165">165</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="166" href="#166">166</a>             addListener0(listener);
+<a class="jxr_linenumber" name="167" href="#167">167</a>         }
+<a class="jxr_linenumber" name="168" href="#168">168</a> 
+<a class="jxr_linenumber" name="169" href="#169">169</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
+<a class="jxr_linenumber" name="170" href="#170">170</a>             notifyListeners();
+<a class="jxr_linenumber" name="171" href="#171">171</a>         }
 <a class="jxr_linenumber" name="172" href="#172">172</a> 
-<a class="jxr_linenumber" name="173" href="#173">173</a>     @Override
-<a class="jxr_linenumber" name="174" href="#174">174</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; addListeners(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt;... listeners) {
-<a class="jxr_linenumber" name="175" href="#175">175</a>         checkNotNull(listeners, <span class="jxr_string">"listeners"</span>);
-<a class="jxr_linenumber" name="176" href="#176">176</a> 
-<a class="jxr_linenumber" name="177" href="#177">177</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="178" href="#178">178</a>             <strong class="jxr_keyword">for</strong> (GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener : listeners) {
-<a class="jxr_linenumber" name="179" href="#179">179</a>                 <strong class="jxr_keyword">if</strong> (listener == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="180" href="#180">180</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="181" href="#181">181</a>                 }
-<a class="jxr_linenumber" name="182" href="#182">182</a>                 addListener0(listener);
-<a class="jxr_linenumber" name="183" href="#183">183</a>             }
-<a class="jxr_linenumber" name="184" href="#184">184</a>         }
-<a class="jxr_linenumber" name="185" href="#185">185</a> 
-<a class="jxr_linenumber" name="186" href="#186">186</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
-<a class="jxr_linenumber" name="187" href="#187">187</a>             notifyListeners();
-<a class="jxr_linenumber" name="188" href="#188">188</a>         }
-<a class="jxr_linenumber" name="189" href="#189">189</a> 
-<a class="jxr_linenumber" name="190" href="#190">190</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="191" href="#191">191</a>     }
+<a class="jxr_linenumber" name="173" href="#173">173</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="174" href="#174">174</a>     }
+<a class="jxr_linenumber" name="175" href="#175">175</a> 
+<a class="jxr_linenumber" name="176" href="#176">176</a>     @Override
+<a class="jxr_linenumber" name="177" href="#177">177</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; addListeners(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt;... listeners) {
+<a class="jxr_linenumber" name="178" href="#178">178</a>         checkNotNull(listeners, <span class="jxr_string">"listeners"</span>);
+<a class="jxr_linenumber" name="179" href="#179">179</a> 
+<a class="jxr_linenumber" name="180" href="#180">180</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="181" href="#181">181</a>             <strong class="jxr_keyword">for</strong> (GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener : listeners) {
+<a class="jxr_linenumber" name="182" href="#182">182</a>                 <strong class="jxr_keyword">if</strong> (listener == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="183" href="#183">183</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="184" href="#184">184</a>                 }
+<a class="jxr_linenumber" name="185" href="#185">185</a>                 addListener0(listener);
+<a class="jxr_linenumber" name="186" href="#186">186</a>             }
+<a class="jxr_linenumber" name="187" href="#187">187</a>         }
+<a class="jxr_linenumber" name="188" href="#188">188</a> 
+<a class="jxr_linenumber" name="189" href="#189">189</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
+<a class="jxr_linenumber" name="190" href="#190">190</a>             notifyListeners();
+<a class="jxr_linenumber" name="191" href="#191">191</a>         }
 <a class="jxr_linenumber" name="192" href="#192">192</a> 
-<a class="jxr_linenumber" name="193" href="#193">193</a>     @Override
-<a class="jxr_linenumber" name="194" href="#194">194</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; removeListener(<strong class="jxr_keyword">final</strong> GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
-<a class="jxr_linenumber" name="195" href="#195">195</a>         checkNotNull(listener, <span class="jxr_string">"listener"</span>);
-<a class="jxr_linenumber" name="196" href="#196">196</a> 
-<a class="jxr_linenumber" name="197" href="#197">197</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="198" href="#198">198</a>             removeListener0(listener);
-<a class="jxr_linenumber" name="199" href="#199">199</a>         }
-<a class="jxr_linenumber" name="200" href="#200">200</a> 
-<a class="jxr_linenumber" name="201" href="#201">201</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="202" href="#202">202</a>     }
+<a class="jxr_linenumber" name="193" href="#193">193</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="194" href="#194">194</a>     }
+<a class="jxr_linenumber" name="195" href="#195">195</a> 
+<a class="jxr_linenumber" name="196" href="#196">196</a>     @Override
+<a class="jxr_linenumber" name="197" href="#197">197</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; removeListener(<strong class="jxr_keyword">final</strong> GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
+<a class="jxr_linenumber" name="198" href="#198">198</a>         checkNotNull(listener, <span class="jxr_string">"listener"</span>);
+<a class="jxr_linenumber" name="199" href="#199">199</a> 
+<a class="jxr_linenumber" name="200" href="#200">200</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="201" href="#201">201</a>             removeListener0(listener);
+<a class="jxr_linenumber" name="202" href="#202">202</a>         }
 <a class="jxr_linenumber" name="203" href="#203">203</a> 
-<a class="jxr_linenumber" name="204" href="#204">204</a>     @Override
-<a class="jxr_linenumber" name="205" href="#205">205</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; removeListeners(<strong class="jxr_keyword">final</strong> GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt;... listeners) {
-<a class="jxr_linenumber" name="206" href="#206">206</a>         checkNotNull(listeners, <span class="jxr_string">"listeners"</span>);
-<a class="jxr_linenumber" name="207" href="#207">207</a> 
-<a class="jxr_linenumber" name="208" href="#208">208</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="209" href="#209">209</a>             <strong class="jxr_keyword">for</strong> (GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener : listeners) {
-<a class="jxr_linenumber" name="210" href="#210">210</a>                 <strong class="jxr_keyword">if</strong> (listener == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="211" href="#211">211</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="212" href="#212">212</a>                 }
-<a class="jxr_linenumber" name="213" href="#213">213</a>                 removeListener0(listener);
-<a class="jxr_linenumber" name="214" href="#214">214</a>             }
-<a class="jxr_linenumber" name="215" href="#215">215</a>         }
-<a class="jxr_linenumber" name="216" href="#216">216</a> 
-<a class="jxr_linenumber" name="217" href="#217">217</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="218" href="#218">218</a>     }
+<a class="jxr_linenumber" name="204" href="#204">204</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="205" href="#205">205</a>     }
+<a class="jxr_linenumber" name="206" href="#206">206</a> 
+<a class="jxr_linenumber" name="207" href="#207">207</a>     @Override
+<a class="jxr_linenumber" name="208" href="#208">208</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; removeListeners(<strong class="jxr_keyword">final</strong> GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt;... listeners) {
+<a class="jxr_linenumber" name="209" href="#209">209</a>         checkNotNull(listeners, <span class="jxr_string">"listeners"</span>);
+<a class="jxr_linenumber" name="210" href="#210">210</a> 
+<a class="jxr_linenumber" name="211" href="#211">211</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="212" href="#212">212</a>             <strong class="jxr_keyword">for</strong> (GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener : listeners) {
+<a class="jxr_linenumber" name="213" href="#213">213</a>                 <strong class="jxr_keyword">if</strong> (listener == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="214" href="#214">214</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="215" href="#215">215</a>                 }
+<a class="jxr_linenumber" name="216" href="#216">216</a>                 removeListener0(listener);
+<a class="jxr_linenumber" name="217" href="#217">217</a>             }
+<a class="jxr_linenumber" name="218" href="#218">218</a>         }
 <a class="jxr_linenumber" name="219" href="#219">219</a> 
-<a class="jxr_linenumber" name="220" href="#220">220</a>     @Override
-<a class="jxr_linenumber" name="221" href="#221">221</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; await() <strong class="jxr_keyword">throws</strong> InterruptedException {
-<a class="jxr_linenumber" name="222" href="#222">222</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
-<a class="jxr_linenumber" name="223" href="#223">223</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="224" href="#224">224</a>         }
-<a class="jxr_linenumber" name="225" href="#225">225</a> 
-<a class="jxr_linenumber" name="226" href="#226">226</a>         <strong class="jxr_keyword">if</strong> (Thread.interrupted()) {
-<a class="jxr_linenumber" name="227" href="#227">227</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InterruptedException(toString());
-<a class="jxr_linenumber" name="228" href="#228">228</a>         }
-<a class="jxr_linenumber" name="229" href="#229">229</a> 
-<a class="jxr_linenumber" name="230" href="#230">230</a>         checkDeadLock();
-<a class="jxr_linenumber" name="231" href="#231">231</a> 
-<a class="jxr_linenumber" name="232" href="#232">232</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="233" href="#233">233</a>             <strong class="jxr_keyword">while</strong> (!isDone()) {
-<a class="jxr_linenumber" name="234" href="#234">234</a>                 incWaiters();
-<a class="jxr_linenumber" name="235" href="#235">235</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="236" href="#236">236</a>                     wait();
-<a class="jxr_linenumber" name="237" href="#237">237</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="238" href="#238">238</a>                     decWaiters();
-<a class="jxr_linenumber" name="239" href="#239">239</a>                 }
-<a class="jxr_linenumber" name="240" href="#240">240</a>             }
-<a class="jxr_linenumber" name="241" href="#241">241</a>         }
-<a class="jxr_linenumber" name="242" href="#242">242</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="243" href="#243">243</a>     }
-<a class="jxr_linenumber" name="244" href="#244">244</a> 
-<a class="jxr_linenumber" name="245" href="#245">245</a>     @Override
-<a class="jxr_linenumber" name="246" href="#246">246</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; awaitUninterruptibly() {
-<a class="jxr_linenumber" name="247" href="#247">247</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
-<a class="jxr_linenumber" name="248" href="#248">248</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="249" href="#249">249</a>         }
-<a class="jxr_linenumber" name="250" href="#250">250</a> 
-<a class="jxr_linenumber" name="251" href="#251">251</a>         checkDeadLock();
-<a class="jxr_linenumber" name="252" href="#252">252</a> 
-<a class="jxr_linenumber" name="253" href="#253">253</a>         <strong class="jxr_keyword">boolean</strong> interrupted = false;
-<a class="jxr_linenumber" name="254" href="#254">254</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="255" href="#255">255</a>             <strong class="jxr_keyword">while</strong> (!isDone()) {
-<a class="jxr_linenumber" name="256" href="#256">256</a>                 incWaiters();
-<a class="jxr_linenumber" name="257" href="#257">257</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="258" href="#258">258</a>                     wait();
-<a class="jxr_linenumber" name="259" href="#259">259</a>                 } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
-<a class="jxr_linenumber" name="260" href="#260">260</a>                     <em class="jxr_comment">// Interrupted while waiting.</em>
-<a class="jxr_linenumber" name="261" href="#261">261</a>                     interrupted = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="262" href="#262">262</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="263" href="#263">263</a>                     decWaiters();
-<a class="jxr_linenumber" name="264" href="#264">264</a>                 }
-<a class="jxr_linenumber" name="265" href="#265">265</a>             }
-<a class="jxr_linenumber" name="266" href="#266">266</a>         }
-<a class="jxr_linenumber" name="267" href="#267">267</a> 
-<a class="jxr_linenumber" name="268" href="#268">268</a>         <strong class="jxr_keyword">if</strong> (interrupted) {
-<a class="jxr_linenumber" name="269" href="#269">269</a>             Thread.currentThread().interrupt();
-<a class="jxr_linenumber" name="270" href="#270">270</a>         }
-<a class="jxr_linenumber" name="271" href="#271">271</a> 
-<a class="jxr_linenumber" name="272" href="#272">272</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="273" href="#273">273</a>     }
+<a class="jxr_linenumber" name="220" href="#220">220</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="221" href="#221">221</a>     }
+<a class="jxr_linenumber" name="222" href="#222">222</a> 
+<a class="jxr_linenumber" name="223" href="#223">223</a>     @Override
+<a class="jxr_linenumber" name="224" href="#224">224</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; await() <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="225" href="#225">225</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
+<a class="jxr_linenumber" name="226" href="#226">226</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="227" href="#227">227</a>         }
+<a class="jxr_linenumber" name="228" href="#228">228</a> 
+<a class="jxr_linenumber" name="229" href="#229">229</a>         <strong class="jxr_keyword">if</strong> (Thread.interrupted()) {
+<a class="jxr_linenumber" name="230" href="#230">230</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InterruptedException(toString());
+<a class="jxr_linenumber" name="231" href="#231">231</a>         }
+<a class="jxr_linenumber" name="232" href="#232">232</a> 
+<a class="jxr_linenumber" name="233" href="#233">233</a>         checkDeadLock();
+<a class="jxr_linenumber" name="234" href="#234">234</a> 
+<a class="jxr_linenumber" name="235" href="#235">235</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="236" href="#236">236</a>             <strong class="jxr_keyword">while</strong> (!isDone()) {
+<a class="jxr_linenumber" name="237" href="#237">237</a>                 incWaiters();
+<a class="jxr_linenumber" name="238" href="#238">238</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="239" href="#239">239</a>                     wait();
+<a class="jxr_linenumber" name="240" href="#240">240</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="241" href="#241">241</a>                     decWaiters();
+<a class="jxr_linenumber" name="242" href="#242">242</a>                 }
+<a class="jxr_linenumber" name="243" href="#243">243</a>             }
+<a class="jxr_linenumber" name="244" href="#244">244</a>         }
+<a class="jxr_linenumber" name="245" href="#245">245</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="246" href="#246">246</a>     }
+<a class="jxr_linenumber" name="247" href="#247">247</a> 
+<a class="jxr_linenumber" name="248" href="#248">248</a>     @Override
+<a class="jxr_linenumber" name="249" href="#249">249</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; awaitUninterruptibly() {
+<a class="jxr_linenumber" name="250" href="#250">250</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
+<a class="jxr_linenumber" name="251" href="#251">251</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="252" href="#252">252</a>         }
+<a class="jxr_linenumber" name="253" href="#253">253</a> 
+<a class="jxr_linenumber" name="254" href="#254">254</a>         checkDeadLock();
+<a class="jxr_linenumber" name="255" href="#255">255</a> 
+<a class="jxr_linenumber" name="256" href="#256">256</a>         <strong class="jxr_keyword">boolean</strong> interrupted = false;
+<a class="jxr_linenumber" name="257" href="#257">257</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="258" href="#258">258</a>             <strong class="jxr_keyword">while</strong> (!isDone()) {
+<a class="jxr_linenumber" name="259" href="#259">259</a>                 incWaiters();
+<a class="jxr_linenumber" name="260" href="#260">260</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="261" href="#261">261</a>                     wait();
+<a class="jxr_linenumber" name="262" href="#262">262</a>                 } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
+<a class="jxr_linenumber" name="263" href="#263">263</a>                     <em class="jxr_comment">// Interrupted while waiting.</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a>                     interrupted = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="265" href="#265">265</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="266" href="#266">266</a>                     decWaiters();
+<a class="jxr_linenumber" name="267" href="#267">267</a>                 }
+<a class="jxr_linenumber" name="268" href="#268">268</a>             }
+<a class="jxr_linenumber" name="269" href="#269">269</a>         }
+<a class="jxr_linenumber" name="270" href="#270">270</a> 
+<a class="jxr_linenumber" name="271" href="#271">271</a>         <strong class="jxr_keyword">if</strong> (interrupted) {
+<a class="jxr_linenumber" name="272" href="#272">272</a>             Thread.currentThread().interrupt();
+<a class="jxr_linenumber" name="273" href="#273">273</a>         }
 <a class="jxr_linenumber" name="274" href="#274">274</a> 
-<a class="jxr_linenumber" name="275" href="#275">275</a>     @Override
-<a class="jxr_linenumber" name="276" href="#276">276</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> await(<strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) <strong class="jxr_keyword">throws</strong> InterruptedException {
-<a class="jxr_linenumber" name="277" href="#277">277</a>         <strong class="jxr_keyword">return</strong> await0(unit.toNanos(timeout), <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="278" href="#278">278</a>     }
-<a class="jxr_linenumber" name="279" href="#279">279</a> 
-<a class="jxr_linenumber" name="280" href="#280">280</a>     @Override
-<a class="jxr_linenumber" name="281" href="#281">281</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> await(<strong class="jxr_keyword">long</strong> timeoutMillis) <strong class="jxr_keyword">throws</strong> InterruptedException {
-<a class="jxr_linenumber" name="282" href="#282">282</a>         <strong class="jxr_keyword">return</strong> await0(MILLISECONDS.toNanos(timeoutMillis), <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="283" href="#283">283</a>     }
-<a class="jxr_linenumber" name="284" href="#284">284</a> 
-<a class="jxr_linenumber" name="285" href="#285">285</a>     @Override
-<a class="jxr_linenumber" name="286" href="#286">286</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> awaitUninterruptibly(<strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) {
-<a class="jxr_linenumber" name="287" href="#287">287</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="288" href="#288">288</a>             <strong class="jxr_keyword">return</strong> await0(unit.toNanos(timeout), false);
-<a class="jxr_linenumber" name="289" href="#289">289</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
-<a class="jxr_linenumber" name="290" href="#290">290</a>             <em class="jxr_comment">// Should not be raised at all.</em>
-<a class="jxr_linenumber" name="291" href="#291">291</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InternalError();
-<a class="jxr_linenumber" name="292" href="#292">292</a>         }
-<a class="jxr_linenumber" name="293" href="#293">293</a>     }
-<a class="jxr_linenumber" name="294" href="#294">294</a> 
-<a class="jxr_linenumber" name="295" href="#295">295</a>     @Override
-<a class="jxr_linenumber" name="296" href="#296">296</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> awaitUninterruptibly(<strong class="jxr_keyword">long</strong> timeoutMillis) {
-<a class="jxr_linenumber" name="297" href="#297">297</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="298" href="#298">298</a>             <strong class="jxr_keyword">return</strong> await0(MILLISECONDS.toNanos(timeoutMillis), false);
-<a class="jxr_linenumber" name="299" href="#299">299</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
-<a class="jxr_linenumber" name="300" href="#300">300</a>             <em class="jxr_comment">// Should not be raised at all.</em>
-<a class="jxr_linenumber" name="301" href="#301">301</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InternalError();
-<a class="jxr_linenumber" name="302" href="#302">302</a>         }
-<a class="jxr_linenumber" name="303" href="#303">303</a>     }
-<a class="jxr_linenumber" name="304" href="#304">304</a> 
-<a class="jxr_linenumber" name="305" href="#305">305</a>     @Override
-<a class="jxr_linenumber" name="306" href="#306">306</a>     <strong class="jxr_keyword">public</strong> V getNow() {
-<a class="jxr_linenumber" name="307" href="#307">307</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
-<a class="jxr_linenumber" name="308" href="#308">308</a>         <strong class="jxr_keyword">if</strong> (result instanceof CauseHolder || result == SUCCESS) {
-<a class="jxr_linenumber" name="309" href="#309">309</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="310" href="#310">310</a>         }
-<a class="jxr_linenumber" name="311" href="#311">311</a>         <strong class="jxr_keyword">return</strong> (V) result;
-<a class="jxr_linenumber" name="312" href="#312">312</a>     }
-<a class="jxr_linenumber" name="313" href="#313">313</a> 
-<a class="jxr_linenumber" name="314" href="#314">314</a>     @Override
-<a class="jxr_linenumber" name="315" href="#315">315</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel(<strong class="jxr_keyword">boolean</strong> mayInterruptIfRunning) {
-<a class="jxr_linenumber" name="316" href="#316">316</a>         <strong class="jxr_keyword">if</strong> (RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, CANCELLATION_CAUSE_HOLDER)) {
-<a class="jxr_linenumber" name="317" href="#317">317</a>             checkNotifyWaiters();
-<a class="jxr_linenumber" name="318" href="#318">318</a>             notifyListeners();
-<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="320" href="#320">320</a>         }
-<a class="jxr_linenumber" name="321" href="#321">321</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="322" href="#322">322</a>     }
-<a class="jxr_linenumber" name="323" href="#323">323</a> 
-<a class="jxr_linenumber" name="324" href="#324">324</a>     @Override
-<a class="jxr_linenumber" name="325" href="#325">325</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCancelled() {
-<a class="jxr_linenumber" name="326" href="#326">326</a>         <strong class="jxr_keyword">return</strong> isCancelled0(result);
-<a class="jxr_linenumber" name="327" href="#327">327</a>     }
-<a class="jxr_linenumber" name="328" href="#328">328</a> 
-<a class="jxr_linenumber" name="329" href="#329">329</a>     @Override
-<a class="jxr_linenumber" name="330" href="#330">330</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isDone() {
-<a class="jxr_linenumber" name="331" href="#331">331</a>         <strong class="jxr_keyword">return</strong> isDone0(result);
-<a class="jxr_linenumber" name="332" href="#332">332</a>     }
-<a class="jxr_linenumber" name="333" href="#333">333</a> 
-<a class="jxr_linenumber" name="334" href="#334">334</a>     @Override
-<a class="jxr_linenumber" name="335" href="#335">335</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; sync() <strong class="jxr_keyword">throws</strong> InterruptedException {
-<a class="jxr_linenumber" name="336" href="#336">336</a>         await();
-<a class="jxr_linenumber" name="337" href="#337">337</a>         rethrowIfFailed();
-<a class="jxr_linenumber" name="338" href="#338">338</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="339" href="#339">339</a>     }
-<a class="jxr_linenumber" name="340" href="#340">340</a> 
-<a class="jxr_linenumber" name="341" href="#341">341</a>     @Override
-<a class="jxr_linenumber" name="342" href="#342">342</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; syncUninterruptibly() {
-<a class="jxr_linenumber" name="343" href="#343">343</a>         awaitUninterruptibly();
-<a class="jxr_linenumber" name="344" href="#344">344</a>         rethrowIfFailed();
-<a class="jxr_linenumber" name="345" href="#345">345</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="346" href="#346">346</a>     }
-<a class="jxr_linenumber" name="347" href="#347">347</a> 
-<a class="jxr_linenumber" name="348" href="#348">348</a>     @Override
-<a class="jxr_linenumber" name="349" href="#349">349</a>     <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="350" href="#350">350</a>         <strong class="jxr_keyword">return</strong> toStringBuilder().toString();
-<a class="jxr_linenumber" name="351" href="#351">351</a>     }
-<a class="jxr_linenumber" name="352" href="#352">352</a> 
-<a class="jxr_linenumber" name="353" href="#353">353</a>     <strong class="jxr_keyword">protected</strong> StringBuilder toStringBuilder() {
-<a class="jxr_linenumber" name="354" href="#354">354</a>         StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(64)
-<a class="jxr_linenumber" name="355" href="#355">355</a>                 .append(StringUtil.simpleClassName(<strong class="jxr_keyword">this</strong>))
-<a class="jxr_linenumber" name="356" href="#356">356</a>                 .append('@')
-<a class="jxr_linenumber" name="357" href="#357">357</a>                 .append(Integer.toHexString(hashCode()));
-<a class="jxr_linenumber" name="358" href="#358">358</a> 
-<a class="jxr_linenumber" name="359" href="#359">359</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
-<a class="jxr_linenumber" name="360" href="#360">360</a>         <strong class="jxr_keyword">if</strong> (result == SUCCESS) {
-<a class="jxr_linenumber" name="361" href="#361">361</a>             buf.append(<span class="jxr_string">"(success)"</span>);
-<a class="jxr_linenumber" name="362" href="#362">362</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (result == UNCANCELLABLE) {
-<a class="jxr_linenumber" name="363" href="#363">363</a>             buf.append(<span class="jxr_string">"(uncancellable)"</span>);
-<a class="jxr_linenumber" name="364" href="#364">364</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (result instanceof CauseHolder) {
-<a class="jxr_linenumber" name="365" href="#365">365</a>             buf.append(<span class="jxr_string">"(failure: "</span>)
-<a class="jxr_linenumber" name="366" href="#366">366</a>                     .append(((CauseHolder) result).cause)
-<a class="jxr_linenumber" name="367" href="#367">367</a>                     .append(')');
-<a class="jxr_linenumber" name="368" href="#368">368</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (result != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="369" href="#369">369</a>             buf.append(<span class="jxr_string">"(success: "</span>)
-<a class="jxr_linenumber" name="370" href="#370">370</a>                     .append(result)
+<a class="jxr_linenumber" name="275" href="#275">275</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="276" href="#276">276</a>     }
+<a class="jxr_linenumber" name="277" href="#277">277</a> 
+<a class="jxr_linenumber" name="278" href="#278">278</a>     @Override
+<a class="jxr_linenumber" name="279" href="#279">279</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> await(<strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="280" href="#280">280</a>         <strong class="jxr_keyword">return</strong> await0(unit.toNanos(timeout), <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="281" href="#281">281</a>     }
+<a class="jxr_linenumber" name="282" href="#282">282</a> 
+<a class="jxr_linenumber" name="283" href="#283">283</a>     @Override
+<a class="jxr_linenumber" name="284" href="#284">284</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> await(<strong class="jxr_keyword">long</strong> timeoutMillis) <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="285" href="#285">285</a>         <strong class="jxr_keyword">return</strong> await0(MILLISECONDS.toNanos(timeoutMillis), <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="286" href="#286">286</a>     }
+<a class="jxr_linenumber" name="287" href="#287">287</a> 
+<a class="jxr_linenumber" name="288" href="#288">288</a>     @Override
+<a class="jxr_linenumber" name="289" href="#289">289</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> awaitUninterruptibly(<strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) {
+<a class="jxr_linenumber" name="290" href="#290">290</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="291" href="#291">291</a>             <strong class="jxr_keyword">return</strong> await0(unit.toNanos(timeout), false);
+<a class="jxr_linenumber" name="292" href="#292">292</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
+<a class="jxr_linenumber" name="293" href="#293">293</a>             <em class="jxr_comment">// Should not be raised at all.</em>
+<a class="jxr_linenumber" name="294" href="#294">294</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InternalError();
+<a class="jxr_linenumber" name="295" href="#295">295</a>         }
+<a class="jxr_linenumber" name="296" href="#296">296</a>     }
+<a class="jxr_linenumber" name="297" href="#297">297</a> 
+<a class="jxr_linenumber" name="298" href="#298">298</a>     @Override
+<a class="jxr_linenumber" name="299" href="#299">299</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> awaitUninterruptibly(<strong class="jxr_keyword">long</strong> timeoutMillis) {
+<a class="jxr_linenumber" name="300" href="#300">300</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="301" href="#301">301</a>             <strong class="jxr_keyword">return</strong> await0(MILLISECONDS.toNanos(timeoutMillis), false);
+<a class="jxr_linenumber" name="302" href="#302">302</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
+<a class="jxr_linenumber" name="303" href="#303">303</a>             <em class="jxr_comment">// Should not be raised at all.</em>
+<a class="jxr_linenumber" name="304" href="#304">304</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InternalError();
+<a class="jxr_linenumber" name="305" href="#305">305</a>         }
+<a class="jxr_linenumber" name="306" href="#306">306</a>     }
+<a class="jxr_linenumber" name="307" href="#307">307</a> 
+<a class="jxr_linenumber" name="308" href="#308">308</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="309" href="#309">309</a>     @Override
+<a class="jxr_linenumber" name="310" href="#310">310</a>     <strong class="jxr_keyword">public</strong> V getNow() {
+<a class="jxr_linenumber" name="311" href="#311">311</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
+<a class="jxr_linenumber" name="312" href="#312">312</a>         <strong class="jxr_keyword">if</strong> (result instanceof CauseHolder || result == SUCCESS) {
+<a class="jxr_linenumber" name="313" href="#313">313</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="314" href="#314">314</a>         }
+<a class="jxr_linenumber" name="315" href="#315">315</a>         <strong class="jxr_keyword">return</strong> (V) result;
+<a class="jxr_linenumber" name="316" href="#316">316</a>     }
+<a class="jxr_linenumber" name="317" href="#317">317</a> 
+<a class="jxr_linenumber" name="318" href="#318">318</a>     @Override
+<a class="jxr_linenumber" name="319" href="#319">319</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel(<strong class="jxr_keyword">boolean</strong> mayInterruptIfRunning) {
+<a class="jxr_linenumber" name="320" href="#320">320</a>         <strong class="jxr_keyword">if</strong> (RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, CANCELLATION_CAUSE_HOLDER)) {
+<a class="jxr_linenumber" name="321" href="#321">321</a>             checkNotifyWaiters();
+<a class="jxr_linenumber" name="322" href="#322">322</a>             notifyListeners();
+<a class="jxr_linenumber" name="323" href="#323">323</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="324" href="#324">324</a>         }
+<a class="jxr_linenumber" name="325" href="#325">325</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="326" href="#326">326</a>     }
+<a class="jxr_linenumber" name="327" href="#327">327</a> 
+<a class="jxr_linenumber" name="328" href="#328">328</a>     @Override
+<a class="jxr_linenumber" name="329" href="#329">329</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCancelled() {
+<a class="jxr_linenumber" name="330" href="#330">330</a>         <strong class="jxr_keyword">return</strong> isCancelled0(result);
+<a class="jxr_linenumber" name="331" href="#331">331</a>     }
+<a class="jxr_linenumber" name="332" href="#332">332</a> 
+<a class="jxr_linenumber" name="333" href="#333">333</a>     @Override
+<a class="jxr_linenumber" name="334" href="#334">334</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isDone() {
+<a class="jxr_linenumber" name="335" href="#335">335</a>         <strong class="jxr_keyword">return</strong> isDone0(result);
+<a class="jxr_linenumber" name="336" href="#336">336</a>     }
+<a class="jxr_linenumber" name="337" href="#337">337</a> 
+<a class="jxr_linenumber" name="338" href="#338">338</a>     @Override
+<a class="jxr_linenumber" name="339" href="#339">339</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; sync() <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="340" href="#340">340</a>         await();
+<a class="jxr_linenumber" name="341" href="#341">341</a>         rethrowIfFailed();
+<a class="jxr_linenumber" name="342" href="#342">342</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="343" href="#343">343</a>     }
+<a class="jxr_linenumber" name="344" href="#344">344</a> 
+<a class="jxr_linenumber" name="345" href="#345">345</a>     @Override
+<a class="jxr_linenumber" name="346" href="#346">346</a>     <strong class="jxr_keyword">public</strong> Promise&lt;V&gt; syncUninterruptibly() {
+<a class="jxr_linenumber" name="347" href="#347">347</a>         awaitUninterruptibly();
+<a class="jxr_linenumber" name="348" href="#348">348</a>         rethrowIfFailed();
+<a class="jxr_linenumber" name="349" href="#349">349</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="350" href="#350">350</a>     }
+<a class="jxr_linenumber" name="351" href="#351">351</a> 
+<a class="jxr_linenumber" name="352" href="#352">352</a>     @Override
+<a class="jxr_linenumber" name="353" href="#353">353</a>     <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="354" href="#354">354</a>         <strong class="jxr_keyword">return</strong> toStringBuilder().toString();
+<a class="jxr_linenumber" name="355" href="#355">355</a>     }
+<a class="jxr_linenumber" name="356" href="#356">356</a> 
+<a class="jxr_linenumber" name="357" href="#357">357</a>     <strong class="jxr_keyword">protected</strong> StringBuilder toStringBuilder() {
+<a class="jxr_linenumber" name="358" href="#358">358</a>         StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(64)
+<a class="jxr_linenumber" name="359" href="#359">359</a>                 .append(StringUtil.simpleClassName(<strong class="jxr_keyword">this</strong>))
+<a class="jxr_linenumber" name="360" href="#360">360</a>                 .append('@')
+<a class="jxr_linenumber" name="361" href="#361">361</a>                 .append(Integer.toHexString(hashCode()));
+<a class="jxr_linenumber" name="362" href="#362">362</a> 
+<a class="jxr_linenumber" name="363" href="#363">363</a>         Object result = <strong class="jxr_keyword">this</strong>.result;
+<a class="jxr_linenumber" name="364" href="#364">364</a>         <strong class="jxr_keyword">if</strong> (result == SUCCESS) {
+<a class="jxr_linenumber" name="365" href="#365">365</a>             buf.append(<span class="jxr_string">"(success)"</span>);
+<a class="jxr_linenumber" name="366" href="#366">366</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (result == UNCANCELLABLE) {
+<a class="jxr_linenumber" name="367" href="#367">367</a>             buf.append(<span class="jxr_string">"(uncancellable)"</span>);
+<a class="jxr_linenumber" name="368" href="#368">368</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (result instanceof CauseHolder) {
+<a class="jxr_linenumber" name="369" href="#369">369</a>             buf.append(<span class="jxr_string">"(failure: "</span>)
+<a class="jxr_linenumber" name="370" href="#370">370</a>                     .append(((CauseHolder) result).cause)
 <a class="jxr_linenumber" name="371" href="#371">371</a>                     .append(')');
-<a class="jxr_linenumber" name="372" href="#372">372</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="373" href="#373">373</a>             buf.append(<span class="jxr_string">"(incomplete)"</span>);
-<a class="jxr_linenumber" name="374" href="#374">374</a>         }
-<a class="jxr_linenumber" name="375" href="#375">375</a> 
-<a class="jxr_linenumber" name="376" href="#376">376</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="377" href="#377">377</a>     }
-<a class="jxr_linenumber" name="378" href="#378">378</a> 
-<a class="jxr_linenumber" name="379" href="#379">379</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="380" href="#380">380</a> <em class="jxr_javadoccomment">     * Get the executor used to notify listeners when this promise is complete.</em>
-<a class="jxr_linenumber" name="381" href="#381">381</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="382" href="#382">382</a> <em class="jxr_javadoccomment">     * It is assumed this executor will protect against {@link StackOverflowError} exceptions.</em>
-<a class="jxr_linenumber" name="383" href="#383">383</a> <em class="jxr_javadoccomment">     * The executor may be used to avoid {@link StackOverflowError} by executing a {@link Runnable} if the stack</em>
-<a class="jxr_linenumber" name="384" href="#384">384</a> <em class="jxr_javadoccomment">     * depth exceeds a threshold.</em>
-<a class="jxr_linenumber" name="385" href="#385">385</a> <em class="jxr_javadoccomment">     * @return The executor used to notify listeners when this promise is complete.</em>
-<a class="jxr_linenumber" name="386" href="#386">386</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="387" href="#387">387</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor() {
-<a class="jxr_linenumber" name="388" href="#388">388</a>         <strong class="jxr_keyword">return</strong> executor;
-<a class="jxr_linenumber" name="389" href="#389">389</a>     }
-<a class="jxr_linenumber" name="390" href="#390">390</a> 
-<a class="jxr_linenumber" name="391" href="#391">391</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> checkDeadLock() {
-<a class="jxr_linenumber" name="392" href="#392">392</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> e = executor();
-<a class="jxr_linenumber" name="393" href="#393">393</a>         <strong class="jxr_keyword">if</strong> (e != <strong class="jxr_keyword">null</strong> &amp;&amp; e.inEventLoop()) {
-<a class="jxr_linenumber" name="394" href="#394">394</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/BlockingOperationException.html">BlockingOperationException</a>(toString());
-<a class="jxr_linenumber" name="395" href="#395">395</a>         }
-<a class="jxr_linenumber" name="396" href="#396">396</a>     }
-<a class="jxr_linenumber" name="397" href="#397">397</a> 
-<a class="jxr_linenumber" name="398" href="#398">398</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="399" href="#399">399</a> <em class="jxr_javadoccomment">     * Notify a listener that a future has completed.</em>
-<a class="jxr_linenumber" name="400" href="#400">400</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="401" href="#401">401</a> <em class="jxr_javadoccomment">     * This method has a fixed depth of {@link #MAX_LISTENER_STACK_DEPTH} that will limit recursion to prevent</em>
-<a class="jxr_linenumber" name="402" href="#402">402</a> <em class="jxr_javadoccomment">     * {@link StackOverflowError} and will stop notifying listeners added after this threshold is exceeded.</em>
-<a class="jxr_linenumber" name="403" href="#403">403</a> <em class="jxr_javadoccomment">     * @param eventExecutor the executor to use to notify the listener {@code listener}.</em>
-<a class="jxr_linenumber" name="404" href="#404">404</a> <em class="jxr_javadoccomment">     * @param future the future that is complete.</em>
-<a class="jxr_linenumber" name="405" href="#405">405</a> <em class="jxr_javadoccomment">     * @param listener the listener to notify.</em>
-<a class="jxr_linenumber" name="406" href="#406">406</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="407" href="#407">407</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyListener(
-<a class="jxr_linenumber" name="408" href="#408">408</a>             <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> eventExecutor, <strong class="jxr_keyword">final</strong> Future&lt;?&gt; future, <strong class="jxr_keyword">final</strong> GenericFutureListener&lt;?&gt; listener) {
-<a class="jxr_linenumber" name="409" href="#409">409</a>         checkNotNull(eventExecutor, <span class="jxr_string">"eventExecutor"</span>);
-<a class="jxr_linenumber" name="410" href="#410">410</a>         checkNotNull(future, <span class="jxr_string">"future"</span>);
-<a class="jxr_linenumber" name="411" href="#411">411</a>         checkNotNull(listener, <span class="jxr_string">"listener"</span>);
-<a class="jxr_linenumber" name="412" href="#412">412</a>         notifyListenerWithStackOverFlowProtection(eventExecutor, future, listener);
-<a class="jxr_linenumber" name="413" href="#413">413</a>     }
-<a class="jxr_linenumber" name="414" href="#414">414</a> 
-<a class="jxr_linenumber" name="415" href="#415">415</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListeners() {
-<a class="jxr_linenumber" name="416" href="#416">416</a>         <em class="jxr_comment">// Modifications to listeners should be done in a synchronized block before this, and should be visible here.</em>
-<a class="jxr_linenumber" name="417" href="#417">417</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="418" href="#418">418</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="419" href="#419">419</a>         }
-<a class="jxr_linenumber" name="420" href="#420">420</a>         notifyListenersWithStackOverFlowProtection();
-<a class="jxr_linenumber" name="421" href="#421">421</a>     }
-<a class="jxr_linenumber" name="422" href="#422">422</a> 
-<a class="jxr_linenumber" name="423" href="#423">423</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListenersWithStackOverFlowProtection() {
-<a class="jxr_linenumber" name="424" href="#424">424</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor = executor();
-<a class="jxr_linenumber" name="425" href="#425">425</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
-<a class="jxr_linenumber" name="426" href="#426">426</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/InternalThreadLocalMap.html">InternalThreadLocalMap</a> threadLocals = InternalThreadLocalMap.get();
-<a class="jxr_linenumber" name="427" href="#427">427</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> stackDepth = threadLocals.futureListenerStackDepth();
-<a class="jxr_linenumber" name="428" href="#428">428</a>             <strong class="jxr_keyword">if</strong> (stackDepth &lt; MAX_LISTENER_STACK_DEPTH) {
-<a class="jxr_linenumber" name="429" href="#429">429</a>                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
-<a class="jxr_linenumber" name="430" href="#430">430</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="431" href="#431">431</a>                     notifyListenersNow();
-<a class="jxr_linenumber" name="432" href="#432">432</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="433" href="#433">433</a>                     threadLocals.setFutureListenerStackDepth(stackDepth);
-<a class="jxr_linenumber" name="434" href="#434">434</a>                 }
-<a class="jxr_linenumber" name="435" href="#435">435</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="436" href="#436">436</a>             }
-<a class="jxr_linenumber" name="437" href="#437">437</a>         }
-<a class="jxr_linenumber" name="438" href="#438">438</a> 
-<a class="jxr_linenumber" name="439" href="#439">439</a>         safeExecute(executor, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
-<a class="jxr_linenumber" name="440" href="#440">440</a>             @Override
-<a class="jxr_linenumber" name="441" href="#441">441</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="442" href="#442">442</a>                 notifyListenersNow();
-<a class="jxr_linenumber" name="443" href="#443">443</a>             }
-<a class="jxr_linenumber" name="444" href="#444">444</a>         });
-<a class="jxr_linenumber" name="445" href="#445">445</a>     }
-<a class="jxr_linenumber" name="446" href="#446">446</a> 
-<a class="jxr_linenumber" name="447" href="#447">447</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="448" href="#448">448</a> <em class="jxr_javadoccomment">     * The logic in this method should be identical to {@link #notifyListenersWithStackOverFlowProtection()} but</em>
-<a class="jxr_linenumber" name="449" href="#449">449</a> <em class="jxr_javadoccomment">     * cannot share code because the listener(s) cannot be cached for an instance of {@link DefaultPromise} since the</em>
-<a class="jxr_linenumber" name="450" href="#450">450</a> <em class="jxr_javadoccomment">     * listener(s) may be changed and is protected by a synchronized operation.</em>
-<a class="jxr_linenumber" name="451" href="#451">451</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="452" href="#452">452</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyListenerWithStackOverFlowProtection(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor,
-<a class="jxr_linenumber" name="453" href="#453">453</a>                                                                   <strong class="jxr_keyword">final</strong> Future&lt;?&gt; future,
-<a class="jxr_linenumber" name="454" href="#454">454</a>                                                                   <strong class="jxr_keyword">final</strong> GenericFutureListener&lt;?&gt; listener) {
-<a class="jxr_linenumber" name="455" href="#455">455</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
-<a class="jxr_linenumber" name="456" href="#456">456</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/InternalThreadLocalMap.html">InternalThreadLocalMap</a> threadLocals = InternalThreadLocalMap.get();
-<a class="jxr_linenumber" name="457" href="#457">457</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> stackDepth = threadLocals.futureListenerStackDepth();
-<a class="jxr_linenumber" name="458" href="#458">458</a>             <strong class="jxr_keyword">if</strong> (stackDepth &lt; MAX_LISTENER_STACK_DEPTH) {
-<a class="jxr_linenumber" name="459" href="#459">459</a>                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
-<a class="jxr_linenumber" name="460" href="#460">460</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="461" href="#461">461</a>                     notifyListener0(future, listener);
-<a class="jxr_linenumber" name="462" href="#462">462</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="463" href="#463">463</a>                     threadLocals.setFutureListenerStackDepth(stackDepth);
-<a class="jxr_linenumber" name="464" href="#464">464</a>                 }
-<a class="jxr_linenumber" name="465" href="#465">465</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="466" href="#466">466</a>             }
-<a class="jxr_linenumber" name="467" href="#467">467</a>         }
-<a class="jxr_linenumber" name="468" href="#468">468</a> 
-<a class="jxr_linenumber" name="469" href="#469">469</a>         safeExecute(executor, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
-<a class="jxr_linenumber" name="470" href="#470">470</a>             @Override
-<a class="jxr_linenumber" name="471" href="#471">471</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="472" href="#472">472</a>                 notifyListener0(future, listener);
-<a class="jxr_linenumber" name="473" href="#473">473</a>             }
-<a class="jxr_linenumber" name="474" href="#474">474</a>         });
-<a class="jxr_linenumber" name="475" href="#475">475</a>     }
-<a class="jxr_linenumber" name="476" href="#476">476</a> 
-<a class="jxr_linenumber" name="477" href="#477">477</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListenersNow() {
-<a class="jxr_linenumber" name="478" href="#478">478</a>         Object listeners;
-<a class="jxr_linenumber" name="479" href="#479">479</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="480" href="#480">480</a>             <em class="jxr_comment">// Only proceed if there are listeners to notify and we are not already notifying listeners.</em>
-<a class="jxr_linenumber" name="481" href="#481">481</a>             <strong class="jxr_keyword">if</strong> (notifyingListeners || <strong class="jxr_keyword">this</strong>.listeners == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="482" href="#482">482</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="483" href="#483">483</a>             }
-<a class="jxr_linenumber" name="484" href="#484">484</a>             notifyingListeners = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="485" href="#485">485</a>             listeners = <strong class="jxr_keyword">this</strong>.listeners;
-<a class="jxr_linenumber" name="486" href="#486">486</a>             <strong class="jxr_keyword">this</strong>.listeners = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="487" href="#487">487</a>         }
-<a class="jxr_linenumber" name="488" href="#488">488</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="489" href="#489">489</a>             <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
-<a class="jxr_linenumber" name="490" href="#490">490</a>                 notifyListeners0((DefaultFutureListeners) listeners);
-<a class="jxr_linenumber" name="491" href="#491">491</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="492" href="#492">492</a>                 notifyListener0(<strong class="jxr_keyword">this</strong>, (GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;V&gt;&gt;) listeners);
-<a class="jxr_linenumber" name="493" href="#493">493</a>             }
-<a class="jxr_linenumber" name="494" href="#494">494</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="495" href="#495">495</a>                 <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.listeners == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="496" href="#496">496</a>                     <em class="jxr_comment">// Nothing can throw from within this method, so setting notifyingListeners back to false does not</em>
-<a class="jxr_linenumber" name="497" href="#497">497</a>                     <em class="jxr_comment">// need to be in a finally block.</em>
-<a class="jxr_linenumber" name="498" href="#498">498</a>                     notifyingListeners = false;
-<a class="jxr_linenumber" name="499" href="#499">499</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="500" href="#500">500</a>                 }
-<a class="jxr_linenumber" name="501" href="#501">501</a>                 listeners = <strong class="jxr_keyword">this</strong>.listeners;
-<a class="jxr_linenumber" name="502" href="#502">502</a>                 <strong class="jxr_keyword">this</strong>.listeners = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="503" href="#503">503</a>             }
-<a class="jxr_linenumber" name="504" href="#504">504</a>         }
-<a class="jxr_linenumber" name="505" href="#505">505</a>     }
-<a class="jxr_linenumber" name="506" href="#506">506</a> 
-<a class="jxr_linenumber" name="507" href="#507">507</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListeners0(<a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a> listeners) {
-<a class="jxr_linenumber" name="508" href="#508">508</a>         GenericFutureListener&lt;?&gt;[] a = listeners.listeners();
-<a class="jxr_linenumber" name="509" href="#509">509</a>         <strong class="jxr_keyword">int</strong> size = listeners.size();
-<a class="jxr_linenumber" name="510" href="#510">510</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
-<a class="jxr_linenumber" name="511" href="#511">511</a>             notifyListener0(<strong class="jxr_keyword">this</strong>, a[i]);
-<a class="jxr_linenumber" name="512" href="#512">512</a>         }
-<a class="jxr_linenumber" name="513" href="#513">513</a>     }
-<a class="jxr_linenumber" name="514" href="#514">514</a> 
-<a class="jxr_linenumber" name="515" href="#515">515</a>     @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
-<a class="jxr_linenumber" name="516" href="#516">516</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyListener0(<a href="../../../../io/netty/util/concurrent/Future.html">Future</a> future, <a href="../../../../io/netty/util/concurrent/GenericFutureListener.html">GenericFutureListener</a> l) {
-<a class="jxr_linenumber" name="517" href="#517">517</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="518" href="#518">518</a>             l.operationComplete(future);
-<a class="jxr_linenumber" name="519" href="#519">519</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="520" href="#520">520</a>             logger.warn(<span class="jxr_string">"An exception was thrown by {}.operationComplete()"</span>, l.getClass().getName(), t);
-<a class="jxr_linenumber" name="521" href="#521">521</a>         }
-<a class="jxr_linenumber" name="522" href="#522">522</a>     }
-<a class="jxr_linenumber" name="523" href="#523">523</a> 
-<a class="jxr_linenumber" name="524" href="#524">524</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addListener0(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
-<a class="jxr_linenumber" name="525" href="#525">525</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="526" href="#526">526</a>             listeners = listener;
-<a class="jxr_linenumber" name="527" href="#527">527</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
-<a class="jxr_linenumber" name="528" href="#528">528</a>             ((<a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a>) listeners).add(listener);
-<a class="jxr_linenumber" name="529" href="#529">529</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="530" href="#530">530</a>             listeners = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a>((GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;V&gt;&gt;) listeners, listener);
-<a class="jxr_linenumber" name="531" href="#531">531</a>         }
-<a class="jxr_linenumber" name="532" href="#532">532</a>     }
-<a class="jxr_linenumber" name="533" href="#533">533</a> 
-<a class="jxr_linenumber" name="534" href="#534">534</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> removeListener0(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
-<a class="jxr_linenumber" name="535" href="#535">535</a>         <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
-<a class="jxr_linenumber" name="536" href="#536">536</a>             ((<a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a>) listeners).remove(listener);
-<a class="jxr_linenumber" name="537" href="#537">537</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (listeners == listener) {
-<a class="jxr_linenumber" name="538" href="#538">538</a>             listeners = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="539" href="#539">539</a>         }
-<a class="jxr_linenumber" name="540" href="#540">540</a>     }
-<a class="jxr_linenumber" name="541" href="#541">541</a> 
-<a class="jxr_linenumber" name="542" href="#542">542</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> setSuccess0(V result) {
-<a class="jxr_linenumber" name="543" href="#543">543</a>         <strong class="jxr_keyword">return</strong> setValue0(result == <strong class="jxr_keyword">null</strong> ? SUCCESS : result);
+<a class="jxr_linenumber" name="372" href="#372">372</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (result != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="373" href="#373">373</a>             buf.append(<span class="jxr_string">"(success: "</span>)
+<a class="jxr_linenumber" name="374" href="#374">374</a>                     .append(result)
+<a class="jxr_linenumber" name="375" href="#375">375</a>                     .append(')');
+<a class="jxr_linenumber" name="376" href="#376">376</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="377" href="#377">377</a>             buf.append(<span class="jxr_string">"(incomplete)"</span>);
+<a class="jxr_linenumber" name="378" href="#378">378</a>         }
+<a class="jxr_linenumber" name="379" href="#379">379</a> 
+<a class="jxr_linenumber" name="380" href="#380">380</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="381" href="#381">381</a>     }
+<a class="jxr_linenumber" name="382" href="#382">382</a> 
+<a class="jxr_linenumber" name="383" href="#383">383</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="384" href="#384">384</a> <em class="jxr_javadoccomment">     * Get the executor used to notify listeners when this promise is complete.</em>
+<a class="jxr_linenumber" name="385" href="#385">385</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="386" href="#386">386</a> <em class="jxr_javadoccomment">     * It is assumed this executor will protect against {@link StackOverflowError} exceptions.</em>
+<a class="jxr_linenumber" name="387" href="#387">387</a> <em class="jxr_javadoccomment">     * The executor may be used to avoid {@link StackOverflowError} by executing a {@link Runnable} if the stack</em>
+<a class="jxr_linenumber" name="388" href="#388">388</a> <em class="jxr_javadoccomment">     * depth exceeds a threshold.</em>
+<a class="jxr_linenumber" name="389" href="#389">389</a> <em class="jxr_javadoccomment">     * @return The executor used to notify listeners when this promise is complete.</em>
+<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="391" href="#391">391</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor() {
+<a class="jxr_linenumber" name="392" href="#392">392</a>         <strong class="jxr_keyword">return</strong> executor;
+<a class="jxr_linenumber" name="393" href="#393">393</a>     }
+<a class="jxr_linenumber" name="394" href="#394">394</a> 
+<a class="jxr_linenumber" name="395" href="#395">395</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> checkDeadLock() {
+<a class="jxr_linenumber" name="396" href="#396">396</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> e = executor();
+<a class="jxr_linenumber" name="397" href="#397">397</a>         <strong class="jxr_keyword">if</strong> (e != <strong class="jxr_keyword">null</strong> &amp;&amp; e.inEventLoop()) {
+<a class="jxr_linenumber" name="398" href="#398">398</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/BlockingOperationException.html">BlockingOperationException</a>(toString());
+<a class="jxr_linenumber" name="399" href="#399">399</a>         }
+<a class="jxr_linenumber" name="400" href="#400">400</a>     }
+<a class="jxr_linenumber" name="401" href="#401">401</a> 
+<a class="jxr_linenumber" name="402" href="#402">402</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="403" href="#403">403</a> <em class="jxr_javadoccomment">     * Notify a listener that a future has completed.</em>
+<a class="jxr_linenumber" name="404" href="#404">404</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="405" href="#405">405</a> <em class="jxr_javadoccomment">     * This method has a fixed depth of {@link #MAX_LISTENER_STACK_DEPTH} that will limit recursion to prevent</em>
+<a class="jxr_linenumber" name="406" href="#406">406</a> <em class="jxr_javadoccomment">     * {@link StackOverflowError} and will stop notifying listeners added after this threshold is exceeded.</em>
+<a class="jxr_linenumber" name="407" href="#407">407</a> <em class="jxr_javadoccomment">     * @param eventExecutor the executor to use to notify the listener {@code listener}.</em>
+<a class="jxr_linenumber" name="408" href="#408">408</a> <em class="jxr_javadoccomment">     * @param future the future that is complete.</em>
+<a class="jxr_linenumber" name="409" href="#409">409</a> <em class="jxr_javadoccomment">     * @param listener the listener to notify.</em>
+<a class="jxr_linenumber" name="410" href="#410">410</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="411" href="#411">411</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyListener(
+<a class="jxr_linenumber" name="412" href="#412">412</a>             <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> eventExecutor, <strong class="jxr_keyword">final</strong> Future&lt;?&gt; future, <strong class="jxr_keyword">final</strong> GenericFutureListener&lt;?&gt; listener) {
+<a class="jxr_linenumber" name="413" href="#413">413</a>         checkNotNull(eventExecutor, <span class="jxr_string">"eventExecutor"</span>);
+<a class="jxr_linenumber" name="414" href="#414">414</a>         checkNotNull(future, <span class="jxr_string">"future"</span>);
+<a class="jxr_linenumber" name="415" href="#415">415</a>         checkNotNull(listener, <span class="jxr_string">"listener"</span>);
+<a class="jxr_linenumber" name="416" href="#416">416</a>         notifyListenerWithStackOverFlowProtection(eventExecutor, future, listener);
+<a class="jxr_linenumber" name="417" href="#417">417</a>     }
+<a class="jxr_linenumber" name="418" href="#418">418</a> 
+<a class="jxr_linenumber" name="419" href="#419">419</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListeners() {
+<a class="jxr_linenumber" name="420" href="#420">420</a>         <em class="jxr_comment">// Modifications to listeners should be done in a synchronized block before this, and should be visible here.</em>
+<a class="jxr_linenumber" name="421" href="#421">421</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="422" href="#422">422</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="423" href="#423">423</a>         }
+<a class="jxr_linenumber" name="424" href="#424">424</a>         notifyListenersWithStackOverFlowProtection();
+<a class="jxr_linenumber" name="425" href="#425">425</a>     }
+<a class="jxr_linenumber" name="426" href="#426">426</a> 
+<a class="jxr_linenumber" name="427" href="#427">427</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListenersWithStackOverFlowProtection() {
+<a class="jxr_linenumber" name="428" href="#428">428</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor = executor();
+<a class="jxr_linenumber" name="429" href="#429">429</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
+<a class="jxr_linenumber" name="430" href="#430">430</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/InternalThreadLocalMap.html">InternalThreadLocalMap</a> threadLocals = InternalThreadLocalMap.get();
+<a class="jxr_linenumber" name="431" href="#431">431</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> stackDepth = threadLocals.futureListenerStackDepth();
+<a class="jxr_linenumber" name="432" href="#432">432</a>             <strong class="jxr_keyword">if</strong> (stackDepth &lt; MAX_LISTENER_STACK_DEPTH) {
+<a class="jxr_linenumber" name="433" href="#433">433</a>                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
+<a class="jxr_linenumber" name="434" href="#434">434</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="435" href="#435">435</a>                     notifyListenersNow();
+<a class="jxr_linenumber" name="436" href="#436">436</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="437" href="#437">437</a>                     threadLocals.setFutureListenerStackDepth(stackDepth);
+<a class="jxr_linenumber" name="438" href="#438">438</a>                 }
+<a class="jxr_linenumber" name="439" href="#439">439</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="440" href="#440">440</a>             }
+<a class="jxr_linenumber" name="441" href="#441">441</a>         }
+<a class="jxr_linenumber" name="442" href="#442">442</a> 
+<a class="jxr_linenumber" name="443" href="#443">443</a>         safeExecute(executor, <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="444" href="#444">444</a>             @Override
+<a class="jxr_linenumber" name="445" href="#445">445</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="446" href="#446">446</a>                 notifyListenersNow();
+<a class="jxr_linenumber" name="447" href="#447">447</a>             }
+<a class="jxr_linenumber" name="448" href="#448">448</a>         });
+<a class="jxr_linenumber" name="449" href="#449">449</a>     }
+<a class="jxr_linenumber" name="450" href="#450">450</a> 
+<a class="jxr_linenumber" name="451" href="#451">451</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="452" href="#452">452</a> <em class="jxr_javadoccomment">     * The logic in this method should be identical to {@link #notifyListenersWithStackOverFlowProtection()} but</em>
+<a class="jxr_linenumber" name="453" href="#453">453</a> <em class="jxr_javadoccomment">     * cannot share code because the listener(s) cannot be cached for an instance of {@link DefaultPromise} since the</em>
+<a class="jxr_linenumber" name="454" href="#454">454</a> <em class="jxr_javadoccomment">     * listener(s) may be changed and is protected by a synchronized operation.</em>
+<a class="jxr_linenumber" name="455" href="#455">455</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="456" href="#456">456</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyListenerWithStackOverFlowProtection(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor,
+<a class="jxr_linenumber" name="457" href="#457">457</a>                                                                   <strong class="jxr_keyword">final</strong> Future&lt;?&gt; future,
+<a class="jxr_linenumber" name="458" href="#458">458</a>                                                                   <strong class="jxr_keyword">final</strong> GenericFutureListener&lt;?&gt; listener) {
+<a class="jxr_linenumber" name="459" href="#459">459</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
+<a class="jxr_linenumber" name="460" href="#460">460</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/util/internal/InternalThreadLocalMap.html">InternalThreadLocalMap</a> threadLocals = InternalThreadLocalMap.get();
+<a class="jxr_linenumber" name="461" href="#461">461</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> stackDepth = threadLocals.futureListenerStackDepth();
+<a class="jxr_linenumber" name="462" href="#462">462</a>             <strong class="jxr_keyword">if</strong> (stackDepth &lt; MAX_LISTENER_STACK_DEPTH) {
+<a class="jxr_linenumber" name="463" href="#463">463</a>                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
+<a class="jxr_linenumber" name="464" href="#464">464</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="465" href="#465">465</a>                     notifyListener0(future, listener);
+<a class="jxr_linenumber" name="466" href="#466">466</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="467" href="#467">467</a>                     threadLocals.setFutureListenerStackDepth(stackDepth);
+<a class="jxr_linenumber" name="468" href="#468">468</a>                 }
+<a class="jxr_linenumber" name="469" href="#469">469</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="470" href="#470">470</a>             }
+<a class="jxr_linenumber" name="471" href="#471">471</a>         }
+<a class="jxr_linenumber" name="472" href="#472">472</a> 
+<a class="jxr_linenumber" name="473" href="#473">473</a>         safeExecute(executor, <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="474" href="#474">474</a>             @Override
+<a class="jxr_linenumber" name="475" href="#475">475</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="476" href="#476">476</a>                 notifyListener0(future, listener);
+<a class="jxr_linenumber" name="477" href="#477">477</a>             }
+<a class="jxr_linenumber" name="478" href="#478">478</a>         });
+<a class="jxr_linenumber" name="479" href="#479">479</a>     }
+<a class="jxr_linenumber" name="480" href="#480">480</a> 
+<a class="jxr_linenumber" name="481" href="#481">481</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListenersNow() {
+<a class="jxr_linenumber" name="482" href="#482">482</a>         Object listeners;
+<a class="jxr_linenumber" name="483" href="#483">483</a>         <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="484" href="#484">484</a>             <em class="jxr_comment">// Only proceed if there are listeners to notify and we are not already notifying listeners.</em>
+<a class="jxr_linenumber" name="485" href="#485">485</a>             <strong class="jxr_keyword">if</strong> (notifyingListeners || <strong class="jxr_keyword">this</strong>.listeners == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="486" href="#486">486</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="487" href="#487">487</a>             }
+<a class="jxr_linenumber" name="488" href="#488">488</a>             notifyingListeners = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="489" href="#489">489</a>             listeners = <strong class="jxr_keyword">this</strong>.listeners;
+<a class="jxr_linenumber" name="490" href="#490">490</a>             <strong class="jxr_keyword">this</strong>.listeners = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="491" href="#491">491</a>         }
+<a class="jxr_linenumber" name="492" href="#492">492</a>         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="493" href="#493">493</a>             <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
+<a class="jxr_linenumber" name="494" href="#494">494</a>                 notifyListeners0((DefaultFutureListeners) listeners);
+<a class="jxr_linenumber" name="495" href="#495">495</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="496" href="#496">496</a>                 notifyListener0(<strong class="jxr_keyword">this</strong>, (GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;V&gt;&gt;) listeners);
+<a class="jxr_linenumber" name="497" href="#497">497</a>             }
+<a class="jxr_linenumber" name="498" href="#498">498</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="499" href="#499">499</a>                 <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.listeners == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="500" href="#500">500</a>                     <em class="jxr_comment">// Nothing can throw from within this method, so setting notifyingListeners back to false does not</em>
+<a class="jxr_linenumber" name="501" href="#501">501</a>                     <em class="jxr_comment">// need to be in a finally block.</em>
+<a class="jxr_linenumber" name="502" href="#502">502</a>                     notifyingListeners = false;
+<a class="jxr_linenumber" name="503" href="#503">503</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="504" href="#504">504</a>                 }
+<a class="jxr_linenumber" name="505" href="#505">505</a>                 listeners = <strong class="jxr_keyword">this</strong>.listeners;
+<a class="jxr_linenumber" name="506" href="#506">506</a>                 <strong class="jxr_keyword">this</strong>.listeners = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="507" href="#507">507</a>             }
+<a class="jxr_linenumber" name="508" href="#508">508</a>         }
+<a class="jxr_linenumber" name="509" href="#509">509</a>     }
+<a class="jxr_linenumber" name="510" href="#510">510</a> 
+<a class="jxr_linenumber" name="511" href="#511">511</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyListeners0(<a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a> listeners) {
+<a class="jxr_linenumber" name="512" href="#512">512</a>         GenericFutureListener&lt;?&gt;[] a = listeners.listeners();
+<a class="jxr_linenumber" name="513" href="#513">513</a>         <strong class="jxr_keyword">int</strong> size = listeners.size();
+<a class="jxr_linenumber" name="514" href="#514">514</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i ++) {
+<a class="jxr_linenumber" name="515" href="#515">515</a>             notifyListener0(<strong class="jxr_keyword">this</strong>, a[i]);
+<a class="jxr_linenumber" name="516" href="#516">516</a>         }
+<a class="jxr_linenumber" name="517" href="#517">517</a>     }
+<a class="jxr_linenumber" name="518" href="#518">518</a> 
+<a class="jxr_linenumber" name="519" href="#519">519</a>     @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
+<a class="jxr_linenumber" name="520" href="#520">520</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyListener0(<a href="../../../../io/netty/util/concurrent/Future.html">Future</a> future, <a href="../../../../io/netty/util/concurrent/GenericFutureListener.html">GenericFutureListener</a> l) {
+<a class="jxr_linenumber" name="521" href="#521">521</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="522" href="#522">522</a>             l.operationComplete(future);
+<a class="jxr_linenumber" name="523" href="#523">523</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="524" href="#524">524</a>             logger.warn(<span class="jxr_string">"An exception was thrown by {}.operationComplete()"</span>, l.getClass().getName(), t);
+<a class="jxr_linenumber" name="525" href="#525">525</a>         }
+<a class="jxr_linenumber" name="526" href="#526">526</a>     }
+<a class="jxr_linenumber" name="527" href="#527">527</a> 
+<a class="jxr_linenumber" name="528" href="#528">528</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> addListener0(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
+<a class="jxr_linenumber" name="529" href="#529">529</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="530" href="#530">530</a>             listeners = listener;
+<a class="jxr_linenumber" name="531" href="#531">531</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
+<a class="jxr_linenumber" name="532" href="#532">532</a>             ((<a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a>) listeners).add(listener);
+<a class="jxr_linenumber" name="533" href="#533">533</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="534" href="#534">534</a>             listeners = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a>((GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;V&gt;&gt;) listeners, listener);
+<a class="jxr_linenumber" name="535" href="#535">535</a>         }
+<a class="jxr_linenumber" name="536" href="#536">536</a>     }
+<a class="jxr_linenumber" name="537" href="#537">537</a> 
+<a class="jxr_linenumber" name="538" href="#538">538</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> removeListener0(GenericFutureListener&lt;? <strong class="jxr_keyword">extends</strong> Future&lt;? <strong class="jxr_keyword">super</strong> V&gt;&gt; listener) {
+<a class="jxr_linenumber" name="539" href="#539">539</a>         <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
+<a class="jxr_linenumber" name="540" href="#540">540</a>             ((<a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a>) listeners).remove(listener);
+<a class="jxr_linenumber" name="541" href="#541">541</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (listeners == listener) {
+<a class="jxr_linenumber" name="542" href="#542">542</a>             listeners = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="543" href="#543">543</a>         }
 <a class="jxr_linenumber" name="544" href="#544">544</a>     }
 <a class="jxr_linenumber" name="545" href="#545">545</a> 
-<a class="jxr_linenumber" name="546" href="#546">546</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> setFailure0(Throwable cause) {
-<a class="jxr_linenumber" name="547" href="#547">547</a>         <strong class="jxr_keyword">return</strong> setValue0(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>(checkNotNull(cause, <span class="jxr_string">"cause"</span>)));
+<a class="jxr_linenumber" name="546" href="#546">546</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> setSuccess0(V result) {
+<a class="jxr_linenumber" name="547" href="#547">547</a>         <strong class="jxr_keyword">return</strong> setValue0(result == <strong class="jxr_keyword">null</strong> ? SUCCESS : result);
 <a class="jxr_linenumber" name="548" href="#548">548</a>     }
 <a class="jxr_linenumber" name="549" href="#549">549</a> 
-<a class="jxr_linenumber" name="550" href="#550">550</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> setValue0(Object objResult) {
-<a class="jxr_linenumber" name="551" href="#551">551</a>         <strong class="jxr_keyword">if</strong> (RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, objResult) ||
-<a class="jxr_linenumber" name="552" href="#552">552</a>             RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, UNCANCELLABLE, objResult)) {
-<a class="jxr_linenumber" name="553" href="#553">553</a>             checkNotifyWaiters();
-<a class="jxr_linenumber" name="554" href="#554">554</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="555" href="#555">555</a>         }
-<a class="jxr_linenumber" name="556" href="#556">556</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="557" href="#557">557</a>     }
-<a class="jxr_linenumber" name="558" href="#558">558</a> 
-<a class="jxr_linenumber" name="559" href="#559">559</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">synchronized</strong> <strong class="jxr_keyword">void</strong> checkNotifyWaiters() {
-<a class="jxr_linenumber" name="560" href="#560">560</a>         <strong class="jxr_keyword">if</strong> (waiters &gt; 0) {
-<a class="jxr_linenumber" name="561" href="#561">561</a>             notifyAll();
-<a class="jxr_linenumber" name="562" href="#562">562</a>         }
-<a class="jxr_linenumber" name="563" href="#563">563</a>     }
-<a class="jxr_linenumber" name="564" href="#564">564</a> 
-<a class="jxr_linenumber" name="565" href="#565">565</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> incWaiters() {
-<a class="jxr_linenumber" name="566" href="#566">566</a>         <strong class="jxr_keyword">if</strong> (waiters == Short.MAX_VALUE) {
-<a class="jxr_linenumber" name="567" href="#567">567</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"too many waiters: "</span> + <strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="568" href="#568">568</a>         }
-<a class="jxr_linenumber" name="569" href="#569">569</a>         ++waiters;
-<a class="jxr_linenumber" name="570" href="#570">570</a>     }
-<a class="jxr_linenumber" name="571" href="#571">571</a> 
-<a class="jxr_linenumber" name="572" href="#572">572</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> decWaiters() {
-<a class="jxr_linenumber" name="573" href="#573">573</a>         --waiters;
+<a class="jxr_linenumber" name="550" href="#550">550</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> setFailure0(Throwable cause) {
+<a class="jxr_linenumber" name="551" href="#551">551</a>         <strong class="jxr_keyword">return</strong> setValue0(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>(checkNotNull(cause, <span class="jxr_string">"cause"</span>)));
+<a class="jxr_linenumber" name="552" href="#552">552</a>     }
+<a class="jxr_linenumber" name="553" href="#553">553</a> 
+<a class="jxr_linenumber" name="554" href="#554">554</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> setValue0(Object objResult) {
+<a class="jxr_linenumber" name="555" href="#555">555</a>         <strong class="jxr_keyword">if</strong> (RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, objResult) ||
+<a class="jxr_linenumber" name="556" href="#556">556</a>             RESULT_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, UNCANCELLABLE, objResult)) {
+<a class="jxr_linenumber" name="557" href="#557">557</a>             checkNotifyWaiters();
+<a class="jxr_linenumber" name="558" href="#558">558</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="559" href="#559">559</a>         }
+<a class="jxr_linenumber" name="560" href="#560">560</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="561" href="#561">561</a>     }
+<a class="jxr_linenumber" name="562" href="#562">562</a> 
+<a class="jxr_linenumber" name="563" href="#563">563</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">synchronized</strong> <strong class="jxr_keyword">void</strong> checkNotifyWaiters() {
+<a class="jxr_linenumber" name="564" href="#564">564</a>         <strong class="jxr_keyword">if</strong> (waiters &gt; 0) {
+<a class="jxr_linenumber" name="565" href="#565">565</a>             notifyAll();
+<a class="jxr_linenumber" name="566" href="#566">566</a>         }
+<a class="jxr_linenumber" name="567" href="#567">567</a>     }
+<a class="jxr_linenumber" name="568" href="#568">568</a> 
+<a class="jxr_linenumber" name="569" href="#569">569</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> incWaiters() {
+<a class="jxr_linenumber" name="570" href="#570">570</a>         <strong class="jxr_keyword">if</strong> (waiters == Short.MAX_VALUE) {
+<a class="jxr_linenumber" name="571" href="#571">571</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"too many waiters: "</span> + <strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="572" href="#572">572</a>         }
+<a class="jxr_linenumber" name="573" href="#573">573</a>         ++waiters;
 <a class="jxr_linenumber" name="574" href="#574">574</a>     }
 <a class="jxr_linenumber" name="575" href="#575">575</a> 
-<a class="jxr_linenumber" name="576" href="#576">576</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> rethrowIfFailed() {
-<a class="jxr_linenumber" name="577" href="#577">577</a>         Throwable cause = cause();
-<a class="jxr_linenumber" name="578" href="#578">578</a>         <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="579" href="#579">579</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="580" href="#580">580</a>         }
-<a class="jxr_linenumber" name="581" href="#581">581</a> 
-<a class="jxr_linenumber" name="582" href="#582">582</a>         PlatformDependent.throwException(cause);
-<a class="jxr_linenumber" name="583" href="#583">583</a>     }
-<a class="jxr_linenumber" name="584" href="#584">584</a> 
-<a class="jxr_linenumber" name="585" href="#585">585</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> await0(<strong class="jxr_keyword">long</strong> timeoutNanos, <strong class="jxr_keyword">boolean</strong> interruptable) <strong class="jxr_keyword">throws</strong> InterruptedException {
-<a class="jxr_linenumber" name="586" href="#586">586</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
-<a class="jxr_linenumber" name="587" href="#587">587</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="588" href="#588">588</a>         }
-<a class="jxr_linenumber" name="589" href="#589">589</a> 
-<a class="jxr_linenumber" name="590" href="#590">590</a>         <strong class="jxr_keyword">if</strong> (timeoutNanos &lt;= 0) {
-<a class="jxr_linenumber" name="591" href="#591">591</a>             <strong class="jxr_keyword">return</strong> isDone();
+<a class="jxr_linenumber" name="576" href="#576">576</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> decWaiters() {
+<a class="jxr_linenumber" name="577" href="#577">577</a>         --waiters;
+<a class="jxr_linenumber" name="578" href="#578">578</a>     }
+<a class="jxr_linenumber" name="579" href="#579">579</a> 
+<a class="jxr_linenumber" name="580" href="#580">580</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> rethrowIfFailed() {
+<a class="jxr_linenumber" name="581" href="#581">581</a>         Throwable cause = cause();
+<a class="jxr_linenumber" name="582" href="#582">582</a>         <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="583" href="#583">583</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="584" href="#584">584</a>         }
+<a class="jxr_linenumber" name="585" href="#585">585</a> 
+<a class="jxr_linenumber" name="586" href="#586">586</a>         PlatformDependent.throwException(cause);
+<a class="jxr_linenumber" name="587" href="#587">587</a>     }
+<a class="jxr_linenumber" name="588" href="#588">588</a> 
+<a class="jxr_linenumber" name="589" href="#589">589</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> await0(<strong class="jxr_keyword">long</strong> timeoutNanos, <strong class="jxr_keyword">boolean</strong> interruptable) <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="590" href="#590">590</a>         <strong class="jxr_keyword">if</strong> (isDone()) {
+<a class="jxr_linenumber" name="591" href="#591">591</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="592" href="#592">592</a>         }
 <a class="jxr_linenumber" name="593" href="#593">593</a> 
-<a class="jxr_linenumber" name="594" href="#594">594</a>         <strong class="jxr_keyword">if</strong> (interruptable &amp;&amp; Thread.interrupted()) {
-<a class="jxr_linenumber" name="595" href="#595">595</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InterruptedException(toString());
+<a class="jxr_linenumber" name="594" href="#594">594</a>         <strong class="jxr_keyword">if</strong> (timeoutNanos &lt;= 0) {
+<a class="jxr_linenumber" name="595" href="#595">595</a>             <strong class="jxr_keyword">return</strong> isDone();
 <a class="jxr_linenumber" name="596" href="#596">596</a>         }
 <a class="jxr_linenumber" name="597" href="#597">597</a> 
-<a class="jxr_linenumber" name="598" href="#598">598</a>         checkDeadLock();
-<a class="jxr_linenumber" name="599" href="#599">599</a> 
-<a class="jxr_linenumber" name="600" href="#600">600</a>         <strong class="jxr_keyword">long</strong> startTime = System.nanoTime();
-<a class="jxr_linenumber" name="601" href="#601">601</a>         <strong class="jxr_keyword">long</strong> waitTime = timeoutNanos;
-<a class="jxr_linenumber" name="602" href="#602">602</a>         <strong class="jxr_keyword">boolean</strong> interrupted = false;
-<a class="jxr_linenumber" name="603" href="#603">603</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="604" href="#604">604</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="605" href="#605">605</a>                 <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="606" href="#606">606</a>                     incWaiters();
-<a class="jxr_linenumber" name="607" href="#607">607</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="608" href="#608">608</a>                         wait(waitTime / 1000000, (<strong class="jxr_keyword">int</strong>) (waitTime % 1000000));
-<a class="jxr_linenumber" name="609" href="#609">609</a>                     } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
-<a class="jxr_linenumber" name="610" href="#610">610</a>                         <strong class="jxr_keyword">if</strong> (interruptable) {
-<a class="jxr_linenumber" name="611" href="#611">611</a>                             <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="612" href="#612">612</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="613" href="#613">613</a>                             interrupted = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="614" href="#614">614</a>                         }
-<a class="jxr_linenumber" name="615" href="#615">615</a>                     } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="616" href="#616">616</a>                         decWaiters();
-<a class="jxr_linenumber" name="617" href="#617">617</a>                     }
-<a class="jxr_linenumber" name="618" href="#618">618</a>                 }
-<a class="jxr_linenumber" name="619" href="#619">619</a>                 <strong class="jxr_keyword">if</strong> (isDone()) {
-<a class="jxr_linenumber" name="620" href="#620">620</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="621" href="#621">621</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="622" href="#622">622</a>                     waitTime = timeoutNanos - (System.nanoTime() - startTime);
-<a class="jxr_linenumber" name="623" href="#623">623</a>                     <strong class="jxr_keyword">if</strong> (waitTime &lt;= 0) {
-<a class="jxr_linenumber" name="624" href="#624">624</a>                         <strong class="jxr_keyword">return</strong> isDone();
-<a class="jxr_linenumber" name="625" href="#625">625</a>                     }
-<a class="jxr_linenumber" name="626" href="#626">626</a>                 }
-<a class="jxr_linenumber" name="627" href="#627">627</a>             }
-<a class="jxr_linenumber" name="628" href="#628">628</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="629" href="#629">629</a>             <strong class="jxr_keyword">if</strong> (interrupted) {
-<a class="jxr_linenumber" name="630" href="#630">630</a>                 Thread.currentThread().interrupt();
+<a class="jxr_linenumber" name="598" href="#598">598</a>         <strong class="jxr_keyword">if</strong> (interruptable &amp;&amp; Thread.interrupted()) {
+<a class="jxr_linenumber" name="599" href="#599">599</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> InterruptedException(toString());
+<a class="jxr_linenumber" name="600" href="#600">600</a>         }
+<a class="jxr_linenumber" name="601" href="#601">601</a> 
+<a class="jxr_linenumber" name="602" href="#602">602</a>         checkDeadLock();
+<a class="jxr_linenumber" name="603" href="#603">603</a> 
+<a class="jxr_linenumber" name="604" href="#604">604</a>         <strong class="jxr_keyword">long</strong> startTime = System.nanoTime();
+<a class="jxr_linenumber" name="605" href="#605">605</a>         <strong class="jxr_keyword">long</strong> waitTime = timeoutNanos;
+<a class="jxr_linenumber" name="606" href="#606">606</a>         <strong class="jxr_keyword">boolean</strong> interrupted = false;
+<a class="jxr_linenumber" name="607" href="#607">607</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="608" href="#608">608</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="609" href="#609">609</a>                 <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="610" href="#610">610</a>                     incWaiters();
+<a class="jxr_linenumber" name="611" href="#611">611</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="612" href="#612">612</a>                         wait(waitTime / 1000000, (<strong class="jxr_keyword">int</strong>) (waitTime % 1000000));
+<a class="jxr_linenumber" name="613" href="#613">613</a>                     } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
+<a class="jxr_linenumber" name="614" href="#614">614</a>                         <strong class="jxr_keyword">if</strong> (interruptable) {
+<a class="jxr_linenumber" name="615" href="#615">615</a>                             <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="616" href="#616">616</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="617" href="#617">617</a>                             interrupted = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="618" href="#618">618</a>                         }
+<a class="jxr_linenumber" name="619" href="#619">619</a>                     } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="620" href="#620">620</a>                         decWaiters();
+<a class="jxr_linenumber" name="621" href="#621">621</a>                     }
+<a class="jxr_linenumber" name="622" href="#622">622</a>                 }
+<a class="jxr_linenumber" name="623" href="#623">623</a>                 <strong class="jxr_keyword">if</strong> (isDone()) {
+<a class="jxr_linenumber" name="624" href="#624">624</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="625" href="#625">625</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="626" href="#626">626</a>                     waitTime = timeoutNanos - (System.nanoTime() - startTime);
+<a class="jxr_linenumber" name="627" href="#627">627</a>                     <strong class="jxr_keyword">if</strong> (waitTime &lt;= 0) {
+<a class="jxr_linenumber" name="628" href="#628">628</a>                         <strong class="jxr_keyword">return</strong> isDone();
+<a class="jxr_linenumber" name="629" href="#629">629</a>                     }
+<a class="jxr_linenumber" name="630" href="#630">630</a>                 }
 <a class="jxr_linenumber" name="631" href="#631">631</a>             }
-<a class="jxr_linenumber" name="632" href="#632">632</a>         }
-<a class="jxr_linenumber" name="633" href="#633">633</a>     }
-<a class="jxr_linenumber" name="634" href="#634">634</a> 
-<a class="jxr_linenumber" name="635" href="#635">635</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="636" href="#636">636</a> <em class="jxr_javadoccomment">     * Notify all progressive listeners.</em>
-<a class="jxr_linenumber" name="637" href="#637">637</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="638" href="#638">638</a> <em class="jxr_javadoccomment">     * No attempt is made to ensure notification order if multiple calls are made to this method before</em>
-<a class="jxr_linenumber" name="639" href="#639">639</a> <em class="jxr_javadoccomment">     * the original invocation completes.</em>
-<a class="jxr_linenumber" name="640" href="#640">640</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="641" href="#641">641</a> <em class="jxr_javadoccomment">     * This will do an iteration over all listeners to get all of type {@link GenericProgressiveFutureListener}s.</em>
-<a class="jxr_linenumber" name="642" href="#642">642</a> <em class="jxr_javadoccomment">     * @param progress the new progress.</em>
-<a class="jxr_linenumber" name="643" href="#643">643</a> <em class="jxr_javadoccomment">     * @param total the total progress.</em>
-<a class="jxr_linenumber" name="644" href="#644">644</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="645" href="#645">645</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="646" href="#646">646</a>     <strong class="jxr_keyword">void</strong> notifyProgressiveListeners(<strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> progress, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> total) {
-<a class="jxr_linenumber" name="647" href="#647">647</a>         <strong class="jxr_keyword">final</strong> Object listeners = progressiveListeners();
-<a class="jxr_linenumber" name="648" href="#648">648</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="649" href="#649">649</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="650" href="#650">650</a>         }
-<a class="jxr_linenumber" name="651" href="#651">651</a> 
-<a class="jxr_linenumber" name="652" href="#652">652</a>         <strong class="jxr_keyword">final</strong> ProgressiveFuture&lt;V&gt; self = (ProgressiveFuture&lt;V&gt;) <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="653" href="#653">653</a> 
-<a class="jxr_linenumber" name="654" href="#654">654</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor = executor();
-<a class="jxr_linenumber" name="655" href="#655">655</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
-<a class="jxr_linenumber" name="656" href="#656">656</a>             <strong class="jxr_keyword">if</strong> (listeners instanceof GenericProgressiveFutureListener[]) {
-<a class="jxr_linenumber" name="657" href="#657">657</a>                 notifyProgressiveListeners0(
-<a class="jxr_linenumber" name="658" href="#658">658</a>                         self, (GenericProgressiveFutureListener&lt;?&gt;[]) listeners, progress, total);
-<a class="jxr_linenumber" name="659" href="#659">659</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="660" href="#660">660</a>                 notifyProgressiveListener0(
-<a class="jxr_linenumber" name="661" href="#661">661</a>                         self, (GenericProgressiveFutureListener&lt;ProgressiveFuture&lt;V&gt;&gt;) listeners, progress, total);
-<a class="jxr_linenumber" name="662" href="#662">662</a>             }
-<a class="jxr_linenumber" name="663" href="#663">663</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="664" href="#664">664</a>             <strong class="jxr_keyword">if</strong> (listeners instanceof GenericProgressiveFutureListener[]) {
-<a class="jxr_linenumber" name="665" href="#665">665</a>                 <strong class="jxr_keyword">final</strong> GenericProgressiveFutureListener&lt;?&gt;[] array =
-<a class="jxr_linenumber" name="666" href="#666">666</a>                         (GenericProgressiveFutureListener&lt;?&gt;[]) listeners;
-<a class="jxr_linenumber" name="667" href="#667">667</a>                 safeExecute(executor, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
-<a class="jxr_linenumber" name="668" href="#668">668</a>                     @Override
-<a class="jxr_linenumber" name="669" href="#669">669</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="670" href="#670">670</a>                         notifyProgressiveListeners0(self, array, progress, total);
-<a class="jxr_linenumber" name="671" href="#671">671</a>                     }
-<a class="jxr_linenumber" name="672" href="#672">672</a>                 });
-<a class="jxr_linenumber" name="673" href="#673">673</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="674" href="#674">674</a>                 <strong class="jxr_keyword">final</strong> GenericProgressiveFutureListener&lt;ProgressiveFuture&lt;V&gt;&gt; l =
-<a class="jxr_linenumber" name="675" href="#675">675</a>                         (GenericProgressiveFutureListener&lt;ProgressiveFuture&lt;V&gt;&gt;) listeners;
-<a class="jxr_linenumber" name="676" href="#676">676</a>                 safeExecute(executor, <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/internal/OneTimeTask.html">OneTimeTask</a>() {
-<a class="jxr_linenumber" name="677" href="#677">677</a>                     @Override
-<a class="jxr_linenumber" name="678" href="#678">678</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="679" href="#679">679</a>                         notifyProgressiveListener0(self, l, progress, total);
-<a class="jxr_linenumber" name="680" href="#680">680</a>                     }
-<a class="jxr_linenumber" name="681" href="#681">681</a>                 });
-<a class="jxr_linenumber" name="682" href="#682">682</a>             }
-<a class="jxr_linenumber" name="683" href="#683">683</a>         }
-<a class="jxr_linenumber" name="684" href="#684">684</a>     }
-<a class="jxr_linenumber" name="685" href="#685">685</a> 
-<a class="jxr_linenumber" name="686" href="#686">686</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="687" href="#687">687</a> <em class="jxr_javadoccomment">     * Returns a {@link GenericProgressiveFutureListener}, an array of {@link GenericProgressiveFutureListener}, or</em>
-<a class="jxr_linenumber" name="688" href="#688">688</a> <em class="jxr_javadoccomment">     * {@code null}.</em>
-<a class="jxr_linenumber" name="689" href="#689">689</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="690" href="#690">690</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">synchronized</strong> Object progressiveListeners() {
-<a class="jxr_linenumber" name="691" href="#691">691</a>         Object listeners = <strong class="jxr_keyword">this</strong>.listeners;
-<a class="jxr_linenumber" name="692" href="#692">692</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="693" href="#693">693</a>             <em class="jxr_comment">// No listeners added</em>
-<a class="jxr_linenumber" name="694" href="#694">694</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="695" href="#695">695</a>         }
-<a class="jxr_linenumber" name="696" href="#696">696</a> 
-<a class="jxr_linenumber" name="697" href="#697">697</a>         <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
-<a class="jxr_linenumber" name="698" href="#698">698</a>             <em class="jxr_comment">// Copy DefaultFutureListeners into an array of listeners.</em>
-<a class="jxr_linenumber" name="699" href="#699">699</a>             <a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a> dfl = (DefaultFutureListeners) listeners;
-<a class="jxr_linenumber" name="700" href="#700">700</a>             <strong class="jxr_keyword">int</strong> progressiveSize = dfl.progressiveSize();
-<a class="jxr_linenumber" name="701" href="#701">701</a>             <strong class="jxr_keyword">switch</strong> (progressiveSize) {
-<a class="jxr_linenumber" name="702" href="#702">702</a>                 <strong class="jxr_keyword">case</strong> 0:
-<a class="jxr_linenumber" name="703" href="#703">703</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="704" href="#704">704</a>                 <strong class="jxr_keyword">case</strong> 1:
-<a class="jxr_linenumber" name="705" href="#705">705</a>                     <strong class="jxr_keyword">for</strong> (GenericFutureListener&lt;?&gt; l: dfl.listeners()) {
-<a class="jxr_linenumber" name="706" href="#706">706</a>                         <strong class="jxr_keyword">if</strong> (l instanceof GenericProgressiveFutureListener) {
-<a class="jxr_linenumber" name="707" href="#707">707</a>                             <strong class="jxr_keyword">return</strong> l;
-<a class="jxr_linenumber" name="708" href="#708">708</a>                         }
-<a class="jxr_linenumber" name="709" href="#709">709</a>                     }
-<a class="jxr_linenumber" name="710" href="#710">710</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="711" href="#711">711</a>             }
-<a class="jxr_linenumber" name="712" href="#712">712</a> 
-<a class="jxr_linenumber" name="713" href="#713">713</a>             GenericFutureListener&lt;?&gt;[] array = dfl.listeners();
-<a class="jxr_linenumber" name="714" href="#714">714</a>             GenericProgressiveFutureListener&lt;?&gt;[] copy = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/GenericProgressiveFutureListener.html">GenericProgressiveFutureListener</a>[progressiveSize];
-<a class="jxr_linenumber" name="715" href="#715">715</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0, j = 0; j &lt; progressiveSize; i ++) {
-<a class="jxr_linenumber" name="716" href="#716">716</a>                 GenericFutureListener&lt;?&gt; l = array[i];
-<a class="jxr_linenumber" name="717" href="#717">717</a>                 <strong class="jxr_keyword">if</strong> (l instanceof GenericProgressiveFutureListener) {
-<a class="jxr_linenumber" name="718" href="#718">718</a>                     copy[j ++] = (GenericProgressiveFutureListener&lt;?&gt;) l;
-<a class="jxr_linenumber" name="719" href="#719">719</a>                 }
-<a class="jxr_linenumber" name="720" href="#720">720</a>             }
-<a class="jxr_linenumber" name="721" href="#721">721</a> 
-<a class="jxr_linenumber" name="722" href="#722">722</a>             <strong class="jxr_keyword">return</strong> copy;
-<a class="jxr_linenumber" name="723" href="#723">723</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (listeners instanceof GenericProgressiveFutureListener) {
-<a class="jxr_linenumber" name="724" href="#724">724</a>             <strong class="jxr_keyword">return</strong> listeners;
-<a class="jxr_linenumber" name="725" href="#725">725</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="726" href="#726">726</a>             <em class="jxr_comment">// Only one listener was added and it's not a progressive listener.</em>
-<a class="jxr_linenumber" name="727" href="#727">727</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="728" href="#728">728</a>         }
-<a class="jxr_linenumber" name="729" href="#729">729</a>     }
-<a class="jxr_linenumber" name="730" href="#730">730</a> 
-<a class="jxr_linenumber" name="731" href="#731">731</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyProgressiveListeners0(
-<a class="jxr_linenumber" name="732" href="#732">732</a>             ProgressiveFuture&lt;?&gt; future, GenericProgressiveFutureListener&lt;?&gt;[] listeners, <strong class="jxr_keyword">long</strong> progress, <strong class="jxr_keyword">long</strong> total) {
-<a class="jxr_linenumber" name="733" href="#733">733</a>         <strong class="jxr_keyword">for</strong> (GenericProgressiveFutureListener&lt;?&gt; l: listeners) {
-<a class="jxr_linenumber" name="734" href="#734">734</a>             <strong class="jxr_keyword">if</strong> (l == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="735" href="#735">735</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="736" href="#736">736</a>             }
-<a class="jxr_linenumber" name="737" href="#737">737</a>             notifyProgressiveListener0(future, l, progress, total);
-<a class="jxr_linenumber" name="738" href="#738">738</a>         }
-<a class="jxr_linenumber" name="739" href="#739">739</a>     }
-<a class="jxr_linenumber" name="740" href="#740">740</a> 
-<a class="jxr_linenumber" name="741" href="#741">741</a>     @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
-<a class="jxr_linenumber" name="742" href="#742">742</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyProgressiveListener0(
-<a class="jxr_linenumber" name="743" href="#743">743</a>             <a href="../../../../io/netty/util/concurrent/ProgressiveFuture.html">ProgressiveFuture</a> future, <a href="../../../../io/netty/util/concurrent/GenericProgressiveFutureListener.html">GenericProgressiveFutureListener</a> l, <strong class="jxr_keyword">long</strong> progress, <strong class="jxr_keyword">long</strong> total) {
-<a class="jxr_linenumber" name="744" href="#744">744</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="745" href="#745">745</a>             l.operationProgressed(future, progress, total);
-<a class="jxr_linenumber" name="746" href="#746">746</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="747" href="#747">747</a>             logger.warn(<span class="jxr_string">"An exception was thrown by {}.operationProgressed()"</span>, l.getClass().getName(), t);
-<a class="jxr_linenumber" name="748" href="#748">748</a>         }
-<a class="jxr_linenumber" name="749" href="#749">749</a>     }
-<a class="jxr_linenumber" name="750" href="#750">750</a> 
-<a class="jxr_linenumber" name="751" href="#751">751</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isCancelled0(Object result) {
-<a class="jxr_linenumber" name="752" href="#752">752</a>         <strong class="jxr_keyword">return</strong> result instanceof <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a> &amp;&amp; ((CauseHolder) result).cause instanceof CancellationException;
+<a class="jxr_linenumber" name="632" href="#632">632</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="633" href="#633">633</a>             <strong class="jxr_keyword">if</strong> (interrupted) {
+<a class="jxr_linenumber" name="634" href="#634">634</a>                 Thread.currentThread().interrupt();
+<a class="jxr_linenumber" name="635" href="#635">635</a>             }
+<a class="jxr_linenumber" name="636" href="#636">636</a>         }
+<a class="jxr_linenumber" name="637" href="#637">637</a>     }
+<a class="jxr_linenumber" name="638" href="#638">638</a> 
+<a class="jxr_linenumber" name="639" href="#639">639</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="640" href="#640">640</a> <em class="jxr_javadoccomment">     * Notify all progressive listeners.</em>
+<a class="jxr_linenumber" name="641" href="#641">641</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="642" href="#642">642</a> <em class="jxr_javadoccomment">     * No attempt is made to ensure notification order if multiple calls are made to this method before</em>
+<a class="jxr_linenumber" name="643" href="#643">643</a> <em class="jxr_javadoccomment">     * the original invocation completes.</em>
+<a class="jxr_linenumber" name="644" href="#644">644</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="645" href="#645">645</a> <em class="jxr_javadoccomment">     * This will do an iteration over all listeners to get all of type {@link GenericProgressiveFutureListener}s.</em>
+<a class="jxr_linenumber" name="646" href="#646">646</a> <em class="jxr_javadoccomment">     * @param progress the new progress.</em>
+<a class="jxr_linenumber" name="647" href="#647">647</a> <em class="jxr_javadoccomment">     * @param total the total progress.</em>
+<a class="jxr_linenumber" name="648" href="#648">648</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="649" href="#649">649</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="650" href="#650">650</a>     <strong class="jxr_keyword">void</strong> notifyProgressiveListeners(<strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> progress, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> total) {
+<a class="jxr_linenumber" name="651" href="#651">651</a>         <strong class="jxr_keyword">final</strong> Object listeners = progressiveListeners();
+<a class="jxr_linenumber" name="652" href="#652">652</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="653" href="#653">653</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="654" href="#654">654</a>         }
+<a class="jxr_linenumber" name="655" href="#655">655</a> 
+<a class="jxr_linenumber" name="656" href="#656">656</a>         <strong class="jxr_keyword">final</strong> ProgressiveFuture&lt;V&gt; self = (ProgressiveFuture&lt;V&gt;) <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="657" href="#657">657</a> 
+<a class="jxr_linenumber" name="658" href="#658">658</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor = executor();
+<a class="jxr_linenumber" name="659" href="#659">659</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
+<a class="jxr_linenumber" name="660" href="#660">660</a>             <strong class="jxr_keyword">if</strong> (listeners instanceof GenericProgressiveFutureListener[]) {
+<a class="jxr_linenumber" name="661" href="#661">661</a>                 notifyProgressiveListeners0(
+<a class="jxr_linenumber" name="662" href="#662">662</a>                         self, (GenericProgressiveFutureListener&lt;?&gt;[]) listeners, progress, total);
+<a class="jxr_linenumber" name="663" href="#663">663</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="664" href="#664">664</a>                 notifyProgressiveListener0(
+<a class="jxr_linenumber" name="665" href="#665">665</a>                         self, (GenericProgressiveFutureListener&lt;ProgressiveFuture&lt;V&gt;&gt;) listeners, progress, total);
+<a class="jxr_linenumber" name="666" href="#666">666</a>             }
+<a class="jxr_linenumber" name="667" href="#667">667</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="668" href="#668">668</a>             <strong class="jxr_keyword">if</strong> (listeners instanceof GenericProgressiveFutureListener[]) {
+<a class="jxr_linenumber" name="669" href="#669">669</a>                 <strong class="jxr_keyword">final</strong> GenericProgressiveFutureListener&lt;?&gt;[] array =
+<a class="jxr_linenumber" name="670" href="#670">670</a>                         (GenericProgressiveFutureListener&lt;?&gt;[]) listeners;
+<a class="jxr_linenumber" name="671" href="#671">671</a>                 safeExecute(executor, <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="672" href="#672">672</a>                     @Override
+<a class="jxr_linenumber" name="673" href="#673">673</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="674" href="#674">674</a>                         notifyProgressiveListeners0(self, array, progress, total);
+<a class="jxr_linenumber" name="675" href="#675">675</a>                     }
+<a class="jxr_linenumber" name="676" href="#676">676</a>                 });
+<a class="jxr_linenumber" name="677" href="#677">677</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="678" href="#678">678</a>                 <strong class="jxr_keyword">final</strong> GenericProgressiveFutureListener&lt;ProgressiveFuture&lt;V&gt;&gt; l =
+<a class="jxr_linenumber" name="679" href="#679">679</a>                         (GenericProgressiveFutureListener&lt;ProgressiveFuture&lt;V&gt;&gt;) listeners;
+<a class="jxr_linenumber" name="680" href="#680">680</a>                 safeExecute(executor, <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="681" href="#681">681</a>                     @Override
+<a class="jxr_linenumber" name="682" href="#682">682</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="683" href="#683">683</a>                         notifyProgressiveListener0(self, l, progress, total);
+<a class="jxr_linenumber" name="684" href="#684">684</a>                     }
+<a class="jxr_linenumber" name="685" href="#685">685</a>                 });
+<a class="jxr_linenumber" name="686" href="#686">686</a>             }
+<a class="jxr_linenumber" name="687" href="#687">687</a>         }
+<a class="jxr_linenumber" name="688" href="#688">688</a>     }
+<a class="jxr_linenumber" name="689" href="#689">689</a> 
+<a class="jxr_linenumber" name="690" href="#690">690</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="691" href="#691">691</a> <em class="jxr_javadoccomment">     * Returns a {@link GenericProgressiveFutureListener}, an array of {@link GenericProgressiveFutureListener}, or</em>
+<a class="jxr_linenumber" name="692" href="#692">692</a> <em class="jxr_javadoccomment">     * {@code null}.</em>
+<a class="jxr_linenumber" name="693" href="#693">693</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="694" href="#694">694</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">synchronized</strong> Object progressiveListeners() {
+<a class="jxr_linenumber" name="695" href="#695">695</a>         Object listeners = <strong class="jxr_keyword">this</strong>.listeners;
+<a class="jxr_linenumber" name="696" href="#696">696</a>         <strong class="jxr_keyword">if</strong> (listeners == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="697" href="#697">697</a>             <em class="jxr_comment">// No listeners added</em>
+<a class="jxr_linenumber" name="698" href="#698">698</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="699" href="#699">699</a>         }
+<a class="jxr_linenumber" name="700" href="#700">700</a> 
+<a class="jxr_linenumber" name="701" href="#701">701</a>         <strong class="jxr_keyword">if</strong> (listeners instanceof DefaultFutureListeners) {
+<a class="jxr_linenumber" name="702" href="#702">702</a>             <em class="jxr_comment">// Copy DefaultFutureListeners into an array of listeners.</em>
+<a class="jxr_linenumber" name="703" href="#703">703</a>             <a href="../../../../io/netty/util/concurrent/DefaultFutureListeners.html">DefaultFutureListeners</a> dfl = (DefaultFutureListeners) listeners;
+<a class="jxr_linenumber" name="704" href="#704">704</a>             <strong class="jxr_keyword">int</strong> progressiveSize = dfl.progressiveSize();
+<a class="jxr_linenumber" name="705" href="#705">705</a>             <strong class="jxr_keyword">switch</strong> (progressiveSize) {
+<a class="jxr_linenumber" name="706" href="#706">706</a>                 <strong class="jxr_keyword">case</strong> 0:
+<a class="jxr_linenumber" name="707" href="#707">707</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="708" href="#708">708</a>                 <strong class="jxr_keyword">case</strong> 1:
+<a class="jxr_linenumber" name="709" href="#709">709</a>                     <strong class="jxr_keyword">for</strong> (GenericFutureListener&lt;?&gt; l: dfl.listeners()) {
+<a class="jxr_linenumber" name="710" href="#710">710</a>                         <strong class="jxr_keyword">if</strong> (l instanceof GenericProgressiveFutureListener) {
+<a class="jxr_linenumber" name="711" href="#711">711</a>                             <strong class="jxr_keyword">return</strong> l;
+<a class="jxr_linenumber" name="712" href="#712">712</a>                         }
+<a class="jxr_linenumber" name="713" href="#713">713</a>                     }
+<a class="jxr_linenumber" name="714" href="#714">714</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="715" href="#715">715</a>             }
+<a class="jxr_linenumber" name="716" href="#716">716</a> 
+<a class="jxr_linenumber" name="717" href="#717">717</a>             GenericFutureListener&lt;?&gt;[] array = dfl.listeners();
+<a class="jxr_linenumber" name="718" href="#718">718</a>             GenericProgressiveFutureListener&lt;?&gt;[] copy = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/util/concurrent/GenericProgressiveFutureListener.html">GenericProgressiveFutureListener</a>[progressiveSize];
+<a class="jxr_linenumber" name="719" href="#719">719</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0, j = 0; j &lt; progressiveSize; i ++) {
+<a class="jxr_linenumber" name="720" href="#720">720</a>                 GenericFutureListener&lt;?&gt; l = array[i];
+<a class="jxr_linenumber" name="721" href="#721">721</a>                 <strong class="jxr_keyword">if</strong> (l instanceof GenericProgressiveFutureListener) {
+<a class="jxr_linenumber" name="722" href="#722">722</a>                     copy[j ++] = (GenericProgressiveFutureListener&lt;?&gt;) l;
+<a class="jxr_linenumber" name="723" href="#723">723</a>                 }
+<a class="jxr_linenumber" name="724" href="#724">724</a>             }
+<a class="jxr_linenumber" name="725" href="#725">725</a> 
+<a class="jxr_linenumber" name="726" href="#726">726</a>             <strong class="jxr_keyword">return</strong> copy;
+<a class="jxr_linenumber" name="727" href="#727">727</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (listeners instanceof GenericProgressiveFutureListener) {
+<a class="jxr_linenumber" name="728" href="#728">728</a>             <strong class="jxr_keyword">return</strong> listeners;
+<a class="jxr_linenumber" name="729" href="#729">729</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="730" href="#730">730</a>             <em class="jxr_comment">// Only one listener was added and it's not a progressive listener.</em>
+<a class="jxr_linenumber" name="731" href="#731">731</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="732" href="#732">732</a>         }
+<a class="jxr_linenumber" name="733" href="#733">733</a>     }
+<a class="jxr_linenumber" name="734" href="#734">734</a> 
+<a class="jxr_linenumber" name="735" href="#735">735</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyProgressiveListeners0(
+<a class="jxr_linenumber" name="736" href="#736">736</a>             ProgressiveFuture&lt;?&gt; future, GenericProgressiveFutureListener&lt;?&gt;[] listeners, <strong class="jxr_keyword">long</strong> progress, <strong class="jxr_keyword">long</strong> total) {
+<a class="jxr_linenumber" name="737" href="#737">737</a>         <strong class="jxr_keyword">for</strong> (GenericProgressiveFutureListener&lt;?&gt; l: listeners) {
+<a class="jxr_linenumber" name="738" href="#738">738</a>             <strong class="jxr_keyword">if</strong> (l == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="739" href="#739">739</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="740" href="#740">740</a>             }
+<a class="jxr_linenumber" name="741" href="#741">741</a>             notifyProgressiveListener0(future, l, progress, total);
+<a class="jxr_linenumber" name="742" href="#742">742</a>         }
+<a class="jxr_linenumber" name="743" href="#743">743</a>     }
+<a class="jxr_linenumber" name="744" href="#744">744</a> 
+<a class="jxr_linenumber" name="745" href="#745">745</a>     @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
+<a class="jxr_linenumber" name="746" href="#746">746</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> notifyProgressiveListener0(
+<a class="jxr_linenumber" name="747" href="#747">747</a>             <a href="../../../../io/netty/util/concurrent/ProgressiveFuture.html">ProgressiveFuture</a> future, <a href="../../../../io/netty/util/concurrent/GenericProgressiveFutureListener.html">GenericProgressiveFutureListener</a> l, <strong class="jxr_keyword">long</strong> progress, <strong class="jxr_keyword">long</strong> total) {
+<a class="jxr_linenumber" name="748" href="#748">748</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="749" href="#749">749</a>             l.operationProgressed(future, progress, total);
+<a class="jxr_linenumber" name="750" href="#750">750</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="751" href="#751">751</a>             logger.warn(<span class="jxr_string">"An exception was thrown by {}.operationProgressed()"</span>, l.getClass().getName(), t);
+<a class="jxr_linenumber" name="752" href="#752">752</a>         }
 <a class="jxr_linenumber" name="753" href="#753">753</a>     }
 <a class="jxr_linenumber" name="754" href="#754">754</a> 
-<a class="jxr_linenumber" name="755" href="#755">755</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isDone0(Object result) {
-<a class="jxr_linenumber" name="756" href="#756">756</a>         <strong class="jxr_keyword">return</strong> result != <strong class="jxr_keyword">null</strong> &amp;&amp; result != UNCANCELLABLE;
+<a class="jxr_linenumber" name="755" href="#755">755</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isCancelled0(Object result) {
+<a class="jxr_linenumber" name="756" href="#756">756</a>         <strong class="jxr_keyword">return</strong> result instanceof <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a> &amp;&amp; ((CauseHolder) result).cause instanceof CancellationException;
 <a class="jxr_linenumber" name="757" href="#757">757</a>     }
 <a class="jxr_linenumber" name="758" href="#758">758</a> 
-<a class="jxr_linenumber" name="759" href="#759">759</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a> {
-<a class="jxr_linenumber" name="760" href="#760">760</a>         <strong class="jxr_keyword">final</strong> Throwable cause;
-<a class="jxr_linenumber" name="761" href="#761">761</a>         <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>(Throwable cause) {
-<a class="jxr_linenumber" name="762" href="#762">762</a>             <strong class="jxr_keyword">this</strong>.cause = cause;
-<a class="jxr_linenumber" name="763" href="#763">763</a>         }
-<a class="jxr_linenumber" name="764" href="#764">764</a>     }
-<a class="jxr_linenumber" name="765" href="#765">765</a> 
-<a class="jxr_linenumber" name="766" href="#766">766</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> safeExecute(<a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor, Runnable task) {
-<a class="jxr_linenumber" name="767" href="#767">767</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="768" href="#768">768</a>             executor.execute(task);
-<a class="jxr_linenumber" name="769" href="#769">769</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="770" href="#770">770</a>             rejectedExecutionLogger.error(<span class="jxr_string">"Failed to submit a listener notification task. Event loop shut down?"</span>, t);
-<a class="jxr_linenumber" name="771" href="#771">771</a>         }
-<a class="jxr_linenumber" name="772" href="#772">772</a>     }
-<a class="jxr_linenumber" name="773" href="#773">773</a> }
+<a class="jxr_linenumber" name="759" href="#759">759</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isDone0(Object result) {
+<a class="jxr_linenumber" name="760" href="#760">760</a>         <strong class="jxr_keyword">return</strong> result != <strong class="jxr_keyword">null</strong> &amp;&amp; result != UNCANCELLABLE;
+<a class="jxr_linenumber" name="761" href="#761">761</a>     }
+<a class="jxr_linenumber" name="762" href="#762">762</a> 
+<a class="jxr_linenumber" name="763" href="#763">763</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a> {
+<a class="jxr_linenumber" name="764" href="#764">764</a>         <strong class="jxr_keyword">final</strong> Throwable cause;
+<a class="jxr_linenumber" name="765" href="#765">765</a>         <a href="../../../../io/netty/util/concurrent/DefaultPromise.html">CauseHolder</a>(Throwable cause) {
+<a class="jxr_linenumber" name="766" href="#766">766</a>             <strong class="jxr_keyword">this</strong>.cause = cause;
+<a class="jxr_linenumber" name="767" href="#767">767</a>         }
+<a class="jxr_linenumber" name="768" href="#768">768</a>     }
+<a class="jxr_linenumber" name="769" href="#769">769</a> 
+<a class="jxr_linenumber" name="770" href="#770">770</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> safeExecute(<a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor, Runnable task) {
+<a class="jxr_linenumber" name="771" href="#771">771</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="772" href="#772">772</a>             executor.execute(task);
+<a class="jxr_linenumber" name="773" href="#773">773</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="774" href="#774">774</a>             rejectedExecutionLogger.error(<span class="jxr_string">"Failed to submit a listener notification task. Event loop shut down?"</span>, t);
+<a class="jxr_linenumber" name="775" href="#775">775</a>         }
+<a class="jxr_linenumber" name="776" href="#776">776</a>     }
+<a class="jxr_linenumber" name="777" href="#777">777</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
