@@ -3,7 +3,7 @@ cd "`dirname "$0"`/.."
 find wiki '(' -type f -and -not -name 'index.html.haml' ')' -delete
 
 echo 'Retrieving the wiki page list ..'
-curl -s https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
+wget -q -O - https://github.com/netty/netty/wiki/_pages | grep -E '<a href="/netty/netty/wiki(/[A-Z][-\._A-Za-z0-9]+)?">[^<]+</a>' > 'wiki/_pages'
 
 PAGE_CNT=`cat wiki/_pages | wc -l | sed -e 's/ //g'`
 
@@ -47,7 +47,7 @@ cat 'wiki/_pages' | while read -r LINE; do
       echo "require 'nokogiri'"
       echo "require 'htmlentities'"
       echo "@doc = Nokogiri::HTML::DocumentFragment.parse <<-'EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'"
-      curl -s "https://github.com$WIKI_URI" || exit 1
+      wget -q -O - "https://github.com$WIKI_URI" || exit 1
       echo
       echo 'EOF_92ca82985abd11f6a579fe9b19b578020e0d454d'
 
