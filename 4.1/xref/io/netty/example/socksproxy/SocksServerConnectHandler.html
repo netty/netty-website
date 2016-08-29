@@ -112,54 +112,57 @@
 <a class="jxr_linenumber" name="102" href="#102">102</a>                             <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
 <a class="jxr_linenumber" name="103" href="#103">103</a>                                 <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> responseFuture =
 <a class="jxr_linenumber" name="104" href="#104">104</a>                                         ctx.channel().writeAndFlush(<strong class="jxr_keyword">new</strong> DefaultSocks5CommandResponse(
-<a class="jxr_linenumber" name="105" href="#105">105</a>                                                 Socks5CommandStatus.SUCCESS, request.dstAddrType()));
-<a class="jxr_linenumber" name="106" href="#106">106</a> 
-<a class="jxr_linenumber" name="107" href="#107">107</a>                                 responseFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="108" href="#108">108</a>                                     @Override
-<a class="jxr_linenumber" name="109" href="#109">109</a>                                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> channelFuture) {
-<a class="jxr_linenumber" name="110" href="#110">110</a>                                         ctx.pipeline().remove(SocksServerConnectHandler.<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="111" href="#111">111</a>                                         outboundChannel.pipeline().addLast(<strong class="jxr_keyword">new</strong> RelayHandler(ctx.channel()));
-<a class="jxr_linenumber" name="112" href="#112">112</a>                                         ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> RelayHandler(outboundChannel));
-<a class="jxr_linenumber" name="113" href="#113">113</a>                                     }
-<a class="jxr_linenumber" name="114" href="#114">114</a>                                 });
-<a class="jxr_linenumber" name="115" href="#115">115</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="116" href="#116">116</a>                                 ctx.channel().writeAndFlush(<strong class="jxr_keyword">new</strong> DefaultSocks5CommandResponse(
-<a class="jxr_linenumber" name="117" href="#117">117</a>                                         Socks5CommandStatus.FAILURE, request.dstAddrType()));
-<a class="jxr_linenumber" name="118" href="#118">118</a>                                 SocksServerUtils.closeOnFlush(ctx.channel());
-<a class="jxr_linenumber" name="119" href="#119">119</a>                             }
-<a class="jxr_linenumber" name="120" href="#120">120</a>                         }
-<a class="jxr_linenumber" name="121" href="#121">121</a>                     });
-<a class="jxr_linenumber" name="122" href="#122">122</a> 
-<a class="jxr_linenumber" name="123" href="#123">123</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/Channel.html">Channel</a> inboundChannel = ctx.channel();
-<a class="jxr_linenumber" name="124" href="#124">124</a>             b.group(inboundChannel.eventLoop())
-<a class="jxr_linenumber" name="125" href="#125">125</a>                     .channel(NioSocketChannel.<strong class="jxr_keyword">class</strong>)
-<a class="jxr_linenumber" name="126" href="#126">126</a>                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-<a class="jxr_linenumber" name="127" href="#127">127</a>                     .option(ChannelOption.SO_KEEPALIVE, <strong class="jxr_keyword">true</strong>)
-<a class="jxr_linenumber" name="128" href="#128">128</a>                     .handler(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/example/socksproxy/DirectClientHandler.html">DirectClientHandler</a>(promise));
-<a class="jxr_linenumber" name="129" href="#129">129</a> 
-<a class="jxr_linenumber" name="130" href="#130">130</a>             b.connect(request.dstAddr(), request.dstPort()).addListener(<strong class="jxr_keyword">new</strong> ChannelFutureListener() {
-<a class="jxr_linenumber" name="131" href="#131">131</a>                 @Override
-<a class="jxr_linenumber" name="132" href="#132">132</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="133" href="#133">133</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
-<a class="jxr_linenumber" name="134" href="#134">134</a>                         <em class="jxr_comment">// Connection established use handler provided results</em>
-<a class="jxr_linenumber" name="135" href="#135">135</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="136" href="#136">136</a>                         <em class="jxr_comment">// Close the connection if the connection attempt has failed.</em>
-<a class="jxr_linenumber" name="137" href="#137">137</a>                         ctx.channel().writeAndFlush(
-<a class="jxr_linenumber" name="138" href="#138">138</a>                                 <strong class="jxr_keyword">new</strong> DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, request.dstAddrType()));
-<a class="jxr_linenumber" name="139" href="#139">139</a>                         SocksServerUtils.closeOnFlush(ctx.channel());
-<a class="jxr_linenumber" name="140" href="#140">140</a>                     }
-<a class="jxr_linenumber" name="141" href="#141">141</a>                 }
-<a class="jxr_linenumber" name="142" href="#142">142</a>             });
-<a class="jxr_linenumber" name="143" href="#143">143</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="144" href="#144">144</a>             ctx.close();
-<a class="jxr_linenumber" name="145" href="#145">145</a>         }
-<a class="jxr_linenumber" name="146" href="#146">146</a>     }
-<a class="jxr_linenumber" name="147" href="#147">147</a> 
-<a class="jxr_linenumber" name="148" href="#148">148</a>     @Override
-<a class="jxr_linenumber" name="149" href="#149">149</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="150" href="#150">150</a>         SocksServerUtils.closeOnFlush(ctx.channel());
-<a class="jxr_linenumber" name="151" href="#151">151</a>     }
-<a class="jxr_linenumber" name="152" href="#152">152</a> }
+<a class="jxr_linenumber" name="105" href="#105">105</a>                                                 Socks5CommandStatus.SUCCESS,
+<a class="jxr_linenumber" name="106" href="#106">106</a>                                                 request.dstAddrType(),
+<a class="jxr_linenumber" name="107" href="#107">107</a>                                                 request.dstAddr(),
+<a class="jxr_linenumber" name="108" href="#108">108</a>                                                 request.dstPort()));
+<a class="jxr_linenumber" name="109" href="#109">109</a> 
+<a class="jxr_linenumber" name="110" href="#110">110</a>                                 responseFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="111" href="#111">111</a>                                     @Override
+<a class="jxr_linenumber" name="112" href="#112">112</a>                                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> channelFuture) {
+<a class="jxr_linenumber" name="113" href="#113">113</a>                                         ctx.pipeline().remove(SocksServerConnectHandler.<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="114" href="#114">114</a>                                         outboundChannel.pipeline().addLast(<strong class="jxr_keyword">new</strong> RelayHandler(ctx.channel()));
+<a class="jxr_linenumber" name="115" href="#115">115</a>                                         ctx.pipeline().addLast(<strong class="jxr_keyword">new</strong> RelayHandler(outboundChannel));
+<a class="jxr_linenumber" name="116" href="#116">116</a>                                     }
+<a class="jxr_linenumber" name="117" href="#117">117</a>                                 });
+<a class="jxr_linenumber" name="118" href="#118">118</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="119" href="#119">119</a>                                 ctx.channel().writeAndFlush(<strong class="jxr_keyword">new</strong> DefaultSocks5CommandResponse(
+<a class="jxr_linenumber" name="120" href="#120">120</a>                                         Socks5CommandStatus.FAILURE, request.dstAddrType()));
+<a class="jxr_linenumber" name="121" href="#121">121</a>                                 SocksServerUtils.closeOnFlush(ctx.channel());
+<a class="jxr_linenumber" name="122" href="#122">122</a>                             }
+<a class="jxr_linenumber" name="123" href="#123">123</a>                         }
+<a class="jxr_linenumber" name="124" href="#124">124</a>                     });
+<a class="jxr_linenumber" name="125" href="#125">125</a> 
+<a class="jxr_linenumber" name="126" href="#126">126</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/Channel.html">Channel</a> inboundChannel = ctx.channel();
+<a class="jxr_linenumber" name="127" href="#127">127</a>             b.group(inboundChannel.eventLoop())
+<a class="jxr_linenumber" name="128" href="#128">128</a>                     .channel(NioSocketChannel.<strong class="jxr_keyword">class</strong>)
+<a class="jxr_linenumber" name="129" href="#129">129</a>                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+<a class="jxr_linenumber" name="130" href="#130">130</a>                     .option(ChannelOption.SO_KEEPALIVE, <strong class="jxr_keyword">true</strong>)
+<a class="jxr_linenumber" name="131" href="#131">131</a>                     .handler(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/example/socksproxy/DirectClientHandler.html">DirectClientHandler</a>(promise));
+<a class="jxr_linenumber" name="132" href="#132">132</a> 
+<a class="jxr_linenumber" name="133" href="#133">133</a>             b.connect(request.dstAddr(), request.dstPort()).addListener(<strong class="jxr_keyword">new</strong> ChannelFutureListener() {
+<a class="jxr_linenumber" name="134" href="#134">134</a>                 @Override
+<a class="jxr_linenumber" name="135" href="#135">135</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="136" href="#136">136</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
+<a class="jxr_linenumber" name="137" href="#137">137</a>                         <em class="jxr_comment">// Connection established use handler provided results</em>
+<a class="jxr_linenumber" name="138" href="#138">138</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="139" href="#139">139</a>                         <em class="jxr_comment">// Close the connection if the connection attempt has failed.</em>
+<a class="jxr_linenumber" name="140" href="#140">140</a>                         ctx.channel().writeAndFlush(
+<a class="jxr_linenumber" name="141" href="#141">141</a>                                 <strong class="jxr_keyword">new</strong> DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, request.dstAddrType()));
+<a class="jxr_linenumber" name="142" href="#142">142</a>                         SocksServerUtils.closeOnFlush(ctx.channel());
+<a class="jxr_linenumber" name="143" href="#143">143</a>                     }
+<a class="jxr_linenumber" name="144" href="#144">144</a>                 }
+<a class="jxr_linenumber" name="145" href="#145">145</a>             });
+<a class="jxr_linenumber" name="146" href="#146">146</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="147" href="#147">147</a>             ctx.close();
+<a class="jxr_linenumber" name="148" href="#148">148</a>         }
+<a class="jxr_linenumber" name="149" href="#149">149</a>     }
+<a class="jxr_linenumber" name="150" href="#150">150</a> 
+<a class="jxr_linenumber" name="151" href="#151">151</a>     @Override
+<a class="jxr_linenumber" name="152" href="#152">152</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="153" href="#153">153</a>         SocksServerUtils.closeOnFlush(ctx.channel());
+<a class="jxr_linenumber" name="154" href="#154">154</a>     }
+<a class="jxr_linenumber" name="155" href="#155">155</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
