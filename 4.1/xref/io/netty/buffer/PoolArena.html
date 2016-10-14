@@ -627,115 +627,138 @@
 <a class="jxr_linenumber" name="617" href="#617">617</a>         }
 <a class="jxr_linenumber" name="618" href="#618">618</a>     }
 <a class="jxr_linenumber" name="619" href="#619">619</a> 
-<a class="jxr_linenumber" name="620" href="#620">620</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/buffer/PoolArena.html">HeapArena</a> <strong class="jxr_keyword">extends</strong> PoolArena&lt;byte[]&gt; {
-<a class="jxr_linenumber" name="621" href="#621">621</a> 
-<a class="jxr_linenumber" name="622" href="#622">622</a>         <a href="../../../io/netty/buffer/PoolArena.html">HeapArena</a>(<a href="../../../io/netty/buffer/PooledByteBufAllocator.html">PooledByteBufAllocator</a> parent, <strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
-<a class="jxr_linenumber" name="623" href="#623">623</a>             <strong class="jxr_keyword">super</strong>(parent, pageSize, maxOrder, pageShifts, chunkSize);
-<a class="jxr_linenumber" name="624" href="#624">624</a>         }
-<a class="jxr_linenumber" name="625" href="#625">625</a> 
-<a class="jxr_linenumber" name="626" href="#626">626</a>         @Override
-<a class="jxr_linenumber" name="627" href="#627">627</a>         <strong class="jxr_keyword">boolean</strong> isDirect() {
-<a class="jxr_linenumber" name="628" href="#628">628</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="629" href="#629">629</a>         }
+<a class="jxr_linenumber" name="620" href="#620">620</a>     @Override
+<a class="jxr_linenumber" name="621" href="#621">621</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> finalize() <strong class="jxr_keyword">throws</strong> Throwable {
+<a class="jxr_linenumber" name="622" href="#622">622</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="623" href="#623">623</a>             <strong class="jxr_keyword">super</strong>.finalize();
+<a class="jxr_linenumber" name="624" href="#624">624</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="625" href="#625">625</a>             destroyPoolSubPages(smallSubpagePools);
+<a class="jxr_linenumber" name="626" href="#626">626</a>             destroyPoolSubPages(tinySubpagePools);
+<a class="jxr_linenumber" name="627" href="#627">627</a>             destroyPoolChunkLists(qInit, q000, q025, q050, q075, q100);
+<a class="jxr_linenumber" name="628" href="#628">628</a>         }
+<a class="jxr_linenumber" name="629" href="#629">629</a>     }
 <a class="jxr_linenumber" name="630" href="#630">630</a> 
-<a class="jxr_linenumber" name="631" href="#631">631</a>         @Override
-<a class="jxr_linenumber" name="632" href="#632">632</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;byte[]&gt; newChunk(<strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
-<a class="jxr_linenumber" name="633" href="#633">633</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;byte[]&gt;(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> byte[chunkSize], pageSize, maxOrder, pageShifts, chunkSize);
+<a class="jxr_linenumber" name="631" href="#631">631</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> destroyPoolSubPages(PoolSubpage&lt;?&gt;[] pages) {
+<a class="jxr_linenumber" name="632" href="#632">632</a>         <strong class="jxr_keyword">for</strong> (PoolSubpage&lt;?&gt; page : pages) {
+<a class="jxr_linenumber" name="633" href="#633">633</a>             page.destroy();
 <a class="jxr_linenumber" name="634" href="#634">634</a>         }
-<a class="jxr_linenumber" name="635" href="#635">635</a> 
-<a class="jxr_linenumber" name="636" href="#636">636</a>         @Override
-<a class="jxr_linenumber" name="637" href="#637">637</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;byte[]&gt; newUnpooledChunk(<strong class="jxr_keyword">int</strong> capacity) {
-<a class="jxr_linenumber" name="638" href="#638">638</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;byte[]&gt;(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> byte[capacity], capacity);
-<a class="jxr_linenumber" name="639" href="#639">639</a>         }
-<a class="jxr_linenumber" name="640" href="#640">640</a> 
-<a class="jxr_linenumber" name="641" href="#641">641</a>         @Override
-<a class="jxr_linenumber" name="642" href="#642">642</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> destroyChunk(PoolChunk&lt;byte[]&gt; chunk) {
-<a class="jxr_linenumber" name="643" href="#643">643</a>             <em class="jxr_comment">// Rely on GC.</em>
-<a class="jxr_linenumber" name="644" href="#644">644</a>         }
-<a class="jxr_linenumber" name="645" href="#645">645</a> 
-<a class="jxr_linenumber" name="646" href="#646">646</a>         @Override
-<a class="jxr_linenumber" name="647" href="#647">647</a>         <strong class="jxr_keyword">protected</strong> PooledByteBuf&lt;byte[]&gt; newByteBuf(<strong class="jxr_keyword">int</strong> maxCapacity) {
-<a class="jxr_linenumber" name="648" href="#648">648</a>             <strong class="jxr_keyword">return</strong> HAS_UNSAFE ? PooledUnsafeHeapByteBuf.newUnsafeInstance(maxCapacity)
-<a class="jxr_linenumber" name="649" href="#649">649</a>                     : PooledHeapByteBuf.newInstance(maxCapacity);
-<a class="jxr_linenumber" name="650" href="#650">650</a>         }
-<a class="jxr_linenumber" name="651" href="#651">651</a> 
-<a class="jxr_linenumber" name="652" href="#652">652</a>         @Override
-<a class="jxr_linenumber" name="653" href="#653">653</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> memoryCopy(byte[] src, <strong class="jxr_keyword">int</strong> srcOffset, byte[] dst, <strong class="jxr_keyword">int</strong> dstOffset, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="654" href="#654">654</a>             <strong class="jxr_keyword">if</strong> (length == 0) {
-<a class="jxr_linenumber" name="655" href="#655">655</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="656" href="#656">656</a>             }
-<a class="jxr_linenumber" name="657" href="#657">657</a> 
-<a class="jxr_linenumber" name="658" href="#658">658</a>             System.arraycopy(src, srcOffset, dst, dstOffset, length);
-<a class="jxr_linenumber" name="659" href="#659">659</a>         }
-<a class="jxr_linenumber" name="660" href="#660">660</a>     }
-<a class="jxr_linenumber" name="661" href="#661">661</a> 
-<a class="jxr_linenumber" name="662" href="#662">662</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/buffer/PoolArena.html">DirectArena</a> <strong class="jxr_keyword">extends</strong> PoolArena&lt;ByteBuffer&gt; {
+<a class="jxr_linenumber" name="635" href="#635">635</a>     }
+<a class="jxr_linenumber" name="636" href="#636">636</a> 
+<a class="jxr_linenumber" name="637" href="#637">637</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> destroyPoolChunkLists(PoolChunkList&lt;T&gt;... chunkLists) {
+<a class="jxr_linenumber" name="638" href="#638">638</a>         <strong class="jxr_keyword">for</strong> (PoolChunkList&lt;T&gt; chunkList: chunkLists) {
+<a class="jxr_linenumber" name="639" href="#639">639</a>             chunkList.destroy(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="640" href="#640">640</a>         }
+<a class="jxr_linenumber" name="641" href="#641">641</a>     }
+<a class="jxr_linenumber" name="642" href="#642">642</a> 
+<a class="jxr_linenumber" name="643" href="#643">643</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/buffer/PoolArena.html">HeapArena</a> <strong class="jxr_keyword">extends</strong> PoolArena&lt;byte[]&gt; {
+<a class="jxr_linenumber" name="644" href="#644">644</a> 
+<a class="jxr_linenumber" name="645" href="#645">645</a>         <a href="../../../io/netty/buffer/PoolArena.html">HeapArena</a>(<a href="../../../io/netty/buffer/PooledByteBufAllocator.html">PooledByteBufAllocator</a> parent, <strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
+<a class="jxr_linenumber" name="646" href="#646">646</a>             <strong class="jxr_keyword">super</strong>(parent, pageSize, maxOrder, pageShifts, chunkSize);
+<a class="jxr_linenumber" name="647" href="#647">647</a>         }
+<a class="jxr_linenumber" name="648" href="#648">648</a> 
+<a class="jxr_linenumber" name="649" href="#649">649</a>         @Override
+<a class="jxr_linenumber" name="650" href="#650">650</a>         <strong class="jxr_keyword">boolean</strong> isDirect() {
+<a class="jxr_linenumber" name="651" href="#651">651</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="652" href="#652">652</a>         }
+<a class="jxr_linenumber" name="653" href="#653">653</a> 
+<a class="jxr_linenumber" name="654" href="#654">654</a>         @Override
+<a class="jxr_linenumber" name="655" href="#655">655</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;byte[]&gt; newChunk(<strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
+<a class="jxr_linenumber" name="656" href="#656">656</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;byte[]&gt;(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> byte[chunkSize], pageSize, maxOrder, pageShifts, chunkSize);
+<a class="jxr_linenumber" name="657" href="#657">657</a>         }
+<a class="jxr_linenumber" name="658" href="#658">658</a> 
+<a class="jxr_linenumber" name="659" href="#659">659</a>         @Override
+<a class="jxr_linenumber" name="660" href="#660">660</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;byte[]&gt; newUnpooledChunk(<strong class="jxr_keyword">int</strong> capacity) {
+<a class="jxr_linenumber" name="661" href="#661">661</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;byte[]&gt;(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> byte[capacity], capacity);
+<a class="jxr_linenumber" name="662" href="#662">662</a>         }
 <a class="jxr_linenumber" name="663" href="#663">663</a> 
-<a class="jxr_linenumber" name="664" href="#664">664</a>         <a href="../../../io/netty/buffer/PoolArena.html">DirectArena</a>(<a href="../../../io/netty/buffer/PooledByteBufAllocator.html">PooledByteBufAllocator</a> parent, <strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
-<a class="jxr_linenumber" name="665" href="#665">665</a>             <strong class="jxr_keyword">super</strong>(parent, pageSize, maxOrder, pageShifts, chunkSize);
-<a class="jxr_linenumber" name="666" href="#666">666</a>         }
-<a class="jxr_linenumber" name="667" href="#667">667</a> 
-<a class="jxr_linenumber" name="668" href="#668">668</a>         @Override
-<a class="jxr_linenumber" name="669" href="#669">669</a>         <strong class="jxr_keyword">boolean</strong> isDirect() {
-<a class="jxr_linenumber" name="670" href="#670">670</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="671" href="#671">671</a>         }
-<a class="jxr_linenumber" name="672" href="#672">672</a> 
-<a class="jxr_linenumber" name="673" href="#673">673</a>         @Override
-<a class="jxr_linenumber" name="674" href="#674">674</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;ByteBuffer&gt; newChunk(<strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
-<a class="jxr_linenumber" name="675" href="#675">675</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;ByteBuffer&gt;(
-<a class="jxr_linenumber" name="676" href="#676">676</a>                     <strong class="jxr_keyword">this</strong>, allocateDirect(chunkSize),
-<a class="jxr_linenumber" name="677" href="#677">677</a>                     pageSize, maxOrder, pageShifts, chunkSize);
-<a class="jxr_linenumber" name="678" href="#678">678</a>         }
-<a class="jxr_linenumber" name="679" href="#679">679</a> 
-<a class="jxr_linenumber" name="680" href="#680">680</a>         @Override
-<a class="jxr_linenumber" name="681" href="#681">681</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;ByteBuffer&gt; newUnpooledChunk(<strong class="jxr_keyword">int</strong> capacity) {
-<a class="jxr_linenumber" name="682" href="#682">682</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;ByteBuffer&gt;(<strong class="jxr_keyword">this</strong>, allocateDirect(capacity), capacity);
-<a class="jxr_linenumber" name="683" href="#683">683</a>         }
+<a class="jxr_linenumber" name="664" href="#664">664</a>         @Override
+<a class="jxr_linenumber" name="665" href="#665">665</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> destroyChunk(PoolChunk&lt;byte[]&gt; chunk) {
+<a class="jxr_linenumber" name="666" href="#666">666</a>             <em class="jxr_comment">// Rely on GC.</em>
+<a class="jxr_linenumber" name="667" href="#667">667</a>         }
+<a class="jxr_linenumber" name="668" href="#668">668</a> 
+<a class="jxr_linenumber" name="669" href="#669">669</a>         @Override
+<a class="jxr_linenumber" name="670" href="#670">670</a>         <strong class="jxr_keyword">protected</strong> PooledByteBuf&lt;byte[]&gt; newByteBuf(<strong class="jxr_keyword">int</strong> maxCapacity) {
+<a class="jxr_linenumber" name="671" href="#671">671</a>             <strong class="jxr_keyword">return</strong> HAS_UNSAFE ? PooledUnsafeHeapByteBuf.newUnsafeInstance(maxCapacity)
+<a class="jxr_linenumber" name="672" href="#672">672</a>                     : PooledHeapByteBuf.newInstance(maxCapacity);
+<a class="jxr_linenumber" name="673" href="#673">673</a>         }
+<a class="jxr_linenumber" name="674" href="#674">674</a> 
+<a class="jxr_linenumber" name="675" href="#675">675</a>         @Override
+<a class="jxr_linenumber" name="676" href="#676">676</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> memoryCopy(byte[] src, <strong class="jxr_keyword">int</strong> srcOffset, byte[] dst, <strong class="jxr_keyword">int</strong> dstOffset, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="677" href="#677">677</a>             <strong class="jxr_keyword">if</strong> (length == 0) {
+<a class="jxr_linenumber" name="678" href="#678">678</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="679" href="#679">679</a>             }
+<a class="jxr_linenumber" name="680" href="#680">680</a> 
+<a class="jxr_linenumber" name="681" href="#681">681</a>             System.arraycopy(src, srcOffset, dst, dstOffset, length);
+<a class="jxr_linenumber" name="682" href="#682">682</a>         }
+<a class="jxr_linenumber" name="683" href="#683">683</a>     }
 <a class="jxr_linenumber" name="684" href="#684">684</a> 
-<a class="jxr_linenumber" name="685" href="#685">685</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> ByteBuffer allocateDirect(<strong class="jxr_keyword">int</strong> capacity) {
-<a class="jxr_linenumber" name="686" href="#686">686</a>             <strong class="jxr_keyword">return</strong> PlatformDependent.useDirectBufferNoCleaner() ?
-<a class="jxr_linenumber" name="687" href="#687">687</a>                     PlatformDependent.allocateDirectNoCleaner(capacity) : ByteBuffer.allocateDirect(capacity);
-<a class="jxr_linenumber" name="688" href="#688">688</a>         }
-<a class="jxr_linenumber" name="689" href="#689">689</a> 
-<a class="jxr_linenumber" name="690" href="#690">690</a>         @Override
-<a class="jxr_linenumber" name="691" href="#691">691</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> destroyChunk(PoolChunk&lt;ByteBuffer&gt; chunk) {
-<a class="jxr_linenumber" name="692" href="#692">692</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.useDirectBufferNoCleaner()) {
-<a class="jxr_linenumber" name="693" href="#693">693</a>                 PlatformDependent.freeDirectNoCleaner(chunk.memory);
-<a class="jxr_linenumber" name="694" href="#694">694</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="695" href="#695">695</a>                 PlatformDependent.freeDirectBuffer(chunk.memory);
-<a class="jxr_linenumber" name="696" href="#696">696</a>             }
-<a class="jxr_linenumber" name="697" href="#697">697</a>         }
-<a class="jxr_linenumber" name="698" href="#698">698</a> 
-<a class="jxr_linenumber" name="699" href="#699">699</a>         @Override
-<a class="jxr_linenumber" name="700" href="#700">700</a>         <strong class="jxr_keyword">protected</strong> PooledByteBuf&lt;ByteBuffer&gt; newByteBuf(<strong class="jxr_keyword">int</strong> maxCapacity) {
-<a class="jxr_linenumber" name="701" href="#701">701</a>             <strong class="jxr_keyword">if</strong> (HAS_UNSAFE) {
-<a class="jxr_linenumber" name="702" href="#702">702</a>                 <strong class="jxr_keyword">return</strong> PooledUnsafeDirectByteBuf.newInstance(maxCapacity);
-<a class="jxr_linenumber" name="703" href="#703">703</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="704" href="#704">704</a>                 <strong class="jxr_keyword">return</strong> PooledDirectByteBuf.newInstance(maxCapacity);
-<a class="jxr_linenumber" name="705" href="#705">705</a>             }
+<a class="jxr_linenumber" name="685" href="#685">685</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/buffer/PoolArena.html">DirectArena</a> <strong class="jxr_keyword">extends</strong> PoolArena&lt;ByteBuffer&gt; {
+<a class="jxr_linenumber" name="686" href="#686">686</a> 
+<a class="jxr_linenumber" name="687" href="#687">687</a>         <a href="../../../io/netty/buffer/PoolArena.html">DirectArena</a>(<a href="../../../io/netty/buffer/PooledByteBufAllocator.html">PooledByteBufAllocator</a> parent, <strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
+<a class="jxr_linenumber" name="688" href="#688">688</a>             <strong class="jxr_keyword">super</strong>(parent, pageSize, maxOrder, pageShifts, chunkSize);
+<a class="jxr_linenumber" name="689" href="#689">689</a>         }
+<a class="jxr_linenumber" name="690" href="#690">690</a> 
+<a class="jxr_linenumber" name="691" href="#691">691</a>         @Override
+<a class="jxr_linenumber" name="692" href="#692">692</a>         <strong class="jxr_keyword">boolean</strong> isDirect() {
+<a class="jxr_linenumber" name="693" href="#693">693</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="694" href="#694">694</a>         }
+<a class="jxr_linenumber" name="695" href="#695">695</a> 
+<a class="jxr_linenumber" name="696" href="#696">696</a>         @Override
+<a class="jxr_linenumber" name="697" href="#697">697</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;ByteBuffer&gt; newChunk(<strong class="jxr_keyword">int</strong> pageSize, <strong class="jxr_keyword">int</strong> maxOrder, <strong class="jxr_keyword">int</strong> pageShifts, <strong class="jxr_keyword">int</strong> chunkSize) {
+<a class="jxr_linenumber" name="698" href="#698">698</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;ByteBuffer&gt;(
+<a class="jxr_linenumber" name="699" href="#699">699</a>                     <strong class="jxr_keyword">this</strong>, allocateDirect(chunkSize),
+<a class="jxr_linenumber" name="700" href="#700">700</a>                     pageSize, maxOrder, pageShifts, chunkSize);
+<a class="jxr_linenumber" name="701" href="#701">701</a>         }
+<a class="jxr_linenumber" name="702" href="#702">702</a> 
+<a class="jxr_linenumber" name="703" href="#703">703</a>         @Override
+<a class="jxr_linenumber" name="704" href="#704">704</a>         <strong class="jxr_keyword">protected</strong> PoolChunk&lt;ByteBuffer&gt; newUnpooledChunk(<strong class="jxr_keyword">int</strong> capacity) {
+<a class="jxr_linenumber" name="705" href="#705">705</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> PoolChunk&lt;ByteBuffer&gt;(<strong class="jxr_keyword">this</strong>, allocateDirect(capacity), capacity);
 <a class="jxr_linenumber" name="706" href="#706">706</a>         }
 <a class="jxr_linenumber" name="707" href="#707">707</a> 
-<a class="jxr_linenumber" name="708" href="#708">708</a>         @Override
-<a class="jxr_linenumber" name="709" href="#709">709</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> memoryCopy(ByteBuffer src, <strong class="jxr_keyword">int</strong> srcOffset, ByteBuffer dst, <strong class="jxr_keyword">int</strong> dstOffset, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="710" href="#710">710</a>             <strong class="jxr_keyword">if</strong> (length == 0) {
-<a class="jxr_linenumber" name="711" href="#711">711</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="712" href="#712">712</a>             }
-<a class="jxr_linenumber" name="713" href="#713">713</a> 
-<a class="jxr_linenumber" name="714" href="#714">714</a>             <strong class="jxr_keyword">if</strong> (HAS_UNSAFE) {
-<a class="jxr_linenumber" name="715" href="#715">715</a>                 PlatformDependent.copyMemory(
-<a class="jxr_linenumber" name="716" href="#716">716</a>                         PlatformDependent.directBufferAddress(src) + srcOffset,
-<a class="jxr_linenumber" name="717" href="#717">717</a>                         PlatformDependent.directBufferAddress(dst) + dstOffset, length);
-<a class="jxr_linenumber" name="718" href="#718">718</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="719" href="#719">719</a>                 <em class="jxr_comment">// We must duplicate the NIO buffers because they may be accessed by other Netty buffers.</em>
-<a class="jxr_linenumber" name="720" href="#720">720</a>                 src = src.duplicate();
-<a class="jxr_linenumber" name="721" href="#721">721</a>                 dst = dst.duplicate();
-<a class="jxr_linenumber" name="722" href="#722">722</a>                 src.position(srcOffset).limit(srcOffset + length);
-<a class="jxr_linenumber" name="723" href="#723">723</a>                 dst.position(dstOffset);
-<a class="jxr_linenumber" name="724" href="#724">724</a>                 dst.put(src);
-<a class="jxr_linenumber" name="725" href="#725">725</a>             }
-<a class="jxr_linenumber" name="726" href="#726">726</a>         }
-<a class="jxr_linenumber" name="727" href="#727">727</a>     }
-<a class="jxr_linenumber" name="728" href="#728">728</a> }
+<a class="jxr_linenumber" name="708" href="#708">708</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> ByteBuffer allocateDirect(<strong class="jxr_keyword">int</strong> capacity) {
+<a class="jxr_linenumber" name="709" href="#709">709</a>             <strong class="jxr_keyword">return</strong> PlatformDependent.useDirectBufferNoCleaner() ?
+<a class="jxr_linenumber" name="710" href="#710">710</a>                     PlatformDependent.allocateDirectNoCleaner(capacity) : ByteBuffer.allocateDirect(capacity);
+<a class="jxr_linenumber" name="711" href="#711">711</a>         }
+<a class="jxr_linenumber" name="712" href="#712">712</a> 
+<a class="jxr_linenumber" name="713" href="#713">713</a>         @Override
+<a class="jxr_linenumber" name="714" href="#714">714</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> destroyChunk(PoolChunk&lt;ByteBuffer&gt; chunk) {
+<a class="jxr_linenumber" name="715" href="#715">715</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.useDirectBufferNoCleaner()) {
+<a class="jxr_linenumber" name="716" href="#716">716</a>                 PlatformDependent.freeDirectNoCleaner(chunk.memory);
+<a class="jxr_linenumber" name="717" href="#717">717</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="718" href="#718">718</a>                 PlatformDependent.freeDirectBuffer(chunk.memory);
+<a class="jxr_linenumber" name="719" href="#719">719</a>             }
+<a class="jxr_linenumber" name="720" href="#720">720</a>         }
+<a class="jxr_linenumber" name="721" href="#721">721</a> 
+<a class="jxr_linenumber" name="722" href="#722">722</a>         @Override
+<a class="jxr_linenumber" name="723" href="#723">723</a>         <strong class="jxr_keyword">protected</strong> PooledByteBuf&lt;ByteBuffer&gt; newByteBuf(<strong class="jxr_keyword">int</strong> maxCapacity) {
+<a class="jxr_linenumber" name="724" href="#724">724</a>             <strong class="jxr_keyword">if</strong> (HAS_UNSAFE) {
+<a class="jxr_linenumber" name="725" href="#725">725</a>                 <strong class="jxr_keyword">return</strong> PooledUnsafeDirectByteBuf.newInstance(maxCapacity);
+<a class="jxr_linenumber" name="726" href="#726">726</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="727" href="#727">727</a>                 <strong class="jxr_keyword">return</strong> PooledDirectByteBuf.newInstance(maxCapacity);
+<a class="jxr_linenumber" name="728" href="#728">728</a>             }
+<a class="jxr_linenumber" name="729" href="#729">729</a>         }
+<a class="jxr_linenumber" name="730" href="#730">730</a> 
+<a class="jxr_linenumber" name="731" href="#731">731</a>         @Override
+<a class="jxr_linenumber" name="732" href="#732">732</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> memoryCopy(ByteBuffer src, <strong class="jxr_keyword">int</strong> srcOffset, ByteBuffer dst, <strong class="jxr_keyword">int</strong> dstOffset, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="733" href="#733">733</a>             <strong class="jxr_keyword">if</strong> (length == 0) {
+<a class="jxr_linenumber" name="734" href="#734">734</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="735" href="#735">735</a>             }
+<a class="jxr_linenumber" name="736" href="#736">736</a> 
+<a class="jxr_linenumber" name="737" href="#737">737</a>             <strong class="jxr_keyword">if</strong> (HAS_UNSAFE) {
+<a class="jxr_linenumber" name="738" href="#738">738</a>                 PlatformDependent.copyMemory(
+<a class="jxr_linenumber" name="739" href="#739">739</a>                         PlatformDependent.directBufferAddress(src) + srcOffset,
+<a class="jxr_linenumber" name="740" href="#740">740</a>                         PlatformDependent.directBufferAddress(dst) + dstOffset, length);
+<a class="jxr_linenumber" name="741" href="#741">741</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="742" href="#742">742</a>                 <em class="jxr_comment">// We must duplicate the NIO buffers because they may be accessed by other Netty buffers.</em>
+<a class="jxr_linenumber" name="743" href="#743">743</a>                 src = src.duplicate();
+<a class="jxr_linenumber" name="744" href="#744">744</a>                 dst = dst.duplicate();
+<a class="jxr_linenumber" name="745" href="#745">745</a>                 src.position(srcOffset).limit(srcOffset + length);
+<a class="jxr_linenumber" name="746" href="#746">746</a>                 dst.position(dstOffset);
+<a class="jxr_linenumber" name="747" href="#747">747</a>                 dst.put(src);
+<a class="jxr_linenumber" name="748" href="#748">748</a>             }
+<a class="jxr_linenumber" name="749" href="#749">749</a>         }
+<a class="jxr_linenumber" name="750" href="#750">750</a>     }
+<a class="jxr_linenumber" name="751" href="#751">751</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

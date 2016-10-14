@@ -194,239 +194,243 @@
 <a class="jxr_linenumber" name="184" href="#184">184</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> getContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">long</strong> defaultValue) {
 <a class="jxr_linenumber" name="185" href="#185">185</a>         String value = message.headers().get(HttpHeaderNames.CONTENT_LENGTH);
 <a class="jxr_linenumber" name="186" href="#186">186</a>         <strong class="jxr_keyword">if</strong> (value != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="187" href="#187">187</a>             <strong class="jxr_keyword">return</strong> Long.parseLong(value);
-<a class="jxr_linenumber" name="188" href="#188">188</a>         }
-<a class="jxr_linenumber" name="189" href="#189">189</a> 
-<a class="jxr_linenumber" name="190" href="#190">190</a>         <em class="jxr_comment">// We know the content length if it's a Web Socket message even if</em>
-<a class="jxr_linenumber" name="191" href="#191">191</a>         <em class="jxr_comment">// Content-Length header is missing.</em>
-<a class="jxr_linenumber" name="192" href="#192">192</a>         <strong class="jxr_keyword">long</strong> webSocketContentLength = getWebSocketContentLength(message);
-<a class="jxr_linenumber" name="193" href="#193">193</a>         <strong class="jxr_keyword">if</strong> (webSocketContentLength &gt;= 0) {
-<a class="jxr_linenumber" name="194" href="#194">194</a>             <strong class="jxr_keyword">return</strong> webSocketContentLength;
-<a class="jxr_linenumber" name="195" href="#195">195</a>         }
-<a class="jxr_linenumber" name="196" href="#196">196</a> 
-<a class="jxr_linenumber" name="197" href="#197">197</a>         <em class="jxr_comment">// Otherwise we don't.</em>
-<a class="jxr_linenumber" name="198" href="#198">198</a>         <strong class="jxr_keyword">return</strong> defaultValue;
-<a class="jxr_linenumber" name="199" href="#199">199</a>     }
+<a class="jxr_linenumber" name="187" href="#187">187</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="188" href="#188">188</a>                 <strong class="jxr_keyword">return</strong> Long.parseLong(value);
+<a class="jxr_linenumber" name="189" href="#189">189</a>             } <strong class="jxr_keyword">catch</strong> (NumberFormatException ignore) {
+<a class="jxr_linenumber" name="190" href="#190">190</a>                 <strong class="jxr_keyword">return</strong> defaultValue;
+<a class="jxr_linenumber" name="191" href="#191">191</a>             }
+<a class="jxr_linenumber" name="192" href="#192">192</a>         }
+<a class="jxr_linenumber" name="193" href="#193">193</a> 
+<a class="jxr_linenumber" name="194" href="#194">194</a>         <em class="jxr_comment">// We know the content length if it's a Web Socket message even if</em>
+<a class="jxr_linenumber" name="195" href="#195">195</a>         <em class="jxr_comment">// Content-Length header is missing.</em>
+<a class="jxr_linenumber" name="196" href="#196">196</a>         <strong class="jxr_keyword">long</strong> webSocketContentLength = getWebSocketContentLength(message);
+<a class="jxr_linenumber" name="197" href="#197">197</a>         <strong class="jxr_keyword">if</strong> (webSocketContentLength &gt;= 0) {
+<a class="jxr_linenumber" name="198" href="#198">198</a>             <strong class="jxr_keyword">return</strong> webSocketContentLength;
+<a class="jxr_linenumber" name="199" href="#199">199</a>         }
 <a class="jxr_linenumber" name="200" href="#200">200</a> 
-<a class="jxr_linenumber" name="201" href="#201">201</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="202" href="#202">202</a> <em class="jxr_javadoccomment">     * Get an {@code int} representation of {@link #getContentLength(HttpMessage, long)}.</em>
-<a class="jxr_linenumber" name="203" href="#203">203</a> <em class="jxr_javadoccomment">     * @return the content length or {@code defaultValue} if this message does</em>
-<a class="jxr_linenumber" name="204" href="#204">204</a> <em class="jxr_javadoccomment">     *         not have the {@code "Content-Length"} header or its value is not</em>
-<a class="jxr_linenumber" name="205" href="#205">205</a> <em class="jxr_javadoccomment">     *         a number. Not to exceed the boundaries of integer.</em>
-<a class="jxr_linenumber" name="206" href="#206">206</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="207" href="#207">207</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">int</strong> defaultValue) {
-<a class="jxr_linenumber" name="208" href="#208">208</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) Math.min(Integer.MAX_VALUE, getContentLength(message, (<strong class="jxr_keyword">long</strong>) defaultValue));
-<a class="jxr_linenumber" name="209" href="#209">209</a>     }
-<a class="jxr_linenumber" name="210" href="#210">210</a> 
-<a class="jxr_linenumber" name="211" href="#211">211</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="212" href="#212">212</a> <em class="jxr_javadoccomment">     * Returns the content length of the specified web socket message. If the</em>
-<a class="jxr_linenumber" name="213" href="#213">213</a> <em class="jxr_javadoccomment">     * specified message is not a web socket message, {@code -1} is returned.</em>
-<a class="jxr_linenumber" name="214" href="#214">214</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="215" href="#215">215</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getWebSocketContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
-<a class="jxr_linenumber" name="216" href="#216">216</a>         <em class="jxr_comment">// WebSockset messages have constant content-lengths.</em>
-<a class="jxr_linenumber" name="217" href="#217">217</a>         <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> h = message.headers();
-<a class="jxr_linenumber" name="218" href="#218">218</a>         <strong class="jxr_keyword">if</strong> (message instanceof HttpRequest) {
-<a class="jxr_linenumber" name="219" href="#219">219</a>             <a href="../../../../../io/netty/handler/codec/http/HttpRequest.html">HttpRequest</a> req = (HttpRequest) message;
-<a class="jxr_linenumber" name="220" href="#220">220</a>             <strong class="jxr_keyword">if</strong> (HttpMethod.GET.equals(req.method()) &amp;&amp;
-<a class="jxr_linenumber" name="221" href="#221">221</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_KEY1) &amp;&amp;
-<a class="jxr_linenumber" name="222" href="#222">222</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_KEY2)) {
-<a class="jxr_linenumber" name="223" href="#223">223</a>                 <strong class="jxr_keyword">return</strong> 8;
-<a class="jxr_linenumber" name="224" href="#224">224</a>             }
-<a class="jxr_linenumber" name="225" href="#225">225</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (message instanceof HttpResponse) {
-<a class="jxr_linenumber" name="226" href="#226">226</a>             <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> res = (HttpResponse) message;
-<a class="jxr_linenumber" name="227" href="#227">227</a>             <strong class="jxr_keyword">if</strong> (res.status().code() == 101 &amp;&amp;
-<a class="jxr_linenumber" name="228" href="#228">228</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_ORIGIN) &amp;&amp;
-<a class="jxr_linenumber" name="229" href="#229">229</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_LOCATION)) {
-<a class="jxr_linenumber" name="230" href="#230">230</a>                 <strong class="jxr_keyword">return</strong> 16;
-<a class="jxr_linenumber" name="231" href="#231">231</a>             }
-<a class="jxr_linenumber" name="232" href="#232">232</a>         }
-<a class="jxr_linenumber" name="233" href="#233">233</a> 
-<a class="jxr_linenumber" name="234" href="#234">234</a>         <em class="jxr_comment">// Not a web socket message</em>
-<a class="jxr_linenumber" name="235" href="#235">235</a>         <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="236" href="#236">236</a>     }
+<a class="jxr_linenumber" name="201" href="#201">201</a>         <em class="jxr_comment">// Otherwise we don't.</em>
+<a class="jxr_linenumber" name="202" href="#202">202</a>         <strong class="jxr_keyword">return</strong> defaultValue;
+<a class="jxr_linenumber" name="203" href="#203">203</a>     }
+<a class="jxr_linenumber" name="204" href="#204">204</a> 
+<a class="jxr_linenumber" name="205" href="#205">205</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="206" href="#206">206</a> <em class="jxr_javadoccomment">     * Get an {@code int} representation of {@link #getContentLength(HttpMessage, long)}.</em>
+<a class="jxr_linenumber" name="207" href="#207">207</a> <em class="jxr_javadoccomment">     * @return the content length or {@code defaultValue} if this message does</em>
+<a class="jxr_linenumber" name="208" href="#208">208</a> <em class="jxr_javadoccomment">     *         not have the {@code "Content-Length"} header or its value is not</em>
+<a class="jxr_linenumber" name="209" href="#209">209</a> <em class="jxr_javadoccomment">     *         a number. Not to exceed the boundaries of integer.</em>
+<a class="jxr_linenumber" name="210" href="#210">210</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="211" href="#211">211</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">int</strong> defaultValue) {
+<a class="jxr_linenumber" name="212" href="#212">212</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) Math.min(Integer.MAX_VALUE, getContentLength(message, (<strong class="jxr_keyword">long</strong>) defaultValue));
+<a class="jxr_linenumber" name="213" href="#213">213</a>     }
+<a class="jxr_linenumber" name="214" href="#214">214</a> 
+<a class="jxr_linenumber" name="215" href="#215">215</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="216" href="#216">216</a> <em class="jxr_javadoccomment">     * Returns the content length of the specified web socket message. If the</em>
+<a class="jxr_linenumber" name="217" href="#217">217</a> <em class="jxr_javadoccomment">     * specified message is not a web socket message, {@code -1} is returned.</em>
+<a class="jxr_linenumber" name="218" href="#218">218</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="219" href="#219">219</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getWebSocketContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
+<a class="jxr_linenumber" name="220" href="#220">220</a>         <em class="jxr_comment">// WebSockset messages have constant content-lengths.</em>
+<a class="jxr_linenumber" name="221" href="#221">221</a>         <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> h = message.headers();
+<a class="jxr_linenumber" name="222" href="#222">222</a>         <strong class="jxr_keyword">if</strong> (message instanceof HttpRequest) {
+<a class="jxr_linenumber" name="223" href="#223">223</a>             <a href="../../../../../io/netty/handler/codec/http/HttpRequest.html">HttpRequest</a> req = (HttpRequest) message;
+<a class="jxr_linenumber" name="224" href="#224">224</a>             <strong class="jxr_keyword">if</strong> (HttpMethod.GET.equals(req.method()) &amp;&amp;
+<a class="jxr_linenumber" name="225" href="#225">225</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_KEY1) &amp;&amp;
+<a class="jxr_linenumber" name="226" href="#226">226</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_KEY2)) {
+<a class="jxr_linenumber" name="227" href="#227">227</a>                 <strong class="jxr_keyword">return</strong> 8;
+<a class="jxr_linenumber" name="228" href="#228">228</a>             }
+<a class="jxr_linenumber" name="229" href="#229">229</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (message instanceof HttpResponse) {
+<a class="jxr_linenumber" name="230" href="#230">230</a>             <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> res = (HttpResponse) message;
+<a class="jxr_linenumber" name="231" href="#231">231</a>             <strong class="jxr_keyword">if</strong> (res.status().code() == 101 &amp;&amp;
+<a class="jxr_linenumber" name="232" href="#232">232</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_ORIGIN) &amp;&amp;
+<a class="jxr_linenumber" name="233" href="#233">233</a>                     h.contains(HttpHeaderNames.SEC_WEBSOCKET_LOCATION)) {
+<a class="jxr_linenumber" name="234" href="#234">234</a>                 <strong class="jxr_keyword">return</strong> 16;
+<a class="jxr_linenumber" name="235" href="#235">235</a>             }
+<a class="jxr_linenumber" name="236" href="#236">236</a>         }
 <a class="jxr_linenumber" name="237" href="#237">237</a> 
-<a class="jxr_linenumber" name="238" href="#238">238</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="239" href="#239">239</a> <em class="jxr_javadoccomment">     * Sets the {@code "Content-Length"} header.</em>
-<a class="jxr_linenumber" name="240" href="#240">240</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="241" href="#241">241</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">long</strong> length) {
-<a class="jxr_linenumber" name="242" href="#242">242</a>         message.headers().set(HttpHeaderNames.CONTENT_LENGTH, length);
-<a class="jxr_linenumber" name="243" href="#243">243</a>     }
-<a class="jxr_linenumber" name="244" href="#244">244</a> 
-<a class="jxr_linenumber" name="245" href="#245">245</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isContentLengthSet(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> m) {
-<a class="jxr_linenumber" name="246" href="#246">246</a>         <strong class="jxr_keyword">return</strong> m.headers().contains(HttpHeaderNames.CONTENT_LENGTH);
+<a class="jxr_linenumber" name="238" href="#238">238</a>         <em class="jxr_comment">// Not a web socket message</em>
+<a class="jxr_linenumber" name="239" href="#239">239</a>         <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="240" href="#240">240</a>     }
+<a class="jxr_linenumber" name="241" href="#241">241</a> 
+<a class="jxr_linenumber" name="242" href="#242">242</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="243" href="#243">243</a> <em class="jxr_javadoccomment">     * Sets the {@code "Content-Length"} header.</em>
+<a class="jxr_linenumber" name="244" href="#244">244</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="245" href="#245">245</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setContentLength(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">long</strong> length) {
+<a class="jxr_linenumber" name="246" href="#246">246</a>         message.headers().set(HttpHeaderNames.CONTENT_LENGTH, length);
 <a class="jxr_linenumber" name="247" href="#247">247</a>     }
 <a class="jxr_linenumber" name="248" href="#248">248</a> 
-<a class="jxr_linenumber" name="249" href="#249">249</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="250" href="#250">250</a> <em class="jxr_javadoccomment">     * Returns {@code true} if and only if the specified message contains the</em>
-<a class="jxr_linenumber" name="251" href="#251">251</a> <em class="jxr_javadoccomment">     * {@code "Expect: 100-continue"} header.</em>
-<a class="jxr_linenumber" name="252" href="#252">252</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="253" href="#253">253</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> is100ContinueExpected(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
-<a class="jxr_linenumber" name="254" href="#254">254</a>         <em class="jxr_comment">// Expect: 100-continue is for requests only.</em>
-<a class="jxr_linenumber" name="255" href="#255">255</a>         <strong class="jxr_keyword">if</strong> (!(message instanceof HttpRequest)) {
-<a class="jxr_linenumber" name="256" href="#256">256</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="257" href="#257">257</a>         }
-<a class="jxr_linenumber" name="258" href="#258">258</a> 
-<a class="jxr_linenumber" name="259" href="#259">259</a>         <em class="jxr_comment">// It works only on HTTP/1.1 or later.</em>
-<a class="jxr_linenumber" name="260" href="#260">260</a>         <strong class="jxr_keyword">if</strong> (message.protocolVersion().compareTo(HttpVersion.HTTP_1_1) &lt; 0) {
-<a class="jxr_linenumber" name="261" href="#261">261</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="262" href="#262">262</a>         }
-<a class="jxr_linenumber" name="263" href="#263">263</a> 
-<a class="jxr_linenumber" name="264" href="#264">264</a>         <em class="jxr_comment">// In most cases, there will be one or zero 'Expect' header.</em>
-<a class="jxr_linenumber" name="265" href="#265">265</a>         CharSequence value = message.headers().get(HttpHeaderNames.EXPECT);
-<a class="jxr_linenumber" name="266" href="#266">266</a>         <strong class="jxr_keyword">if</strong> (value == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="267" href="#267">267</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="268" href="#268">268</a>         }
-<a class="jxr_linenumber" name="269" href="#269">269</a>         <strong class="jxr_keyword">if</strong> (HttpHeaderValues.CONTINUE.contentEqualsIgnoreCase(value)) {
-<a class="jxr_linenumber" name="270" href="#270">270</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="271" href="#271">271</a>         }
-<a class="jxr_linenumber" name="272" href="#272">272</a> 
-<a class="jxr_linenumber" name="273" href="#273">273</a>         <em class="jxr_comment">// Multiple 'Expect' headers.  Search through them.</em>
-<a class="jxr_linenumber" name="274" href="#274">274</a>         <strong class="jxr_keyword">return</strong> message.headers().contains(HttpHeaderNames.EXPECT, HttpHeaderValues.CONTINUE, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="275" href="#275">275</a>     }
+<a class="jxr_linenumber" name="249" href="#249">249</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isContentLengthSet(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> m) {
+<a class="jxr_linenumber" name="250" href="#250">250</a>         <strong class="jxr_keyword">return</strong> m.headers().contains(HttpHeaderNames.CONTENT_LENGTH);
+<a class="jxr_linenumber" name="251" href="#251">251</a>     }
+<a class="jxr_linenumber" name="252" href="#252">252</a> 
+<a class="jxr_linenumber" name="253" href="#253">253</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="254" href="#254">254</a> <em class="jxr_javadoccomment">     * Returns {@code true} if and only if the specified message contains the</em>
+<a class="jxr_linenumber" name="255" href="#255">255</a> <em class="jxr_javadoccomment">     * {@code "Expect: 100-continue"} header.</em>
+<a class="jxr_linenumber" name="256" href="#256">256</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="257" href="#257">257</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> is100ContinueExpected(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
+<a class="jxr_linenumber" name="258" href="#258">258</a>         <em class="jxr_comment">// Expect: 100-continue is for requests only.</em>
+<a class="jxr_linenumber" name="259" href="#259">259</a>         <strong class="jxr_keyword">if</strong> (!(message instanceof HttpRequest)) {
+<a class="jxr_linenumber" name="260" href="#260">260</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="261" href="#261">261</a>         }
+<a class="jxr_linenumber" name="262" href="#262">262</a> 
+<a class="jxr_linenumber" name="263" href="#263">263</a>         <em class="jxr_comment">// It works only on HTTP/1.1 or later.</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a>         <strong class="jxr_keyword">if</strong> (message.protocolVersion().compareTo(HttpVersion.HTTP_1_1) &lt; 0) {
+<a class="jxr_linenumber" name="265" href="#265">265</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="266" href="#266">266</a>         }
+<a class="jxr_linenumber" name="267" href="#267">267</a> 
+<a class="jxr_linenumber" name="268" href="#268">268</a>         <em class="jxr_comment">// In most cases, there will be one or zero 'Expect' header.</em>
+<a class="jxr_linenumber" name="269" href="#269">269</a>         CharSequence value = message.headers().get(HttpHeaderNames.EXPECT);
+<a class="jxr_linenumber" name="270" href="#270">270</a>         <strong class="jxr_keyword">if</strong> (value == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="271" href="#271">271</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="272" href="#272">272</a>         }
+<a class="jxr_linenumber" name="273" href="#273">273</a>         <strong class="jxr_keyword">if</strong> (HttpHeaderValues.CONTINUE.contentEqualsIgnoreCase(value)) {
+<a class="jxr_linenumber" name="274" href="#274">274</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="275" href="#275">275</a>         }
 <a class="jxr_linenumber" name="276" href="#276">276</a> 
-<a class="jxr_linenumber" name="277" href="#277">277</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="278" href="#278">278</a> <em class="jxr_javadoccomment">     * Sets or removes the {@code "Expect: 100-continue"} header to / from the</em>
-<a class="jxr_linenumber" name="279" href="#279">279</a> <em class="jxr_javadoccomment">     * specified message. If {@code expected} is {@code true},</em>
-<a class="jxr_linenumber" name="280" href="#280">280</a> <em class="jxr_javadoccomment">     * the {@code "Expect: 100-continue"} header is set and all other previous</em>
-<a class="jxr_linenumber" name="281" href="#281">281</a> <em class="jxr_javadoccomment">     * {@code "Expect"} headers are removed.  Otherwise, all {@code "Expect"}</em>
-<a class="jxr_linenumber" name="282" href="#282">282</a> <em class="jxr_javadoccomment">     * headers are removed completely.</em>
-<a class="jxr_linenumber" name="283" href="#283">283</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="284" href="#284">284</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> set100ContinueExpected(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">boolean</strong> expected) {
-<a class="jxr_linenumber" name="285" href="#285">285</a>         <strong class="jxr_keyword">if</strong> (expected) {
-<a class="jxr_linenumber" name="286" href="#286">286</a>             message.headers().set(HttpHeaderNames.EXPECT, HttpHeaderValues.CONTINUE);
-<a class="jxr_linenumber" name="287" href="#287">287</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="288" href="#288">288</a>             message.headers().remove(HttpHeaderNames.EXPECT);
-<a class="jxr_linenumber" name="289" href="#289">289</a>         }
-<a class="jxr_linenumber" name="290" href="#290">290</a>     }
-<a class="jxr_linenumber" name="291" href="#291">291</a> 
-<a class="jxr_linenumber" name="292" href="#292">292</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="293" href="#293">293</a> <em class="jxr_javadoccomment">     * Checks to see if the transfer encoding in a specified {@link HttpMessage} is chunked</em>
-<a class="jxr_linenumber" name="294" href="#294">294</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="295" href="#295">295</a> <em class="jxr_javadoccomment">     * @param message The message to check</em>
-<a class="jxr_linenumber" name="296" href="#296">296</a> <em class="jxr_javadoccomment">     * @return True if transfer encoding is chunked, otherwise false</em>
-<a class="jxr_linenumber" name="297" href="#297">297</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="298" href="#298">298</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isTransferEncodingChunked(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
-<a class="jxr_linenumber" name="299" href="#299">299</a>         <strong class="jxr_keyword">return</strong> message.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="300" href="#300">300</a>     }
-<a class="jxr_linenumber" name="301" href="#301">301</a> 
-<a class="jxr_linenumber" name="302" href="#302">302</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="303" href="#303">303</a> <em class="jxr_javadoccomment">     * Set the {@link HttpHeaderNames#TRANSFER_ENCODING} to either include {@link HttpHeaderValues#CHUNKED} if</em>
-<a class="jxr_linenumber" name="304" href="#304">304</a> <em class="jxr_javadoccomment">     * {@code chunked} is {@code true}, or remove {@link HttpHeaderValues#CHUNKED} if {@code chunked} is {@code false}.</em>
-<a class="jxr_linenumber" name="305" href="#305">305</a> <em class="jxr_javadoccomment">     * @param m The message which contains the headers to modify.</em>
-<a class="jxr_linenumber" name="306" href="#306">306</a> <em class="jxr_javadoccomment">     * @param chunked if {@code true} then include {@link HttpHeaderValues#CHUNKED} in the headers. otherwise remove</em>
-<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * {@link HttpHeaderValues#CHUNKED} from the headers.</em>
-<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="309" href="#309">309</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setTransferEncodingChunked(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> m, <strong class="jxr_keyword">boolean</strong> chunked) {
-<a class="jxr_linenumber" name="310" href="#310">310</a>         <strong class="jxr_keyword">if</strong> (chunked) {
-<a class="jxr_linenumber" name="311" href="#311">311</a>             m.headers().add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-<a class="jxr_linenumber" name="312" href="#312">312</a>             m.headers().remove(HttpHeaderNames.CONTENT_LENGTH);
-<a class="jxr_linenumber" name="313" href="#313">313</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="314" href="#314">314</a>             List&lt;String&gt; encodings = m.headers().getAll(HttpHeaderNames.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="315" href="#315">315</a>             <strong class="jxr_keyword">if</strong> (encodings.isEmpty()) {
-<a class="jxr_linenumber" name="316" href="#316">316</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="317" href="#317">317</a>             }
-<a class="jxr_linenumber" name="318" href="#318">318</a>             List&lt;CharSequence&gt; values = <strong class="jxr_keyword">new</strong> ArrayList&lt;CharSequence&gt;(encodings);
-<a class="jxr_linenumber" name="319" href="#319">319</a>             Iterator&lt;CharSequence&gt; valuesIt = values.iterator();
-<a class="jxr_linenumber" name="320" href="#320">320</a>             <strong class="jxr_keyword">while</strong> (valuesIt.hasNext()) {
-<a class="jxr_linenumber" name="321" href="#321">321</a>                 CharSequence value = valuesIt.next();
-<a class="jxr_linenumber" name="322" href="#322">322</a>                 <strong class="jxr_keyword">if</strong> (HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(value)) {
-<a class="jxr_linenumber" name="323" href="#323">323</a>                     valuesIt.remove();
-<a class="jxr_linenumber" name="324" href="#324">324</a>                 }
-<a class="jxr_linenumber" name="325" href="#325">325</a>             }
-<a class="jxr_linenumber" name="326" href="#326">326</a>             <strong class="jxr_keyword">if</strong> (values.isEmpty()) {
-<a class="jxr_linenumber" name="327" href="#327">327</a>                 m.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="328" href="#328">328</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="329" href="#329">329</a>                 m.headers().set(HttpHeaderNames.TRANSFER_ENCODING, values);
-<a class="jxr_linenumber" name="330" href="#330">330</a>             }
-<a class="jxr_linenumber" name="331" href="#331">331</a>         }
-<a class="jxr_linenumber" name="332" href="#332">332</a>     }
-<a class="jxr_linenumber" name="333" href="#333">333</a> 
-<a class="jxr_linenumber" name="334" href="#334">334</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="335" href="#335">335</a> <em class="jxr_javadoccomment">     * Fetch charset from message's Content-Type header.</em>
-<a class="jxr_linenumber" name="336" href="#336">336</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="337" href="#337">337</a> <em class="jxr_javadoccomment">     * @return the charset from message's Content-Type header or {@link io.netty.util.CharsetUtil#ISO_8859_1}</em>
-<a class="jxr_linenumber" name="338" href="#338">338</a> <em class="jxr_javadoccomment">     * if charset is not presented or unparsable</em>
-<a class="jxr_linenumber" name="339" href="#339">339</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="340" href="#340">340</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> Charset getCharset(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
-<a class="jxr_linenumber" name="341" href="#341">341</a>         <strong class="jxr_keyword">return</strong> getCharset(message, CharsetUtil.ISO_8859_1);
-<a class="jxr_linenumber" name="342" href="#342">342</a>     }
-<a class="jxr_linenumber" name="343" href="#343">343</a> 
-<a class="jxr_linenumber" name="344" href="#344">344</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="345" href="#345">345</a> <em class="jxr_javadoccomment">     * Fetch charset from message's Content-Type header.</em>
-<a class="jxr_linenumber" name="346" href="#346">346</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="347" href="#347">347</a> <em class="jxr_javadoccomment">     * @return the charset from message's Content-Type header or {@code defaultCharset}</em>
-<a class="jxr_linenumber" name="348" href="#348">348</a> <em class="jxr_javadoccomment">     * if charset is not presented or unparsable</em>
-<a class="jxr_linenumber" name="349" href="#349">349</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="350" href="#350">350</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> Charset getCharset(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, Charset defaultCharset) {
-<a class="jxr_linenumber" name="351" href="#351">351</a>         CharSequence charsetCharSequence = getCharsetAsString(message);
-<a class="jxr_linenumber" name="352" href="#352">352</a>         <strong class="jxr_keyword">if</strong> (charsetCharSequence != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="353" href="#353">353</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="354" href="#354">354</a>                 <strong class="jxr_keyword">return</strong> Charset.forName(charsetCharSequence.toString());
-<a class="jxr_linenumber" name="355" href="#355">355</a>             } <strong class="jxr_keyword">catch</strong> (UnsupportedCharsetException unsupportedException) {
-<a class="jxr_linenumber" name="356" href="#356">356</a>                 <strong class="jxr_keyword">return</strong> defaultCharset;
-<a class="jxr_linenumber" name="357" href="#357">357</a>             }
-<a class="jxr_linenumber" name="358" href="#358">358</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="359" href="#359">359</a>             <strong class="jxr_keyword">return</strong> defaultCharset;
-<a class="jxr_linenumber" name="360" href="#360">360</a>         }
-<a class="jxr_linenumber" name="361" href="#361">361</a>     }
-<a class="jxr_linenumber" name="362" href="#362">362</a> 
-<a class="jxr_linenumber" name="363" href="#363">363</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="364" href="#364">364</a> <em class="jxr_javadoccomment">     * Fetch charset from message's Content-Type header as a char sequence.</em>
-<a class="jxr_linenumber" name="365" href="#365">365</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="366" href="#366">366</a> <em class="jxr_javadoccomment">     * A lot of sites/possibly clients have charset="CHARSET", for example charset="utf-8". Or "utf8" instead of "utf-8"</em>
-<a class="jxr_linenumber" name="367" href="#367">367</a> <em class="jxr_javadoccomment">     * This is not according to standard, but this method provide an ability to catch desired mistakes manually in code</em>
-<a class="jxr_linenumber" name="368" href="#368">368</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="369" href="#369">369</a> <em class="jxr_javadoccomment">     * @return the {@code CharSequence} with charset from message's Content-Type header</em>
-<a class="jxr_linenumber" name="370" href="#370">370</a> <em class="jxr_javadoccomment">     * or {@code null} if charset is not presented</em>
-<a class="jxr_linenumber" name="371" href="#371">371</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="372" href="#372">372</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> CharSequence getCharsetAsString(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
-<a class="jxr_linenumber" name="373" href="#373">373</a>         CharSequence contentTypeValue = message.headers().get(HttpHeaderNames.CONTENT_TYPE);
-<a class="jxr_linenumber" name="374" href="#374">374</a>         <strong class="jxr_keyword">if</strong> (contentTypeValue != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="375" href="#375">375</a>             <strong class="jxr_keyword">int</strong> indexOfCharset = AsciiString.indexOfIgnoreCaseAscii(contentTypeValue, CHARSET_EQUALS, 0);
-<a class="jxr_linenumber" name="376" href="#376">376</a>             <strong class="jxr_keyword">if</strong> (indexOfCharset != AsciiString.INDEX_NOT_FOUND) {
-<a class="jxr_linenumber" name="377" href="#377">377</a>                 <strong class="jxr_keyword">int</strong> indexOfEncoding = indexOfCharset + CHARSET_EQUALS.length();
-<a class="jxr_linenumber" name="378" href="#378">378</a>                 <strong class="jxr_keyword">if</strong> (indexOfEncoding &lt; contentTypeValue.length()) {
-<a class="jxr_linenumber" name="379" href="#379">379</a>                     <strong class="jxr_keyword">return</strong> contentTypeValue.subSequence(indexOfEncoding, contentTypeValue.length());
-<a class="jxr_linenumber" name="380" href="#380">380</a>                 }
-<a class="jxr_linenumber" name="381" href="#381">381</a>             }
-<a class="jxr_linenumber" name="382" href="#382">382</a>         }
-<a class="jxr_linenumber" name="383" href="#383">383</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="384" href="#384">384</a>     }
-<a class="jxr_linenumber" name="385" href="#385">385</a> 
-<a class="jxr_linenumber" name="386" href="#386">386</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="387" href="#387">387</a> <em class="jxr_javadoccomment">     * Fetch MIME type part from message's Content-Type header as a char sequence.</em>
-<a class="jxr_linenumber" name="388" href="#388">388</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="389" href="#389">389</a> <em class="jxr_javadoccomment">     * @return the MIME type as a {@code CharSequence} from message's Content-Type header</em>
-<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">     * or {@code null} if content-type header or MIME type part of this header are not presented</em>
-<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">     * &lt;p/&gt;</em>
-<a class="jxr_linenumber" name="392" href="#392">392</a> <em class="jxr_javadoccomment">     * "content-type: text/html; charset=utf-8" - "text/html" will be returned &lt;br/&gt;</em>
-<a class="jxr_linenumber" name="393" href="#393">393</a> <em class="jxr_javadoccomment">     * "content-type: text/html" - "text/html" will be returned &lt;br/&gt;</em>
-<a class="jxr_linenumber" name="394" href="#394">394</a> <em class="jxr_javadoccomment">     * "content-type: " or no header - {@code null} we be returned</em>
-<a class="jxr_linenumber" name="395" href="#395">395</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="396" href="#396">396</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> CharSequence getMimeType(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
-<a class="jxr_linenumber" name="397" href="#397">397</a>         CharSequence contentTypeValue = message.headers().get(HttpHeaderNames.CONTENT_TYPE);
-<a class="jxr_linenumber" name="398" href="#398">398</a>         <strong class="jxr_keyword">if</strong> (contentTypeValue != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="399" href="#399">399</a>             <strong class="jxr_keyword">int</strong> indexOfSemicolon = AsciiString.indexOfIgnoreCaseAscii(contentTypeValue, SEMICOLON, 0);
-<a class="jxr_linenumber" name="400" href="#400">400</a>             <strong class="jxr_keyword">if</strong> (indexOfSemicolon != AsciiString.INDEX_NOT_FOUND) {
-<a class="jxr_linenumber" name="401" href="#401">401</a>                 <strong class="jxr_keyword">return</strong> contentTypeValue.subSequence(0, indexOfSemicolon);
-<a class="jxr_linenumber" name="402" href="#402">402</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="403" href="#403">403</a>                 <strong class="jxr_keyword">return</strong> contentTypeValue.length() &gt; 0 ? contentTypeValue : <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="404" href="#404">404</a>             }
-<a class="jxr_linenumber" name="405" href="#405">405</a>         }
-<a class="jxr_linenumber" name="406" href="#406">406</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="407" href="#407">407</a>     }
-<a class="jxr_linenumber" name="408" href="#408">408</a> 
-<a class="jxr_linenumber" name="409" href="#409">409</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeAscii0(CharSequence seq, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
-<a class="jxr_linenumber" name="410" href="#410">410</a>         <strong class="jxr_keyword">int</strong> length = seq.length();
-<a class="jxr_linenumber" name="411" href="#411">411</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0 ; i &lt; length; i++) {
-<a class="jxr_linenumber" name="412" href="#412">412</a>             buf.writeByte(c2b(seq.charAt(i)));
-<a class="jxr_linenumber" name="413" href="#413">413</a>         }
-<a class="jxr_linenumber" name="414" href="#414">414</a>     }
-<a class="jxr_linenumber" name="415" href="#415">415</a> 
-<a class="jxr_linenumber" name="416" href="#416">416</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte c2b(<strong class="jxr_keyword">char</strong> c) {
-<a class="jxr_linenumber" name="417" href="#417">417</a>         <strong class="jxr_keyword">return</strong> c &gt; 255 ? (byte) '?' : (byte) c;
+<a class="jxr_linenumber" name="277" href="#277">277</a>         <em class="jxr_comment">// Multiple 'Expect' headers.  Search through them.</em>
+<a class="jxr_linenumber" name="278" href="#278">278</a>         <strong class="jxr_keyword">return</strong> message.headers().contains(HttpHeaderNames.EXPECT, HttpHeaderValues.CONTINUE, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="279" href="#279">279</a>     }
+<a class="jxr_linenumber" name="280" href="#280">280</a> 
+<a class="jxr_linenumber" name="281" href="#281">281</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="282" href="#282">282</a> <em class="jxr_javadoccomment">     * Sets or removes the {@code "Expect: 100-continue"} header to / from the</em>
+<a class="jxr_linenumber" name="283" href="#283">283</a> <em class="jxr_javadoccomment">     * specified message. If {@code expected} is {@code true},</em>
+<a class="jxr_linenumber" name="284" href="#284">284</a> <em class="jxr_javadoccomment">     * the {@code "Expect: 100-continue"} header is set and all other previous</em>
+<a class="jxr_linenumber" name="285" href="#285">285</a> <em class="jxr_javadoccomment">     * {@code "Expect"} headers are removed.  Otherwise, all {@code "Expect"}</em>
+<a class="jxr_linenumber" name="286" href="#286">286</a> <em class="jxr_javadoccomment">     * headers are removed completely.</em>
+<a class="jxr_linenumber" name="287" href="#287">287</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="288" href="#288">288</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> set100ContinueExpected(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, <strong class="jxr_keyword">boolean</strong> expected) {
+<a class="jxr_linenumber" name="289" href="#289">289</a>         <strong class="jxr_keyword">if</strong> (expected) {
+<a class="jxr_linenumber" name="290" href="#290">290</a>             message.headers().set(HttpHeaderNames.EXPECT, HttpHeaderValues.CONTINUE);
+<a class="jxr_linenumber" name="291" href="#291">291</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="292" href="#292">292</a>             message.headers().remove(HttpHeaderNames.EXPECT);
+<a class="jxr_linenumber" name="293" href="#293">293</a>         }
+<a class="jxr_linenumber" name="294" href="#294">294</a>     }
+<a class="jxr_linenumber" name="295" href="#295">295</a> 
+<a class="jxr_linenumber" name="296" href="#296">296</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="297" href="#297">297</a> <em class="jxr_javadoccomment">     * Checks to see if the transfer encoding in a specified {@link HttpMessage} is chunked</em>
+<a class="jxr_linenumber" name="298" href="#298">298</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="299" href="#299">299</a> <em class="jxr_javadoccomment">     * @param message The message to check</em>
+<a class="jxr_linenumber" name="300" href="#300">300</a> <em class="jxr_javadoccomment">     * @return True if transfer encoding is chunked, otherwise false</em>
+<a class="jxr_linenumber" name="301" href="#301">301</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="302" href="#302">302</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isTransferEncodingChunked(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
+<a class="jxr_linenumber" name="303" href="#303">303</a>         <strong class="jxr_keyword">return</strong> message.headers().contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="304" href="#304">304</a>     }
+<a class="jxr_linenumber" name="305" href="#305">305</a> 
+<a class="jxr_linenumber" name="306" href="#306">306</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * Set the {@link HttpHeaderNames#TRANSFER_ENCODING} to either include {@link HttpHeaderValues#CHUNKED} if</em>
+<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     * {@code chunked} is {@code true}, or remove {@link HttpHeaderValues#CHUNKED} if {@code chunked} is {@code false}.</em>
+<a class="jxr_linenumber" name="309" href="#309">309</a> <em class="jxr_javadoccomment">     * @param m The message which contains the headers to modify.</em>
+<a class="jxr_linenumber" name="310" href="#310">310</a> <em class="jxr_javadoccomment">     * @param chunked if {@code true} then include {@link HttpHeaderValues#CHUNKED} in the headers. otherwise remove</em>
+<a class="jxr_linenumber" name="311" href="#311">311</a> <em class="jxr_javadoccomment">     * {@link HttpHeaderValues#CHUNKED} from the headers.</em>
+<a class="jxr_linenumber" name="312" href="#312">312</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="313" href="#313">313</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setTransferEncodingChunked(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> m, <strong class="jxr_keyword">boolean</strong> chunked) {
+<a class="jxr_linenumber" name="314" href="#314">314</a>         <strong class="jxr_keyword">if</strong> (chunked) {
+<a class="jxr_linenumber" name="315" href="#315">315</a>             m.headers().add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+<a class="jxr_linenumber" name="316" href="#316">316</a>             m.headers().remove(HttpHeaderNames.CONTENT_LENGTH);
+<a class="jxr_linenumber" name="317" href="#317">317</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="318" href="#318">318</a>             List&lt;String&gt; encodings = m.headers().getAll(HttpHeaderNames.TRANSFER_ENCODING);
+<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">if</strong> (encodings.isEmpty()) {
+<a class="jxr_linenumber" name="320" href="#320">320</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="321" href="#321">321</a>             }
+<a class="jxr_linenumber" name="322" href="#322">322</a>             List&lt;CharSequence&gt; values = <strong class="jxr_keyword">new</strong> ArrayList&lt;CharSequence&gt;(encodings);
+<a class="jxr_linenumber" name="323" href="#323">323</a>             Iterator&lt;CharSequence&gt; valuesIt = values.iterator();
+<a class="jxr_linenumber" name="324" href="#324">324</a>             <strong class="jxr_keyword">while</strong> (valuesIt.hasNext()) {
+<a class="jxr_linenumber" name="325" href="#325">325</a>                 CharSequence value = valuesIt.next();
+<a class="jxr_linenumber" name="326" href="#326">326</a>                 <strong class="jxr_keyword">if</strong> (HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(value)) {
+<a class="jxr_linenumber" name="327" href="#327">327</a>                     valuesIt.remove();
+<a class="jxr_linenumber" name="328" href="#328">328</a>                 }
+<a class="jxr_linenumber" name="329" href="#329">329</a>             }
+<a class="jxr_linenumber" name="330" href="#330">330</a>             <strong class="jxr_keyword">if</strong> (values.isEmpty()) {
+<a class="jxr_linenumber" name="331" href="#331">331</a>                 m.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
+<a class="jxr_linenumber" name="332" href="#332">332</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="333" href="#333">333</a>                 m.headers().set(HttpHeaderNames.TRANSFER_ENCODING, values);
+<a class="jxr_linenumber" name="334" href="#334">334</a>             }
+<a class="jxr_linenumber" name="335" href="#335">335</a>         }
+<a class="jxr_linenumber" name="336" href="#336">336</a>     }
+<a class="jxr_linenumber" name="337" href="#337">337</a> 
+<a class="jxr_linenumber" name="338" href="#338">338</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="339" href="#339">339</a> <em class="jxr_javadoccomment">     * Fetch charset from message's Content-Type header.</em>
+<a class="jxr_linenumber" name="340" href="#340">340</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="341" href="#341">341</a> <em class="jxr_javadoccomment">     * @return the charset from message's Content-Type header or {@link io.netty.util.CharsetUtil#ISO_8859_1}</em>
+<a class="jxr_linenumber" name="342" href="#342">342</a> <em class="jxr_javadoccomment">     * if charset is not presented or unparsable</em>
+<a class="jxr_linenumber" name="343" href="#343">343</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="344" href="#344">344</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> Charset getCharset(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
+<a class="jxr_linenumber" name="345" href="#345">345</a>         <strong class="jxr_keyword">return</strong> getCharset(message, CharsetUtil.ISO_8859_1);
+<a class="jxr_linenumber" name="346" href="#346">346</a>     }
+<a class="jxr_linenumber" name="347" href="#347">347</a> 
+<a class="jxr_linenumber" name="348" href="#348">348</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="349" href="#349">349</a> <em class="jxr_javadoccomment">     * Fetch charset from message's Content-Type header.</em>
+<a class="jxr_linenumber" name="350" href="#350">350</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="351" href="#351">351</a> <em class="jxr_javadoccomment">     * @return the charset from message's Content-Type header or {@code defaultCharset}</em>
+<a class="jxr_linenumber" name="352" href="#352">352</a> <em class="jxr_javadoccomment">     * if charset is not presented or unparsable</em>
+<a class="jxr_linenumber" name="353" href="#353">353</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="354" href="#354">354</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> Charset getCharset(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message, Charset defaultCharset) {
+<a class="jxr_linenumber" name="355" href="#355">355</a>         CharSequence charsetCharSequence = getCharsetAsString(message);
+<a class="jxr_linenumber" name="356" href="#356">356</a>         <strong class="jxr_keyword">if</strong> (charsetCharSequence != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="357" href="#357">357</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="358" href="#358">358</a>                 <strong class="jxr_keyword">return</strong> Charset.forName(charsetCharSequence.toString());
+<a class="jxr_linenumber" name="359" href="#359">359</a>             } <strong class="jxr_keyword">catch</strong> (UnsupportedCharsetException unsupportedException) {
+<a class="jxr_linenumber" name="360" href="#360">360</a>                 <strong class="jxr_keyword">return</strong> defaultCharset;
+<a class="jxr_linenumber" name="361" href="#361">361</a>             }
+<a class="jxr_linenumber" name="362" href="#362">362</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="363" href="#363">363</a>             <strong class="jxr_keyword">return</strong> defaultCharset;
+<a class="jxr_linenumber" name="364" href="#364">364</a>         }
+<a class="jxr_linenumber" name="365" href="#365">365</a>     }
+<a class="jxr_linenumber" name="366" href="#366">366</a> 
+<a class="jxr_linenumber" name="367" href="#367">367</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="368" href="#368">368</a> <em class="jxr_javadoccomment">     * Fetch charset from message's Content-Type header as a char sequence.</em>
+<a class="jxr_linenumber" name="369" href="#369">369</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="370" href="#370">370</a> <em class="jxr_javadoccomment">     * A lot of sites/possibly clients have charset="CHARSET", for example charset="utf-8". Or "utf8" instead of "utf-8"</em>
+<a class="jxr_linenumber" name="371" href="#371">371</a> <em class="jxr_javadoccomment">     * This is not according to standard, but this method provide an ability to catch desired mistakes manually in code</em>
+<a class="jxr_linenumber" name="372" href="#372">372</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="373" href="#373">373</a> <em class="jxr_javadoccomment">     * @return the {@code CharSequence} with charset from message's Content-Type header</em>
+<a class="jxr_linenumber" name="374" href="#374">374</a> <em class="jxr_javadoccomment">     * or {@code null} if charset is not presented</em>
+<a class="jxr_linenumber" name="375" href="#375">375</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="376" href="#376">376</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> CharSequence getCharsetAsString(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
+<a class="jxr_linenumber" name="377" href="#377">377</a>         CharSequence contentTypeValue = message.headers().get(HttpHeaderNames.CONTENT_TYPE);
+<a class="jxr_linenumber" name="378" href="#378">378</a>         <strong class="jxr_keyword">if</strong> (contentTypeValue != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="379" href="#379">379</a>             <strong class="jxr_keyword">int</strong> indexOfCharset = AsciiString.indexOfIgnoreCaseAscii(contentTypeValue, CHARSET_EQUALS, 0);
+<a class="jxr_linenumber" name="380" href="#380">380</a>             <strong class="jxr_keyword">if</strong> (indexOfCharset != AsciiString.INDEX_NOT_FOUND) {
+<a class="jxr_linenumber" name="381" href="#381">381</a>                 <strong class="jxr_keyword">int</strong> indexOfEncoding = indexOfCharset + CHARSET_EQUALS.length();
+<a class="jxr_linenumber" name="382" href="#382">382</a>                 <strong class="jxr_keyword">if</strong> (indexOfEncoding &lt; contentTypeValue.length()) {
+<a class="jxr_linenumber" name="383" href="#383">383</a>                     <strong class="jxr_keyword">return</strong> contentTypeValue.subSequence(indexOfEncoding, contentTypeValue.length());
+<a class="jxr_linenumber" name="384" href="#384">384</a>                 }
+<a class="jxr_linenumber" name="385" href="#385">385</a>             }
+<a class="jxr_linenumber" name="386" href="#386">386</a>         }
+<a class="jxr_linenumber" name="387" href="#387">387</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="388" href="#388">388</a>     }
+<a class="jxr_linenumber" name="389" href="#389">389</a> 
+<a class="jxr_linenumber" name="390" href="#390">390</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">     * Fetch MIME type part from message's Content-Type header as a char sequence.</em>
+<a class="jxr_linenumber" name="392" href="#392">392</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="393" href="#393">393</a> <em class="jxr_javadoccomment">     * @return the MIME type as a {@code CharSequence} from message's Content-Type header</em>
+<a class="jxr_linenumber" name="394" href="#394">394</a> <em class="jxr_javadoccomment">     * or {@code null} if content-type header or MIME type part of this header are not presented</em>
+<a class="jxr_linenumber" name="395" href="#395">395</a> <em class="jxr_javadoccomment">     * &lt;p/&gt;</em>
+<a class="jxr_linenumber" name="396" href="#396">396</a> <em class="jxr_javadoccomment">     * "content-type: text/html; charset=utf-8" - "text/html" will be returned &lt;br/&gt;</em>
+<a class="jxr_linenumber" name="397" href="#397">397</a> <em class="jxr_javadoccomment">     * "content-type: text/html" - "text/html" will be returned &lt;br/&gt;</em>
+<a class="jxr_linenumber" name="398" href="#398">398</a> <em class="jxr_javadoccomment">     * "content-type: " or no header - {@code null} we be returned</em>
+<a class="jxr_linenumber" name="399" href="#399">399</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="400" href="#400">400</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> CharSequence getMimeType(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> message) {
+<a class="jxr_linenumber" name="401" href="#401">401</a>         CharSequence contentTypeValue = message.headers().get(HttpHeaderNames.CONTENT_TYPE);
+<a class="jxr_linenumber" name="402" href="#402">402</a>         <strong class="jxr_keyword">if</strong> (contentTypeValue != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="403" href="#403">403</a>             <strong class="jxr_keyword">int</strong> indexOfSemicolon = AsciiString.indexOfIgnoreCaseAscii(contentTypeValue, SEMICOLON, 0);
+<a class="jxr_linenumber" name="404" href="#404">404</a>             <strong class="jxr_keyword">if</strong> (indexOfSemicolon != AsciiString.INDEX_NOT_FOUND) {
+<a class="jxr_linenumber" name="405" href="#405">405</a>                 <strong class="jxr_keyword">return</strong> contentTypeValue.subSequence(0, indexOfSemicolon);
+<a class="jxr_linenumber" name="406" href="#406">406</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="407" href="#407">407</a>                 <strong class="jxr_keyword">return</strong> contentTypeValue.length() &gt; 0 ? contentTypeValue : <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="408" href="#408">408</a>             }
+<a class="jxr_linenumber" name="409" href="#409">409</a>         }
+<a class="jxr_linenumber" name="410" href="#410">410</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="411" href="#411">411</a>     }
+<a class="jxr_linenumber" name="412" href="#412">412</a> 
+<a class="jxr_linenumber" name="413" href="#413">413</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeAscii0(CharSequence seq, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
+<a class="jxr_linenumber" name="414" href="#414">414</a>         <strong class="jxr_keyword">int</strong> length = seq.length();
+<a class="jxr_linenumber" name="415" href="#415">415</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0 ; i &lt; length; i++) {
+<a class="jxr_linenumber" name="416" href="#416">416</a>             buf.writeByte(c2b(seq.charAt(i)));
+<a class="jxr_linenumber" name="417" href="#417">417</a>         }
 <a class="jxr_linenumber" name="418" href="#418">418</a>     }
-<a class="jxr_linenumber" name="419" href="#419">419</a> }
+<a class="jxr_linenumber" name="419" href="#419">419</a> 
+<a class="jxr_linenumber" name="420" href="#420">420</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte c2b(<strong class="jxr_keyword">char</strong> c) {
+<a class="jxr_linenumber" name="421" href="#421">421</a>         <strong class="jxr_keyword">return</strong> c &gt; 255 ? (byte) '?' : (byte) c;
+<a class="jxr_linenumber" name="422" href="#422">422</a>     }
+<a class="jxr_linenumber" name="423" href="#423">423</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
