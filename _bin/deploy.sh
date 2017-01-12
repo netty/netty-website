@@ -30,7 +30,7 @@ function spopd {
 
 function ensure_clean_copy {
   GIT_STATUS="$(git status 2> /dev/null)"
-  if [[ ! ${GIT_STATUS} =~ (working directory clean) ]]; then
+  if [[ ! ${GIT_STATUS} =~ (working (directory|tree) clean) ]]; then
     echo "Working directory not clean: $PWD"
     exit 1
   fi
