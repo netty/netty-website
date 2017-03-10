@@ -178,7 +178,7 @@
 <a class="jxr_linenumber" name="168" href="#168">168</a> 
 <a class="jxr_linenumber" name="169" href="#169">169</a>         p.addLast(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;Channel&gt;() {
 <a class="jxr_linenumber" name="170" href="#170">170</a>             @Override
-<a class="jxr_linenumber" name="171" href="#171">171</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> initChannel(<a href="../../../io/netty/channel/Channel.html">Channel</a> ch) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="171" href="#171">171</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> initChannel(<strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> ch) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="172" href="#172">172</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = ch.pipeline();
 <a class="jxr_linenumber" name="173" href="#173">173</a>                 <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> handler = config.handler();
 <a class="jxr_linenumber" name="174" href="#174">174</a>                 <strong class="jxr_keyword">if</strong> (handler != <strong class="jxr_keyword">null</strong>) {
@@ -193,7 +193,7 @@
 <a class="jxr_linenumber" name="183" href="#183">183</a>                     @Override
 <a class="jxr_linenumber" name="184" href="#184">184</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
 <a class="jxr_linenumber" name="185" href="#185">185</a>                         pipeline.addLast(<strong class="jxr_keyword">new</strong> <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrapAcceptor</a>(
-<a class="jxr_linenumber" name="186" href="#186">186</a>                                 currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
+<a class="jxr_linenumber" name="186" href="#186">186</a>                                 ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
 <a class="jxr_linenumber" name="187" href="#187">187</a>                     }
 <a class="jxr_linenumber" name="188" href="#188">188</a>                 });
 <a class="jxr_linenumber" name="189" href="#189">189</a>             }
@@ -229,102 +229,110 @@
 <a class="jxr_linenumber" name="219" href="#219">219</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> childHandler;
 <a class="jxr_linenumber" name="220" href="#220">220</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Entry&lt;ChannelOption&lt;?&gt;, Object&gt;[] childOptions;
 <a class="jxr_linenumber" name="221" href="#221">221</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Entry&lt;AttributeKey&lt;?&gt;, Object&gt;[] childAttrs;
-<a class="jxr_linenumber" name="222" href="#222">222</a> 
-<a class="jxr_linenumber" name="223" href="#223">223</a>         <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrapAcceptor</a>(
-<a class="jxr_linenumber" name="224" href="#224">224</a>                 <a href="../../../io/netty/channel/EventLoopGroup.html">EventLoopGroup</a> childGroup, <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> childHandler,
-<a class="jxr_linenumber" name="225" href="#225">225</a>                 Entry&lt;ChannelOption&lt;?&gt;, Object&gt;[] childOptions, Entry&lt;AttributeKey&lt;?&gt;, Object&gt;[] childAttrs) {
-<a class="jxr_linenumber" name="226" href="#226">226</a>             <strong class="jxr_keyword">this</strong>.childGroup = childGroup;
-<a class="jxr_linenumber" name="227" href="#227">227</a>             <strong class="jxr_keyword">this</strong>.childHandler = childHandler;
-<a class="jxr_linenumber" name="228" href="#228">228</a>             <strong class="jxr_keyword">this</strong>.childOptions = childOptions;
-<a class="jxr_linenumber" name="229" href="#229">229</a>             <strong class="jxr_keyword">this</strong>.childAttrs = childAttrs;
-<a class="jxr_linenumber" name="230" href="#230">230</a>         }
+<a class="jxr_linenumber" name="222" href="#222">222</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Runnable enableAutoReadTask;
+<a class="jxr_linenumber" name="223" href="#223">223</a> 
+<a class="jxr_linenumber" name="224" href="#224">224</a>         <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrapAcceptor</a>(
+<a class="jxr_linenumber" name="225" href="#225">225</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> channel, <a href="../../../io/netty/channel/EventLoopGroup.html">EventLoopGroup</a> childGroup, <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> childHandler,
+<a class="jxr_linenumber" name="226" href="#226">226</a>                 Entry&lt;ChannelOption&lt;?&gt;, Object&gt;[] childOptions, Entry&lt;AttributeKey&lt;?&gt;, Object&gt;[] childAttrs) {
+<a class="jxr_linenumber" name="227" href="#227">227</a>             <strong class="jxr_keyword">this</strong>.childGroup = childGroup;
+<a class="jxr_linenumber" name="228" href="#228">228</a>             <strong class="jxr_keyword">this</strong>.childHandler = childHandler;
+<a class="jxr_linenumber" name="229" href="#229">229</a>             <strong class="jxr_keyword">this</strong>.childOptions = childOptions;
+<a class="jxr_linenumber" name="230" href="#230">230</a>             <strong class="jxr_keyword">this</strong>.childAttrs = childAttrs;
 <a class="jxr_linenumber" name="231" href="#231">231</a> 
-<a class="jxr_linenumber" name="232" href="#232">232</a>         @Override
-<a class="jxr_linenumber" name="233" href="#233">233</a>         @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="234" href="#234">234</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelRead(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg) {
-<a class="jxr_linenumber" name="235" href="#235">235</a>             <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> child = (Channel) msg;
-<a class="jxr_linenumber" name="236" href="#236">236</a> 
-<a class="jxr_linenumber" name="237" href="#237">237</a>             child.pipeline().addLast(childHandler);
-<a class="jxr_linenumber" name="238" href="#238">238</a> 
-<a class="jxr_linenumber" name="239" href="#239">239</a>             setChannelOptions(child, childOptions, logger);
-<a class="jxr_linenumber" name="240" href="#240">240</a> 
-<a class="jxr_linenumber" name="241" href="#241">241</a>             <strong class="jxr_keyword">for</strong> (Entry&lt;AttributeKey&lt;?&gt;, Object&gt; e: childAttrs) {
-<a class="jxr_linenumber" name="242" href="#242">242</a>                 child.attr((AttributeKey&lt;Object&gt;) e.getKey()).set(e.getValue());
-<a class="jxr_linenumber" name="243" href="#243">243</a>             }
+<a class="jxr_linenumber" name="232" href="#232">232</a>             <em class="jxr_comment">// Task which is scheduled to re-enable auto-read.</em>
+<a class="jxr_linenumber" name="233" href="#233">233</a>             <em class="jxr_comment">// It's important to create this Runnable before we try to submit it as otherwise the URLClassLoader may</em>
+<a class="jxr_linenumber" name="234" href="#234">234</a>             <em class="jxr_comment">// not be able to load the class because of the file limit it already reached.</em>
+<a class="jxr_linenumber" name="235" href="#235">235</a>             <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="236" href="#236">236</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/1328</em>
+<a class="jxr_linenumber" name="237" href="#237">237</a>             enableAutoReadTask = <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="238" href="#238">238</a>                 @Override
+<a class="jxr_linenumber" name="239" href="#239">239</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="240" href="#240">240</a>                     channel.config().setAutoRead(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="241" href="#241">241</a>                 }
+<a class="jxr_linenumber" name="242" href="#242">242</a>             };
+<a class="jxr_linenumber" name="243" href="#243">243</a>         }
 <a class="jxr_linenumber" name="244" href="#244">244</a> 
-<a class="jxr_linenumber" name="245" href="#245">245</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="246" href="#246">246</a>                 childGroup.register(child).addListener(<strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="247" href="#247">247</a>                     @Override
-<a class="jxr_linenumber" name="248" href="#248">248</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="249" href="#249">249</a>                         <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="250" href="#250">250</a>                             forceClose(child, future.cause());
-<a class="jxr_linenumber" name="251" href="#251">251</a>                         }
-<a class="jxr_linenumber" name="252" href="#252">252</a>                     }
-<a class="jxr_linenumber" name="253" href="#253">253</a>                 });
-<a class="jxr_linenumber" name="254" href="#254">254</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="255" href="#255">255</a>                 forceClose(child, t);
+<a class="jxr_linenumber" name="245" href="#245">245</a>         @Override
+<a class="jxr_linenumber" name="246" href="#246">246</a>         @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="247" href="#247">247</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelRead(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg) {
+<a class="jxr_linenumber" name="248" href="#248">248</a>             <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/Channel.html">Channel</a> child = (Channel) msg;
+<a class="jxr_linenumber" name="249" href="#249">249</a> 
+<a class="jxr_linenumber" name="250" href="#250">250</a>             child.pipeline().addLast(childHandler);
+<a class="jxr_linenumber" name="251" href="#251">251</a> 
+<a class="jxr_linenumber" name="252" href="#252">252</a>             setChannelOptions(child, childOptions, logger);
+<a class="jxr_linenumber" name="253" href="#253">253</a> 
+<a class="jxr_linenumber" name="254" href="#254">254</a>             <strong class="jxr_keyword">for</strong> (Entry&lt;AttributeKey&lt;?&gt;, Object&gt; e: childAttrs) {
+<a class="jxr_linenumber" name="255" href="#255">255</a>                 child.attr((AttributeKey&lt;Object&gt;) e.getKey()).set(e.getValue());
 <a class="jxr_linenumber" name="256" href="#256">256</a>             }
-<a class="jxr_linenumber" name="257" href="#257">257</a>         }
-<a class="jxr_linenumber" name="258" href="#258">258</a> 
-<a class="jxr_linenumber" name="259" href="#259">259</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> forceClose(<a href="../../../io/netty/channel/Channel.html">Channel</a> child, Throwable t) {
-<a class="jxr_linenumber" name="260" href="#260">260</a>             child.unsafe().closeForcibly();
-<a class="jxr_linenumber" name="261" href="#261">261</a>             logger.warn(<span class="jxr_string">"Failed to register an accepted channel: "</span> + child, t);
-<a class="jxr_linenumber" name="262" href="#262">262</a>         }
-<a class="jxr_linenumber" name="263" href="#263">263</a> 
-<a class="jxr_linenumber" name="264" href="#264">264</a>         @Override
-<a class="jxr_linenumber" name="265" href="#265">265</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="266" href="#266">266</a>             <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> config = ctx.channel().config();
-<a class="jxr_linenumber" name="267" href="#267">267</a>             <strong class="jxr_keyword">if</strong> (config.isAutoRead()) {
-<a class="jxr_linenumber" name="268" href="#268">268</a>                 <em class="jxr_comment">// stop accept new connections for 1 second to allow the channel to recover</em>
-<a class="jxr_linenumber" name="269" href="#269">269</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/1328</em>
-<a class="jxr_linenumber" name="270" href="#270">270</a>                 config.setAutoRead(false);
-<a class="jxr_linenumber" name="271" href="#271">271</a>                 ctx.channel().eventLoop().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="272" href="#272">272</a>                     @Override
-<a class="jxr_linenumber" name="273" href="#273">273</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="274" href="#274">274</a>                         config.setAutoRead(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="275" href="#275">275</a>                     }
-<a class="jxr_linenumber" name="276" href="#276">276</a>                 }, 1, TimeUnit.SECONDS);
-<a class="jxr_linenumber" name="277" href="#277">277</a>             }
-<a class="jxr_linenumber" name="278" href="#278">278</a>             <em class="jxr_comment">// still let the exceptionCaught event flow through the pipeline to give the user</em>
-<a class="jxr_linenumber" name="279" href="#279">279</a>             <em class="jxr_comment">// a chance to do something with it</em>
-<a class="jxr_linenumber" name="280" href="#280">280</a>             ctx.fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="281" href="#281">281</a>         }
-<a class="jxr_linenumber" name="282" href="#282">282</a>     }
-<a class="jxr_linenumber" name="283" href="#283">283</a> 
-<a class="jxr_linenumber" name="284" href="#284">284</a>     @Override
-<a class="jxr_linenumber" name="285" href="#285">285</a>     @SuppressWarnings(<span class="jxr_string">"CloneDoesntCallSuperClone"</span>)
-<a class="jxr_linenumber" name="286" href="#286">286</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrap</a> clone() {
-<a class="jxr_linenumber" name="287" href="#287">287</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrap</a>(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="288" href="#288">288</a>     }
-<a class="jxr_linenumber" name="289" href="#289">289</a> 
-<a class="jxr_linenumber" name="290" href="#290">290</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="291" href="#291">291</a> <em class="jxr_javadoccomment">     * Return the configured {@link EventLoopGroup} which will be used for the child channels or {@code null}</em>
-<a class="jxr_linenumber" name="292" href="#292">292</a> <em class="jxr_javadoccomment">     * if non is configured yet.</em>
-<a class="jxr_linenumber" name="293" href="#293">293</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="294" href="#294">294</a> <em class="jxr_javadoccomment">     * @deprecated Use {@link #config()} instead.</em>
-<a class="jxr_linenumber" name="295" href="#295">295</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="296" href="#296">296</a>     @Deprecated
-<a class="jxr_linenumber" name="297" href="#297">297</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/EventLoopGroup.html">EventLoopGroup</a> childGroup() {
-<a class="jxr_linenumber" name="298" href="#298">298</a>         <strong class="jxr_keyword">return</strong> childGroup;
-<a class="jxr_linenumber" name="299" href="#299">299</a>     }
-<a class="jxr_linenumber" name="300" href="#300">300</a> 
-<a class="jxr_linenumber" name="301" href="#301">301</a>     <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> childHandler() {
-<a class="jxr_linenumber" name="302" href="#302">302</a>         <strong class="jxr_keyword">return</strong> childHandler;
-<a class="jxr_linenumber" name="303" href="#303">303</a>     }
-<a class="jxr_linenumber" name="304" href="#304">304</a> 
-<a class="jxr_linenumber" name="305" href="#305">305</a>     <strong class="jxr_keyword">final</strong> Map&lt;ChannelOption&lt;?&gt;, Object&gt; childOptions() {
-<a class="jxr_linenumber" name="306" href="#306">306</a>         <strong class="jxr_keyword">return</strong> copiedMap(childOptions);
+<a class="jxr_linenumber" name="257" href="#257">257</a> 
+<a class="jxr_linenumber" name="258" href="#258">258</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="259" href="#259">259</a>                 childGroup.register(child).addListener(<strong class="jxr_keyword">new</strong> <a href="../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="260" href="#260">260</a>                     @Override
+<a class="jxr_linenumber" name="261" href="#261">261</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="262" href="#262">262</a>                         <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="263" href="#263">263</a>                             forceClose(child, future.cause());
+<a class="jxr_linenumber" name="264" href="#264">264</a>                         }
+<a class="jxr_linenumber" name="265" href="#265">265</a>                     }
+<a class="jxr_linenumber" name="266" href="#266">266</a>                 });
+<a class="jxr_linenumber" name="267" href="#267">267</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="268" href="#268">268</a>                 forceClose(child, t);
+<a class="jxr_linenumber" name="269" href="#269">269</a>             }
+<a class="jxr_linenumber" name="270" href="#270">270</a>         }
+<a class="jxr_linenumber" name="271" href="#271">271</a> 
+<a class="jxr_linenumber" name="272" href="#272">272</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> forceClose(<a href="../../../io/netty/channel/Channel.html">Channel</a> child, Throwable t) {
+<a class="jxr_linenumber" name="273" href="#273">273</a>             child.unsafe().closeForcibly();
+<a class="jxr_linenumber" name="274" href="#274">274</a>             logger.warn(<span class="jxr_string">"Failed to register an accepted channel: "</span> + child, t);
+<a class="jxr_linenumber" name="275" href="#275">275</a>         }
+<a class="jxr_linenumber" name="276" href="#276">276</a> 
+<a class="jxr_linenumber" name="277" href="#277">277</a>         @Override
+<a class="jxr_linenumber" name="278" href="#278">278</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="279" href="#279">279</a>             <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> config = ctx.channel().config();
+<a class="jxr_linenumber" name="280" href="#280">280</a>             <strong class="jxr_keyword">if</strong> (config.isAutoRead()) {
+<a class="jxr_linenumber" name="281" href="#281">281</a>                 <em class="jxr_comment">// stop accept new connections for 1 second to allow the channel to recover</em>
+<a class="jxr_linenumber" name="282" href="#282">282</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/1328</em>
+<a class="jxr_linenumber" name="283" href="#283">283</a>                 config.setAutoRead(false);
+<a class="jxr_linenumber" name="284" href="#284">284</a>                 ctx.channel().eventLoop().schedule(enableAutoReadTask, 1, TimeUnit.SECONDS);
+<a class="jxr_linenumber" name="285" href="#285">285</a>             }
+<a class="jxr_linenumber" name="286" href="#286">286</a>             <em class="jxr_comment">// still let the exceptionCaught event flow through the pipeline to give the user</em>
+<a class="jxr_linenumber" name="287" href="#287">287</a>             <em class="jxr_comment">// a chance to do something with it</em>
+<a class="jxr_linenumber" name="288" href="#288">288</a>             ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="289" href="#289">289</a>         }
+<a class="jxr_linenumber" name="290" href="#290">290</a>     }
+<a class="jxr_linenumber" name="291" href="#291">291</a> 
+<a class="jxr_linenumber" name="292" href="#292">292</a>     @Override
+<a class="jxr_linenumber" name="293" href="#293">293</a>     @SuppressWarnings(<span class="jxr_string">"CloneDoesntCallSuperClone"</span>)
+<a class="jxr_linenumber" name="294" href="#294">294</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrap</a> clone() {
+<a class="jxr_linenumber" name="295" href="#295">295</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/bootstrap/ServerBootstrap.html">ServerBootstrap</a>(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="296" href="#296">296</a>     }
+<a class="jxr_linenumber" name="297" href="#297">297</a> 
+<a class="jxr_linenumber" name="298" href="#298">298</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="299" href="#299">299</a> <em class="jxr_javadoccomment">     * Return the configured {@link EventLoopGroup} which will be used for the child channels or {@code null}</em>
+<a class="jxr_linenumber" name="300" href="#300">300</a> <em class="jxr_javadoccomment">     * if non is configured yet.</em>
+<a class="jxr_linenumber" name="301" href="#301">301</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="302" href="#302">302</a> <em class="jxr_javadoccomment">     * @deprecated Use {@link #config()} instead.</em>
+<a class="jxr_linenumber" name="303" href="#303">303</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="304" href="#304">304</a>     @Deprecated
+<a class="jxr_linenumber" name="305" href="#305">305</a>     <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/channel/EventLoopGroup.html">EventLoopGroup</a> childGroup() {
+<a class="jxr_linenumber" name="306" href="#306">306</a>         <strong class="jxr_keyword">return</strong> childGroup;
 <a class="jxr_linenumber" name="307" href="#307">307</a>     }
 <a class="jxr_linenumber" name="308" href="#308">308</a> 
-<a class="jxr_linenumber" name="309" href="#309">309</a>     <strong class="jxr_keyword">final</strong> Map&lt;AttributeKey&lt;?&gt;, Object&gt; childAttrs() {
-<a class="jxr_linenumber" name="310" href="#310">310</a>         <strong class="jxr_keyword">return</strong> copiedMap(childAttrs);
+<a class="jxr_linenumber" name="309" href="#309">309</a>     <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/channel/ChannelHandler.html">ChannelHandler</a> childHandler() {
+<a class="jxr_linenumber" name="310" href="#310">310</a>         <strong class="jxr_keyword">return</strong> childHandler;
 <a class="jxr_linenumber" name="311" href="#311">311</a>     }
 <a class="jxr_linenumber" name="312" href="#312">312</a> 
-<a class="jxr_linenumber" name="313" href="#313">313</a>     @Override
-<a class="jxr_linenumber" name="314" href="#314">314</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/bootstrap/ServerBootstrapConfig.html">ServerBootstrapConfig</a> config() {
-<a class="jxr_linenumber" name="315" href="#315">315</a>         <strong class="jxr_keyword">return</strong> config;
-<a class="jxr_linenumber" name="316" href="#316">316</a>     }
-<a class="jxr_linenumber" name="317" href="#317">317</a> }
+<a class="jxr_linenumber" name="313" href="#313">313</a>     <strong class="jxr_keyword">final</strong> Map&lt;ChannelOption&lt;?&gt;, Object&gt; childOptions() {
+<a class="jxr_linenumber" name="314" href="#314">314</a>         <strong class="jxr_keyword">return</strong> copiedMap(childOptions);
+<a class="jxr_linenumber" name="315" href="#315">315</a>     }
+<a class="jxr_linenumber" name="316" href="#316">316</a> 
+<a class="jxr_linenumber" name="317" href="#317">317</a>     <strong class="jxr_keyword">final</strong> Map&lt;AttributeKey&lt;?&gt;, Object&gt; childAttrs() {
+<a class="jxr_linenumber" name="318" href="#318">318</a>         <strong class="jxr_keyword">return</strong> copiedMap(childAttrs);
+<a class="jxr_linenumber" name="319" href="#319">319</a>     }
+<a class="jxr_linenumber" name="320" href="#320">320</a> 
+<a class="jxr_linenumber" name="321" href="#321">321</a>     @Override
+<a class="jxr_linenumber" name="322" href="#322">322</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/bootstrap/ServerBootstrapConfig.html">ServerBootstrapConfig</a> config() {
+<a class="jxr_linenumber" name="323" href="#323">323</a>         <strong class="jxr_keyword">return</strong> config;
+<a class="jxr_linenumber" name="324" href="#324">324</a>     }
+<a class="jxr_linenumber" name="325" href="#325">325</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

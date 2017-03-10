@@ -26,7 +26,7 @@
 <a class="jxr_linenumber" name="16" href="#16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.ssl;
 <a class="jxr_linenumber" name="17" href="#17">17</a>  
 <a class="jxr_linenumber" name="18" href="#18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.ReferenceCountedOpenSslServerContext.ServerContext;
-<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> org.apache.tomcat.jni.SSL;
+<a class="jxr_linenumber" name="19" href="#19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.internal.tcnative.SSL;
 <a class="jxr_linenumber" name="20" href="#20">20</a>  
 <a class="jxr_linenumber" name="21" href="#21">21</a>  <strong class="jxr_keyword">import</strong> java.io.File;
 <a class="jxr_linenumber" name="22" href="#22">22</a>  <strong class="jxr_keyword">import</strong> java.security.PrivateKey;
@@ -333,51 +333,53 @@
 <a class="jxr_linenumber" name="323" href="#323">323</a>         <strong class="jxr_keyword">this</strong>(toX509CertificatesInternal(trustCertCollectionFile), trustManagerFactory,
 <a class="jxr_linenumber" name="324" href="#324">324</a>                 toX509CertificatesInternal(keyCertChainFile), toPrivateKeyInternal(keyFile, keyPassword),
 <a class="jxr_linenumber" name="325" href="#325">325</a>                 keyPassword, keyManagerFactory, ciphers, cipherFilter,
-<a class="jxr_linenumber" name="326" href="#326">326</a>                 apn, sessionCacheSize, sessionTimeout, ClientAuth.NONE, false);
+<a class="jxr_linenumber" name="326" href="#326">326</a>                 apn, sessionCacheSize, sessionTimeout, ClientAuth.NONE, <strong class="jxr_keyword">null</strong>, false);
 <a class="jxr_linenumber" name="327" href="#327">327</a>     }
 <a class="jxr_linenumber" name="328" href="#328">328</a> 
 <a class="jxr_linenumber" name="329" href="#329">329</a>     <a href="../../../../io/netty/handler/ssl/OpenSslServerContext.html">OpenSslServerContext</a>(
 <a class="jxr_linenumber" name="330" href="#330">330</a>             X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
 <a class="jxr_linenumber" name="331" href="#331">331</a>             X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
 <a class="jxr_linenumber" name="332" href="#332">332</a>             Iterable&lt;String&gt; ciphers, <a href="../../../../io/netty/handler/ssl/CipherSuiteFilter.html">CipherSuiteFilter</a> cipherFilter, <a href="../../../../io/netty/handler/ssl/ApplicationProtocolConfig.html">ApplicationProtocolConfig</a> apn,
-<a class="jxr_linenumber" name="333" href="#333">333</a>             <strong class="jxr_keyword">long</strong> sessionCacheSize, <strong class="jxr_keyword">long</strong> sessionTimeout, <a href="../../../../io/netty/handler/ssl/ClientAuth.html">ClientAuth</a> clientAuth, <strong class="jxr_keyword">boolean</strong> startTls) <strong class="jxr_keyword">throws</strong> SSLException {
-<a class="jxr_linenumber" name="334" href="#334">334</a>         <strong class="jxr_keyword">this</strong>(trustCertCollection, trustManagerFactory, keyCertChain, key, keyPassword, keyManagerFactory, ciphers,
-<a class="jxr_linenumber" name="335" href="#335">335</a>                 cipherFilter, toNegotiator(apn), sessionCacheSize, sessionTimeout, clientAuth, startTls);
-<a class="jxr_linenumber" name="336" href="#336">336</a>     }
-<a class="jxr_linenumber" name="337" href="#337">337</a> 
-<a class="jxr_linenumber" name="338" href="#338">338</a>     @SuppressWarnings(<span class="jxr_string">"deprecation"</span>)
-<a class="jxr_linenumber" name="339" href="#339">339</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/OpenSslServerContext.html">OpenSslServerContext</a>(
-<a class="jxr_linenumber" name="340" href="#340">340</a>             X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
-<a class="jxr_linenumber" name="341" href="#341">341</a>             X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
-<a class="jxr_linenumber" name="342" href="#342">342</a>             Iterable&lt;String&gt; ciphers, <a href="../../../../io/netty/handler/ssl/CipherSuiteFilter.html">CipherSuiteFilter</a> cipherFilter, <a href="../../../../io/netty/handler/ssl/OpenSslApplicationProtocolNegotiator.html">OpenSslApplicationProtocolNegotiator</a> apn,
-<a class="jxr_linenumber" name="343" href="#343">343</a>             <strong class="jxr_keyword">long</strong> sessionCacheSize, <strong class="jxr_keyword">long</strong> sessionTimeout, <a href="../../../../io/netty/handler/ssl/ClientAuth.html">ClientAuth</a> clientAuth, <strong class="jxr_keyword">boolean</strong> startTls) <strong class="jxr_keyword">throws</strong> SSLException {
-<a class="jxr_linenumber" name="344" href="#344">344</a>         <strong class="jxr_keyword">super</strong>(ciphers, cipherFilter, apn, sessionCacheSize, sessionTimeout, SSL.SSL_MODE_SERVER, keyCertChain,
-<a class="jxr_linenumber" name="345" href="#345">345</a>                 clientAuth, startTls);
-<a class="jxr_linenumber" name="346" href="#346">346</a>         <em class="jxr_comment">// Create a new SSL_CTX and configure it.</em>
-<a class="jxr_linenumber" name="347" href="#347">347</a>         <strong class="jxr_keyword">boolean</strong> success = false;
-<a class="jxr_linenumber" name="348" href="#348">348</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="349" href="#349">349</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslServerContext.html">ServerContext</a> context = newSessionContext(<strong class="jxr_keyword">this</strong>, ctx, engineMap, trustCertCollection, trustManagerFactory,
-<a class="jxr_linenumber" name="350" href="#350">350</a>                                                       keyCertChain, key, keyPassword, keyManagerFactory);
-<a class="jxr_linenumber" name="351" href="#351">351</a>             sessionContext = context.sessionContext;
-<a class="jxr_linenumber" name="352" href="#352">352</a>             keyMaterialManager = context.keyMaterialManager;
-<a class="jxr_linenumber" name="353" href="#353">353</a>             success = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="354" href="#354">354</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="355" href="#355">355</a>             <strong class="jxr_keyword">if</strong> (!success) {
-<a class="jxr_linenumber" name="356" href="#356">356</a>                 release();
-<a class="jxr_linenumber" name="357" href="#357">357</a>             }
-<a class="jxr_linenumber" name="358" href="#358">358</a>         }
-<a class="jxr_linenumber" name="359" href="#359">359</a>     }
-<a class="jxr_linenumber" name="360" href="#360">360</a> 
-<a class="jxr_linenumber" name="361" href="#361">361</a>     @Override
-<a class="jxr_linenumber" name="362" href="#362">362</a>     <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/handler/ssl/OpenSslServerSessionContext.html">OpenSslServerSessionContext</a> sessionContext() {
-<a class="jxr_linenumber" name="363" href="#363">363</a>         <strong class="jxr_keyword">return</strong> sessionContext;
-<a class="jxr_linenumber" name="364" href="#364">364</a>     }
-<a class="jxr_linenumber" name="365" href="#365">365</a> 
-<a class="jxr_linenumber" name="366" href="#366">366</a>     @Override
-<a class="jxr_linenumber" name="367" href="#367">367</a>     <a href="../../../../io/netty/handler/ssl/OpenSslKeyMaterialManager.html">OpenSslKeyMaterialManager</a> keyMaterialManager() {
-<a class="jxr_linenumber" name="368" href="#368">368</a>         <strong class="jxr_keyword">return</strong> keyMaterialManager;
-<a class="jxr_linenumber" name="369" href="#369">369</a>     }
-<a class="jxr_linenumber" name="370" href="#370">370</a> }
+<a class="jxr_linenumber" name="333" href="#333">333</a>             <strong class="jxr_keyword">long</strong> sessionCacheSize, <strong class="jxr_keyword">long</strong> sessionTimeout, <a href="../../../../io/netty/handler/ssl/ClientAuth.html">ClientAuth</a> clientAuth, String[] protocols, <strong class="jxr_keyword">boolean</strong> startTls)
+<a class="jxr_linenumber" name="334" href="#334">334</a>             <strong class="jxr_keyword">throws</strong> SSLException {
+<a class="jxr_linenumber" name="335" href="#335">335</a>         <strong class="jxr_keyword">this</strong>(trustCertCollection, trustManagerFactory, keyCertChain, key, keyPassword, keyManagerFactory, ciphers,
+<a class="jxr_linenumber" name="336" href="#336">336</a>                 cipherFilter, toNegotiator(apn), sessionCacheSize, sessionTimeout, clientAuth, protocols, startTls);
+<a class="jxr_linenumber" name="337" href="#337">337</a>     }
+<a class="jxr_linenumber" name="338" href="#338">338</a> 
+<a class="jxr_linenumber" name="339" href="#339">339</a>     @SuppressWarnings(<span class="jxr_string">"deprecation"</span>)
+<a class="jxr_linenumber" name="340" href="#340">340</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/OpenSslServerContext.html">OpenSslServerContext</a>(
+<a class="jxr_linenumber" name="341" href="#341">341</a>             X509Certificate[] trustCertCollection, TrustManagerFactory trustManagerFactory,
+<a class="jxr_linenumber" name="342" href="#342">342</a>             X509Certificate[] keyCertChain, PrivateKey key, String keyPassword, KeyManagerFactory keyManagerFactory,
+<a class="jxr_linenumber" name="343" href="#343">343</a>             Iterable&lt;String&gt; ciphers, <a href="../../../../io/netty/handler/ssl/CipherSuiteFilter.html">CipherSuiteFilter</a> cipherFilter, <a href="../../../../io/netty/handler/ssl/OpenSslApplicationProtocolNegotiator.html">OpenSslApplicationProtocolNegotiator</a> apn,
+<a class="jxr_linenumber" name="344" href="#344">344</a>             <strong class="jxr_keyword">long</strong> sessionCacheSize, <strong class="jxr_keyword">long</strong> sessionTimeout, <a href="../../../../io/netty/handler/ssl/ClientAuth.html">ClientAuth</a> clientAuth, String[] protocols, <strong class="jxr_keyword">boolean</strong> startTls)
+<a class="jxr_linenumber" name="345" href="#345">345</a>             <strong class="jxr_keyword">throws</strong> SSLException {
+<a class="jxr_linenumber" name="346" href="#346">346</a>         <strong class="jxr_keyword">super</strong>(ciphers, cipherFilter, apn, sessionCacheSize, sessionTimeout, SSL.SSL_MODE_SERVER, keyCertChain,
+<a class="jxr_linenumber" name="347" href="#347">347</a>                 clientAuth, protocols, startTls);
+<a class="jxr_linenumber" name="348" href="#348">348</a>         <em class="jxr_comment">// Create a new SSL_CTX and configure it.</em>
+<a class="jxr_linenumber" name="349" href="#349">349</a>         <strong class="jxr_keyword">boolean</strong> success = false;
+<a class="jxr_linenumber" name="350" href="#350">350</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="351" href="#351">351</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslServerContext.html">ServerContext</a> context = newSessionContext(<strong class="jxr_keyword">this</strong>, ctx, engineMap, trustCertCollection, trustManagerFactory,
+<a class="jxr_linenumber" name="352" href="#352">352</a>                                                       keyCertChain, key, keyPassword, keyManagerFactory);
+<a class="jxr_linenumber" name="353" href="#353">353</a>             sessionContext = context.sessionContext;
+<a class="jxr_linenumber" name="354" href="#354">354</a>             keyMaterialManager = context.keyMaterialManager;
+<a class="jxr_linenumber" name="355" href="#355">355</a>             success = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="356" href="#356">356</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="357" href="#357">357</a>             <strong class="jxr_keyword">if</strong> (!success) {
+<a class="jxr_linenumber" name="358" href="#358">358</a>                 release();
+<a class="jxr_linenumber" name="359" href="#359">359</a>             }
+<a class="jxr_linenumber" name="360" href="#360">360</a>         }
+<a class="jxr_linenumber" name="361" href="#361">361</a>     }
+<a class="jxr_linenumber" name="362" href="#362">362</a> 
+<a class="jxr_linenumber" name="363" href="#363">363</a>     @Override
+<a class="jxr_linenumber" name="364" href="#364">364</a>     <strong class="jxr_keyword">public</strong> <a href="../../../../io/netty/handler/ssl/OpenSslServerSessionContext.html">OpenSslServerSessionContext</a> sessionContext() {
+<a class="jxr_linenumber" name="365" href="#365">365</a>         <strong class="jxr_keyword">return</strong> sessionContext;
+<a class="jxr_linenumber" name="366" href="#366">366</a>     }
+<a class="jxr_linenumber" name="367" href="#367">367</a> 
+<a class="jxr_linenumber" name="368" href="#368">368</a>     @Override
+<a class="jxr_linenumber" name="369" href="#369">369</a>     <a href="../../../../io/netty/handler/ssl/OpenSslKeyMaterialManager.html">OpenSslKeyMaterialManager</a> keyMaterialManager() {
+<a class="jxr_linenumber" name="370" href="#370">370</a>         <strong class="jxr_keyword">return</strong> keyMaterialManager;
+<a class="jxr_linenumber" name="371" href="#371">371</a>     }
+<a class="jxr_linenumber" name="372" href="#372">372</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

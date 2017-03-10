@@ -62,7 +62,7 @@
 <a class="jxr_linenumber" name="52" href="#52">52</a>  <em class="jxr_javadoccomment"> */</em>
 <a class="jxr_linenumber" name="53" href="#53">53</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http/HttpContentEncoder.html">HttpContentEncoder</a> <strong class="jxr_keyword">extends</strong> MessageToMessageCodec&lt;HttpRequest, HttpObject&gt; {
 <a class="jxr_linenumber" name="54" href="#54">54</a>  
-<a class="jxr_linenumber" name="55" href="#55">55</a>      <strong class="jxr_keyword">private</strong> enum <a href="../../../../../io/netty/handler/codec/http/HttpObjectDecoder.html">State</a> {
+<a class="jxr_linenumber" name="55" href="#55">55</a>      <strong class="jxr_keyword">private</strong> enum <a href="../../../../../io/netty/handler/codec/http/HttpContentEncoder.html">State</a> {
 <a class="jxr_linenumber" name="56" href="#56">56</a>          PASS_THROUGH,
 <a class="jxr_linenumber" name="57" href="#57">57</a>          AWAIT_HEADERS,
 <a class="jxr_linenumber" name="58" href="#58">58</a>          AWAIT_CONTENT
@@ -73,44 +73,44 @@
 <a class="jxr_linenumber" name="63" href="#63">63</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> CONTINUE_CODE = HttpResponseStatus.CONTINUE.code();
 <a class="jxr_linenumber" name="64" href="#64">64</a>  
 <a class="jxr_linenumber" name="65" href="#65">65</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Queue&lt;CharSequence&gt; acceptEncodingQueue = <strong class="jxr_keyword">new</strong> ArrayDeque&lt;CharSequence&gt;();
-<a class="jxr_linenumber" name="66" href="#66">66</a>      <strong class="jxr_keyword">private</strong> CharSequence acceptEncoding;
-<a class="jxr_linenumber" name="67" href="#67">67</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/embedded/EmbeddedChannel.html">EmbeddedChannel</a> encoder;
-<a class="jxr_linenumber" name="68" href="#68">68</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/handler/codec/http/HttpObjectDecoder.html">State</a> state = State.AWAIT_HEADERS;
-<a class="jxr_linenumber" name="69" href="#69">69</a>  
-<a class="jxr_linenumber" name="70" href="#70">70</a>      @Override
-<a class="jxr_linenumber" name="71" href="#71">71</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> acceptOutboundMessage(Object msg) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="72" href="#72">72</a>          <strong class="jxr_keyword">return</strong> msg instanceof <a href="../../../../../io/netty/handler/codec/http/HttpContent.html">HttpContent</a> || msg instanceof HttpResponse;
-<a class="jxr_linenumber" name="73" href="#73">73</a>      }
-<a class="jxr_linenumber" name="74" href="#74">74</a>  
-<a class="jxr_linenumber" name="75" href="#75">75</a>      @Override
-<a class="jxr_linenumber" name="76" href="#76">76</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> decode(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/HttpRequest.html">HttpRequest</a> msg, List&lt;Object&gt; out)
-<a class="jxr_linenumber" name="77" href="#77">77</a>              <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="78" href="#78">78</a>          CharSequence acceptedEncoding = msg.headers().get(HttpHeaders.Names.ACCEPT_ENCODING);
-<a class="jxr_linenumber" name="79" href="#79">79</a>          <strong class="jxr_keyword">if</strong> (acceptedEncoding == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="80" href="#80">80</a>              acceptedEncoding = HttpHeaders.Values.IDENTITY;
-<a class="jxr_linenumber" name="81" href="#81">81</a>          }
-<a class="jxr_linenumber" name="82" href="#82">82</a>  
-<a class="jxr_linenumber" name="83" href="#83">83</a>          <a href="../../../../../io/netty/handler/codec/http/HttpMethod.html">HttpMethod</a> meth = msg.getMethod();
-<a class="jxr_linenumber" name="84" href="#84">84</a>          <strong class="jxr_keyword">if</strong> (meth == HttpMethod.HEAD) {
-<a class="jxr_linenumber" name="85" href="#85">85</a>              acceptedEncoding = ZERO_LENGTH_HEAD;
-<a class="jxr_linenumber" name="86" href="#86">86</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (meth == HttpMethod.CONNECT) {
-<a class="jxr_linenumber" name="87" href="#87">87</a>              acceptedEncoding = ZERO_LENGTH_CONNECT;
-<a class="jxr_linenumber" name="88" href="#88">88</a>          }
-<a class="jxr_linenumber" name="89" href="#89">89</a>  
-<a class="jxr_linenumber" name="90" href="#90">90</a>          acceptEncodingQueue.add(acceptedEncoding);
-<a class="jxr_linenumber" name="91" href="#91">91</a>          out.add(ReferenceCountUtil.retain(msg));
-<a class="jxr_linenumber" name="92" href="#92">92</a>      }
-<a class="jxr_linenumber" name="93" href="#93">93</a>  
-<a class="jxr_linenumber" name="94" href="#94">94</a>      @Override
-<a class="jxr_linenumber" name="95" href="#95">95</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encode(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/HttpObject.html">HttpObject</a> msg, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="96" href="#96">96</a>          <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> isFull = msg instanceof <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> &amp;&amp; msg instanceof LastHttpContent;
-<a class="jxr_linenumber" name="97" href="#97">97</a>          <strong class="jxr_keyword">switch</strong> (state) {
-<a class="jxr_linenumber" name="98" href="#98">98</a>              <strong class="jxr_keyword">case</strong> AWAIT_HEADERS: {
-<a class="jxr_linenumber" name="99" href="#99">99</a>                  ensureHeaders(msg);
-<a class="jxr_linenumber" name="100" href="#100">100</a>                 assert encoder == <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="101" href="#101">101</a> 
-<a class="jxr_linenumber" name="102" href="#102">102</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> res = (HttpResponse) msg;
-<a class="jxr_linenumber" name="103" href="#103">103</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> code = res.getStatus().code();
+<a class="jxr_linenumber" name="66" href="#66">66</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/embedded/EmbeddedChannel.html">EmbeddedChannel</a> encoder;
+<a class="jxr_linenumber" name="67" href="#67">67</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/handler/codec/http/HttpContentEncoder.html">State</a> state = State.AWAIT_HEADERS;
+<a class="jxr_linenumber" name="68" href="#68">68</a>  
+<a class="jxr_linenumber" name="69" href="#69">69</a>      @Override
+<a class="jxr_linenumber" name="70" href="#70">70</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> acceptOutboundMessage(Object msg) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="71" href="#71">71</a>          <strong class="jxr_keyword">return</strong> msg instanceof <a href="../../../../../io/netty/handler/codec/http/HttpContent.html">HttpContent</a> || msg instanceof HttpResponse;
+<a class="jxr_linenumber" name="72" href="#72">72</a>      }
+<a class="jxr_linenumber" name="73" href="#73">73</a>  
+<a class="jxr_linenumber" name="74" href="#74">74</a>      @Override
+<a class="jxr_linenumber" name="75" href="#75">75</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> decode(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/HttpRequest.html">HttpRequest</a> msg, List&lt;Object&gt; out)
+<a class="jxr_linenumber" name="76" href="#76">76</a>              <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="77" href="#77">77</a>          CharSequence acceptedEncoding = msg.headers().get(HttpHeaders.Names.ACCEPT_ENCODING);
+<a class="jxr_linenumber" name="78" href="#78">78</a>          <strong class="jxr_keyword">if</strong> (acceptedEncoding == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="79" href="#79">79</a>              acceptedEncoding = HttpHeaders.Values.IDENTITY;
+<a class="jxr_linenumber" name="80" href="#80">80</a>          }
+<a class="jxr_linenumber" name="81" href="#81">81</a>  
+<a class="jxr_linenumber" name="82" href="#82">82</a>          <a href="../../../../../io/netty/handler/codec/http/HttpMethod.html">HttpMethod</a> meth = msg.getMethod();
+<a class="jxr_linenumber" name="83" href="#83">83</a>          <strong class="jxr_keyword">if</strong> (meth == HttpMethod.HEAD) {
+<a class="jxr_linenumber" name="84" href="#84">84</a>              acceptedEncoding = ZERO_LENGTH_HEAD;
+<a class="jxr_linenumber" name="85" href="#85">85</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (meth == HttpMethod.CONNECT) {
+<a class="jxr_linenumber" name="86" href="#86">86</a>              acceptedEncoding = ZERO_LENGTH_CONNECT;
+<a class="jxr_linenumber" name="87" href="#87">87</a>          }
+<a class="jxr_linenumber" name="88" href="#88">88</a>  
+<a class="jxr_linenumber" name="89" href="#89">89</a>          acceptEncodingQueue.add(acceptedEncoding);
+<a class="jxr_linenumber" name="90" href="#90">90</a>          out.add(ReferenceCountUtil.retain(msg));
+<a class="jxr_linenumber" name="91" href="#91">91</a>      }
+<a class="jxr_linenumber" name="92" href="#92">92</a>  
+<a class="jxr_linenumber" name="93" href="#93">93</a>      @Override
+<a class="jxr_linenumber" name="94" href="#94">94</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encode(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/handler/codec/http/HttpObject.html">HttpObject</a> msg, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="95" href="#95">95</a>          <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> isFull = msg instanceof <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> &amp;&amp; msg instanceof LastHttpContent;
+<a class="jxr_linenumber" name="96" href="#96">96</a>          <strong class="jxr_keyword">switch</strong> (state) {
+<a class="jxr_linenumber" name="97" href="#97">97</a>              <strong class="jxr_keyword">case</strong> AWAIT_HEADERS: {
+<a class="jxr_linenumber" name="98" href="#98">98</a>                  ensureHeaders(msg);
+<a class="jxr_linenumber" name="99" href="#99">99</a>                  assert encoder == <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="100" href="#100">100</a> 
+<a class="jxr_linenumber" name="101" href="#101">101</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http/HttpResponse.html">HttpResponse</a> res = (HttpResponse) msg;
+<a class="jxr_linenumber" name="102" href="#102">102</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> code = res.getStatus().code();
+<a class="jxr_linenumber" name="103" href="#103">103</a>                 <strong class="jxr_keyword">final</strong> CharSequence acceptEncoding;
 <a class="jxr_linenumber" name="104" href="#104">104</a>                 <strong class="jxr_keyword">if</strong> (code == CONTINUE_CODE) {
 <a class="jxr_linenumber" name="105" href="#105">105</a>                     <em class="jxr_comment">// We need to not poll the encoding when response with CONTINUE as another response will follow</em>
 <a class="jxr_linenumber" name="106" href="#106">106</a>                     <em class="jxr_comment">// for the issued request. See https://github.com/netty/netty/issues/4079</em>

@@ -36,7 +36,7 @@
 <a class="jxr_linenumber" name="26" href="#26">26</a>      <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="27" href="#27">27</a>  <em class="jxr_javadoccomment">     * The allowed states of an HTTP2 stream.</em>
 <a class="jxr_linenumber" name="28" href="#28">28</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="29" href="#29">29</a>      enum <a href="../../../../../io/netty/handler/codec/http2/Http2Stream.html">State</a> {
+<a class="jxr_linenumber" name="29" href="#29">29</a>      enum <a href="../../../../../io/netty/handler/codec/http2/WeightedFairQueueByteDistributor.html">State</a> {
 <a class="jxr_linenumber" name="30" href="#30">30</a>          IDLE(false, false),
 <a class="jxr_linenumber" name="31" href="#31">31</a>          RESERVED_LOCAL(false, false),
 <a class="jxr_linenumber" name="32" href="#32">32</a>          RESERVED_REMOTE(false, false),
@@ -48,7 +48,7 @@
 <a class="jxr_linenumber" name="38" href="#38">38</a>          <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> localSideOpen;
 <a class="jxr_linenumber" name="39" href="#39">39</a>          <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> remoteSideOpen;
 <a class="jxr_linenumber" name="40" href="#40">40</a>  
-<a class="jxr_linenumber" name="41" href="#41">41</a>          <a href="../../../../../io/netty/handler/codec/http2/Http2Stream.html">State</a>(<strong class="jxr_keyword">boolean</strong> localSideOpen, <strong class="jxr_keyword">boolean</strong> remoteSideOpen) {
+<a class="jxr_linenumber" name="41" href="#41">41</a>          <a href="../../../../../io/netty/handler/codec/http2/WeightedFairQueueByteDistributor.html">State</a>(<strong class="jxr_keyword">boolean</strong> localSideOpen, <strong class="jxr_keyword">boolean</strong> remoteSideOpen) {
 <a class="jxr_linenumber" name="42" href="#42">42</a>              <strong class="jxr_keyword">this</strong>.localSideOpen = localSideOpen;
 <a class="jxr_linenumber" name="43" href="#43">43</a>              <strong class="jxr_keyword">this</strong>.remoteSideOpen = remoteSideOpen;
 <a class="jxr_linenumber" name="44" href="#44">44</a>          }
@@ -78,7 +78,7 @@
 <a class="jxr_linenumber" name="68" href="#68">68</a>      <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="69" href="#69">69</a>  <em class="jxr_javadoccomment">     * Gets the state of this stream.</em>
 <a class="jxr_linenumber" name="70" href="#70">70</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="71" href="#71">71</a>      <a href="../../../../../io/netty/handler/codec/http2/Http2Stream.html">State</a> state();
+<a class="jxr_linenumber" name="71" href="#71">71</a>      <a href="../../../../../io/netty/handler/codec/http2/WeightedFairQueueByteDistributor.html">State</a> state();
 <a class="jxr_linenumber" name="72" href="#72">72</a>  
 <a class="jxr_linenumber" name="73" href="#73">73</a>      <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="74" href="#74">74</a>  <em class="jxr_javadoccomment">     * Opens this stream, making it available via {@link Http2Connection#forEachActiveStream(Http2StreamVisitor)} and</em>
@@ -140,80 +140,25 @@
 <a class="jxr_linenumber" name="130" href="#130">130</a>     &lt;V&gt; V removeProperty(Http2Connection.PropertyKey key);
 <a class="jxr_linenumber" name="131" href="#131">131</a> 
 <a class="jxr_linenumber" name="132" href="#132">132</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="133" href="#133">133</a> <em class="jxr_javadoccomment">     * Updates an priority for this stream. Calling this method may affect the structure of the</em>
-<a class="jxr_linenumber" name="134" href="#134">134</a> <em class="jxr_javadoccomment">     * priority tree.</em>
-<a class="jxr_linenumber" name="135" href="#135">135</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="136" href="#136">136</a> <em class="jxr_javadoccomment">     * @param parentStreamId the parent stream that given stream should depend on. May be {@code 0},</em>
-<a class="jxr_linenumber" name="137" href="#137">137</a> <em class="jxr_javadoccomment">     *            if the stream has no dependencies and should be an immediate child of the</em>
-<a class="jxr_linenumber" name="138" href="#138">138</a> <em class="jxr_javadoccomment">     *            connection.</em>
-<a class="jxr_linenumber" name="139" href="#139">139</a> <em class="jxr_javadoccomment">     * @param weight the weight to be assigned to this stream relative to its parent. This value</em>
-<a class="jxr_linenumber" name="140" href="#140">140</a> <em class="jxr_javadoccomment">     *            must be between 1 and 256 (inclusive)</em>
-<a class="jxr_linenumber" name="141" href="#141">141</a> <em class="jxr_javadoccomment">     * @param exclusive indicates that the stream should be the exclusive dependent on its parent.</em>
-<a class="jxr_linenumber" name="142" href="#142">142</a> <em class="jxr_javadoccomment">     *            This only applies if the stream has a parent.</em>
-<a class="jxr_linenumber" name="143" href="#143">143</a> <em class="jxr_javadoccomment">     * @return this stream.</em>
+<a class="jxr_linenumber" name="133" href="#133">133</a> <em class="jxr_javadoccomment">     * Indicates that headers has been sent to the remote on this stream.</em>
+<a class="jxr_linenumber" name="134" href="#134">134</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="135" href="#135">135</a>     Http2Stream headersSent();
+<a class="jxr_linenumber" name="136" href="#136">136</a> 
+<a class="jxr_linenumber" name="137" href="#137">137</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="138" href="#138">138</a> <em class="jxr_javadoccomment">     * Indicates whether or not headers was sent to the remote endpoint.</em>
+<a class="jxr_linenumber" name="139" href="#139">139</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="140" href="#140">140</a>     <strong class="jxr_keyword">boolean</strong> isHeadersSent();
+<a class="jxr_linenumber" name="141" href="#141">141</a> 
+<a class="jxr_linenumber" name="142" href="#142">142</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="143" href="#143">143</a> <em class="jxr_javadoccomment">     * Indicates that a push promise was sent to the remote endpoint.</em>
 <a class="jxr_linenumber" name="144" href="#144">144</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="145" href="#145">145</a>     Http2Stream setPriority(<strong class="jxr_keyword">int</strong> parentStreamId, <strong class="jxr_keyword">short</strong> weight, <strong class="jxr_keyword">boolean</strong> exclusive) <strong class="jxr_keyword">throws</strong> Http2Exception;
+<a class="jxr_linenumber" name="145" href="#145">145</a>     Http2Stream pushPromiseSent();
 <a class="jxr_linenumber" name="146" href="#146">146</a> 
 <a class="jxr_linenumber" name="147" href="#147">147</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="148" href="#148">148</a> <em class="jxr_javadoccomment">     * Indicates whether or not this stream is the root node of the priority tree.</em>
+<a class="jxr_linenumber" name="148" href="#148">148</a> <em class="jxr_javadoccomment">     * Indicates whether or not a push promise was sent to the remote endpoint.</em>
 <a class="jxr_linenumber" name="149" href="#149">149</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="150" href="#150">150</a>     <strong class="jxr_keyword">boolean</strong> isRoot();
-<a class="jxr_linenumber" name="151" href="#151">151</a> 
-<a class="jxr_linenumber" name="152" href="#152">152</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="153" href="#153">153</a> <em class="jxr_javadoccomment">     * Indicates whether or not this is a leaf node (i.e. {@link #numChildren} is 0) of the priority tree.</em>
-<a class="jxr_linenumber" name="154" href="#154">154</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="155" href="#155">155</a>     <strong class="jxr_keyword">boolean</strong> isLeaf();
-<a class="jxr_linenumber" name="156" href="#156">156</a> 
-<a class="jxr_linenumber" name="157" href="#157">157</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="158" href="#158">158</a> <em class="jxr_javadoccomment">     * Returns weight assigned to the dependency with the parent. The weight will be a value</em>
-<a class="jxr_linenumber" name="159" href="#159">159</a> <em class="jxr_javadoccomment">     * between 1 and 256.</em>
-<a class="jxr_linenumber" name="160" href="#160">160</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="161" href="#161">161</a>     <strong class="jxr_keyword">short</strong> weight();
-<a class="jxr_linenumber" name="162" href="#162">162</a> 
-<a class="jxr_linenumber" name="163" href="#163">163</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="164" href="#164">164</a> <em class="jxr_javadoccomment">     * The parent (i.e. the node in the priority tree on which this node depends), or {@code null}</em>
-<a class="jxr_linenumber" name="165" href="#165">165</a> <em class="jxr_javadoccomment">     * if this is the root node (i.e. the connection, itself).</em>
-<a class="jxr_linenumber" name="166" href="#166">166</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="167" href="#167">167</a>     Http2Stream parent();
-<a class="jxr_linenumber" name="168" href="#168">168</a> 
-<a class="jxr_linenumber" name="169" href="#169">169</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="170" href="#170">170</a> <em class="jxr_javadoccomment">     * Indicates whether or not this stream is a descendant in the priority tree from the given stream.</em>
-<a class="jxr_linenumber" name="171" href="#171">171</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="172" href="#172">172</a>     <strong class="jxr_keyword">boolean</strong> isDescendantOf(Http2Stream stream);
-<a class="jxr_linenumber" name="173" href="#173">173</a> 
-<a class="jxr_linenumber" name="174" href="#174">174</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="175" href="#175">175</a> <em class="jxr_javadoccomment">     * Returns the number of child streams directly dependent on this stream.</em>
-<a class="jxr_linenumber" name="176" href="#176">176</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="177" href="#177">177</a>     <strong class="jxr_keyword">int</strong> numChildren();
-<a class="jxr_linenumber" name="178" href="#178">178</a> 
-<a class="jxr_linenumber" name="179" href="#179">179</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="180" href="#180">180</a> <em class="jxr_javadoccomment">     * Provide a means of iterating over the children of this stream.</em>
-<a class="jxr_linenumber" name="181" href="#181">181</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="182" href="#182">182</a> <em class="jxr_javadoccomment">     * @param visitor The visitor which will visit each child stream.</em>
-<a class="jxr_linenumber" name="183" href="#183">183</a> <em class="jxr_javadoccomment">     * @return The stream before iteration stopped or {@code null} if iteration went past the end.</em>
-<a class="jxr_linenumber" name="184" href="#184">184</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="185" href="#185">185</a>     Http2Stream forEachChild(Http2StreamVisitor visitor) <strong class="jxr_keyword">throws</strong> Http2Exception;
-<a class="jxr_linenumber" name="186" href="#186">186</a> 
-<a class="jxr_linenumber" name="187" href="#187">187</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="188" href="#188">188</a> <em class="jxr_javadoccomment">     * Indicates that headers has been sent to the remote on this stream.</em>
-<a class="jxr_linenumber" name="189" href="#189">189</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="190" href="#190">190</a>     Http2Stream headersSent();
-<a class="jxr_linenumber" name="191" href="#191">191</a> 
-<a class="jxr_linenumber" name="192" href="#192">192</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="193" href="#193">193</a> <em class="jxr_javadoccomment">     * Indicates whether or not headers was sent to the remote endpoint.</em>
-<a class="jxr_linenumber" name="194" href="#194">194</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="195" href="#195">195</a>     <strong class="jxr_keyword">boolean</strong> isHeadersSent();
-<a class="jxr_linenumber" name="196" href="#196">196</a> 
-<a class="jxr_linenumber" name="197" href="#197">197</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="198" href="#198">198</a> <em class="jxr_javadoccomment">     * Indicates that a push promise was sent to the remote endpoint.</em>
-<a class="jxr_linenumber" name="199" href="#199">199</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="200" href="#200">200</a>     Http2Stream pushPromiseSent();
-<a class="jxr_linenumber" name="201" href="#201">201</a> 
-<a class="jxr_linenumber" name="202" href="#202">202</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="203" href="#203">203</a> <em class="jxr_javadoccomment">     * Indicates whether or not a push promise was sent to the remote endpoint.</em>
-<a class="jxr_linenumber" name="204" href="#204">204</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="205" href="#205">205</a>     <strong class="jxr_keyword">boolean</strong> isPushPromiseSent();
-<a class="jxr_linenumber" name="206" href="#206">206</a> }
+<a class="jxr_linenumber" name="150" href="#150">150</a>     <strong class="jxr_keyword">boolean</strong> isPushPromiseSent();
+<a class="jxr_linenumber" name="151" href="#151">151</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

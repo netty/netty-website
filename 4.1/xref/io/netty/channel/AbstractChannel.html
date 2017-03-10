@@ -550,7 +550,7 @@
 <a class="jxr_linenumber" name="540" href="#540">540</a>             <strong class="jxr_keyword">if</strong> (Boolean.TRUE.equals(config().getOption(ChannelOption.SO_BROADCAST)) &amp;&amp;
 <a class="jxr_linenumber" name="541" href="#541">541</a>                 localAddress instanceof InetSocketAddress &amp;&amp;
 <a class="jxr_linenumber" name="542" href="#542">542</a>                 !((InetSocketAddress) localAddress).getAddress().isAnyLocalAddress() &amp;&amp;
-<a class="jxr_linenumber" name="543" href="#543">543</a>                 !PlatformDependent.isWindows() &amp;&amp; !PlatformDependent.isRoot()) {
+<a class="jxr_linenumber" name="543" href="#543">543</a>                 !PlatformDependent.isWindows() &amp;&amp; !PlatformDependent.maybeSuperUser()) {
 <a class="jxr_linenumber" name="544" href="#544">544</a>                 <em class="jxr_comment">// Warn a user about the fact that a non-root user can't receive a</em>
 <a class="jxr_linenumber" name="545" href="#545">545</a>                 <em class="jxr_comment">// broadcast packet on *nix if the socket is bound on non-wildcard address.</em>
 <a class="jxr_linenumber" name="546" href="#546">546</a>                 logger.warn(
@@ -1075,45 +1075,48 @@
 <a class="jxr_linenumber" name="1065" href="#1065">1065</a> 
 <a class="jxr_linenumber" name="1066" href="#1066">1066</a>         <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedConnectException</a>(ConnectException exception, SocketAddress remoteAddress) {
 <a class="jxr_linenumber" name="1067" href="#1067">1067</a>             <strong class="jxr_keyword">super</strong>(exception.getMessage() + <span class="jxr_string">": "</span> + remoteAddress);
-<a class="jxr_linenumber" name="1068" href="#1068">1068</a>             setStackTrace(exception.getStackTrace());
-<a class="jxr_linenumber" name="1069" href="#1069">1069</a>         }
-<a class="jxr_linenumber" name="1070" href="#1070">1070</a> 
-<a class="jxr_linenumber" name="1071" href="#1071">1071</a>         @Override
-<a class="jxr_linenumber" name="1072" href="#1072">1072</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
-<a class="jxr_linenumber" name="1073" href="#1073">1073</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="1074" href="#1074">1074</a>         }
-<a class="jxr_linenumber" name="1075" href="#1075">1075</a>     }
-<a class="jxr_linenumber" name="1076" href="#1076">1076</a> 
-<a class="jxr_linenumber" name="1077" href="#1077">1077</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedNoRouteToHostException</a> <strong class="jxr_keyword">extends</strong> NoRouteToHostException {
-<a class="jxr_linenumber" name="1078" href="#1078">1078</a> 
-<a class="jxr_linenumber" name="1079" href="#1079">1079</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = -6801433937592080623L;
-<a class="jxr_linenumber" name="1080" href="#1080">1080</a> 
-<a class="jxr_linenumber" name="1081" href="#1081">1081</a>         <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedNoRouteToHostException</a>(NoRouteToHostException exception, SocketAddress remoteAddress) {
-<a class="jxr_linenumber" name="1082" href="#1082">1082</a>             <strong class="jxr_keyword">super</strong>(exception.getMessage() + <span class="jxr_string">": "</span> + remoteAddress);
-<a class="jxr_linenumber" name="1083" href="#1083">1083</a>             setStackTrace(exception.getStackTrace());
-<a class="jxr_linenumber" name="1084" href="#1084">1084</a>         }
-<a class="jxr_linenumber" name="1085" href="#1085">1085</a> 
-<a class="jxr_linenumber" name="1086" href="#1086">1086</a>         @Override
-<a class="jxr_linenumber" name="1087" href="#1087">1087</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
-<a class="jxr_linenumber" name="1088" href="#1088">1088</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="1089" href="#1089">1089</a>         }
-<a class="jxr_linenumber" name="1090" href="#1090">1090</a>     }
-<a class="jxr_linenumber" name="1091" href="#1091">1091</a> 
-<a class="jxr_linenumber" name="1092" href="#1092">1092</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedSocketException</a> <strong class="jxr_keyword">extends</strong> SocketException {
+<a class="jxr_linenumber" name="1068" href="#1068">1068</a>             initCause(exception);
+<a class="jxr_linenumber" name="1069" href="#1069">1069</a>             setStackTrace(exception.getStackTrace());
+<a class="jxr_linenumber" name="1070" href="#1070">1070</a>         }
+<a class="jxr_linenumber" name="1071" href="#1071">1071</a> 
+<a class="jxr_linenumber" name="1072" href="#1072">1072</a>         @Override
+<a class="jxr_linenumber" name="1073" href="#1073">1073</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
+<a class="jxr_linenumber" name="1074" href="#1074">1074</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="1075" href="#1075">1075</a>         }
+<a class="jxr_linenumber" name="1076" href="#1076">1076</a>     }
+<a class="jxr_linenumber" name="1077" href="#1077">1077</a> 
+<a class="jxr_linenumber" name="1078" href="#1078">1078</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedNoRouteToHostException</a> <strong class="jxr_keyword">extends</strong> NoRouteToHostException {
+<a class="jxr_linenumber" name="1079" href="#1079">1079</a> 
+<a class="jxr_linenumber" name="1080" href="#1080">1080</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = -6801433937592080623L;
+<a class="jxr_linenumber" name="1081" href="#1081">1081</a> 
+<a class="jxr_linenumber" name="1082" href="#1082">1082</a>         <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedNoRouteToHostException</a>(NoRouteToHostException exception, SocketAddress remoteAddress) {
+<a class="jxr_linenumber" name="1083" href="#1083">1083</a>             <strong class="jxr_keyword">super</strong>(exception.getMessage() + <span class="jxr_string">": "</span> + remoteAddress);
+<a class="jxr_linenumber" name="1084" href="#1084">1084</a>             initCause(exception);
+<a class="jxr_linenumber" name="1085" href="#1085">1085</a>             setStackTrace(exception.getStackTrace());
+<a class="jxr_linenumber" name="1086" href="#1086">1086</a>         }
+<a class="jxr_linenumber" name="1087" href="#1087">1087</a> 
+<a class="jxr_linenumber" name="1088" href="#1088">1088</a>         @Override
+<a class="jxr_linenumber" name="1089" href="#1089">1089</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
+<a class="jxr_linenumber" name="1090" href="#1090">1090</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="1091" href="#1091">1091</a>         }
+<a class="jxr_linenumber" name="1092" href="#1092">1092</a>     }
 <a class="jxr_linenumber" name="1093" href="#1093">1093</a> 
-<a class="jxr_linenumber" name="1094" href="#1094">1094</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 3896743275010454039L;
+<a class="jxr_linenumber" name="1094" href="#1094">1094</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedSocketException</a> <strong class="jxr_keyword">extends</strong> SocketException {
 <a class="jxr_linenumber" name="1095" href="#1095">1095</a> 
-<a class="jxr_linenumber" name="1096" href="#1096">1096</a>         <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedSocketException</a>(SocketException exception, SocketAddress remoteAddress) {
-<a class="jxr_linenumber" name="1097" href="#1097">1097</a>             <strong class="jxr_keyword">super</strong>(exception.getMessage() + <span class="jxr_string">": "</span> + remoteAddress);
-<a class="jxr_linenumber" name="1098" href="#1098">1098</a>             setStackTrace(exception.getStackTrace());
-<a class="jxr_linenumber" name="1099" href="#1099">1099</a>         }
-<a class="jxr_linenumber" name="1100" href="#1100">1100</a> 
-<a class="jxr_linenumber" name="1101" href="#1101">1101</a>         @Override
-<a class="jxr_linenumber" name="1102" href="#1102">1102</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
-<a class="jxr_linenumber" name="1103" href="#1103">1103</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="1104" href="#1104">1104</a>         }
-<a class="jxr_linenumber" name="1105" href="#1105">1105</a>     }
-<a class="jxr_linenumber" name="1106" href="#1106">1106</a> }
+<a class="jxr_linenumber" name="1096" href="#1096">1096</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 3896743275010454039L;
+<a class="jxr_linenumber" name="1097" href="#1097">1097</a> 
+<a class="jxr_linenumber" name="1098" href="#1098">1098</a>         <a href="../../../io/netty/channel/AbstractChannel.html">AnnotatedSocketException</a>(SocketException exception, SocketAddress remoteAddress) {
+<a class="jxr_linenumber" name="1099" href="#1099">1099</a>             <strong class="jxr_keyword">super</strong>(exception.getMessage() + <span class="jxr_string">": "</span> + remoteAddress);
+<a class="jxr_linenumber" name="1100" href="#1100">1100</a>             initCause(exception);
+<a class="jxr_linenumber" name="1101" href="#1101">1101</a>             setStackTrace(exception.getStackTrace());
+<a class="jxr_linenumber" name="1102" href="#1102">1102</a>         }
+<a class="jxr_linenumber" name="1103" href="#1103">1103</a> 
+<a class="jxr_linenumber" name="1104" href="#1104">1104</a>         @Override
+<a class="jxr_linenumber" name="1105" href="#1105">1105</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
+<a class="jxr_linenumber" name="1106" href="#1106">1106</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="1107" href="#1107">1107</a>         }
+<a class="jxr_linenumber" name="1108" href="#1108">1108</a>     }
+<a class="jxr_linenumber" name="1109" href="#1109">1109</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
