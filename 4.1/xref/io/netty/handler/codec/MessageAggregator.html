@@ -410,39 +410,50 @@
 <a class="jxr_linenumber" name="400" href="#400">400</a>     }
 <a class="jxr_linenumber" name="401" href="#401">401</a> 
 <a class="jxr_linenumber" name="402" href="#402">402</a>     @Override
-<a class="jxr_linenumber" name="403" href="#403">403</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="404" href="#404">404</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="405" href="#405">405</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over</em>
-<a class="jxr_linenumber" name="406" href="#406">406</a>             <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
-<a class="jxr_linenumber" name="407" href="#407">407</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="408" href="#408">408</a>             releaseCurrentMessage();
+<a class="jxr_linenumber" name="403" href="#403">403</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadComplete(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="404" href="#404">404</a>         <em class="jxr_comment">// We might need keep reading the channel until the full message is aggregated.</em>
+<a class="jxr_linenumber" name="405" href="#405">405</a>         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="406" href="#406">406</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/6583</em>
+<a class="jxr_linenumber" name="407" href="#407">407</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong> &amp;&amp; !ctx.channel().config().isAutoRead()) {
+<a class="jxr_linenumber" name="408" href="#408">408</a>             ctx.read();
 <a class="jxr_linenumber" name="409" href="#409">409</a>         }
-<a class="jxr_linenumber" name="410" href="#410">410</a>     }
-<a class="jxr_linenumber" name="411" href="#411">411</a> 
-<a class="jxr_linenumber" name="412" href="#412">412</a>     @Override
-<a class="jxr_linenumber" name="413" href="#413">413</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="414" href="#414">414</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="415" href="#415">415</a>     }
-<a class="jxr_linenumber" name="416" href="#416">416</a> 
-<a class="jxr_linenumber" name="417" href="#417">417</a>     @Override
-<a class="jxr_linenumber" name="418" href="#418">418</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="419" href="#419">419</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="420" href="#420">420</a>             <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
-<a class="jxr_linenumber" name="421" href="#421">421</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="422" href="#422">422</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over as there is not much more we can do in</em>
-<a class="jxr_linenumber" name="423" href="#423">423</a>             <em class="jxr_comment">// this case</em>
-<a class="jxr_linenumber" name="424" href="#424">424</a>             releaseCurrentMessage();
-<a class="jxr_linenumber" name="425" href="#425">425</a>         }
+<a class="jxr_linenumber" name="410" href="#410">410</a>         ctx.fireChannelReadComplete();
+<a class="jxr_linenumber" name="411" href="#411">411</a>     }
+<a class="jxr_linenumber" name="412" href="#412">412</a> 
+<a class="jxr_linenumber" name="413" href="#413">413</a>     @Override
+<a class="jxr_linenumber" name="414" href="#414">414</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="415" href="#415">415</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="416" href="#416">416</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over</em>
+<a class="jxr_linenumber" name="417" href="#417">417</a>             <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
+<a class="jxr_linenumber" name="418" href="#418">418</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="419" href="#419">419</a>             releaseCurrentMessage();
+<a class="jxr_linenumber" name="420" href="#420">420</a>         }
+<a class="jxr_linenumber" name="421" href="#421">421</a>     }
+<a class="jxr_linenumber" name="422" href="#422">422</a> 
+<a class="jxr_linenumber" name="423" href="#423">423</a>     @Override
+<a class="jxr_linenumber" name="424" href="#424">424</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="425" href="#425">425</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
 <a class="jxr_linenumber" name="426" href="#426">426</a>     }
 <a class="jxr_linenumber" name="427" href="#427">427</a> 
-<a class="jxr_linenumber" name="428" href="#428">428</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> releaseCurrentMessage() {
-<a class="jxr_linenumber" name="429" href="#429">429</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="430" href="#430">430</a>             currentMessage.release();
-<a class="jxr_linenumber" name="431" href="#431">431</a>             currentMessage = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="432" href="#432">432</a>             handlingOversizedMessage = false;
-<a class="jxr_linenumber" name="433" href="#433">433</a>         }
-<a class="jxr_linenumber" name="434" href="#434">434</a>     }
-<a class="jxr_linenumber" name="435" href="#435">435</a> }
+<a class="jxr_linenumber" name="428" href="#428">428</a>     @Override
+<a class="jxr_linenumber" name="429" href="#429">429</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="430" href="#430">430</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="431" href="#431">431</a>             <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
+<a class="jxr_linenumber" name="432" href="#432">432</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="433" href="#433">433</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over as there is not much more we can do in</em>
+<a class="jxr_linenumber" name="434" href="#434">434</a>             <em class="jxr_comment">// this case</em>
+<a class="jxr_linenumber" name="435" href="#435">435</a>             releaseCurrentMessage();
+<a class="jxr_linenumber" name="436" href="#436">436</a>         }
+<a class="jxr_linenumber" name="437" href="#437">437</a>     }
+<a class="jxr_linenumber" name="438" href="#438">438</a> 
+<a class="jxr_linenumber" name="439" href="#439">439</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> releaseCurrentMessage() {
+<a class="jxr_linenumber" name="440" href="#440">440</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="441" href="#441">441</a>             currentMessage.release();
+<a class="jxr_linenumber" name="442" href="#442">442</a>             currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="443" href="#443">443</a>             handlingOversizedMessage = false;
+<a class="jxr_linenumber" name="444" href="#444">444</a>         }
+<a class="jxr_linenumber" name="445" href="#445">445</a>     }
+<a class="jxr_linenumber" name="446" href="#446">446</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

@@ -81,7 +81,7 @@
 <a class="jxr_linenumber" name="71" href="#71">71</a>      }
 <a class="jxr_linenumber" name="72" href="#72">72</a>  
 <a class="jxr_linenumber" name="73" href="#73">73</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="74" href="#74">74</a>  <em class="jxr_javadoccomment">     * Exposed Used for testing only! Default values used in the initial settings frame are overriden intentionally</em>
+<a class="jxr_linenumber" name="74" href="#74">74</a>  <em class="jxr_javadoccomment">     * Exposed Used for testing only! Default values used in the initial settings frame are overridden intentionally</em>
 <a class="jxr_linenumber" name="75" href="#75">75</a>  <em class="jxr_javadoccomment">     * for testing but violate the RFC if used outside the scope of testing.</em>
 <a class="jxr_linenumber" name="76" href="#76">76</a>  <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="77" href="#77">77</a>      DefaultHttp2HeadersDecoder(<strong class="jxr_keyword">boolean</strong> validateHeaders, <a href="../../../../../io/netty/handler/codec/http2/HpackDecoder.html">HpackDecoder</a> hpackDecoder) {
@@ -122,7 +122,7 @@
 <a class="jxr_linenumber" name="112" href="#112">112</a>     @Override
 <a class="jxr_linenumber" name="113" href="#113">113</a>     <strong class="jxr_keyword">public</strong> Http2Headers decodeHeaders(<strong class="jxr_keyword">int</strong> streamId, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> headerBlock) <strong class="jxr_keyword">throws</strong> Http2Exception {
 <a class="jxr_linenumber" name="114" href="#114">114</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="115" href="#115">115</a>             <strong class="jxr_keyword">final</strong> Http2Headers headers = <strong class="jxr_keyword">new</strong> DefaultHttp2Headers(validateHeaders, (<strong class="jxr_keyword">int</strong>) headerArraySizeAccumulator);
+<a class="jxr_linenumber" name="115" href="#115">115</a>             <strong class="jxr_keyword">final</strong> Http2Headers headers = newHeaders();
 <a class="jxr_linenumber" name="116" href="#116">116</a>             hpackDecoder.decode(streamId, headerBlock, headers);
 <a class="jxr_linenumber" name="117" href="#117">117</a>             headerArraySizeAccumulator = HEADERS_COUNT_WEIGHT_NEW * headers.size() +
 <a class="jxr_linenumber" name="118" href="#118">118</a>                                          HEADERS_COUNT_WEIGHT_HISTORICAL * headerArraySizeAccumulator;
@@ -136,7 +136,31 @@
 <a class="jxr_linenumber" name="126" href="#126">126</a>             <strong class="jxr_keyword">throw</strong> connectionError(COMPRESSION_ERROR, e, e.getMessage());
 <a class="jxr_linenumber" name="127" href="#127">127</a>         }
 <a class="jxr_linenumber" name="128" href="#128">128</a>     }
-<a class="jxr_linenumber" name="129" href="#129">129</a> }
+<a class="jxr_linenumber" name="129" href="#129">129</a> 
+<a class="jxr_linenumber" name="130" href="#130">130</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="131" href="#131">131</a> <em class="jxr_javadoccomment">     * A weighted moving average estimating how many headers are expected during the decode process.</em>
+<a class="jxr_linenumber" name="132" href="#132">132</a> <em class="jxr_javadoccomment">     * @return an estimate of how many headers are expected during the decode process.</em>
+<a class="jxr_linenumber" name="133" href="#133">133</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="134" href="#134">134</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> numberOfHeadersGuess() {
+<a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) headerArraySizeAccumulator;
+<a class="jxr_linenumber" name="136" href="#136">136</a>     }
+<a class="jxr_linenumber" name="137" href="#137">137</a> 
+<a class="jxr_linenumber" name="138" href="#138">138</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="139" href="#139">139</a> <em class="jxr_javadoccomment">     * Determines if the headers should be validated as a result of the decode operation.</em>
+<a class="jxr_linenumber" name="140" href="#140">140</a> <em class="jxr_javadoccomment">     * @return {@code true} if the headers should be validated as a result of the decode operation.</em>
+<a class="jxr_linenumber" name="141" href="#141">141</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="142" href="#142">142</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> validateHeaders() {
+<a class="jxr_linenumber" name="143" href="#143">143</a>         <strong class="jxr_keyword">return</strong> validateHeaders;
+<a class="jxr_linenumber" name="144" href="#144">144</a>     }
+<a class="jxr_linenumber" name="145" href="#145">145</a> 
+<a class="jxr_linenumber" name="146" href="#146">146</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="147" href="#147">147</a> <em class="jxr_javadoccomment">     * Create a new {@link Http2Headers} object which will store the results of the decode operation.</em>
+<a class="jxr_linenumber" name="148" href="#148">148</a> <em class="jxr_javadoccomment">     * @return a new {@link Http2Headers} object which will store the results of the decode operation.</em>
+<a class="jxr_linenumber" name="149" href="#149">149</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="150" href="#150">150</a>     <strong class="jxr_keyword">protected</strong> Http2Headers newHeaders() {
+<a class="jxr_linenumber" name="151" href="#151">151</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> DefaultHttp2Headers(validateHeaders, (<strong class="jxr_keyword">int</strong>) headerArraySizeAccumulator);
+<a class="jxr_linenumber" name="152" href="#152">152</a>     }
+<a class="jxr_linenumber" name="153" href="#153">153</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
