@@ -45,7 +45,7 @@
 <a class="jxr_linenumber" name="35" href="#35">35</a>          <strong class="jxr_keyword">this</strong>.listener = listener;
 <a class="jxr_linenumber" name="36" href="#36">36</a>      }
 <a class="jxr_linenumber" name="37" href="#37">37</a>  
-<a class="jxr_linenumber" name="38" href="#38">38</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> getStreamId(<a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> httpHeaders) {
+<a class="jxr_linenumber" name="38" href="#38">38</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getStreamId(Http2Connection connection, <a href="../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> httpHeaders) {
 <a class="jxr_linenumber" name="39" href="#39">39</a>          <strong class="jxr_keyword">return</strong> httpHeaders.getInt(HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text(),
 <a class="jxr_linenumber" name="40" href="#40">40</a>                                    connection.remote().incrementAndGetNextStreamId());
 <a class="jxr_linenumber" name="41" href="#41">41</a>      }
@@ -53,35 +53,39 @@
 <a class="jxr_linenumber" name="43" href="#43">43</a>      @Override
 <a class="jxr_linenumber" name="44" href="#44">44</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="45" href="#45">45</a>          <strong class="jxr_keyword">if</strong> (msg instanceof FullHttpMessage) {
-<a class="jxr_linenumber" name="46" href="#46">46</a>              <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> message = (FullHttpMessage) msg;
-<a class="jxr_linenumber" name="47" href="#47">47</a>              <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="48" href="#48">48</a>                  <strong class="jxr_keyword">int</strong> streamId = getStreamId(message.headers());
-<a class="jxr_linenumber" name="49" href="#49">49</a>                  Http2Stream stream = connection.stream(streamId);
-<a class="jxr_linenumber" name="50" href="#50">50</a>                  <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="51" href="#51">51</a>                      stream = connection.remote().createStream(streamId, false);
-<a class="jxr_linenumber" name="52" href="#52">52</a>                  }
-<a class="jxr_linenumber" name="53" href="#53">53</a>                  message.headers().set(HttpConversionUtil.ExtensionHeaderNames.SCHEME.text(), HttpScheme.HTTP.name());
-<a class="jxr_linenumber" name="54" href="#54">54</a>                  Http2Headers messageHeaders = HttpConversionUtil.toHttp2Headers(message, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="55" href="#55">55</a>                  <strong class="jxr_keyword">boolean</strong> hasContent = message.content().isReadable();
-<a class="jxr_linenumber" name="56" href="#56">56</a>                  <strong class="jxr_keyword">boolean</strong> hasTrailers = !message.trailingHeaders().isEmpty();
-<a class="jxr_linenumber" name="57" href="#57">57</a>                  listener.onHeadersRead(
-<a class="jxr_linenumber" name="58" href="#58">58</a>                      ctx, streamId, messageHeaders, 0, !(hasContent || hasTrailers));
-<a class="jxr_linenumber" name="59" href="#59">59</a>                  <strong class="jxr_keyword">if</strong> (hasContent) {
-<a class="jxr_linenumber" name="60" href="#60">60</a>                      listener.onDataRead(ctx, streamId, message.content(), 0, !hasTrailers);
-<a class="jxr_linenumber" name="61" href="#61">61</a>                  }
-<a class="jxr_linenumber" name="62" href="#62">62</a>                  <strong class="jxr_keyword">if</strong> (hasTrailers) {
-<a class="jxr_linenumber" name="63" href="#63">63</a>                      Http2Headers headers = HttpConversionUtil.toHttp2Headers(message.trailingHeaders(), <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="64" href="#64">64</a>                      listener.onHeadersRead(ctx, streamId, headers, 0, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="65" href="#65">65</a>                  }
-<a class="jxr_linenumber" name="66" href="#66">66</a>                  stream.closeRemoteSide();
-<a class="jxr_linenumber" name="67" href="#67">67</a>              } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="68" href="#68">68</a>                  message.release();
-<a class="jxr_linenumber" name="69" href="#69">69</a>              }
-<a class="jxr_linenumber" name="70" href="#70">70</a>          } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="71" href="#71">71</a>              <strong class="jxr_keyword">super</strong>.channelRead(ctx, msg);
-<a class="jxr_linenumber" name="72" href="#72">72</a>          }
-<a class="jxr_linenumber" name="73" href="#73">73</a>      }
-<a class="jxr_linenumber" name="74" href="#74">74</a>  }
+<a class="jxr_linenumber" name="46" href="#46">46</a>              handle(ctx, connection, listener, (FullHttpMessage) msg);
+<a class="jxr_linenumber" name="47" href="#47">47</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="48" href="#48">48</a>              <strong class="jxr_keyword">super</strong>.channelRead(ctx, msg);
+<a class="jxr_linenumber" name="49" href="#49">49</a>          }
+<a class="jxr_linenumber" name="50" href="#50">50</a>      }
+<a class="jxr_linenumber" name="51" href="#51">51</a>  
+<a class="jxr_linenumber" name="52" href="#52">52</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> handle(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Connection connection,
+<a class="jxr_linenumber" name="53" href="#53">53</a>                                Http2FrameListener listener, <a href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html">FullHttpMessage</a> message) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="54" href="#54">54</a>          <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="55" href="#55">55</a>              <strong class="jxr_keyword">int</strong> streamId = getStreamId(connection, message.headers());
+<a class="jxr_linenumber" name="56" href="#56">56</a>              Http2Stream stream = connection.stream(streamId);
+<a class="jxr_linenumber" name="57" href="#57">57</a>              <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="58" href="#58">58</a>                  stream = connection.remote().createStream(streamId, false);
+<a class="jxr_linenumber" name="59" href="#59">59</a>              }
+<a class="jxr_linenumber" name="60" href="#60">60</a>              message.headers().set(HttpConversionUtil.ExtensionHeaderNames.SCHEME.text(), HttpScheme.HTTP.name());
+<a class="jxr_linenumber" name="61" href="#61">61</a>              Http2Headers messageHeaders = HttpConversionUtil.toHttp2Headers(message, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="62" href="#62">62</a>              <strong class="jxr_keyword">boolean</strong> hasContent = message.content().isReadable();
+<a class="jxr_linenumber" name="63" href="#63">63</a>              <strong class="jxr_keyword">boolean</strong> hasTrailers = !message.trailingHeaders().isEmpty();
+<a class="jxr_linenumber" name="64" href="#64">64</a>              listener.onHeadersRead(
+<a class="jxr_linenumber" name="65" href="#65">65</a>                      ctx, streamId, messageHeaders, 0, !(hasContent || hasTrailers));
+<a class="jxr_linenumber" name="66" href="#66">66</a>              <strong class="jxr_keyword">if</strong> (hasContent) {
+<a class="jxr_linenumber" name="67" href="#67">67</a>                  listener.onDataRead(ctx, streamId, message.content(), 0, !hasTrailers);
+<a class="jxr_linenumber" name="68" href="#68">68</a>              }
+<a class="jxr_linenumber" name="69" href="#69">69</a>              <strong class="jxr_keyword">if</strong> (hasTrailers) {
+<a class="jxr_linenumber" name="70" href="#70">70</a>                  Http2Headers headers = HttpConversionUtil.toHttp2Headers(message.trailingHeaders(), <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="71" href="#71">71</a>                  listener.onHeadersRead(ctx, streamId, headers, 0, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="72" href="#72">72</a>              }
+<a class="jxr_linenumber" name="73" href="#73">73</a>              stream.closeRemoteSide();
+<a class="jxr_linenumber" name="74" href="#74">74</a>          } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="75" href="#75">75</a>              message.release();
+<a class="jxr_linenumber" name="76" href="#76">76</a>          }
+<a class="jxr_linenumber" name="77" href="#77">77</a>      }
+<a class="jxr_linenumber" name="78" href="#78">78</a>  }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
