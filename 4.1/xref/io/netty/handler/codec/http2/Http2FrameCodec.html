@@ -258,7 +258,7 @@
 <a class="jxr_linenumber" name="248" href="#248">248</a>                 upgrade.upgradeRequest().headers().setInt(
 <a class="jxr_linenumber" name="249" href="#249">249</a>                         HttpConversionUtil.ExtensionHeaderNames.STREAM_ID.text(), HTTP_UPGRADE_STREAM_ID);
 <a class="jxr_linenumber" name="250" href="#250">250</a>                 InboundHttpToHttp2Adapter.handle(
-<a class="jxr_linenumber" name="251" href="#251">251</a>                         ctx, connection(), decoder().frameListener(), upgrade.upgradeRequest());
+<a class="jxr_linenumber" name="251" href="#251">251</a>                         ctx, connection(), decoder().frameListener(), upgrade.upgradeRequest().retain());
 <a class="jxr_linenumber" name="252" href="#252">252</a>             } <strong class="jxr_keyword">finally</strong> {
 <a class="jxr_linenumber" name="253" href="#253">253</a>                 upgrade.release();
 <a class="jxr_linenumber" name="254" href="#254">254</a>             }
@@ -592,52 +592,57 @@
 <a class="jxr_linenumber" name="582" href="#582">582</a>         ctx.fireExceptionCaught(cause);
 <a class="jxr_linenumber" name="583" href="#583">583</a>     }
 <a class="jxr_linenumber" name="584" href="#584">584</a> 
-<a class="jxr_linenumber" name="585" href="#585">585</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Http2RemoteFlowControllerListener <strong class="jxr_keyword">implements</strong> Http2RemoteFlowController.Listener {
-<a class="jxr_linenumber" name="586" href="#586">586</a>         @Override
-<a class="jxr_linenumber" name="587" href="#587">587</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> writabilityChanged(Http2Stream stream) {
-<a class="jxr_linenumber" name="588" href="#588">588</a>             Http2FrameStream frameStream = stream.getProperty(streamKey);
-<a class="jxr_linenumber" name="589" href="#589">589</a>             <strong class="jxr_keyword">if</strong> (frameStream == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="590" href="#590">590</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="591" href="#591">591</a>             }
-<a class="jxr_linenumber" name="592" href="#592">592</a>             onHttp2StreamWritabilityChanged(
-<a class="jxr_linenumber" name="593" href="#593">593</a>                     ctx, frameStream, connection().remote().flowController().isWritable(stream));
-<a class="jxr_linenumber" name="594" href="#594">594</a>         }
-<a class="jxr_linenumber" name="595" href="#595">595</a>     }
-<a class="jxr_linenumber" name="596" href="#596">596</a> 
-<a class="jxr_linenumber" name="597" href="#597">597</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="598" href="#598">598</a> <em class="jxr_javadoccomment">     * {@link Http2FrameStream} implementation.</em>
-<a class="jxr_linenumber" name="599" href="#599">599</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="600" href="#600">600</a>     <em class="jxr_comment">// TODO(buchgr): Merge Http2FrameStream and Http2Stream.</em>
-<a class="jxr_linenumber" name="601" href="#601">601</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> DefaultHttp2FrameStream <strong class="jxr_keyword">implements</strong> Http2FrameStream {
-<a class="jxr_linenumber" name="602" href="#602">602</a> 
-<a class="jxr_linenumber" name="603" href="#603">603</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">int</strong> id = -1;
-<a class="jxr_linenumber" name="604" href="#604">604</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> Http2Stream stream;
-<a class="jxr_linenumber" name="605" href="#605">605</a> 
-<a class="jxr_linenumber" name="606" href="#606">606</a>         DefaultHttp2FrameStream setStreamAndProperty(<a href="../../../../../io/netty/handler/codec/http2/Http2Connection.html">PropertyKey</a> streamKey, Http2Stream stream) {
-<a class="jxr_linenumber" name="607" href="#607">607</a>             assert id == -1 || stream.id() == id;
-<a class="jxr_linenumber" name="608" href="#608">608</a>             <strong class="jxr_keyword">this</strong>.stream = stream;
-<a class="jxr_linenumber" name="609" href="#609">609</a>             stream.setProperty(streamKey, <strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="610" href="#610">610</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="611" href="#611">611</a>         }
-<a class="jxr_linenumber" name="612" href="#612">612</a> 
-<a class="jxr_linenumber" name="613" href="#613">613</a>         @Override
-<a class="jxr_linenumber" name="614" href="#614">614</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> id() {
-<a class="jxr_linenumber" name="615" href="#615">615</a>             Http2Stream stream = <strong class="jxr_keyword">this</strong>.stream;
-<a class="jxr_linenumber" name="616" href="#616">616</a>             <strong class="jxr_keyword">return</strong> stream == <strong class="jxr_keyword">null</strong> ? id : stream.id();
-<a class="jxr_linenumber" name="617" href="#617">617</a>         }
-<a class="jxr_linenumber" name="618" href="#618">618</a> 
-<a class="jxr_linenumber" name="619" href="#619">619</a>         @Override
-<a class="jxr_linenumber" name="620" href="#620">620</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/WeightedFairQueueByteDistributor.html">State</a> state() {
-<a class="jxr_linenumber" name="621" href="#621">621</a>             Http2Stream stream = <strong class="jxr_keyword">this</strong>.stream;
-<a class="jxr_linenumber" name="622" href="#622">622</a>             <strong class="jxr_keyword">return</strong> stream == <strong class="jxr_keyword">null</strong> ? State.IDLE : stream.state();
-<a class="jxr_linenumber" name="623" href="#623">623</a>         }
-<a class="jxr_linenumber" name="624" href="#624">624</a> 
-<a class="jxr_linenumber" name="625" href="#625">625</a>         @Override
-<a class="jxr_linenumber" name="626" href="#626">626</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="627" href="#627">627</a>             <strong class="jxr_keyword">return</strong> String.valueOf(id());
+<a class="jxr_linenumber" name="585" href="#585">585</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> isWritable(DefaultHttp2FrameStream stream) {
+<a class="jxr_linenumber" name="586" href="#586">586</a>         Http2Stream s = stream.stream;
+<a class="jxr_linenumber" name="587" href="#587">587</a>         <strong class="jxr_keyword">return</strong> s != <strong class="jxr_keyword">null</strong> &amp;&amp; connection().remote().flowController().isWritable(s);
+<a class="jxr_linenumber" name="588" href="#588">588</a>     }
+<a class="jxr_linenumber" name="589" href="#589">589</a> 
+<a class="jxr_linenumber" name="590" href="#590">590</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Http2RemoteFlowControllerListener <strong class="jxr_keyword">implements</strong> Http2RemoteFlowController.Listener {
+<a class="jxr_linenumber" name="591" href="#591">591</a>         @Override
+<a class="jxr_linenumber" name="592" href="#592">592</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> writabilityChanged(Http2Stream stream) {
+<a class="jxr_linenumber" name="593" href="#593">593</a>             Http2FrameStream frameStream = stream.getProperty(streamKey);
+<a class="jxr_linenumber" name="594" href="#594">594</a>             <strong class="jxr_keyword">if</strong> (frameStream == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="595" href="#595">595</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="596" href="#596">596</a>             }
+<a class="jxr_linenumber" name="597" href="#597">597</a>             onHttp2StreamWritabilityChanged(
+<a class="jxr_linenumber" name="598" href="#598">598</a>                     ctx, frameStream, connection().remote().flowController().isWritable(stream));
+<a class="jxr_linenumber" name="599" href="#599">599</a>         }
+<a class="jxr_linenumber" name="600" href="#600">600</a>     }
+<a class="jxr_linenumber" name="601" href="#601">601</a> 
+<a class="jxr_linenumber" name="602" href="#602">602</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="603" href="#603">603</a> <em class="jxr_javadoccomment">     * {@link Http2FrameStream} implementation.</em>
+<a class="jxr_linenumber" name="604" href="#604">604</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="605" href="#605">605</a>     <em class="jxr_comment">// TODO(buchgr): Merge Http2FrameStream and Http2Stream.</em>
+<a class="jxr_linenumber" name="606" href="#606">606</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> DefaultHttp2FrameStream <strong class="jxr_keyword">implements</strong> Http2FrameStream {
+<a class="jxr_linenumber" name="607" href="#607">607</a> 
+<a class="jxr_linenumber" name="608" href="#608">608</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">int</strong> id = -1;
+<a class="jxr_linenumber" name="609" href="#609">609</a>         <strong class="jxr_keyword">volatile</strong> Http2Stream stream;
+<a class="jxr_linenumber" name="610" href="#610">610</a> 
+<a class="jxr_linenumber" name="611" href="#611">611</a>         DefaultHttp2FrameStream setStreamAndProperty(<a href="../../../../../io/netty/handler/codec/http2/Http2Connection.html">PropertyKey</a> streamKey, Http2Stream stream) {
+<a class="jxr_linenumber" name="612" href="#612">612</a>             assert id == -1 || stream.id() == id;
+<a class="jxr_linenumber" name="613" href="#613">613</a>             <strong class="jxr_keyword">this</strong>.stream = stream;
+<a class="jxr_linenumber" name="614" href="#614">614</a>             stream.setProperty(streamKey, <strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="615" href="#615">615</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="616" href="#616">616</a>         }
+<a class="jxr_linenumber" name="617" href="#617">617</a> 
+<a class="jxr_linenumber" name="618" href="#618">618</a>         @Override
+<a class="jxr_linenumber" name="619" href="#619">619</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> id() {
+<a class="jxr_linenumber" name="620" href="#620">620</a>             Http2Stream stream = <strong class="jxr_keyword">this</strong>.stream;
+<a class="jxr_linenumber" name="621" href="#621">621</a>             <strong class="jxr_keyword">return</strong> stream == <strong class="jxr_keyword">null</strong> ? id : stream.id();
+<a class="jxr_linenumber" name="622" href="#622">622</a>         }
+<a class="jxr_linenumber" name="623" href="#623">623</a> 
+<a class="jxr_linenumber" name="624" href="#624">624</a>         @Override
+<a class="jxr_linenumber" name="625" href="#625">625</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/handler/codec/http2/WeightedFairQueueByteDistributor.html">State</a> state() {
+<a class="jxr_linenumber" name="626" href="#626">626</a>             Http2Stream stream = <strong class="jxr_keyword">this</strong>.stream;
+<a class="jxr_linenumber" name="627" href="#627">627</a>             <strong class="jxr_keyword">return</strong> stream == <strong class="jxr_keyword">null</strong> ? State.IDLE : stream.state();
 <a class="jxr_linenumber" name="628" href="#628">628</a>         }
-<a class="jxr_linenumber" name="629" href="#629">629</a>     }
-<a class="jxr_linenumber" name="630" href="#630">630</a> }
+<a class="jxr_linenumber" name="629" href="#629">629</a> 
+<a class="jxr_linenumber" name="630" href="#630">630</a>         @Override
+<a class="jxr_linenumber" name="631" href="#631">631</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="632" href="#632">632</a>             <strong class="jxr_keyword">return</strong> String.valueOf(id());
+<a class="jxr_linenumber" name="633" href="#633">633</a>         }
+<a class="jxr_linenumber" name="634" href="#634">634</a>     }
+<a class="jxr_linenumber" name="635" href="#635">635</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
