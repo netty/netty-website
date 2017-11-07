@@ -34,7 +34,7 @@ Modify the web site files as you wish.
 To test locally, start the embedded web server using Awestruct.
 
     $ cd netty-website
-    $ bundle exec awestruct --auto --server
+    $ bundle exec awestruct --auto --server -u https://netty.io
 
 The web site will be available at `http://localhost:4242/`
 
