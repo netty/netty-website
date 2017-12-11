@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_US" lang="en_US">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_DE" lang="en_DE">
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 <title>HttpContentDecoder xref</title>
@@ -205,13 +205,13 @@
 <a class="jxr_linenumber" name="195" href="#195">195</a> 
 <a class="jxr_linenumber" name="196" href="#196">196</a>     @Override
 <a class="jxr_linenumber" name="197" href="#197">197</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="198" href="#198">198</a>         cleanup();
+<a class="jxr_linenumber" name="198" href="#198">198</a>         cleanupSafely(ctx);
 <a class="jxr_linenumber" name="199" href="#199">199</a>         <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
 <a class="jxr_linenumber" name="200" href="#200">200</a>     }
 <a class="jxr_linenumber" name="201" href="#201">201</a> 
 <a class="jxr_linenumber" name="202" href="#202">202</a>     @Override
 <a class="jxr_linenumber" name="203" href="#203">203</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="204" href="#204">204</a>         cleanup();
+<a class="jxr_linenumber" name="204" href="#204">204</a>         cleanupSafely(ctx);
 <a class="jxr_linenumber" name="205" href="#205">205</a>         <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
 <a class="jxr_linenumber" name="206" href="#206">206</a>     }
 <a class="jxr_linenumber" name="207" href="#207">207</a> 
@@ -224,47 +224,48 @@
 <a class="jxr_linenumber" name="214" href="#214">214</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cleanup() {
 <a class="jxr_linenumber" name="215" href="#215">215</a>         <strong class="jxr_keyword">if</strong> (decoder != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="216" href="#216">216</a>             <em class="jxr_comment">// Clean-up the previous decoder if not cleaned up correctly.</em>
-<a class="jxr_linenumber" name="217" href="#217">217</a>             <strong class="jxr_keyword">if</strong> (decoder.finish()) {
-<a class="jxr_linenumber" name="218" href="#218">218</a>                 <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="219" href="#219">219</a>                     <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = decoder.readInbound();
-<a class="jxr_linenumber" name="220" href="#220">220</a>                     <strong class="jxr_keyword">if</strong> (buf == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="221" href="#221">221</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="222" href="#222">222</a>                     }
-<a class="jxr_linenumber" name="223" href="#223">223</a>                     <em class="jxr_comment">// Release the buffer</em>
-<a class="jxr_linenumber" name="224" href="#224">224</a>                     buf.release();
-<a class="jxr_linenumber" name="225" href="#225">225</a>                 }
-<a class="jxr_linenumber" name="226" href="#226">226</a>             }
-<a class="jxr_linenumber" name="227" href="#227">227</a>             decoder = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="228" href="#228">228</a>         }
-<a class="jxr_linenumber" name="229" href="#229">229</a>     }
-<a class="jxr_linenumber" name="230" href="#230">230</a> 
-<a class="jxr_linenumber" name="231" href="#231">231</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> decode(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) {
-<a class="jxr_linenumber" name="232" href="#232">232</a>         <em class="jxr_comment">// call retain here as it will call release after its written to the channel</em>
-<a class="jxr_linenumber" name="233" href="#233">233</a>         decoder.writeInbound(in.retain());
-<a class="jxr_linenumber" name="234" href="#234">234</a>         fetchDecoderOutput(out);
-<a class="jxr_linenumber" name="235" href="#235">235</a>     }
-<a class="jxr_linenumber" name="236" href="#236">236</a> 
-<a class="jxr_linenumber" name="237" href="#237">237</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> finishDecode(List&lt;Object&gt; out) {
-<a class="jxr_linenumber" name="238" href="#238">238</a>         <strong class="jxr_keyword">if</strong> (decoder.finish()) {
-<a class="jxr_linenumber" name="239" href="#239">239</a>             fetchDecoderOutput(out);
-<a class="jxr_linenumber" name="240" href="#240">240</a>         }
-<a class="jxr_linenumber" name="241" href="#241">241</a>         decoder = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="242" href="#242">242</a>     }
-<a class="jxr_linenumber" name="243" href="#243">243</a> 
-<a class="jxr_linenumber" name="244" href="#244">244</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> fetchDecoderOutput(List&lt;Object&gt; out) {
-<a class="jxr_linenumber" name="245" href="#245">245</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="246" href="#246">246</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = decoder.readInbound();
-<a class="jxr_linenumber" name="247" href="#247">247</a>             <strong class="jxr_keyword">if</strong> (buf == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="248" href="#248">248</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="249" href="#249">249</a>             }
-<a class="jxr_linenumber" name="250" href="#250">250</a>             <strong class="jxr_keyword">if</strong> (!buf.isReadable()) {
-<a class="jxr_linenumber" name="251" href="#251">251</a>                 buf.release();
-<a class="jxr_linenumber" name="252" href="#252">252</a>                 <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="253" href="#253">253</a>             }
-<a class="jxr_linenumber" name="254" href="#254">254</a>             out.add(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultHttpContent.html">DefaultHttpContent</a>(buf));
-<a class="jxr_linenumber" name="255" href="#255">255</a>         }
-<a class="jxr_linenumber" name="256" href="#256">256</a>     }
-<a class="jxr_linenumber" name="257" href="#257">257</a> }
+<a class="jxr_linenumber" name="217" href="#217">217</a>             decoder.finishAndReleaseAll();
+<a class="jxr_linenumber" name="218" href="#218">218</a>             decoder = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="219" href="#219">219</a>         }
+<a class="jxr_linenumber" name="220" href="#220">220</a>     }
+<a class="jxr_linenumber" name="221" href="#221">221</a> 
+<a class="jxr_linenumber" name="222" href="#222">222</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cleanupSafely(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="223" href="#223">223</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="224" href="#224">224</a>             cleanup();
+<a class="jxr_linenumber" name="225" href="#225">225</a>         } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="226" href="#226">226</a>             <em class="jxr_comment">// If cleanup throws any error we need to propagate it through the pipeline</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a>             <em class="jxr_comment">// so we don't fail to propagate pipeline events.</em>
+<a class="jxr_linenumber" name="228" href="#228">228</a>             ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="229" href="#229">229</a>         }
+<a class="jxr_linenumber" name="230" href="#230">230</a>     }
+<a class="jxr_linenumber" name="231" href="#231">231</a> 
+<a class="jxr_linenumber" name="232" href="#232">232</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> decode(<a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) {
+<a class="jxr_linenumber" name="233" href="#233">233</a>         <em class="jxr_comment">// call retain here as it will call release after its written to the channel</em>
+<a class="jxr_linenumber" name="234" href="#234">234</a>         decoder.writeInbound(in.retain());
+<a class="jxr_linenumber" name="235" href="#235">235</a>         fetchDecoderOutput(out);
+<a class="jxr_linenumber" name="236" href="#236">236</a>     }
+<a class="jxr_linenumber" name="237" href="#237">237</a> 
+<a class="jxr_linenumber" name="238" href="#238">238</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> finishDecode(List&lt;Object&gt; out) {
+<a class="jxr_linenumber" name="239" href="#239">239</a>         <strong class="jxr_keyword">if</strong> (decoder.finish()) {
+<a class="jxr_linenumber" name="240" href="#240">240</a>             fetchDecoderOutput(out);
+<a class="jxr_linenumber" name="241" href="#241">241</a>         }
+<a class="jxr_linenumber" name="242" href="#242">242</a>         decoder = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="243" href="#243">243</a>     }
+<a class="jxr_linenumber" name="244" href="#244">244</a> 
+<a class="jxr_linenumber" name="245" href="#245">245</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> fetchDecoderOutput(List&lt;Object&gt; out) {
+<a class="jxr_linenumber" name="246" href="#246">246</a>         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="247" href="#247">247</a>             <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = decoder.readInbound();
+<a class="jxr_linenumber" name="248" href="#248">248</a>             <strong class="jxr_keyword">if</strong> (buf == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="249" href="#249">249</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="250" href="#250">250</a>             }
+<a class="jxr_linenumber" name="251" href="#251">251</a>             <strong class="jxr_keyword">if</strong> (!buf.isReadable()) {
+<a class="jxr_linenumber" name="252" href="#252">252</a>                 buf.release();
+<a class="jxr_linenumber" name="253" href="#253">253</a>                 <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="254" href="#254">254</a>             }
+<a class="jxr_linenumber" name="255" href="#255">255</a>             out.add(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/DefaultHttpContent.html">DefaultHttpContent</a>(buf));
+<a class="jxr_linenumber" name="256" href="#256">256</a>         }
+<a class="jxr_linenumber" name="257" href="#257">257</a>     }
+<a class="jxr_linenumber" name="258" href="#258">258</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

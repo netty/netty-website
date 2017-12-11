@@ -301,31 +301,31 @@
 <a class="jxr_linenumber" name="291" href="#291">291</a> 
 <a class="jxr_linenumber" name="292" href="#292">292</a>     @Override
 <a class="jxr_linenumber" name="293" href="#293">293</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="294" href="#294">294</a>         cleanup();
+<a class="jxr_linenumber" name="294" href="#294">294</a>         cleanupSafely(ctx);
 <a class="jxr_linenumber" name="295" href="#295">295</a>         <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
 <a class="jxr_linenumber" name="296" href="#296">296</a>     }
 <a class="jxr_linenumber" name="297" href="#297">297</a> 
 <a class="jxr_linenumber" name="298" href="#298">298</a>     @Override
 <a class="jxr_linenumber" name="299" href="#299">299</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="300" href="#300">300</a>         cleanup();
+<a class="jxr_linenumber" name="300" href="#300">300</a>         cleanupSafely(ctx);
 <a class="jxr_linenumber" name="301" href="#301">301</a>         <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
 <a class="jxr_linenumber" name="302" href="#302">302</a>     }
 <a class="jxr_linenumber" name="303" href="#303">303</a> 
 <a class="jxr_linenumber" name="304" href="#304">304</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cleanup() {
 <a class="jxr_linenumber" name="305" href="#305">305</a>         <strong class="jxr_keyword">if</strong> (encoder != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="306" href="#306">306</a>             <em class="jxr_comment">// Clean-up the previous encoder if not cleaned up correctly.</em>
-<a class="jxr_linenumber" name="307" href="#307">307</a>             <strong class="jxr_keyword">if</strong> (encoder.finish()) {
-<a class="jxr_linenumber" name="308" href="#308">308</a>                 <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="309" href="#309">309</a>                     <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = (ByteBuf) encoder.readOutbound();
-<a class="jxr_linenumber" name="310" href="#310">310</a>                     <strong class="jxr_keyword">if</strong> (buf == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="311" href="#311">311</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="312" href="#312">312</a>                     }
-<a class="jxr_linenumber" name="313" href="#313">313</a>                     <em class="jxr_comment">// Release the buffer</em>
-<a class="jxr_linenumber" name="314" href="#314">314</a>                     <em class="jxr_comment">// https://github.com/netty/netty/issues/1524</em>
-<a class="jxr_linenumber" name="315" href="#315">315</a>                     buf.release();
-<a class="jxr_linenumber" name="316" href="#316">316</a>                 }
-<a class="jxr_linenumber" name="317" href="#317">317</a>             }
-<a class="jxr_linenumber" name="318" href="#318">318</a>             encoder = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="307" href="#307">307</a>             encoder.finishAndReleaseAll();
+<a class="jxr_linenumber" name="308" href="#308">308</a>             encoder = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="309" href="#309">309</a>         }
+<a class="jxr_linenumber" name="310" href="#310">310</a>     }
+<a class="jxr_linenumber" name="311" href="#311">311</a> 
+<a class="jxr_linenumber" name="312" href="#312">312</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cleanupSafely(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="313" href="#313">313</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="314" href="#314">314</a>             cleanup();
+<a class="jxr_linenumber" name="315" href="#315">315</a>         } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="316" href="#316">316</a>             <em class="jxr_comment">// If cleanup throws any error we need to propagate it through the pipeline</em>
+<a class="jxr_linenumber" name="317" href="#317">317</a>             <em class="jxr_comment">// so we don't fail to propagate pipeline events.</em>
+<a class="jxr_linenumber" name="318" href="#318">318</a>             ctx.fireExceptionCaught(cause);
 <a class="jxr_linenumber" name="319" href="#319">319</a>         }
 <a class="jxr_linenumber" name="320" href="#320">320</a>     }
 <a class="jxr_linenumber" name="321" href="#321">321</a> 

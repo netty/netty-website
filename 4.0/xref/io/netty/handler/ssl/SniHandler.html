@@ -121,7 +121,7 @@
 <a class="jxr_linenumber" name="111" href="#111">111</a>                                         <span class="jxr_string">"not an SSL/TLS record: "</span> + ByteBufUtil.hexDump(in));
 <a class="jxr_linenumber" name="112" href="#112">112</a>                                 in.skipBytes(in.readableBytes());
 <a class="jxr_linenumber" name="113" href="#113">113</a> 
-<a class="jxr_linenumber" name="114" href="#114">114</a>                                 SslUtils.notifyHandshakeFailure(ctx, e);
+<a class="jxr_linenumber" name="114" href="#114">114</a>                                 SslUtils.notifyHandshakeFailure(ctx, e, <strong class="jxr_keyword">true</strong>);
 <a class="jxr_linenumber" name="115" href="#115">115</a>                                 <strong class="jxr_keyword">throw</strong> e;
 <a class="jxr_linenumber" name="116" href="#116">116</a>                             }
 <a class="jxr_linenumber" name="117" href="#117">117</a>                             <strong class="jxr_keyword">if</strong> (len == SslUtils.NOT_ENOUGH_DATA ||
@@ -249,46 +249,49 @@
 <a class="jxr_linenumber" name="239" href="#239">239</a>                             <strong class="jxr_keyword">break</strong> loop;
 <a class="jxr_linenumber" name="240" href="#240">240</a>                     }
 <a class="jxr_linenumber" name="241" href="#241">241</a>                 }
-<a class="jxr_linenumber" name="242" href="#242">242</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="243" href="#243">243</a>                 <em class="jxr_comment">// unexpected encoding, ignore sni and use default</em>
-<a class="jxr_linenumber" name="244" href="#244">244</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="245" href="#245">245</a>                     logger.debug(<span class="jxr_string">"Unexpected client hello packet: "</span> + ByteBufUtil.hexDump(in), e);
-<a class="jxr_linenumber" name="246" href="#246">246</a>                 }
-<a class="jxr_linenumber" name="247" href="#247">247</a>             }
-<a class="jxr_linenumber" name="248" href="#248">248</a>             <em class="jxr_comment">// Just select the default SslContext</em>
-<a class="jxr_linenumber" name="249" href="#249">249</a>             select(ctx, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="250" href="#250">250</a>         }
-<a class="jxr_linenumber" name="251" href="#251">251</a>     }
-<a class="jxr_linenumber" name="252" href="#252">252</a> 
-<a class="jxr_linenumber" name="253" href="#253">253</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> select(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, String hostname) {
-<a class="jxr_linenumber" name="254" href="#254">254</a>         <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandler</a> sslHandler = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="255" href="#255">255</a>         <a href="../../../../io/netty/handler/ssl/SslContext.html">SslContext</a> selectedContext = mapping.map(hostname);
-<a class="jxr_linenumber" name="256" href="#256">256</a>         selection = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SniHandler.html">Selection</a>(selectedContext, hostname);
-<a class="jxr_linenumber" name="257" href="#257">257</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="258" href="#258">258</a>             sslHandler = selection.context.newHandler(ctx.alloc());
-<a class="jxr_linenumber" name="259" href="#259">259</a>             ctx.pipeline().replace(<strong class="jxr_keyword">this</strong>, SslHandler.<strong class="jxr_keyword">class</strong>.getName(), sslHandler);
-<a class="jxr_linenumber" name="260" href="#260">260</a>         } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="261" href="#261">261</a>             selection = EMPTY_SELECTION;
-<a class="jxr_linenumber" name="262" href="#262">262</a>             <em class="jxr_comment">// Since the SslHandler was not inserted into the pipeline the ownership of the SSLEngine was not</em>
-<a class="jxr_linenumber" name="263" href="#263">263</a>             <em class="jxr_comment">// transferred to the SslHandler.</em>
-<a class="jxr_linenumber" name="264" href="#264">264</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/5678</em>
-<a class="jxr_linenumber" name="265" href="#265">265</a>             <strong class="jxr_keyword">if</strong> (sslHandler != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="266" href="#266">266</a>                 ReferenceCountUtil.safeRelease(sslHandler.engine());
-<a class="jxr_linenumber" name="267" href="#267">267</a>             }
-<a class="jxr_linenumber" name="268" href="#268">268</a>             PlatformDependent.throwException(cause);
-<a class="jxr_linenumber" name="269" href="#269">269</a>         }
-<a class="jxr_linenumber" name="270" href="#270">270</a>     }
-<a class="jxr_linenumber" name="271" href="#271">271</a> 
-<a class="jxr_linenumber" name="272" href="#272">272</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/SniHandler.html">Selection</a> {
-<a class="jxr_linenumber" name="273" href="#273">273</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/ssl/SslContext.html">SslContext</a> context;
-<a class="jxr_linenumber" name="274" href="#274">274</a>         <strong class="jxr_keyword">final</strong> String hostname;
-<a class="jxr_linenumber" name="275" href="#275">275</a> 
-<a class="jxr_linenumber" name="276" href="#276">276</a>         <a href="../../../../io/netty/handler/ssl/SniHandler.html">Selection</a>(<a href="../../../../io/netty/handler/ssl/SslContext.html">SslContext</a> context, String hostname) {
-<a class="jxr_linenumber" name="277" href="#277">277</a>             <strong class="jxr_keyword">this</strong>.context = context;
-<a class="jxr_linenumber" name="278" href="#278">278</a>             <strong class="jxr_keyword">this</strong>.hostname = hostname;
-<a class="jxr_linenumber" name="279" href="#279">279</a>         }
-<a class="jxr_linenumber" name="280" href="#280">280</a>     }
-<a class="jxr_linenumber" name="281" href="#281">281</a> }
+<a class="jxr_linenumber" name="242" href="#242">242</a>             } <strong class="jxr_keyword">catch</strong> (NotSslRecordException e) {
+<a class="jxr_linenumber" name="243" href="#243">243</a>                 <em class="jxr_comment">// Just rethrow as in this case we also closed the channel and this is consistent with SslHandler.</em>
+<a class="jxr_linenumber" name="244" href="#244">244</a>                 <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="245" href="#245">245</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="246" href="#246">246</a>                 <em class="jxr_comment">// unexpected encoding, ignore sni and use default</em>
+<a class="jxr_linenumber" name="247" href="#247">247</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="248" href="#248">248</a>                     logger.debug(<span class="jxr_string">"Unexpected client hello packet: "</span> + ByteBufUtil.hexDump(in), e);
+<a class="jxr_linenumber" name="249" href="#249">249</a>                 }
+<a class="jxr_linenumber" name="250" href="#250">250</a>             }
+<a class="jxr_linenumber" name="251" href="#251">251</a>             <em class="jxr_comment">// Just select the default SslContext</em>
+<a class="jxr_linenumber" name="252" href="#252">252</a>             select(ctx, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="253" href="#253">253</a>         }
+<a class="jxr_linenumber" name="254" href="#254">254</a>     }
+<a class="jxr_linenumber" name="255" href="#255">255</a> 
+<a class="jxr_linenumber" name="256" href="#256">256</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> select(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, String hostname) {
+<a class="jxr_linenumber" name="257" href="#257">257</a>         <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandler</a> sslHandler = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="258" href="#258">258</a>         <a href="../../../../io/netty/handler/ssl/SslContext.html">SslContext</a> selectedContext = mapping.map(hostname);
+<a class="jxr_linenumber" name="259" href="#259">259</a>         selection = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SniHandler.html">Selection</a>(selectedContext, hostname);
+<a class="jxr_linenumber" name="260" href="#260">260</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="261" href="#261">261</a>             sslHandler = selection.context.newHandler(ctx.alloc());
+<a class="jxr_linenumber" name="262" href="#262">262</a>             ctx.pipeline().replace(<strong class="jxr_keyword">this</strong>, SslHandler.<strong class="jxr_keyword">class</strong>.getName(), sslHandler);
+<a class="jxr_linenumber" name="263" href="#263">263</a>         } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="264" href="#264">264</a>             selection = EMPTY_SELECTION;
+<a class="jxr_linenumber" name="265" href="#265">265</a>             <em class="jxr_comment">// Since the SslHandler was not inserted into the pipeline the ownership of the SSLEngine was not</em>
+<a class="jxr_linenumber" name="266" href="#266">266</a>             <em class="jxr_comment">// transferred to the SslHandler.</em>
+<a class="jxr_linenumber" name="267" href="#267">267</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/5678</em>
+<a class="jxr_linenumber" name="268" href="#268">268</a>             <strong class="jxr_keyword">if</strong> (sslHandler != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="269" href="#269">269</a>                 ReferenceCountUtil.safeRelease(sslHandler.engine());
+<a class="jxr_linenumber" name="270" href="#270">270</a>             }
+<a class="jxr_linenumber" name="271" href="#271">271</a>             PlatformDependent.throwException(cause);
+<a class="jxr_linenumber" name="272" href="#272">272</a>         }
+<a class="jxr_linenumber" name="273" href="#273">273</a>     }
+<a class="jxr_linenumber" name="274" href="#274">274</a> 
+<a class="jxr_linenumber" name="275" href="#275">275</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/SniHandler.html">Selection</a> {
+<a class="jxr_linenumber" name="276" href="#276">276</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/ssl/SslContext.html">SslContext</a> context;
+<a class="jxr_linenumber" name="277" href="#277">277</a>         <strong class="jxr_keyword">final</strong> String hostname;
+<a class="jxr_linenumber" name="278" href="#278">278</a> 
+<a class="jxr_linenumber" name="279" href="#279">279</a>         <a href="../../../../io/netty/handler/ssl/SniHandler.html">Selection</a>(<a href="../../../../io/netty/handler/ssl/SslContext.html">SslContext</a> context, String hostname) {
+<a class="jxr_linenumber" name="280" href="#280">280</a>             <strong class="jxr_keyword">this</strong>.context = context;
+<a class="jxr_linenumber" name="281" href="#281">281</a>             <strong class="jxr_keyword">this</strong>.hostname = hostname;
+<a class="jxr_linenumber" name="282" href="#282">282</a>         }
+<a class="jxr_linenumber" name="283" href="#283">283</a>     }
+<a class="jxr_linenumber" name="284" href="#284">284</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
