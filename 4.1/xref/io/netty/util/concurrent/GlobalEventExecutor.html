@@ -225,64 +225,71 @@
 <a class="jxr_linenumber" name="215" href="#215">215</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> startThread() {
 <a class="jxr_linenumber" name="216" href="#216">216</a>         <strong class="jxr_keyword">if</strong> (started.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
 <a class="jxr_linenumber" name="217" href="#217">217</a>             Thread t = threadFactory.newThread(taskRunner);
-<a class="jxr_linenumber" name="218" href="#218">218</a>             <em class="jxr_comment">// Set the thread before starting it as otherwise inEventLoop() may return false and so produce</em>
-<a class="jxr_linenumber" name="219" href="#219">219</a>             <em class="jxr_comment">// an assert error.</em>
-<a class="jxr_linenumber" name="220" href="#220">220</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/4357</em>
-<a class="jxr_linenumber" name="221" href="#221">221</a>             thread = t;
-<a class="jxr_linenumber" name="222" href="#222">222</a>             t.start();
-<a class="jxr_linenumber" name="223" href="#223">223</a>         }
-<a class="jxr_linenumber" name="224" href="#224">224</a>     }
-<a class="jxr_linenumber" name="225" href="#225">225</a> 
-<a class="jxr_linenumber" name="226" href="#226">226</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/concurrent/GlobalEventExecutor.html">TaskRunner</a> <strong class="jxr_keyword">implements</strong> Runnable {
-<a class="jxr_linenumber" name="227" href="#227">227</a>         @Override
-<a class="jxr_linenumber" name="228" href="#228">228</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="229" href="#229">229</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="230" href="#230">230</a>                 Runnable task = takeTask();
-<a class="jxr_linenumber" name="231" href="#231">231</a>                 <strong class="jxr_keyword">if</strong> (task != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="232" href="#232">232</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="233" href="#233">233</a>                         task.run();
-<a class="jxr_linenumber" name="234" href="#234">234</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="235" href="#235">235</a>                         logger.warn(<span class="jxr_string">"Unexpected exception from the global event executor: "</span>, t);
-<a class="jxr_linenumber" name="236" href="#236">236</a>                     }
-<a class="jxr_linenumber" name="237" href="#237">237</a> 
-<a class="jxr_linenumber" name="238" href="#238">238</a>                     <strong class="jxr_keyword">if</strong> (task != quietPeriodTask) {
-<a class="jxr_linenumber" name="239" href="#239">239</a>                         <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="240" href="#240">240</a>                     }
-<a class="jxr_linenumber" name="241" href="#241">241</a>                 }
-<a class="jxr_linenumber" name="242" href="#242">242</a> 
-<a class="jxr_linenumber" name="243" href="#243">243</a>                 Queue&lt;ScheduledFutureTask&lt;?&gt;&gt; scheduledTaskQueue = GlobalEventExecutor.<strong class="jxr_keyword">this</strong>.scheduledTaskQueue;
-<a class="jxr_linenumber" name="244" href="#244">244</a>                 <em class="jxr_comment">// Terminate if there is no task in the queue (except the noop task).</em>
-<a class="jxr_linenumber" name="245" href="#245">245</a>                 <strong class="jxr_keyword">if</strong> (taskQueue.isEmpty() &amp;&amp; (scheduledTaskQueue == <strong class="jxr_keyword">null</strong> || scheduledTaskQueue.size() == 1)) {
-<a class="jxr_linenumber" name="246" href="#246">246</a>                     <em class="jxr_comment">// Mark the current thread as stopped.</em>
-<a class="jxr_linenumber" name="247" href="#247">247</a>                     <em class="jxr_comment">// The following CAS must always success and must be uncontended,</em>
-<a class="jxr_linenumber" name="248" href="#248">248</a>                     <em class="jxr_comment">// because only one thread should be running at the same time.</em>
-<a class="jxr_linenumber" name="249" href="#249">249</a>                     <strong class="jxr_keyword">boolean</strong> stopped = started.compareAndSet(<strong class="jxr_keyword">true</strong>, false);
-<a class="jxr_linenumber" name="250" href="#250">250</a>                     assert stopped;
-<a class="jxr_linenumber" name="251" href="#251">251</a> 
-<a class="jxr_linenumber" name="252" href="#252">252</a>                     <em class="jxr_comment">// Check if there are pending entries added by execute() or schedule*() while we do CAS above.</em>
-<a class="jxr_linenumber" name="253" href="#253">253</a>                     <strong class="jxr_keyword">if</strong> (taskQueue.isEmpty() &amp;&amp; (scheduledTaskQueue == <strong class="jxr_keyword">null</strong> || scheduledTaskQueue.size() == 1)) {
-<a class="jxr_linenumber" name="254" href="#254">254</a>                         <em class="jxr_comment">// A) No new task was added and thus there's nothing to handle</em>
-<a class="jxr_linenumber" name="255" href="#255">255</a>                         <em class="jxr_comment">//    -&gt; safe to terminate because there's nothing left to do</em>
-<a class="jxr_linenumber" name="256" href="#256">256</a>                         <em class="jxr_comment">// B) A new thread started and handled all the new tasks.</em>
-<a class="jxr_linenumber" name="257" href="#257">257</a>                         <em class="jxr_comment">//    -&gt; safe to terminate the new thread will take care the rest</em>
-<a class="jxr_linenumber" name="258" href="#258">258</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="259" href="#259">259</a>                     }
-<a class="jxr_linenumber" name="260" href="#260">260</a> 
-<a class="jxr_linenumber" name="261" href="#261">261</a>                     <em class="jxr_comment">// There are pending tasks added again.</em>
-<a class="jxr_linenumber" name="262" href="#262">262</a>                     <strong class="jxr_keyword">if</strong> (!started.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
-<a class="jxr_linenumber" name="263" href="#263">263</a>                         <em class="jxr_comment">// startThread() started a new thread and set 'started' to true.</em>
-<a class="jxr_linenumber" name="264" href="#264">264</a>                         <em class="jxr_comment">// -&gt; terminate this thread so that the new thread reads from taskQueue exclusively.</em>
+<a class="jxr_linenumber" name="218" href="#218">218</a>             <em class="jxr_comment">// Set to null to ensure we not create classloader leaks by holds a strong reference to the inherited</em>
+<a class="jxr_linenumber" name="219" href="#219">219</a>             <em class="jxr_comment">// classloader.</em>
+<a class="jxr_linenumber" name="220" href="#220">220</a>             <em class="jxr_comment">// See:</em>
+<a class="jxr_linenumber" name="221" href="#221">221</a>             <em class="jxr_comment">// - https://github.com/netty/netty/issues/7290</em>
+<a class="jxr_linenumber" name="222" href="#222">222</a>             <em class="jxr_comment">// - https://bugs.openjdk.java.net/browse/JDK-7008595</em>
+<a class="jxr_linenumber" name="223" href="#223">223</a>             t.setContextClassLoader(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="224" href="#224">224</a> 
+<a class="jxr_linenumber" name="225" href="#225">225</a>             <em class="jxr_comment">// Set the thread before starting it as otherwise inEventLoop() may return false and so produce</em>
+<a class="jxr_linenumber" name="226" href="#226">226</a>             <em class="jxr_comment">// an assert error.</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/4357</em>
+<a class="jxr_linenumber" name="228" href="#228">228</a>             thread = t;
+<a class="jxr_linenumber" name="229" href="#229">229</a>             t.start();
+<a class="jxr_linenumber" name="230" href="#230">230</a>         }
+<a class="jxr_linenumber" name="231" href="#231">231</a>     }
+<a class="jxr_linenumber" name="232" href="#232">232</a> 
+<a class="jxr_linenumber" name="233" href="#233">233</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/concurrent/GlobalEventExecutor.html">TaskRunner</a> <strong class="jxr_keyword">implements</strong> Runnable {
+<a class="jxr_linenumber" name="234" href="#234">234</a>         @Override
+<a class="jxr_linenumber" name="235" href="#235">235</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="236" href="#236">236</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="237" href="#237">237</a>                 Runnable task = takeTask();
+<a class="jxr_linenumber" name="238" href="#238">238</a>                 <strong class="jxr_keyword">if</strong> (task != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="239" href="#239">239</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="240" href="#240">240</a>                         task.run();
+<a class="jxr_linenumber" name="241" href="#241">241</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="242" href="#242">242</a>                         logger.warn(<span class="jxr_string">"Unexpected exception from the global event executor: "</span>, t);
+<a class="jxr_linenumber" name="243" href="#243">243</a>                     }
+<a class="jxr_linenumber" name="244" href="#244">244</a> 
+<a class="jxr_linenumber" name="245" href="#245">245</a>                     <strong class="jxr_keyword">if</strong> (task != quietPeriodTask) {
+<a class="jxr_linenumber" name="246" href="#246">246</a>                         <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="247" href="#247">247</a>                     }
+<a class="jxr_linenumber" name="248" href="#248">248</a>                 }
+<a class="jxr_linenumber" name="249" href="#249">249</a> 
+<a class="jxr_linenumber" name="250" href="#250">250</a>                 Queue&lt;ScheduledFutureTask&lt;?&gt;&gt; scheduledTaskQueue = GlobalEventExecutor.<strong class="jxr_keyword">this</strong>.scheduledTaskQueue;
+<a class="jxr_linenumber" name="251" href="#251">251</a>                 <em class="jxr_comment">// Terminate if there is no task in the queue (except the noop task).</em>
+<a class="jxr_linenumber" name="252" href="#252">252</a>                 <strong class="jxr_keyword">if</strong> (taskQueue.isEmpty() &amp;&amp; (scheduledTaskQueue == <strong class="jxr_keyword">null</strong> || scheduledTaskQueue.size() == 1)) {
+<a class="jxr_linenumber" name="253" href="#253">253</a>                     <em class="jxr_comment">// Mark the current thread as stopped.</em>
+<a class="jxr_linenumber" name="254" href="#254">254</a>                     <em class="jxr_comment">// The following CAS must always success and must be uncontended,</em>
+<a class="jxr_linenumber" name="255" href="#255">255</a>                     <em class="jxr_comment">// because only one thread should be running at the same time.</em>
+<a class="jxr_linenumber" name="256" href="#256">256</a>                     <strong class="jxr_keyword">boolean</strong> stopped = started.compareAndSet(<strong class="jxr_keyword">true</strong>, false);
+<a class="jxr_linenumber" name="257" href="#257">257</a>                     assert stopped;
+<a class="jxr_linenumber" name="258" href="#258">258</a> 
+<a class="jxr_linenumber" name="259" href="#259">259</a>                     <em class="jxr_comment">// Check if there are pending entries added by execute() or schedule*() while we do CAS above.</em>
+<a class="jxr_linenumber" name="260" href="#260">260</a>                     <strong class="jxr_keyword">if</strong> (taskQueue.isEmpty() &amp;&amp; (scheduledTaskQueue == <strong class="jxr_keyword">null</strong> || scheduledTaskQueue.size() == 1)) {
+<a class="jxr_linenumber" name="261" href="#261">261</a>                         <em class="jxr_comment">// A) No new task was added and thus there's nothing to handle</em>
+<a class="jxr_linenumber" name="262" href="#262">262</a>                         <em class="jxr_comment">//    -&gt; safe to terminate because there's nothing left to do</em>
+<a class="jxr_linenumber" name="263" href="#263">263</a>                         <em class="jxr_comment">// B) A new thread started and handled all the new tasks.</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a>                         <em class="jxr_comment">//    -&gt; safe to terminate the new thread will take care the rest</em>
 <a class="jxr_linenumber" name="265" href="#265">265</a>                         <strong class="jxr_keyword">break</strong>;
 <a class="jxr_linenumber" name="266" href="#266">266</a>                     }
 <a class="jxr_linenumber" name="267" href="#267">267</a> 
-<a class="jxr_linenumber" name="268" href="#268">268</a>                     <em class="jxr_comment">// New tasks were added, but this worker was faster to set 'started' to true.</em>
-<a class="jxr_linenumber" name="269" href="#269">269</a>                     <em class="jxr_comment">// i.e. a new worker thread was not started by startThread().</em>
-<a class="jxr_linenumber" name="270" href="#270">270</a>                     <em class="jxr_comment">// -&gt; keep this thread alive to handle the newly added entries.</em>
-<a class="jxr_linenumber" name="271" href="#271">271</a>                 }
-<a class="jxr_linenumber" name="272" href="#272">272</a>             }
-<a class="jxr_linenumber" name="273" href="#273">273</a>         }
-<a class="jxr_linenumber" name="274" href="#274">274</a>     }
-<a class="jxr_linenumber" name="275" href="#275">275</a> }
+<a class="jxr_linenumber" name="268" href="#268">268</a>                     <em class="jxr_comment">// There are pending tasks added again.</em>
+<a class="jxr_linenumber" name="269" href="#269">269</a>                     <strong class="jxr_keyword">if</strong> (!started.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="270" href="#270">270</a>                         <em class="jxr_comment">// startThread() started a new thread and set 'started' to true.</em>
+<a class="jxr_linenumber" name="271" href="#271">271</a>                         <em class="jxr_comment">// -&gt; terminate this thread so that the new thread reads from taskQueue exclusively.</em>
+<a class="jxr_linenumber" name="272" href="#272">272</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="273" href="#273">273</a>                     }
+<a class="jxr_linenumber" name="274" href="#274">274</a> 
+<a class="jxr_linenumber" name="275" href="#275">275</a>                     <em class="jxr_comment">// New tasks were added, but this worker was faster to set 'started' to true.</em>
+<a class="jxr_linenumber" name="276" href="#276">276</a>                     <em class="jxr_comment">// i.e. a new worker thread was not started by startThread().</em>
+<a class="jxr_linenumber" name="277" href="#277">277</a>                     <em class="jxr_comment">// -&gt; keep this thread alive to handle the newly added entries.</em>
+<a class="jxr_linenumber" name="278" href="#278">278</a>                 }
+<a class="jxr_linenumber" name="279" href="#279">279</a>             }
+<a class="jxr_linenumber" name="280" href="#280">280</a>         }
+<a class="jxr_linenumber" name="281" href="#281">281</a>     }
+<a class="jxr_linenumber" name="282" href="#282">282</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
