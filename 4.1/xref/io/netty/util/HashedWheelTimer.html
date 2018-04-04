@@ -429,404 +429,409 @@
 <a class="jxr_linenumber" name="419" href="#419">419</a>         <em class="jxr_comment">// Add the timeout to the timeout queue which will be processed on the next tick.</em>
 <a class="jxr_linenumber" name="420" href="#420">420</a>         <em class="jxr_comment">// During processing all the queued HashedWheelTimeouts will be added to the correct HashedWheelBucket.</em>
 <a class="jxr_linenumber" name="421" href="#421">421</a>         <strong class="jxr_keyword">long</strong> deadline = System.nanoTime() + unit.toNanos(delay) - startTime;
-<a class="jxr_linenumber" name="422" href="#422">422</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a>(<strong class="jxr_keyword">this</strong>, task, deadline);
-<a class="jxr_linenumber" name="423" href="#423">423</a>         timeouts.add(timeout);
-<a class="jxr_linenumber" name="424" href="#424">424</a>         <strong class="jxr_keyword">return</strong> timeout;
-<a class="jxr_linenumber" name="425" href="#425">425</a>     }
-<a class="jxr_linenumber" name="426" href="#426">426</a> 
-<a class="jxr_linenumber" name="427" href="#427">427</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="428" href="#428">428</a> <em class="jxr_javadoccomment">     * Returns the number of pending timeouts of this {@link Timer}.</em>
-<a class="jxr_linenumber" name="429" href="#429">429</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="430" href="#430">430</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> pendingTimeouts() {
-<a class="jxr_linenumber" name="431" href="#431">431</a>         <strong class="jxr_keyword">return</strong> pendingTimeouts.get();
-<a class="jxr_linenumber" name="432" href="#432">432</a>     }
-<a class="jxr_linenumber" name="433" href="#433">433</a> 
-<a class="jxr_linenumber" name="434" href="#434">434</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> reportTooManyInstances() {
-<a class="jxr_linenumber" name="435" href="#435">435</a>         String resourceType = simpleClassName(HashedWheelTimer.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="436" href="#436">436</a>         logger.error(<span class="jxr_string">"You are creating too many "</span> + resourceType + <span class="jxr_string">" instances. "</span> +
-<a class="jxr_linenumber" name="437" href="#437">437</a>                 resourceType + <span class="jxr_string">" is a shared resource that must be reused across the JVM,"</span> +
-<a class="jxr_linenumber" name="438" href="#438">438</a>                 <span class="jxr_string">"so that only a few instances are created."</span>);
-<a class="jxr_linenumber" name="439" href="#439">439</a>     }
-<a class="jxr_linenumber" name="440" href="#440">440</a> 
-<a class="jxr_linenumber" name="441" href="#441">441</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">Worker</a> <strong class="jxr_keyword">implements</strong> Runnable {
-<a class="jxr_linenumber" name="442" href="#442">442</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Set&lt;Timeout&gt; unprocessedTimeouts = <strong class="jxr_keyword">new</strong> HashSet&lt;Timeout&gt;();
-<a class="jxr_linenumber" name="443" href="#443">443</a> 
-<a class="jxr_linenumber" name="444" href="#444">444</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> tick;
+<a class="jxr_linenumber" name="422" href="#422">422</a> 
+<a class="jxr_linenumber" name="423" href="#423">423</a>         <em class="jxr_comment">// Guard against overflow.</em>
+<a class="jxr_linenumber" name="424" href="#424">424</a>         <strong class="jxr_keyword">if</strong> (delay &gt; 0 &amp;&amp; deadline &lt; 0) {
+<a class="jxr_linenumber" name="425" href="#425">425</a>             deadline = Long.MAX_VALUE;
+<a class="jxr_linenumber" name="426" href="#426">426</a>         }
+<a class="jxr_linenumber" name="427" href="#427">427</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a>(<strong class="jxr_keyword">this</strong>, task, deadline);
+<a class="jxr_linenumber" name="428" href="#428">428</a>         timeouts.add(timeout);
+<a class="jxr_linenumber" name="429" href="#429">429</a>         <strong class="jxr_keyword">return</strong> timeout;
+<a class="jxr_linenumber" name="430" href="#430">430</a>     }
+<a class="jxr_linenumber" name="431" href="#431">431</a> 
+<a class="jxr_linenumber" name="432" href="#432">432</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="433" href="#433">433</a> <em class="jxr_javadoccomment">     * Returns the number of pending timeouts of this {@link Timer}.</em>
+<a class="jxr_linenumber" name="434" href="#434">434</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="435" href="#435">435</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> pendingTimeouts() {
+<a class="jxr_linenumber" name="436" href="#436">436</a>         <strong class="jxr_keyword">return</strong> pendingTimeouts.get();
+<a class="jxr_linenumber" name="437" href="#437">437</a>     }
+<a class="jxr_linenumber" name="438" href="#438">438</a> 
+<a class="jxr_linenumber" name="439" href="#439">439</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> reportTooManyInstances() {
+<a class="jxr_linenumber" name="440" href="#440">440</a>         String resourceType = simpleClassName(HashedWheelTimer.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="441" href="#441">441</a>         logger.error(<span class="jxr_string">"You are creating too many "</span> + resourceType + <span class="jxr_string">" instances. "</span> +
+<a class="jxr_linenumber" name="442" href="#442">442</a>                 resourceType + <span class="jxr_string">" is a shared resource that must be reused across the JVM,"</span> +
+<a class="jxr_linenumber" name="443" href="#443">443</a>                 <span class="jxr_string">"so that only a few instances are created."</span>);
+<a class="jxr_linenumber" name="444" href="#444">444</a>     }
 <a class="jxr_linenumber" name="445" href="#445">445</a> 
-<a class="jxr_linenumber" name="446" href="#446">446</a>         @Override
-<a class="jxr_linenumber" name="447" href="#447">447</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="448" href="#448">448</a>             <em class="jxr_comment">// Initialize the startTime.</em>
-<a class="jxr_linenumber" name="449" href="#449">449</a>             startTime = System.nanoTime();
-<a class="jxr_linenumber" name="450" href="#450">450</a>             <strong class="jxr_keyword">if</strong> (startTime == 0) {
-<a class="jxr_linenumber" name="451" href="#451">451</a>                 <em class="jxr_comment">// We use 0 as an indicator for the uninitialized value here, so make sure it's not 0 when initialized.</em>
-<a class="jxr_linenumber" name="452" href="#452">452</a>                 startTime = 1;
-<a class="jxr_linenumber" name="453" href="#453">453</a>             }
-<a class="jxr_linenumber" name="454" href="#454">454</a> 
-<a class="jxr_linenumber" name="455" href="#455">455</a>             <em class="jxr_comment">// Notify the other threads waiting for the initialization at start().</em>
-<a class="jxr_linenumber" name="456" href="#456">456</a>             startTimeInitialized.countDown();
-<a class="jxr_linenumber" name="457" href="#457">457</a> 
-<a class="jxr_linenumber" name="458" href="#458">458</a>             <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="459" href="#459">459</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> deadline = waitForNextTick();
-<a class="jxr_linenumber" name="460" href="#460">460</a>                 <strong class="jxr_keyword">if</strong> (deadline &gt; 0) {
-<a class="jxr_linenumber" name="461" href="#461">461</a>                     <strong class="jxr_keyword">int</strong> idx = (<strong class="jxr_keyword">int</strong>) (tick &amp; mask);
-<a class="jxr_linenumber" name="462" href="#462">462</a>                     processCancelledTasks();
-<a class="jxr_linenumber" name="463" href="#463">463</a>                     <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket =
-<a class="jxr_linenumber" name="464" href="#464">464</a>                             wheel[idx];
-<a class="jxr_linenumber" name="465" href="#465">465</a>                     transferTimeoutsToBuckets();
-<a class="jxr_linenumber" name="466" href="#466">466</a>                     bucket.expireTimeouts(deadline);
-<a class="jxr_linenumber" name="467" href="#467">467</a>                     tick++;
-<a class="jxr_linenumber" name="468" href="#468">468</a>                 }
-<a class="jxr_linenumber" name="469" href="#469">469</a>             } <strong class="jxr_keyword">while</strong> (WORKER_STATE_UPDATER.get(HashedWheelTimer.<strong class="jxr_keyword">this</strong>) == WORKER_STATE_STARTED);
-<a class="jxr_linenumber" name="470" href="#470">470</a> 
-<a class="jxr_linenumber" name="471" href="#471">471</a>             <em class="jxr_comment">// Fill the unprocessedTimeouts so we can return them from stop() method.</em>
-<a class="jxr_linenumber" name="472" href="#472">472</a>             <strong class="jxr_keyword">for</strong> (HashedWheelBucket bucket: wheel) {
-<a class="jxr_linenumber" name="473" href="#473">473</a>                 bucket.clearTimeouts(unprocessedTimeouts);
-<a class="jxr_linenumber" name="474" href="#474">474</a>             }
-<a class="jxr_linenumber" name="475" href="#475">475</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="476" href="#476">476</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = timeouts.poll();
-<a class="jxr_linenumber" name="477" href="#477">477</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="478" href="#478">478</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="479" href="#479">479</a>                 }
-<a class="jxr_linenumber" name="480" href="#480">480</a>                 <strong class="jxr_keyword">if</strong> (!timeout.isCancelled()) {
-<a class="jxr_linenumber" name="481" href="#481">481</a>                     unprocessedTimeouts.add(timeout);
-<a class="jxr_linenumber" name="482" href="#482">482</a>                 }
-<a class="jxr_linenumber" name="483" href="#483">483</a>             }
-<a class="jxr_linenumber" name="484" href="#484">484</a>             processCancelledTasks();
-<a class="jxr_linenumber" name="485" href="#485">485</a>         }
-<a class="jxr_linenumber" name="486" href="#486">486</a> 
-<a class="jxr_linenumber" name="487" href="#487">487</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> transferTimeoutsToBuckets() {
-<a class="jxr_linenumber" name="488" href="#488">488</a>             <em class="jxr_comment">// transfer only max. 100000 timeouts per tick to prevent a thread to stale the workerThread when it just</em>
-<a class="jxr_linenumber" name="489" href="#489">489</a>             <em class="jxr_comment">// adds new timeouts in a loop.</em>
-<a class="jxr_linenumber" name="490" href="#490">490</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; 100000; i++) {
-<a class="jxr_linenumber" name="491" href="#491">491</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = timeouts.poll();
-<a class="jxr_linenumber" name="492" href="#492">492</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="493" href="#493">493</a>                     <em class="jxr_comment">// all processed</em>
-<a class="jxr_linenumber" name="494" href="#494">494</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="495" href="#495">495</a>                 }
-<a class="jxr_linenumber" name="496" href="#496">496</a>                 <strong class="jxr_keyword">if</strong> (timeout.state() == HashedWheelTimeout.ST_CANCELLED) {
-<a class="jxr_linenumber" name="497" href="#497">497</a>                     <em class="jxr_comment">// Was cancelled in the meantime.</em>
-<a class="jxr_linenumber" name="498" href="#498">498</a>                     <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="499" href="#499">499</a>                 }
-<a class="jxr_linenumber" name="500" href="#500">500</a> 
-<a class="jxr_linenumber" name="501" href="#501">501</a>                 <strong class="jxr_keyword">long</strong> calculated = timeout.deadline / tickDuration;
-<a class="jxr_linenumber" name="502" href="#502">502</a>                 timeout.remainingRounds = (calculated - tick) / wheel.length;
-<a class="jxr_linenumber" name="503" href="#503">503</a> 
-<a class="jxr_linenumber" name="504" href="#504">504</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> ticks = Math.max(calculated, tick); <em class="jxr_comment">// Ensure we don't schedule for past.</em>
-<a class="jxr_linenumber" name="505" href="#505">505</a>                 <strong class="jxr_keyword">int</strong> stopIndex = (<strong class="jxr_keyword">int</strong>) (ticks &amp; mask);
-<a class="jxr_linenumber" name="506" href="#506">506</a> 
-<a class="jxr_linenumber" name="507" href="#507">507</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket = wheel[stopIndex];
-<a class="jxr_linenumber" name="508" href="#508">508</a>                 bucket.addTimeout(timeout);
-<a class="jxr_linenumber" name="509" href="#509">509</a>             }
-<a class="jxr_linenumber" name="510" href="#510">510</a>         }
+<a class="jxr_linenumber" name="446" href="#446">446</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">Worker</a> <strong class="jxr_keyword">implements</strong> Runnable {
+<a class="jxr_linenumber" name="447" href="#447">447</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Set&lt;Timeout&gt; unprocessedTimeouts = <strong class="jxr_keyword">new</strong> HashSet&lt;Timeout&gt;();
+<a class="jxr_linenumber" name="448" href="#448">448</a> 
+<a class="jxr_linenumber" name="449" href="#449">449</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> tick;
+<a class="jxr_linenumber" name="450" href="#450">450</a> 
+<a class="jxr_linenumber" name="451" href="#451">451</a>         @Override
+<a class="jxr_linenumber" name="452" href="#452">452</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="453" href="#453">453</a>             <em class="jxr_comment">// Initialize the startTime.</em>
+<a class="jxr_linenumber" name="454" href="#454">454</a>             startTime = System.nanoTime();
+<a class="jxr_linenumber" name="455" href="#455">455</a>             <strong class="jxr_keyword">if</strong> (startTime == 0) {
+<a class="jxr_linenumber" name="456" href="#456">456</a>                 <em class="jxr_comment">// We use 0 as an indicator for the uninitialized value here, so make sure it's not 0 when initialized.</em>
+<a class="jxr_linenumber" name="457" href="#457">457</a>                 startTime = 1;
+<a class="jxr_linenumber" name="458" href="#458">458</a>             }
+<a class="jxr_linenumber" name="459" href="#459">459</a> 
+<a class="jxr_linenumber" name="460" href="#460">460</a>             <em class="jxr_comment">// Notify the other threads waiting for the initialization at start().</em>
+<a class="jxr_linenumber" name="461" href="#461">461</a>             startTimeInitialized.countDown();
+<a class="jxr_linenumber" name="462" href="#462">462</a> 
+<a class="jxr_linenumber" name="463" href="#463">463</a>             <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="464" href="#464">464</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> deadline = waitForNextTick();
+<a class="jxr_linenumber" name="465" href="#465">465</a>                 <strong class="jxr_keyword">if</strong> (deadline &gt; 0) {
+<a class="jxr_linenumber" name="466" href="#466">466</a>                     <strong class="jxr_keyword">int</strong> idx = (<strong class="jxr_keyword">int</strong>) (tick &amp; mask);
+<a class="jxr_linenumber" name="467" href="#467">467</a>                     processCancelledTasks();
+<a class="jxr_linenumber" name="468" href="#468">468</a>                     <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket =
+<a class="jxr_linenumber" name="469" href="#469">469</a>                             wheel[idx];
+<a class="jxr_linenumber" name="470" href="#470">470</a>                     transferTimeoutsToBuckets();
+<a class="jxr_linenumber" name="471" href="#471">471</a>                     bucket.expireTimeouts(deadline);
+<a class="jxr_linenumber" name="472" href="#472">472</a>                     tick++;
+<a class="jxr_linenumber" name="473" href="#473">473</a>                 }
+<a class="jxr_linenumber" name="474" href="#474">474</a>             } <strong class="jxr_keyword">while</strong> (WORKER_STATE_UPDATER.get(HashedWheelTimer.<strong class="jxr_keyword">this</strong>) == WORKER_STATE_STARTED);
+<a class="jxr_linenumber" name="475" href="#475">475</a> 
+<a class="jxr_linenumber" name="476" href="#476">476</a>             <em class="jxr_comment">// Fill the unprocessedTimeouts so we can return them from stop() method.</em>
+<a class="jxr_linenumber" name="477" href="#477">477</a>             <strong class="jxr_keyword">for</strong> (HashedWheelBucket bucket: wheel) {
+<a class="jxr_linenumber" name="478" href="#478">478</a>                 bucket.clearTimeouts(unprocessedTimeouts);
+<a class="jxr_linenumber" name="479" href="#479">479</a>             }
+<a class="jxr_linenumber" name="480" href="#480">480</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="481" href="#481">481</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = timeouts.poll();
+<a class="jxr_linenumber" name="482" href="#482">482</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="483" href="#483">483</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="484" href="#484">484</a>                 }
+<a class="jxr_linenumber" name="485" href="#485">485</a>                 <strong class="jxr_keyword">if</strong> (!timeout.isCancelled()) {
+<a class="jxr_linenumber" name="486" href="#486">486</a>                     unprocessedTimeouts.add(timeout);
+<a class="jxr_linenumber" name="487" href="#487">487</a>                 }
+<a class="jxr_linenumber" name="488" href="#488">488</a>             }
+<a class="jxr_linenumber" name="489" href="#489">489</a>             processCancelledTasks();
+<a class="jxr_linenumber" name="490" href="#490">490</a>         }
+<a class="jxr_linenumber" name="491" href="#491">491</a> 
+<a class="jxr_linenumber" name="492" href="#492">492</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> transferTimeoutsToBuckets() {
+<a class="jxr_linenumber" name="493" href="#493">493</a>             <em class="jxr_comment">// transfer only max. 100000 timeouts per tick to prevent a thread to stale the workerThread when it just</em>
+<a class="jxr_linenumber" name="494" href="#494">494</a>             <em class="jxr_comment">// adds new timeouts in a loop.</em>
+<a class="jxr_linenumber" name="495" href="#495">495</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; 100000; i++) {
+<a class="jxr_linenumber" name="496" href="#496">496</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = timeouts.poll();
+<a class="jxr_linenumber" name="497" href="#497">497</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="498" href="#498">498</a>                     <em class="jxr_comment">// all processed</em>
+<a class="jxr_linenumber" name="499" href="#499">499</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="500" href="#500">500</a>                 }
+<a class="jxr_linenumber" name="501" href="#501">501</a>                 <strong class="jxr_keyword">if</strong> (timeout.state() == HashedWheelTimeout.ST_CANCELLED) {
+<a class="jxr_linenumber" name="502" href="#502">502</a>                     <em class="jxr_comment">// Was cancelled in the meantime.</em>
+<a class="jxr_linenumber" name="503" href="#503">503</a>                     <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="504" href="#504">504</a>                 }
+<a class="jxr_linenumber" name="505" href="#505">505</a> 
+<a class="jxr_linenumber" name="506" href="#506">506</a>                 <strong class="jxr_keyword">long</strong> calculated = timeout.deadline / tickDuration;
+<a class="jxr_linenumber" name="507" href="#507">507</a>                 timeout.remainingRounds = (calculated - tick) / wheel.length;
+<a class="jxr_linenumber" name="508" href="#508">508</a> 
+<a class="jxr_linenumber" name="509" href="#509">509</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> ticks = Math.max(calculated, tick); <em class="jxr_comment">// Ensure we don't schedule for past.</em>
+<a class="jxr_linenumber" name="510" href="#510">510</a>                 <strong class="jxr_keyword">int</strong> stopIndex = (<strong class="jxr_keyword">int</strong>) (ticks &amp; mask);
 <a class="jxr_linenumber" name="511" href="#511">511</a> 
-<a class="jxr_linenumber" name="512" href="#512">512</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> processCancelledTasks() {
-<a class="jxr_linenumber" name="513" href="#513">513</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="514" href="#514">514</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = cancelledTimeouts.poll();
-<a class="jxr_linenumber" name="515" href="#515">515</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="516" href="#516">516</a>                     <em class="jxr_comment">// all processed</em>
-<a class="jxr_linenumber" name="517" href="#517">517</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="518" href="#518">518</a>                 }
-<a class="jxr_linenumber" name="519" href="#519">519</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="520" href="#520">520</a>                     timeout.remove();
-<a class="jxr_linenumber" name="521" href="#521">521</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="522" href="#522">522</a>                     <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
-<a class="jxr_linenumber" name="523" href="#523">523</a>                         logger.warn(<span class="jxr_string">"An exception was thrown while process a cancellation task"</span>, t);
-<a class="jxr_linenumber" name="524" href="#524">524</a>                     }
-<a class="jxr_linenumber" name="525" href="#525">525</a>                 }
-<a class="jxr_linenumber" name="526" href="#526">526</a>             }
-<a class="jxr_linenumber" name="527" href="#527">527</a>         }
-<a class="jxr_linenumber" name="528" href="#528">528</a> 
-<a class="jxr_linenumber" name="529" href="#529">529</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="530" href="#530">530</a> <em class="jxr_javadoccomment">         * calculate goal nanoTime from startTime and current tick number,</em>
-<a class="jxr_linenumber" name="531" href="#531">531</a> <em class="jxr_javadoccomment">         * then wait until that goal has been reached.</em>
-<a class="jxr_linenumber" name="532" href="#532">532</a> <em class="jxr_javadoccomment">         * @return Long.MIN_VALUE if received a shutdown request,</em>
-<a class="jxr_linenumber" name="533" href="#533">533</a> <em class="jxr_javadoccomment">         * current time otherwise (with Long.MIN_VALUE changed by +1)</em>
-<a class="jxr_linenumber" name="534" href="#534">534</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="535" href="#535">535</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> waitForNextTick() {
-<a class="jxr_linenumber" name="536" href="#536">536</a>             <strong class="jxr_keyword">long</strong> deadline = tickDuration * (tick + 1);
-<a class="jxr_linenumber" name="537" href="#537">537</a> 
-<a class="jxr_linenumber" name="538" href="#538">538</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="539" href="#539">539</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> currentTime = System.nanoTime() - startTime;
-<a class="jxr_linenumber" name="540" href="#540">540</a>                 <strong class="jxr_keyword">long</strong> sleepTimeMs = (deadline - currentTime + 999999) / 1000000;
-<a class="jxr_linenumber" name="541" href="#541">541</a> 
-<a class="jxr_linenumber" name="542" href="#542">542</a>                 <strong class="jxr_keyword">if</strong> (sleepTimeMs &lt;= 0) {
-<a class="jxr_linenumber" name="543" href="#543">543</a>                     <strong class="jxr_keyword">if</strong> (currentTime == Long.MIN_VALUE) {
-<a class="jxr_linenumber" name="544" href="#544">544</a>                         <strong class="jxr_keyword">return</strong> -Long.MAX_VALUE;
-<a class="jxr_linenumber" name="545" href="#545">545</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="546" href="#546">546</a>                         <strong class="jxr_keyword">return</strong> currentTime;
-<a class="jxr_linenumber" name="547" href="#547">547</a>                     }
-<a class="jxr_linenumber" name="548" href="#548">548</a>                 }
-<a class="jxr_linenumber" name="549" href="#549">549</a> 
-<a class="jxr_linenumber" name="550" href="#550">550</a>                 <em class="jxr_comment">// Check if we run on windows, as if thats the case we will need</em>
-<a class="jxr_linenumber" name="551" href="#551">551</a>                 <em class="jxr_comment">// to round the sleepTime as workaround for a bug that only affect</em>
-<a class="jxr_linenumber" name="552" href="#552">552</a>                 <em class="jxr_comment">// the JVM if it runs on windows.</em>
-<a class="jxr_linenumber" name="553" href="#553">553</a>                 <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="554" href="#554">554</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/356</em>
-<a class="jxr_linenumber" name="555" href="#555">555</a>                 <strong class="jxr_keyword">if</strong> (PlatformDependent.isWindows()) {
-<a class="jxr_linenumber" name="556" href="#556">556</a>                     sleepTimeMs = sleepTimeMs / 10 * 10;
-<a class="jxr_linenumber" name="557" href="#557">557</a>                 }
-<a class="jxr_linenumber" name="558" href="#558">558</a> 
-<a class="jxr_linenumber" name="559" href="#559">559</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="560" href="#560">560</a>                     Thread.sleep(sleepTimeMs);
-<a class="jxr_linenumber" name="561" href="#561">561</a>                 } <strong class="jxr_keyword">catch</strong> (InterruptedException ignored) {
-<a class="jxr_linenumber" name="562" href="#562">562</a>                     <strong class="jxr_keyword">if</strong> (WORKER_STATE_UPDATER.get(HashedWheelTimer.<strong class="jxr_keyword">this</strong>) == WORKER_STATE_SHUTDOWN) {
-<a class="jxr_linenumber" name="563" href="#563">563</a>                         <strong class="jxr_keyword">return</strong> Long.MIN_VALUE;
-<a class="jxr_linenumber" name="564" href="#564">564</a>                     }
-<a class="jxr_linenumber" name="565" href="#565">565</a>                 }
-<a class="jxr_linenumber" name="566" href="#566">566</a>             }
-<a class="jxr_linenumber" name="567" href="#567">567</a>         }
-<a class="jxr_linenumber" name="568" href="#568">568</a> 
-<a class="jxr_linenumber" name="569" href="#569">569</a>         <strong class="jxr_keyword">public</strong> Set&lt;Timeout&gt; unprocessedTimeouts() {
-<a class="jxr_linenumber" name="570" href="#570">570</a>             <strong class="jxr_keyword">return</strong> Collections.unmodifiableSet(unprocessedTimeouts);
-<a class="jxr_linenumber" name="571" href="#571">571</a>         }
-<a class="jxr_linenumber" name="572" href="#572">572</a>     }
+<a class="jxr_linenumber" name="512" href="#512">512</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket = wheel[stopIndex];
+<a class="jxr_linenumber" name="513" href="#513">513</a>                 bucket.addTimeout(timeout);
+<a class="jxr_linenumber" name="514" href="#514">514</a>             }
+<a class="jxr_linenumber" name="515" href="#515">515</a>         }
+<a class="jxr_linenumber" name="516" href="#516">516</a> 
+<a class="jxr_linenumber" name="517" href="#517">517</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> processCancelledTasks() {
+<a class="jxr_linenumber" name="518" href="#518">518</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="519" href="#519">519</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = cancelledTimeouts.poll();
+<a class="jxr_linenumber" name="520" href="#520">520</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="521" href="#521">521</a>                     <em class="jxr_comment">// all processed</em>
+<a class="jxr_linenumber" name="522" href="#522">522</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="523" href="#523">523</a>                 }
+<a class="jxr_linenumber" name="524" href="#524">524</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="525" href="#525">525</a>                     timeout.remove();
+<a class="jxr_linenumber" name="526" href="#526">526</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="527" href="#527">527</a>                     <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
+<a class="jxr_linenumber" name="528" href="#528">528</a>                         logger.warn(<span class="jxr_string">"An exception was thrown while process a cancellation task"</span>, t);
+<a class="jxr_linenumber" name="529" href="#529">529</a>                     }
+<a class="jxr_linenumber" name="530" href="#530">530</a>                 }
+<a class="jxr_linenumber" name="531" href="#531">531</a>             }
+<a class="jxr_linenumber" name="532" href="#532">532</a>         }
+<a class="jxr_linenumber" name="533" href="#533">533</a> 
+<a class="jxr_linenumber" name="534" href="#534">534</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="535" href="#535">535</a> <em class="jxr_javadoccomment">         * calculate goal nanoTime from startTime and current tick number,</em>
+<a class="jxr_linenumber" name="536" href="#536">536</a> <em class="jxr_javadoccomment">         * then wait until that goal has been reached.</em>
+<a class="jxr_linenumber" name="537" href="#537">537</a> <em class="jxr_javadoccomment">         * @return Long.MIN_VALUE if received a shutdown request,</em>
+<a class="jxr_linenumber" name="538" href="#538">538</a> <em class="jxr_javadoccomment">         * current time otherwise (with Long.MIN_VALUE changed by +1)</em>
+<a class="jxr_linenumber" name="539" href="#539">539</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="540" href="#540">540</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> waitForNextTick() {
+<a class="jxr_linenumber" name="541" href="#541">541</a>             <strong class="jxr_keyword">long</strong> deadline = tickDuration * (tick + 1);
+<a class="jxr_linenumber" name="542" href="#542">542</a> 
+<a class="jxr_linenumber" name="543" href="#543">543</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="544" href="#544">544</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> currentTime = System.nanoTime() - startTime;
+<a class="jxr_linenumber" name="545" href="#545">545</a>                 <strong class="jxr_keyword">long</strong> sleepTimeMs = (deadline - currentTime + 999999) / 1000000;
+<a class="jxr_linenumber" name="546" href="#546">546</a> 
+<a class="jxr_linenumber" name="547" href="#547">547</a>                 <strong class="jxr_keyword">if</strong> (sleepTimeMs &lt;= 0) {
+<a class="jxr_linenumber" name="548" href="#548">548</a>                     <strong class="jxr_keyword">if</strong> (currentTime == Long.MIN_VALUE) {
+<a class="jxr_linenumber" name="549" href="#549">549</a>                         <strong class="jxr_keyword">return</strong> -Long.MAX_VALUE;
+<a class="jxr_linenumber" name="550" href="#550">550</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="551" href="#551">551</a>                         <strong class="jxr_keyword">return</strong> currentTime;
+<a class="jxr_linenumber" name="552" href="#552">552</a>                     }
+<a class="jxr_linenumber" name="553" href="#553">553</a>                 }
+<a class="jxr_linenumber" name="554" href="#554">554</a> 
+<a class="jxr_linenumber" name="555" href="#555">555</a>                 <em class="jxr_comment">// Check if we run on windows, as if thats the case we will need</em>
+<a class="jxr_linenumber" name="556" href="#556">556</a>                 <em class="jxr_comment">// to round the sleepTime as workaround for a bug that only affect</em>
+<a class="jxr_linenumber" name="557" href="#557">557</a>                 <em class="jxr_comment">// the JVM if it runs on windows.</em>
+<a class="jxr_linenumber" name="558" href="#558">558</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="559" href="#559">559</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/356</em>
+<a class="jxr_linenumber" name="560" href="#560">560</a>                 <strong class="jxr_keyword">if</strong> (PlatformDependent.isWindows()) {
+<a class="jxr_linenumber" name="561" href="#561">561</a>                     sleepTimeMs = sleepTimeMs / 10 * 10;
+<a class="jxr_linenumber" name="562" href="#562">562</a>                 }
+<a class="jxr_linenumber" name="563" href="#563">563</a> 
+<a class="jxr_linenumber" name="564" href="#564">564</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="565" href="#565">565</a>                     Thread.sleep(sleepTimeMs);
+<a class="jxr_linenumber" name="566" href="#566">566</a>                 } <strong class="jxr_keyword">catch</strong> (InterruptedException ignored) {
+<a class="jxr_linenumber" name="567" href="#567">567</a>                     <strong class="jxr_keyword">if</strong> (WORKER_STATE_UPDATER.get(HashedWheelTimer.<strong class="jxr_keyword">this</strong>) == WORKER_STATE_SHUTDOWN) {
+<a class="jxr_linenumber" name="568" href="#568">568</a>                         <strong class="jxr_keyword">return</strong> Long.MIN_VALUE;
+<a class="jxr_linenumber" name="569" href="#569">569</a>                     }
+<a class="jxr_linenumber" name="570" href="#570">570</a>                 }
+<a class="jxr_linenumber" name="571" href="#571">571</a>             }
+<a class="jxr_linenumber" name="572" href="#572">572</a>         }
 <a class="jxr_linenumber" name="573" href="#573">573</a> 
-<a class="jxr_linenumber" name="574" href="#574">574</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/util/Timeout.html">Timeout</a> {
-<a class="jxr_linenumber" name="575" href="#575">575</a> 
-<a class="jxr_linenumber" name="576" href="#576">576</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ST_INIT = 0;
-<a class="jxr_linenumber" name="577" href="#577">577</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ST_CANCELLED = 1;
-<a class="jxr_linenumber" name="578" href="#578">578</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ST_EXPIRED = 2;
-<a class="jxr_linenumber" name="579" href="#579">579</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> AtomicIntegerFieldUpdater&lt;HashedWheelTimeout&gt; STATE_UPDATER =
-<a class="jxr_linenumber" name="580" href="#580">580</a>                 AtomicIntegerFieldUpdater.newUpdater(HashedWheelTimeout.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"state"</span>);
-<a class="jxr_linenumber" name="581" href="#581">581</a> 
-<a class="jxr_linenumber" name="582" href="#582">582</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimer</a> timer;
-<a class="jxr_linenumber" name="583" href="#583">583</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/TimerTask.html">TimerTask</a> task;
-<a class="jxr_linenumber" name="584" href="#584">584</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> deadline;
-<a class="jxr_linenumber" name="585" href="#585">585</a> 
-<a class="jxr_linenumber" name="586" href="#586">586</a>         @SuppressWarnings({<span class="jxr_string">"unused"</span>, <span class="jxr_string">"FieldMayBeFinal"</span>, <span class="jxr_string">"RedundantFieldInitialization"</span> })
-<a class="jxr_linenumber" name="587" href="#587">587</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">int</strong> state = ST_INIT;
-<a class="jxr_linenumber" name="588" href="#588">588</a> 
-<a class="jxr_linenumber" name="589" href="#589">589</a>         <em class="jxr_comment">// remainingRounds will be calculated and set by Worker.transferTimeoutsToBuckets() before the</em>
-<a class="jxr_linenumber" name="590" href="#590">590</a>         <em class="jxr_comment">// HashedWheelTimeout will be added to the correct HashedWheelBucket.</em>
-<a class="jxr_linenumber" name="591" href="#591">591</a>         <strong class="jxr_keyword">long</strong> remainingRounds;
-<a class="jxr_linenumber" name="592" href="#592">592</a> 
-<a class="jxr_linenumber" name="593" href="#593">593</a>         <em class="jxr_comment">// This will be used to chain timeouts in HashedWheelTimerBucket via a double-linked-list.</em>
-<a class="jxr_linenumber" name="594" href="#594">594</a>         <em class="jxr_comment">// As only the workerThread will act on it there is no need for synchronization / volatile.</em>
-<a class="jxr_linenumber" name="595" href="#595">595</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next;
-<a class="jxr_linenumber" name="596" href="#596">596</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> prev;
+<a class="jxr_linenumber" name="574" href="#574">574</a>         <strong class="jxr_keyword">public</strong> Set&lt;Timeout&gt; unprocessedTimeouts() {
+<a class="jxr_linenumber" name="575" href="#575">575</a>             <strong class="jxr_keyword">return</strong> Collections.unmodifiableSet(unprocessedTimeouts);
+<a class="jxr_linenumber" name="576" href="#576">576</a>         }
+<a class="jxr_linenumber" name="577" href="#577">577</a>     }
+<a class="jxr_linenumber" name="578" href="#578">578</a> 
+<a class="jxr_linenumber" name="579" href="#579">579</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> <strong class="jxr_keyword">implements</strong> <a href="../../../io/netty/util/Timeout.html">Timeout</a> {
+<a class="jxr_linenumber" name="580" href="#580">580</a> 
+<a class="jxr_linenumber" name="581" href="#581">581</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ST_INIT = 0;
+<a class="jxr_linenumber" name="582" href="#582">582</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ST_CANCELLED = 1;
+<a class="jxr_linenumber" name="583" href="#583">583</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ST_EXPIRED = 2;
+<a class="jxr_linenumber" name="584" href="#584">584</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> AtomicIntegerFieldUpdater&lt;HashedWheelTimeout&gt; STATE_UPDATER =
+<a class="jxr_linenumber" name="585" href="#585">585</a>                 AtomicIntegerFieldUpdater.newUpdater(HashedWheelTimeout.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"state"</span>);
+<a class="jxr_linenumber" name="586" href="#586">586</a> 
+<a class="jxr_linenumber" name="587" href="#587">587</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimer</a> timer;
+<a class="jxr_linenumber" name="588" href="#588">588</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/TimerTask.html">TimerTask</a> task;
+<a class="jxr_linenumber" name="589" href="#589">589</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> deadline;
+<a class="jxr_linenumber" name="590" href="#590">590</a> 
+<a class="jxr_linenumber" name="591" href="#591">591</a>         @SuppressWarnings({<span class="jxr_string">"unused"</span>, <span class="jxr_string">"FieldMayBeFinal"</span>, <span class="jxr_string">"RedundantFieldInitialization"</span> })
+<a class="jxr_linenumber" name="592" href="#592">592</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">int</strong> state = ST_INIT;
+<a class="jxr_linenumber" name="593" href="#593">593</a> 
+<a class="jxr_linenumber" name="594" href="#594">594</a>         <em class="jxr_comment">// remainingRounds will be calculated and set by Worker.transferTimeoutsToBuckets() before the</em>
+<a class="jxr_linenumber" name="595" href="#595">595</a>         <em class="jxr_comment">// HashedWheelTimeout will be added to the correct HashedWheelBucket.</em>
+<a class="jxr_linenumber" name="596" href="#596">596</a>         <strong class="jxr_keyword">long</strong> remainingRounds;
 <a class="jxr_linenumber" name="597" href="#597">597</a> 
-<a class="jxr_linenumber" name="598" href="#598">598</a>         <em class="jxr_comment">// The bucket to which the timeout was added</em>
-<a class="jxr_linenumber" name="599" href="#599">599</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket;
-<a class="jxr_linenumber" name="600" href="#600">600</a> 
-<a class="jxr_linenumber" name="601" href="#601">601</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a>(<a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimer</a> timer, <a href="../../../io/netty/util/TimerTask.html">TimerTask</a> task, <strong class="jxr_keyword">long</strong> deadline) {
-<a class="jxr_linenumber" name="602" href="#602">602</a>             <strong class="jxr_keyword">this</strong>.timer = timer;
-<a class="jxr_linenumber" name="603" href="#603">603</a>             <strong class="jxr_keyword">this</strong>.task = task;
-<a class="jxr_linenumber" name="604" href="#604">604</a>             <strong class="jxr_keyword">this</strong>.deadline = deadline;
-<a class="jxr_linenumber" name="605" href="#605">605</a>         }
-<a class="jxr_linenumber" name="606" href="#606">606</a> 
-<a class="jxr_linenumber" name="607" href="#607">607</a>         @Override
-<a class="jxr_linenumber" name="608" href="#608">608</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/util/Timer.html">Timer</a> timer() {
-<a class="jxr_linenumber" name="609" href="#609">609</a>             <strong class="jxr_keyword">return</strong> timer;
+<a class="jxr_linenumber" name="598" href="#598">598</a>         <em class="jxr_comment">// This will be used to chain timeouts in HashedWheelTimerBucket via a double-linked-list.</em>
+<a class="jxr_linenumber" name="599" href="#599">599</a>         <em class="jxr_comment">// As only the workerThread will act on it there is no need for synchronization / volatile.</em>
+<a class="jxr_linenumber" name="600" href="#600">600</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next;
+<a class="jxr_linenumber" name="601" href="#601">601</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> prev;
+<a class="jxr_linenumber" name="602" href="#602">602</a> 
+<a class="jxr_linenumber" name="603" href="#603">603</a>         <em class="jxr_comment">// The bucket to which the timeout was added</em>
+<a class="jxr_linenumber" name="604" href="#604">604</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket;
+<a class="jxr_linenumber" name="605" href="#605">605</a> 
+<a class="jxr_linenumber" name="606" href="#606">606</a>         <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a>(<a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimer</a> timer, <a href="../../../io/netty/util/TimerTask.html">TimerTask</a> task, <strong class="jxr_keyword">long</strong> deadline) {
+<a class="jxr_linenumber" name="607" href="#607">607</a>             <strong class="jxr_keyword">this</strong>.timer = timer;
+<a class="jxr_linenumber" name="608" href="#608">608</a>             <strong class="jxr_keyword">this</strong>.task = task;
+<a class="jxr_linenumber" name="609" href="#609">609</a>             <strong class="jxr_keyword">this</strong>.deadline = deadline;
 <a class="jxr_linenumber" name="610" href="#610">610</a>         }
 <a class="jxr_linenumber" name="611" href="#611">611</a> 
 <a class="jxr_linenumber" name="612" href="#612">612</a>         @Override
-<a class="jxr_linenumber" name="613" href="#613">613</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/util/TimerTask.html">TimerTask</a> task() {
-<a class="jxr_linenumber" name="614" href="#614">614</a>             <strong class="jxr_keyword">return</strong> task;
+<a class="jxr_linenumber" name="613" href="#613">613</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/util/Timer.html">Timer</a> timer() {
+<a class="jxr_linenumber" name="614" href="#614">614</a>             <strong class="jxr_keyword">return</strong> timer;
 <a class="jxr_linenumber" name="615" href="#615">615</a>         }
 <a class="jxr_linenumber" name="616" href="#616">616</a> 
 <a class="jxr_linenumber" name="617" href="#617">617</a>         @Override
-<a class="jxr_linenumber" name="618" href="#618">618</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel() {
-<a class="jxr_linenumber" name="619" href="#619">619</a>             <em class="jxr_comment">// only update the state it will be removed from HashedWheelBucket on next tick.</em>
-<a class="jxr_linenumber" name="620" href="#620">620</a>             <strong class="jxr_keyword">if</strong> (!compareAndSetState(ST_INIT, ST_CANCELLED)) {
-<a class="jxr_linenumber" name="621" href="#621">621</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="622" href="#622">622</a>             }
-<a class="jxr_linenumber" name="623" href="#623">623</a>             <em class="jxr_comment">// If a task should be canceled we put this to another queue which will be processed on each tick.</em>
-<a class="jxr_linenumber" name="624" href="#624">624</a>             <em class="jxr_comment">// So this means that we will have a GC latency of max. 1 tick duration which is good enough. This way</em>
-<a class="jxr_linenumber" name="625" href="#625">625</a>             <em class="jxr_comment">// we can make again use of our MpscLinkedQueue and so minimize the locking / overhead as much as possible.</em>
-<a class="jxr_linenumber" name="626" href="#626">626</a>             timer.cancelledTimeouts.add(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="627" href="#627">627</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="628" href="#628">628</a>         }
-<a class="jxr_linenumber" name="629" href="#629">629</a> 
-<a class="jxr_linenumber" name="630" href="#630">630</a>         <strong class="jxr_keyword">void</strong> remove() {
-<a class="jxr_linenumber" name="631" href="#631">631</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket = <strong class="jxr_keyword">this</strong>.bucket;
-<a class="jxr_linenumber" name="632" href="#632">632</a>             <strong class="jxr_keyword">if</strong> (bucket != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="633" href="#633">633</a>                 bucket.remove(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="634" href="#634">634</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="635" href="#635">635</a>                 timer.pendingTimeouts.decrementAndGet();
-<a class="jxr_linenumber" name="636" href="#636">636</a>             }
-<a class="jxr_linenumber" name="637" href="#637">637</a>         }
-<a class="jxr_linenumber" name="638" href="#638">638</a> 
-<a class="jxr_linenumber" name="639" href="#639">639</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> compareAndSetState(<strong class="jxr_keyword">int</strong> expected, <strong class="jxr_keyword">int</strong> state) {
-<a class="jxr_linenumber" name="640" href="#640">640</a>             <strong class="jxr_keyword">return</strong> STATE_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, expected, state);
-<a class="jxr_linenumber" name="641" href="#641">641</a>         }
-<a class="jxr_linenumber" name="642" href="#642">642</a> 
-<a class="jxr_linenumber" name="643" href="#643">643</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> state() {
-<a class="jxr_linenumber" name="644" href="#644">644</a>             <strong class="jxr_keyword">return</strong> state;
-<a class="jxr_linenumber" name="645" href="#645">645</a>         }
-<a class="jxr_linenumber" name="646" href="#646">646</a> 
-<a class="jxr_linenumber" name="647" href="#647">647</a>         @Override
-<a class="jxr_linenumber" name="648" href="#648">648</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCancelled() {
-<a class="jxr_linenumber" name="649" href="#649">649</a>             <strong class="jxr_keyword">return</strong> state() == ST_CANCELLED;
+<a class="jxr_linenumber" name="618" href="#618">618</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/util/TimerTask.html">TimerTask</a> task() {
+<a class="jxr_linenumber" name="619" href="#619">619</a>             <strong class="jxr_keyword">return</strong> task;
+<a class="jxr_linenumber" name="620" href="#620">620</a>         }
+<a class="jxr_linenumber" name="621" href="#621">621</a> 
+<a class="jxr_linenumber" name="622" href="#622">622</a>         @Override
+<a class="jxr_linenumber" name="623" href="#623">623</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel() {
+<a class="jxr_linenumber" name="624" href="#624">624</a>             <em class="jxr_comment">// only update the state it will be removed from HashedWheelBucket on next tick.</em>
+<a class="jxr_linenumber" name="625" href="#625">625</a>             <strong class="jxr_keyword">if</strong> (!compareAndSetState(ST_INIT, ST_CANCELLED)) {
+<a class="jxr_linenumber" name="626" href="#626">626</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="627" href="#627">627</a>             }
+<a class="jxr_linenumber" name="628" href="#628">628</a>             <em class="jxr_comment">// If a task should be canceled we put this to another queue which will be processed on each tick.</em>
+<a class="jxr_linenumber" name="629" href="#629">629</a>             <em class="jxr_comment">// So this means that we will have a GC latency of max. 1 tick duration which is good enough. This way</em>
+<a class="jxr_linenumber" name="630" href="#630">630</a>             <em class="jxr_comment">// we can make again use of our MpscLinkedQueue and so minimize the locking / overhead as much as possible.</em>
+<a class="jxr_linenumber" name="631" href="#631">631</a>             timer.cancelledTimeouts.add(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="632" href="#632">632</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="633" href="#633">633</a>         }
+<a class="jxr_linenumber" name="634" href="#634">634</a> 
+<a class="jxr_linenumber" name="635" href="#635">635</a>         <strong class="jxr_keyword">void</strong> remove() {
+<a class="jxr_linenumber" name="636" href="#636">636</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> bucket = <strong class="jxr_keyword">this</strong>.bucket;
+<a class="jxr_linenumber" name="637" href="#637">637</a>             <strong class="jxr_keyword">if</strong> (bucket != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="638" href="#638">638</a>                 bucket.remove(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="639" href="#639">639</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="640" href="#640">640</a>                 timer.pendingTimeouts.decrementAndGet();
+<a class="jxr_linenumber" name="641" href="#641">641</a>             }
+<a class="jxr_linenumber" name="642" href="#642">642</a>         }
+<a class="jxr_linenumber" name="643" href="#643">643</a> 
+<a class="jxr_linenumber" name="644" href="#644">644</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> compareAndSetState(<strong class="jxr_keyword">int</strong> expected, <strong class="jxr_keyword">int</strong> state) {
+<a class="jxr_linenumber" name="645" href="#645">645</a>             <strong class="jxr_keyword">return</strong> STATE_UPDATER.compareAndSet(<strong class="jxr_keyword">this</strong>, expected, state);
+<a class="jxr_linenumber" name="646" href="#646">646</a>         }
+<a class="jxr_linenumber" name="647" href="#647">647</a> 
+<a class="jxr_linenumber" name="648" href="#648">648</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> state() {
+<a class="jxr_linenumber" name="649" href="#649">649</a>             <strong class="jxr_keyword">return</strong> state;
 <a class="jxr_linenumber" name="650" href="#650">650</a>         }
 <a class="jxr_linenumber" name="651" href="#651">651</a> 
 <a class="jxr_linenumber" name="652" href="#652">652</a>         @Override
-<a class="jxr_linenumber" name="653" href="#653">653</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isExpired() {
-<a class="jxr_linenumber" name="654" href="#654">654</a>             <strong class="jxr_keyword">return</strong> state() == ST_EXPIRED;
+<a class="jxr_linenumber" name="653" href="#653">653</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCancelled() {
+<a class="jxr_linenumber" name="654" href="#654">654</a>             <strong class="jxr_keyword">return</strong> state() == ST_CANCELLED;
 <a class="jxr_linenumber" name="655" href="#655">655</a>         }
 <a class="jxr_linenumber" name="656" href="#656">656</a> 
-<a class="jxr_linenumber" name="657" href="#657">657</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> expire() {
-<a class="jxr_linenumber" name="658" href="#658">658</a>             <strong class="jxr_keyword">if</strong> (!compareAndSetState(ST_INIT, ST_EXPIRED)) {
-<a class="jxr_linenumber" name="659" href="#659">659</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="660" href="#660">660</a>             }
+<a class="jxr_linenumber" name="657" href="#657">657</a>         @Override
+<a class="jxr_linenumber" name="658" href="#658">658</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isExpired() {
+<a class="jxr_linenumber" name="659" href="#659">659</a>             <strong class="jxr_keyword">return</strong> state() == ST_EXPIRED;
+<a class="jxr_linenumber" name="660" href="#660">660</a>         }
 <a class="jxr_linenumber" name="661" href="#661">661</a> 
-<a class="jxr_linenumber" name="662" href="#662">662</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="663" href="#663">663</a>                 task.run(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="664" href="#664">664</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="665" href="#665">665</a>                 <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
-<a class="jxr_linenumber" name="666" href="#666">666</a>                     logger.warn(<span class="jxr_string">"An exception was thrown by "</span> + TimerTask.<strong class="jxr_keyword">class</strong>.getSimpleName() + '.', t);
-<a class="jxr_linenumber" name="667" href="#667">667</a>                 }
-<a class="jxr_linenumber" name="668" href="#668">668</a>             }
-<a class="jxr_linenumber" name="669" href="#669">669</a>         }
-<a class="jxr_linenumber" name="670" href="#670">670</a> 
-<a class="jxr_linenumber" name="671" href="#671">671</a>         @Override
-<a class="jxr_linenumber" name="672" href="#672">672</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="673" href="#673">673</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> currentTime = System.nanoTime();
-<a class="jxr_linenumber" name="674" href="#674">674</a>             <strong class="jxr_keyword">long</strong> remaining = deadline - currentTime + timer.startTime;
+<a class="jxr_linenumber" name="662" href="#662">662</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> expire() {
+<a class="jxr_linenumber" name="663" href="#663">663</a>             <strong class="jxr_keyword">if</strong> (!compareAndSetState(ST_INIT, ST_EXPIRED)) {
+<a class="jxr_linenumber" name="664" href="#664">664</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="665" href="#665">665</a>             }
+<a class="jxr_linenumber" name="666" href="#666">666</a> 
+<a class="jxr_linenumber" name="667" href="#667">667</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="668" href="#668">668</a>                 task.run(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="669" href="#669">669</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="670" href="#670">670</a>                 <strong class="jxr_keyword">if</strong> (logger.isWarnEnabled()) {
+<a class="jxr_linenumber" name="671" href="#671">671</a>                     logger.warn(<span class="jxr_string">"An exception was thrown by "</span> + TimerTask.<strong class="jxr_keyword">class</strong>.getSimpleName() + '.', t);
+<a class="jxr_linenumber" name="672" href="#672">672</a>                 }
+<a class="jxr_linenumber" name="673" href="#673">673</a>             }
+<a class="jxr_linenumber" name="674" href="#674">674</a>         }
 <a class="jxr_linenumber" name="675" href="#675">675</a> 
-<a class="jxr_linenumber" name="676" href="#676">676</a>             StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(192)
-<a class="jxr_linenumber" name="677" href="#677">677</a>                .append(simpleClassName(<strong class="jxr_keyword">this</strong>))
-<a class="jxr_linenumber" name="678" href="#678">678</a>                .append('(')
-<a class="jxr_linenumber" name="679" href="#679">679</a>                .append(<span class="jxr_string">"deadline: "</span>);
-<a class="jxr_linenumber" name="680" href="#680">680</a>             <strong class="jxr_keyword">if</strong> (remaining &gt; 0) {
-<a class="jxr_linenumber" name="681" href="#681">681</a>                 buf.append(remaining)
-<a class="jxr_linenumber" name="682" href="#682">682</a>                    .append(<span class="jxr_string">" ns later"</span>);
-<a class="jxr_linenumber" name="683" href="#683">683</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (remaining &lt; 0) {
-<a class="jxr_linenumber" name="684" href="#684">684</a>                 buf.append(-remaining)
-<a class="jxr_linenumber" name="685" href="#685">685</a>                    .append(<span class="jxr_string">" ns ago"</span>);
-<a class="jxr_linenumber" name="686" href="#686">686</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="687" href="#687">687</a>                 buf.append(<span class="jxr_string">"now"</span>);
-<a class="jxr_linenumber" name="688" href="#688">688</a>             }
-<a class="jxr_linenumber" name="689" href="#689">689</a> 
-<a class="jxr_linenumber" name="690" href="#690">690</a>             <strong class="jxr_keyword">if</strong> (isCancelled()) {
-<a class="jxr_linenumber" name="691" href="#691">691</a>                 buf.append(<span class="jxr_string">", cancelled"</span>);
-<a class="jxr_linenumber" name="692" href="#692">692</a>             }
-<a class="jxr_linenumber" name="693" href="#693">693</a> 
-<a class="jxr_linenumber" name="694" href="#694">694</a>             <strong class="jxr_keyword">return</strong> buf.append(<span class="jxr_string">", task: "</span>)
-<a class="jxr_linenumber" name="695" href="#695">695</a>                       .append(task())
-<a class="jxr_linenumber" name="696" href="#696">696</a>                       .append(')')
-<a class="jxr_linenumber" name="697" href="#697">697</a>                       .toString();
-<a class="jxr_linenumber" name="698" href="#698">698</a>         }
-<a class="jxr_linenumber" name="699" href="#699">699</a>     }
-<a class="jxr_linenumber" name="700" href="#700">700</a> 
-<a class="jxr_linenumber" name="701" href="#701">701</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="702" href="#702">702</a> <em class="jxr_javadoccomment">     * Bucket that stores HashedWheelTimeouts. These are stored in a linked-list like datastructure to allow easy</em>
-<a class="jxr_linenumber" name="703" href="#703">703</a> <em class="jxr_javadoccomment">     * removal of HashedWheelTimeouts in the middle. Also the HashedWheelTimeout act as nodes themself and so no</em>
-<a class="jxr_linenumber" name="704" href="#704">704</a> <em class="jxr_javadoccomment">     * extra object creation is needed.</em>
-<a class="jxr_linenumber" name="705" href="#705">705</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="706" href="#706">706</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> {
-<a class="jxr_linenumber" name="707" href="#707">707</a>         <em class="jxr_comment">// Used for the linked-list datastructure</em>
-<a class="jxr_linenumber" name="708" href="#708">708</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> head;
-<a class="jxr_linenumber" name="709" href="#709">709</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> tail;
-<a class="jxr_linenumber" name="710" href="#710">710</a> 
-<a class="jxr_linenumber" name="711" href="#711">711</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="712" href="#712">712</a> <em class="jxr_javadoccomment">         * Add {@link HashedWheelTimeout} to this bucket.</em>
-<a class="jxr_linenumber" name="713" href="#713">713</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="714" href="#714">714</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> addTimeout(<a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout) {
-<a class="jxr_linenumber" name="715" href="#715">715</a>             assert timeout.bucket == <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="716" href="#716">716</a>             timeout.bucket = <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="717" href="#717">717</a>             <strong class="jxr_keyword">if</strong> (head == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="718" href="#718">718</a>                 head = tail = timeout;
-<a class="jxr_linenumber" name="719" href="#719">719</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="720" href="#720">720</a>                 tail.next = timeout;
-<a class="jxr_linenumber" name="721" href="#721">721</a>                 timeout.prev = tail;
-<a class="jxr_linenumber" name="722" href="#722">722</a>                 tail = timeout;
-<a class="jxr_linenumber" name="723" href="#723">723</a>             }
-<a class="jxr_linenumber" name="724" href="#724">724</a>         }
-<a class="jxr_linenumber" name="725" href="#725">725</a> 
-<a class="jxr_linenumber" name="726" href="#726">726</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="727" href="#727">727</a> <em class="jxr_javadoccomment">         * Expire all {@link HashedWheelTimeout}s for the given {@code deadline}.</em>
-<a class="jxr_linenumber" name="728" href="#728">728</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="729" href="#729">729</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> expireTimeouts(<strong class="jxr_keyword">long</strong> deadline) {
-<a class="jxr_linenumber" name="730" href="#730">730</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = head;
-<a class="jxr_linenumber" name="731" href="#731">731</a> 
-<a class="jxr_linenumber" name="732" href="#732">732</a>             <em class="jxr_comment">// process all timeouts</em>
-<a class="jxr_linenumber" name="733" href="#733">733</a>             <strong class="jxr_keyword">while</strong> (timeout != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="734" href="#734">734</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next = timeout.next;
-<a class="jxr_linenumber" name="735" href="#735">735</a>                 <strong class="jxr_keyword">if</strong> (timeout.remainingRounds &lt;= 0) {
-<a class="jxr_linenumber" name="736" href="#736">736</a>                     next = remove(timeout);
-<a class="jxr_linenumber" name="737" href="#737">737</a>                     <strong class="jxr_keyword">if</strong> (timeout.deadline &lt;= deadline) {
-<a class="jxr_linenumber" name="738" href="#738">738</a>                         timeout.expire();
-<a class="jxr_linenumber" name="739" href="#739">739</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="740" href="#740">740</a>                         <em class="jxr_comment">// The timeout was placed into a wrong slot. This should never happen.</em>
-<a class="jxr_linenumber" name="741" href="#741">741</a>                         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(String.format(
-<a class="jxr_linenumber" name="742" href="#742">742</a>                                 <span class="jxr_string">"timeout.deadline (%d) &gt; deadline (%d)"</span>, timeout.deadline, deadline));
-<a class="jxr_linenumber" name="743" href="#743">743</a>                     }
-<a class="jxr_linenumber" name="744" href="#744">744</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (timeout.isCancelled()) {
-<a class="jxr_linenumber" name="745" href="#745">745</a>                     next = remove(timeout);
-<a class="jxr_linenumber" name="746" href="#746">746</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="747" href="#747">747</a>                     timeout.remainingRounds --;
-<a class="jxr_linenumber" name="748" href="#748">748</a>                 }
-<a class="jxr_linenumber" name="749" href="#749">749</a>                 timeout = next;
-<a class="jxr_linenumber" name="750" href="#750">750</a>             }
-<a class="jxr_linenumber" name="751" href="#751">751</a>         }
-<a class="jxr_linenumber" name="752" href="#752">752</a> 
-<a class="jxr_linenumber" name="753" href="#753">753</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> remove(<a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout) {
-<a class="jxr_linenumber" name="754" href="#754">754</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next = timeout.next;
-<a class="jxr_linenumber" name="755" href="#755">755</a>             <em class="jxr_comment">// remove timeout that was either processed or cancelled by updating the linked-list</em>
-<a class="jxr_linenumber" name="756" href="#756">756</a>             <strong class="jxr_keyword">if</strong> (timeout.prev != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="757" href="#757">757</a>                 timeout.prev.next = next;
-<a class="jxr_linenumber" name="758" href="#758">758</a>             }
-<a class="jxr_linenumber" name="759" href="#759">759</a>             <strong class="jxr_keyword">if</strong> (timeout.next != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="760" href="#760">760</a>                 timeout.next.prev = timeout.prev;
-<a class="jxr_linenumber" name="761" href="#761">761</a>             }
-<a class="jxr_linenumber" name="762" href="#762">762</a> 
-<a class="jxr_linenumber" name="763" href="#763">763</a>             <strong class="jxr_keyword">if</strong> (timeout == head) {
-<a class="jxr_linenumber" name="764" href="#764">764</a>                 <em class="jxr_comment">// if timeout is also the tail we need to adjust the entry too</em>
-<a class="jxr_linenumber" name="765" href="#765">765</a>                 <strong class="jxr_keyword">if</strong> (timeout == tail) {
-<a class="jxr_linenumber" name="766" href="#766">766</a>                     tail = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="767" href="#767">767</a>                     head = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="768" href="#768">768</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="769" href="#769">769</a>                     head = next;
-<a class="jxr_linenumber" name="770" href="#770">770</a>                 }
-<a class="jxr_linenumber" name="771" href="#771">771</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (timeout == tail) {
-<a class="jxr_linenumber" name="772" href="#772">772</a>                 <em class="jxr_comment">// if the timeout is the tail modify the tail to be the prev node.</em>
-<a class="jxr_linenumber" name="773" href="#773">773</a>                 tail = timeout.prev;
-<a class="jxr_linenumber" name="774" href="#774">774</a>             }
-<a class="jxr_linenumber" name="775" href="#775">775</a>             <em class="jxr_comment">// null out prev, next and bucket to allow for GC.</em>
-<a class="jxr_linenumber" name="776" href="#776">776</a>             timeout.prev = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="777" href="#777">777</a>             timeout.next = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="778" href="#778">778</a>             timeout.bucket = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="779" href="#779">779</a>             timeout.timer.pendingTimeouts.decrementAndGet();
-<a class="jxr_linenumber" name="780" href="#780">780</a>             <strong class="jxr_keyword">return</strong> next;
-<a class="jxr_linenumber" name="781" href="#781">781</a>         }
-<a class="jxr_linenumber" name="782" href="#782">782</a> 
-<a class="jxr_linenumber" name="783" href="#783">783</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="784" href="#784">784</a> <em class="jxr_javadoccomment">         * Clear this bucket and return all not expired / cancelled {@link Timeout}s.</em>
-<a class="jxr_linenumber" name="785" href="#785">785</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="786" href="#786">786</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> clearTimeouts(Set&lt;Timeout&gt; set) {
-<a class="jxr_linenumber" name="787" href="#787">787</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="788" href="#788">788</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = pollTimeout();
-<a class="jxr_linenumber" name="789" href="#789">789</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="790" href="#790">790</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="791" href="#791">791</a>                 }
-<a class="jxr_linenumber" name="792" href="#792">792</a>                 <strong class="jxr_keyword">if</strong> (timeout.isExpired() || timeout.isCancelled()) {
-<a class="jxr_linenumber" name="793" href="#793">793</a>                     <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="794" href="#794">794</a>                 }
-<a class="jxr_linenumber" name="795" href="#795">795</a>                 set.add(timeout);
-<a class="jxr_linenumber" name="796" href="#796">796</a>             }
-<a class="jxr_linenumber" name="797" href="#797">797</a>         }
-<a class="jxr_linenumber" name="798" href="#798">798</a> 
-<a class="jxr_linenumber" name="799" href="#799">799</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> pollTimeout() {
-<a class="jxr_linenumber" name="800" href="#800">800</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> head = <strong class="jxr_keyword">this</strong>.head;
-<a class="jxr_linenumber" name="801" href="#801">801</a>             <strong class="jxr_keyword">if</strong> (head == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="802" href="#802">802</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="803" href="#803">803</a>             }
-<a class="jxr_linenumber" name="804" href="#804">804</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next = head.next;
-<a class="jxr_linenumber" name="805" href="#805">805</a>             <strong class="jxr_keyword">if</strong> (next == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="806" href="#806">806</a>                 tail = <strong class="jxr_keyword">this</strong>.head =  <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="807" href="#807">807</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="808" href="#808">808</a>                 <strong class="jxr_keyword">this</strong>.head = next;
-<a class="jxr_linenumber" name="809" href="#809">809</a>                 next.prev = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="810" href="#810">810</a>             }
-<a class="jxr_linenumber" name="811" href="#811">811</a> 
-<a class="jxr_linenumber" name="812" href="#812">812</a>             <em class="jxr_comment">// null out prev and next to allow for GC.</em>
-<a class="jxr_linenumber" name="813" href="#813">813</a>             head.next = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="814" href="#814">814</a>             head.prev = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="815" href="#815">815</a>             head.bucket = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="816" href="#816">816</a>             <strong class="jxr_keyword">return</strong> head;
-<a class="jxr_linenumber" name="817" href="#817">817</a>         }
-<a class="jxr_linenumber" name="818" href="#818">818</a>     }
-<a class="jxr_linenumber" name="819" href="#819">819</a> }
+<a class="jxr_linenumber" name="676" href="#676">676</a>         @Override
+<a class="jxr_linenumber" name="677" href="#677">677</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="678" href="#678">678</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> currentTime = System.nanoTime();
+<a class="jxr_linenumber" name="679" href="#679">679</a>             <strong class="jxr_keyword">long</strong> remaining = deadline - currentTime + timer.startTime;
+<a class="jxr_linenumber" name="680" href="#680">680</a> 
+<a class="jxr_linenumber" name="681" href="#681">681</a>             StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(192)
+<a class="jxr_linenumber" name="682" href="#682">682</a>                .append(simpleClassName(<strong class="jxr_keyword">this</strong>))
+<a class="jxr_linenumber" name="683" href="#683">683</a>                .append('(')
+<a class="jxr_linenumber" name="684" href="#684">684</a>                .append(<span class="jxr_string">"deadline: "</span>);
+<a class="jxr_linenumber" name="685" href="#685">685</a>             <strong class="jxr_keyword">if</strong> (remaining &gt; 0) {
+<a class="jxr_linenumber" name="686" href="#686">686</a>                 buf.append(remaining)
+<a class="jxr_linenumber" name="687" href="#687">687</a>                    .append(<span class="jxr_string">" ns later"</span>);
+<a class="jxr_linenumber" name="688" href="#688">688</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (remaining &lt; 0) {
+<a class="jxr_linenumber" name="689" href="#689">689</a>                 buf.append(-remaining)
+<a class="jxr_linenumber" name="690" href="#690">690</a>                    .append(<span class="jxr_string">" ns ago"</span>);
+<a class="jxr_linenumber" name="691" href="#691">691</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="692" href="#692">692</a>                 buf.append(<span class="jxr_string">"now"</span>);
+<a class="jxr_linenumber" name="693" href="#693">693</a>             }
+<a class="jxr_linenumber" name="694" href="#694">694</a> 
+<a class="jxr_linenumber" name="695" href="#695">695</a>             <strong class="jxr_keyword">if</strong> (isCancelled()) {
+<a class="jxr_linenumber" name="696" href="#696">696</a>                 buf.append(<span class="jxr_string">", cancelled"</span>);
+<a class="jxr_linenumber" name="697" href="#697">697</a>             }
+<a class="jxr_linenumber" name="698" href="#698">698</a> 
+<a class="jxr_linenumber" name="699" href="#699">699</a>             <strong class="jxr_keyword">return</strong> buf.append(<span class="jxr_string">", task: "</span>)
+<a class="jxr_linenumber" name="700" href="#700">700</a>                       .append(task())
+<a class="jxr_linenumber" name="701" href="#701">701</a>                       .append(')')
+<a class="jxr_linenumber" name="702" href="#702">702</a>                       .toString();
+<a class="jxr_linenumber" name="703" href="#703">703</a>         }
+<a class="jxr_linenumber" name="704" href="#704">704</a>     }
+<a class="jxr_linenumber" name="705" href="#705">705</a> 
+<a class="jxr_linenumber" name="706" href="#706">706</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="707" href="#707">707</a> <em class="jxr_javadoccomment">     * Bucket that stores HashedWheelTimeouts. These are stored in a linked-list like datastructure to allow easy</em>
+<a class="jxr_linenumber" name="708" href="#708">708</a> <em class="jxr_javadoccomment">     * removal of HashedWheelTimeouts in the middle. Also the HashedWheelTimeout act as nodes themself and so no</em>
+<a class="jxr_linenumber" name="709" href="#709">709</a> <em class="jxr_javadoccomment">     * extra object creation is needed.</em>
+<a class="jxr_linenumber" name="710" href="#710">710</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="711" href="#711">711</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelBucket</a> {
+<a class="jxr_linenumber" name="712" href="#712">712</a>         <em class="jxr_comment">// Used for the linked-list datastructure</em>
+<a class="jxr_linenumber" name="713" href="#713">713</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> head;
+<a class="jxr_linenumber" name="714" href="#714">714</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> tail;
+<a class="jxr_linenumber" name="715" href="#715">715</a> 
+<a class="jxr_linenumber" name="716" href="#716">716</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="717" href="#717">717</a> <em class="jxr_javadoccomment">         * Add {@link HashedWheelTimeout} to this bucket.</em>
+<a class="jxr_linenumber" name="718" href="#718">718</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="719" href="#719">719</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> addTimeout(<a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout) {
+<a class="jxr_linenumber" name="720" href="#720">720</a>             assert timeout.bucket == <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="721" href="#721">721</a>             timeout.bucket = <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="722" href="#722">722</a>             <strong class="jxr_keyword">if</strong> (head == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="723" href="#723">723</a>                 head = tail = timeout;
+<a class="jxr_linenumber" name="724" href="#724">724</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="725" href="#725">725</a>                 tail.next = timeout;
+<a class="jxr_linenumber" name="726" href="#726">726</a>                 timeout.prev = tail;
+<a class="jxr_linenumber" name="727" href="#727">727</a>                 tail = timeout;
+<a class="jxr_linenumber" name="728" href="#728">728</a>             }
+<a class="jxr_linenumber" name="729" href="#729">729</a>         }
+<a class="jxr_linenumber" name="730" href="#730">730</a> 
+<a class="jxr_linenumber" name="731" href="#731">731</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="732" href="#732">732</a> <em class="jxr_javadoccomment">         * Expire all {@link HashedWheelTimeout}s for the given {@code deadline}.</em>
+<a class="jxr_linenumber" name="733" href="#733">733</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="734" href="#734">734</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> expireTimeouts(<strong class="jxr_keyword">long</strong> deadline) {
+<a class="jxr_linenumber" name="735" href="#735">735</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = head;
+<a class="jxr_linenumber" name="736" href="#736">736</a> 
+<a class="jxr_linenumber" name="737" href="#737">737</a>             <em class="jxr_comment">// process all timeouts</em>
+<a class="jxr_linenumber" name="738" href="#738">738</a>             <strong class="jxr_keyword">while</strong> (timeout != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="739" href="#739">739</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next = timeout.next;
+<a class="jxr_linenumber" name="740" href="#740">740</a>                 <strong class="jxr_keyword">if</strong> (timeout.remainingRounds &lt;= 0) {
+<a class="jxr_linenumber" name="741" href="#741">741</a>                     next = remove(timeout);
+<a class="jxr_linenumber" name="742" href="#742">742</a>                     <strong class="jxr_keyword">if</strong> (timeout.deadline &lt;= deadline) {
+<a class="jxr_linenumber" name="743" href="#743">743</a>                         timeout.expire();
+<a class="jxr_linenumber" name="744" href="#744">744</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="745" href="#745">745</a>                         <em class="jxr_comment">// The timeout was placed into a wrong slot. This should never happen.</em>
+<a class="jxr_linenumber" name="746" href="#746">746</a>                         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(String.format(
+<a class="jxr_linenumber" name="747" href="#747">747</a>                                 <span class="jxr_string">"timeout.deadline (%d) &gt; deadline (%d)"</span>, timeout.deadline, deadline));
+<a class="jxr_linenumber" name="748" href="#748">748</a>                     }
+<a class="jxr_linenumber" name="749" href="#749">749</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (timeout.isCancelled()) {
+<a class="jxr_linenumber" name="750" href="#750">750</a>                     next = remove(timeout);
+<a class="jxr_linenumber" name="751" href="#751">751</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="752" href="#752">752</a>                     timeout.remainingRounds --;
+<a class="jxr_linenumber" name="753" href="#753">753</a>                 }
+<a class="jxr_linenumber" name="754" href="#754">754</a>                 timeout = next;
+<a class="jxr_linenumber" name="755" href="#755">755</a>             }
+<a class="jxr_linenumber" name="756" href="#756">756</a>         }
+<a class="jxr_linenumber" name="757" href="#757">757</a> 
+<a class="jxr_linenumber" name="758" href="#758">758</a>         <strong class="jxr_keyword">public</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> remove(<a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout) {
+<a class="jxr_linenumber" name="759" href="#759">759</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next = timeout.next;
+<a class="jxr_linenumber" name="760" href="#760">760</a>             <em class="jxr_comment">// remove timeout that was either processed or cancelled by updating the linked-list</em>
+<a class="jxr_linenumber" name="761" href="#761">761</a>             <strong class="jxr_keyword">if</strong> (timeout.prev != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="762" href="#762">762</a>                 timeout.prev.next = next;
+<a class="jxr_linenumber" name="763" href="#763">763</a>             }
+<a class="jxr_linenumber" name="764" href="#764">764</a>             <strong class="jxr_keyword">if</strong> (timeout.next != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="765" href="#765">765</a>                 timeout.next.prev = timeout.prev;
+<a class="jxr_linenumber" name="766" href="#766">766</a>             }
+<a class="jxr_linenumber" name="767" href="#767">767</a> 
+<a class="jxr_linenumber" name="768" href="#768">768</a>             <strong class="jxr_keyword">if</strong> (timeout == head) {
+<a class="jxr_linenumber" name="769" href="#769">769</a>                 <em class="jxr_comment">// if timeout is also the tail we need to adjust the entry too</em>
+<a class="jxr_linenumber" name="770" href="#770">770</a>                 <strong class="jxr_keyword">if</strong> (timeout == tail) {
+<a class="jxr_linenumber" name="771" href="#771">771</a>                     tail = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="772" href="#772">772</a>                     head = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="773" href="#773">773</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="774" href="#774">774</a>                     head = next;
+<a class="jxr_linenumber" name="775" href="#775">775</a>                 }
+<a class="jxr_linenumber" name="776" href="#776">776</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (timeout == tail) {
+<a class="jxr_linenumber" name="777" href="#777">777</a>                 <em class="jxr_comment">// if the timeout is the tail modify the tail to be the prev node.</em>
+<a class="jxr_linenumber" name="778" href="#778">778</a>                 tail = timeout.prev;
+<a class="jxr_linenumber" name="779" href="#779">779</a>             }
+<a class="jxr_linenumber" name="780" href="#780">780</a>             <em class="jxr_comment">// null out prev, next and bucket to allow for GC.</em>
+<a class="jxr_linenumber" name="781" href="#781">781</a>             timeout.prev = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="782" href="#782">782</a>             timeout.next = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="783" href="#783">783</a>             timeout.bucket = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="784" href="#784">784</a>             timeout.timer.pendingTimeouts.decrementAndGet();
+<a class="jxr_linenumber" name="785" href="#785">785</a>             <strong class="jxr_keyword">return</strong> next;
+<a class="jxr_linenumber" name="786" href="#786">786</a>         }
+<a class="jxr_linenumber" name="787" href="#787">787</a> 
+<a class="jxr_linenumber" name="788" href="#788">788</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="789" href="#789">789</a> <em class="jxr_javadoccomment">         * Clear this bucket and return all not expired / cancelled {@link Timeout}s.</em>
+<a class="jxr_linenumber" name="790" href="#790">790</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="791" href="#791">791</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> clearTimeouts(Set&lt;Timeout&gt; set) {
+<a class="jxr_linenumber" name="792" href="#792">792</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="793" href="#793">793</a>                 <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> timeout = pollTimeout();
+<a class="jxr_linenumber" name="794" href="#794">794</a>                 <strong class="jxr_keyword">if</strong> (timeout == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="795" href="#795">795</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="796" href="#796">796</a>                 }
+<a class="jxr_linenumber" name="797" href="#797">797</a>                 <strong class="jxr_keyword">if</strong> (timeout.isExpired() || timeout.isCancelled()) {
+<a class="jxr_linenumber" name="798" href="#798">798</a>                     <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="799" href="#799">799</a>                 }
+<a class="jxr_linenumber" name="800" href="#800">800</a>                 set.add(timeout);
+<a class="jxr_linenumber" name="801" href="#801">801</a>             }
+<a class="jxr_linenumber" name="802" href="#802">802</a>         }
+<a class="jxr_linenumber" name="803" href="#803">803</a> 
+<a class="jxr_linenumber" name="804" href="#804">804</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> pollTimeout() {
+<a class="jxr_linenumber" name="805" href="#805">805</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> head = <strong class="jxr_keyword">this</strong>.head;
+<a class="jxr_linenumber" name="806" href="#806">806</a>             <strong class="jxr_keyword">if</strong> (head == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="807" href="#807">807</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="808" href="#808">808</a>             }
+<a class="jxr_linenumber" name="809" href="#809">809</a>             <a href="../../../io/netty/util/HashedWheelTimer.html">HashedWheelTimeout</a> next = head.next;
+<a class="jxr_linenumber" name="810" href="#810">810</a>             <strong class="jxr_keyword">if</strong> (next == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="811" href="#811">811</a>                 tail = <strong class="jxr_keyword">this</strong>.head =  <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="812" href="#812">812</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="813" href="#813">813</a>                 <strong class="jxr_keyword">this</strong>.head = next;
+<a class="jxr_linenumber" name="814" href="#814">814</a>                 next.prev = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="815" href="#815">815</a>             }
+<a class="jxr_linenumber" name="816" href="#816">816</a> 
+<a class="jxr_linenumber" name="817" href="#817">817</a>             <em class="jxr_comment">// null out prev and next to allow for GC.</em>
+<a class="jxr_linenumber" name="818" href="#818">818</a>             head.next = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="819" href="#819">819</a>             head.prev = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="820" href="#820">820</a>             head.bucket = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="821" href="#821">821</a>             <strong class="jxr_keyword">return</strong> head;
+<a class="jxr_linenumber" name="822" href="#822">822</a>         }
+<a class="jxr_linenumber" name="823" href="#823">823</a>     }
+<a class="jxr_linenumber" name="824" href="#824">824</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

@@ -379,261 +379,262 @@
 <a class="jxr_linenumber" name="369" href="#369">369</a>             <em class="jxr_comment">// be collected via the WeakReference.</em>
 <a class="jxr_linenumber" name="370" href="#370">370</a>             trackedHash = System.identityHashCode(referent);
 <a class="jxr_linenumber" name="371" href="#371">371</a>             allLeaks.put(<strong class="jxr_keyword">this</strong>, LeakEntry.INSTANCE);
-<a class="jxr_linenumber" name="372" href="#372">372</a>             headUpdater.set(<strong class="jxr_keyword">this</strong>, Record.BOTTOM);
-<a class="jxr_linenumber" name="373" href="#373">373</a>             <strong class="jxr_keyword">this</strong>.allLeaks = allLeaks;
-<a class="jxr_linenumber" name="374" href="#374">374</a>         }
-<a class="jxr_linenumber" name="375" href="#375">375</a> 
-<a class="jxr_linenumber" name="376" href="#376">376</a>         @Override
-<a class="jxr_linenumber" name="377" href="#377">377</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> record() {
-<a class="jxr_linenumber" name="378" href="#378">378</a>             record0(<strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="379" href="#379">379</a>         }
-<a class="jxr_linenumber" name="380" href="#380">380</a> 
-<a class="jxr_linenumber" name="381" href="#381">381</a>         @Override
-<a class="jxr_linenumber" name="382" href="#382">382</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> record(Object hint) {
-<a class="jxr_linenumber" name="383" href="#383">383</a>             record0(hint);
-<a class="jxr_linenumber" name="384" href="#384">384</a>         }
-<a class="jxr_linenumber" name="385" href="#385">385</a> 
-<a class="jxr_linenumber" name="386" href="#386">386</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="387" href="#387">387</a> <em class="jxr_javadoccomment">         * This method works by exponentially backing off as more records are present in the stack. Each record has a</em>
-<a class="jxr_linenumber" name="388" href="#388">388</a> <em class="jxr_javadoccomment">         * 1 / 2^n chance of dropping the top most record and replacing it with itself. This has a number of convenient</em>
-<a class="jxr_linenumber" name="389" href="#389">389</a> <em class="jxr_javadoccomment">         * properties:</em>
-<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">         * &lt;ol&gt;</em>
-<a class="jxr_linenumber" name="392" href="#392">392</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  The current record is always recorded. This is due to the compare and swap dropping the top most</em>
-<a class="jxr_linenumber" name="393" href="#393">393</a> <em class="jxr_javadoccomment">         *       record, rather than the to-be-pushed record.</em>
-<a class="jxr_linenumber" name="394" href="#394">394</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  The very last access will always be recorded. This comes as a property of 1.</em>
-<a class="jxr_linenumber" name="395" href="#395">395</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  It is possible to retain more records than the target, based upon the probability distribution.</em>
-<a class="jxr_linenumber" name="396" href="#396">396</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  It is easy to keep a precise record of the number of elements in the stack, since each element has to</em>
-<a class="jxr_linenumber" name="397" href="#397">397</a> <em class="jxr_javadoccomment">         *     know how tall the stack is.</em>
-<a class="jxr_linenumber" name="398" href="#398">398</a> <em class="jxr_javadoccomment">         * &lt;/ol&gt;</em>
-<a class="jxr_linenumber" name="399" href="#399">399</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="400" href="#400">400</a> <em class="jxr_javadoccomment">         * In this particular implementation, there are also some advantages. A thread local random is used to decide</em>
-<a class="jxr_linenumber" name="401" href="#401">401</a> <em class="jxr_javadoccomment">         * if something should be recorded. This means that if there is a deterministic access pattern, it is now</em>
-<a class="jxr_linenumber" name="402" href="#402">402</a> <em class="jxr_javadoccomment">         * possible to see what other accesses occur, rather than always dropping them. Second, after</em>
-<a class="jxr_linenumber" name="403" href="#403">403</a> <em class="jxr_javadoccomment">         * {@link #TARGET_RECORDS} accesses, backoff occurs. This matches typical access patterns,</em>
-<a class="jxr_linenumber" name="404" href="#404">404</a> <em class="jxr_javadoccomment">         * where there are either a high number of accesses (i.e. a cached buffer), or low (an ephemeral buffer), but</em>
-<a class="jxr_linenumber" name="405" href="#405">405</a> <em class="jxr_javadoccomment">         * not many in between.</em>
-<a class="jxr_linenumber" name="406" href="#406">406</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="407" href="#407">407</a> <em class="jxr_javadoccomment">         * The use of atomics avoids serializing a high number of accesses, when most of the records will be thrown</em>
-<a class="jxr_linenumber" name="408" href="#408">408</a> <em class="jxr_javadoccomment">         * away. High contention only happens when there are very few existing records, which is only likely when the</em>
-<a class="jxr_linenumber" name="409" href="#409">409</a> <em class="jxr_javadoccomment">         * object isn't shared! If this is a problem, the loop can be aborted and the record dropped, because another</em>
-<a class="jxr_linenumber" name="410" href="#410">410</a> <em class="jxr_javadoccomment">         * thread won the race.</em>
-<a class="jxr_linenumber" name="411" href="#411">411</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="412" href="#412">412</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> record0(Object hint) {
-<a class="jxr_linenumber" name="413" href="#413">413</a>             <em class="jxr_comment">// Check TARGET_RECORDS &gt; 0 here to avoid similar check before remove from and add to lastRecords</em>
-<a class="jxr_linenumber" name="414" href="#414">414</a>             <strong class="jxr_keyword">if</strong> (TARGET_RECORDS &gt; 0) {
-<a class="jxr_linenumber" name="415" href="#415">415</a>                 <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> oldHead;
-<a class="jxr_linenumber" name="416" href="#416">416</a>                 <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> prevHead;
-<a class="jxr_linenumber" name="417" href="#417">417</a>                 <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> newHead;
-<a class="jxr_linenumber" name="418" href="#418">418</a>                 <strong class="jxr_keyword">boolean</strong> dropped;
-<a class="jxr_linenumber" name="419" href="#419">419</a>                 <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="420" href="#420">420</a>                     <strong class="jxr_keyword">if</strong> ((prevHead = oldHead = headUpdater.get(<strong class="jxr_keyword">this</strong>)) == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="421" href="#421">421</a>                         <em class="jxr_comment">// already closed.</em>
-<a class="jxr_linenumber" name="422" href="#422">422</a>                         <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="423" href="#423">423</a>                     }
-<a class="jxr_linenumber" name="424" href="#424">424</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> numElements = oldHead.pos + 1;
-<a class="jxr_linenumber" name="425" href="#425">425</a>                     <strong class="jxr_keyword">if</strong> (numElements &gt;= TARGET_RECORDS) {
-<a class="jxr_linenumber" name="426" href="#426">426</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> backOffFactor = Math.min(numElements - TARGET_RECORDS, 30);
-<a class="jxr_linenumber" name="427" href="#427">427</a>                         <strong class="jxr_keyword">if</strong> (dropped = PlatformDependent.threadLocalRandom().nextInt(1 &lt;&lt; backOffFactor) != 0) {
-<a class="jxr_linenumber" name="428" href="#428">428</a>                             prevHead = oldHead.next;
-<a class="jxr_linenumber" name="429" href="#429">429</a>                         }
-<a class="jxr_linenumber" name="430" href="#430">430</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="431" href="#431">431</a>                         dropped = false;
-<a class="jxr_linenumber" name="432" href="#432">432</a>                     }
-<a class="jxr_linenumber" name="433" href="#433">433</a>                     newHead = hint != <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(prevHead, hint) : <strong class="jxr_keyword">new</strong> Record(prevHead);
-<a class="jxr_linenumber" name="434" href="#434">434</a>                 } <strong class="jxr_keyword">while</strong> (!headUpdater.compareAndSet(<strong class="jxr_keyword">this</strong>, oldHead, newHead));
-<a class="jxr_linenumber" name="435" href="#435">435</a>                 <strong class="jxr_keyword">if</strong> (dropped) {
-<a class="jxr_linenumber" name="436" href="#436">436</a>                     droppedRecordsUpdater.incrementAndGet(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="437" href="#437">437</a>                 }
-<a class="jxr_linenumber" name="438" href="#438">438</a>             }
-<a class="jxr_linenumber" name="439" href="#439">439</a>         }
-<a class="jxr_linenumber" name="440" href="#440">440</a> 
-<a class="jxr_linenumber" name="441" href="#441">441</a>         <strong class="jxr_keyword">boolean</strong> dispose() {
-<a class="jxr_linenumber" name="442" href="#442">442</a>             clear();
-<a class="jxr_linenumber" name="443" href="#443">443</a>             <strong class="jxr_keyword">return</strong> allLeaks.remove(<strong class="jxr_keyword">this</strong>, LeakEntry.INSTANCE);
-<a class="jxr_linenumber" name="444" href="#444">444</a>         }
-<a class="jxr_linenumber" name="445" href="#445">445</a> 
-<a class="jxr_linenumber" name="446" href="#446">446</a>         @Override
-<a class="jxr_linenumber" name="447" href="#447">447</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> close() {
-<a class="jxr_linenumber" name="448" href="#448">448</a>             <em class="jxr_comment">// Use the ConcurrentMap remove method, which avoids allocating an iterator.</em>
-<a class="jxr_linenumber" name="449" href="#449">449</a>             <strong class="jxr_keyword">if</strong> (allLeaks.remove(<strong class="jxr_keyword">this</strong>, LeakEntry.INSTANCE)) {
-<a class="jxr_linenumber" name="450" href="#450">450</a>                 <em class="jxr_comment">// Call clear so the reference is not even enqueued.</em>
-<a class="jxr_linenumber" name="451" href="#451">451</a>                 clear();
-<a class="jxr_linenumber" name="452" href="#452">452</a>                 headUpdater.set(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="453" href="#453">453</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="454" href="#454">454</a>             }
-<a class="jxr_linenumber" name="455" href="#455">455</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="456" href="#456">456</a>         }
-<a class="jxr_linenumber" name="457" href="#457">457</a> 
-<a class="jxr_linenumber" name="458" href="#458">458</a>         @Override
-<a class="jxr_linenumber" name="459" href="#459">459</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> close(T trackedObject) {
-<a class="jxr_linenumber" name="460" href="#460">460</a>             <em class="jxr_comment">// Ensure that the object that was tracked is the same as the one that was passed to close(...).</em>
-<a class="jxr_linenumber" name="461" href="#461">461</a>             assert trackedHash == System.identityHashCode(trackedObject);
-<a class="jxr_linenumber" name="462" href="#462">462</a> 
-<a class="jxr_linenumber" name="463" href="#463">463</a>             <em class="jxr_comment">// We need to actually do the null check of the trackedObject after we close the leak because otherwise</em>
-<a class="jxr_linenumber" name="464" href="#464">464</a>             <em class="jxr_comment">// we may get false-positives reported by the ResourceLeakDetector. This can happen as the JIT / GC may</em>
-<a class="jxr_linenumber" name="465" href="#465">465</a>             <em class="jxr_comment">// be able to figure out that we do not need the trackedObject anymore and so already enqueue it for</em>
-<a class="jxr_linenumber" name="466" href="#466">466</a>             <em class="jxr_comment">// collection before we actually get a chance to close the enclosing ResourceLeak.</em>
-<a class="jxr_linenumber" name="467" href="#467">467</a>             <strong class="jxr_keyword">return</strong> close() &amp;&amp; trackedObject != <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="468" href="#468">468</a>         }
-<a class="jxr_linenumber" name="469" href="#469">469</a> 
-<a class="jxr_linenumber" name="470" href="#470">470</a>         @Override
-<a class="jxr_linenumber" name="471" href="#471">471</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="472" href="#472">472</a>             <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> oldHead = headUpdater.getAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="473" href="#473">473</a>             <strong class="jxr_keyword">if</strong> (oldHead == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="474" href="#474">474</a>                 <em class="jxr_comment">// Already closed</em>
-<a class="jxr_linenumber" name="475" href="#475">475</a>                 <strong class="jxr_keyword">return</strong> EMPTY_STRING;
-<a class="jxr_linenumber" name="476" href="#476">476</a>             }
-<a class="jxr_linenumber" name="477" href="#477">477</a> 
-<a class="jxr_linenumber" name="478" href="#478">478</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> dropped = droppedRecordsUpdater.get(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="479" href="#479">479</a>             <strong class="jxr_keyword">int</strong> duped = 0;
-<a class="jxr_linenumber" name="480" href="#480">480</a> 
-<a class="jxr_linenumber" name="481" href="#481">481</a>             <strong class="jxr_keyword">int</strong> present = oldHead.pos + 1;
-<a class="jxr_linenumber" name="482" href="#482">482</a>             <em class="jxr_comment">// Guess about 2 kilobytes per stack trace</em>
-<a class="jxr_linenumber" name="483" href="#483">483</a>             StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(present * 2048).append(NEWLINE);
-<a class="jxr_linenumber" name="484" href="#484">484</a>             buf.append(<span class="jxr_string">"Recent access records: "</span>).append(NEWLINE);
-<a class="jxr_linenumber" name="485" href="#485">485</a> 
-<a class="jxr_linenumber" name="486" href="#486">486</a>             <strong class="jxr_keyword">int</strong> i = 1;
-<a class="jxr_linenumber" name="487" href="#487">487</a>             Set&lt;String&gt; seen = <strong class="jxr_keyword">new</strong> HashSet&lt;String&gt;(present);
-<a class="jxr_linenumber" name="488" href="#488">488</a>             <strong class="jxr_keyword">for</strong> (; oldHead != Record.BOTTOM; oldHead = oldHead.next) {
-<a class="jxr_linenumber" name="489" href="#489">489</a>                 String s = oldHead.toString();
-<a class="jxr_linenumber" name="490" href="#490">490</a>                 <strong class="jxr_keyword">if</strong> (seen.add(s)) {
-<a class="jxr_linenumber" name="491" href="#491">491</a>                     <strong class="jxr_keyword">if</strong> (oldHead.next == Record.BOTTOM) {
-<a class="jxr_linenumber" name="492" href="#492">492</a>                         buf.append(<span class="jxr_string">"Created at:"</span>).append(NEWLINE).append(s);
-<a class="jxr_linenumber" name="493" href="#493">493</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="494" href="#494">494</a>                         buf.append('#').append(i++).append(':').append(NEWLINE).append(s);
-<a class="jxr_linenumber" name="495" href="#495">495</a>                     }
-<a class="jxr_linenumber" name="496" href="#496">496</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="497" href="#497">497</a>                     duped++;
-<a class="jxr_linenumber" name="498" href="#498">498</a>                 }
-<a class="jxr_linenumber" name="499" href="#499">499</a>             }
-<a class="jxr_linenumber" name="500" href="#500">500</a> 
-<a class="jxr_linenumber" name="501" href="#501">501</a>             <strong class="jxr_keyword">if</strong> (duped &gt; 0) {
-<a class="jxr_linenumber" name="502" href="#502">502</a>                 buf.append(<span class="jxr_string">": "</span>)
-<a class="jxr_linenumber" name="503" href="#503">503</a>                         .append(dropped)
-<a class="jxr_linenumber" name="504" href="#504">504</a>                         .append(<span class="jxr_string">" leak records were discarded because they were duplicates"</span>)
-<a class="jxr_linenumber" name="505" href="#505">505</a>                         .append(NEWLINE);
-<a class="jxr_linenumber" name="506" href="#506">506</a>             }
-<a class="jxr_linenumber" name="507" href="#507">507</a> 
-<a class="jxr_linenumber" name="508" href="#508">508</a>             <strong class="jxr_keyword">if</strong> (dropped &gt; 0) {
-<a class="jxr_linenumber" name="509" href="#509">509</a>                 buf.append(<span class="jxr_string">": "</span>)
-<a class="jxr_linenumber" name="510" href="#510">510</a>                    .append(dropped)
-<a class="jxr_linenumber" name="511" href="#511">511</a>                    .append(<span class="jxr_string">" leak records were discarded because the leak record count is targeted to "</span>)
-<a class="jxr_linenumber" name="512" href="#512">512</a>                    .append(TARGET_RECORDS)
-<a class="jxr_linenumber" name="513" href="#513">513</a>                    .append(<span class="jxr_string">". Use system property "</span>)
-<a class="jxr_linenumber" name="514" href="#514">514</a>                    .append(PROP_TARGET_RECORDS)
-<a class="jxr_linenumber" name="515" href="#515">515</a>                    .append(<span class="jxr_string">" to increase the limit."</span>)
-<a class="jxr_linenumber" name="516" href="#516">516</a>                    .append(NEWLINE);
-<a class="jxr_linenumber" name="517" href="#517">517</a>             }
-<a class="jxr_linenumber" name="518" href="#518">518</a> 
-<a class="jxr_linenumber" name="519" href="#519">519</a>             buf.setLength(buf.length() - NEWLINE.length());
-<a class="jxr_linenumber" name="520" href="#520">520</a>             <strong class="jxr_keyword">return</strong> buf.toString();
-<a class="jxr_linenumber" name="521" href="#521">521</a>         }
-<a class="jxr_linenumber" name="522" href="#522">522</a>     }
-<a class="jxr_linenumber" name="523" href="#523">523</a> 
-<a class="jxr_linenumber" name="524" href="#524">524</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> AtomicReference&lt;String[]&gt; excludedMethods =
-<a class="jxr_linenumber" name="525" href="#525">525</a>             <strong class="jxr_keyword">new</strong> AtomicReference&lt;String[]&gt;(EmptyArrays.EMPTY_STRINGS);
-<a class="jxr_linenumber" name="526" href="#526">526</a> 
-<a class="jxr_linenumber" name="527" href="#527">527</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> addExclusions(Class clz, String ... methodNames) {
-<a class="jxr_linenumber" name="528" href="#528">528</a>         Set&lt;String&gt; nameSet = <strong class="jxr_keyword">new</strong> HashSet&lt;String&gt;(Arrays.asList(methodNames));
-<a class="jxr_linenumber" name="529" href="#529">529</a>         <em class="jxr_comment">// Use loop rather than lookup. This avoids knowing the parameters, and doesn't have to handle</em>
-<a class="jxr_linenumber" name="530" href="#530">530</a>         <em class="jxr_comment">// NoSuchMethodException.</em>
-<a class="jxr_linenumber" name="531" href="#531">531</a>         <strong class="jxr_keyword">for</strong> (Method method : clz.getDeclaredMethods()) {
-<a class="jxr_linenumber" name="532" href="#532">532</a>             <strong class="jxr_keyword">if</strong> (nameSet.remove(method.getName()) &amp;&amp; nameSet.isEmpty()) {
-<a class="jxr_linenumber" name="533" href="#533">533</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="534" href="#534">534</a>             }
-<a class="jxr_linenumber" name="535" href="#535">535</a>         }
-<a class="jxr_linenumber" name="536" href="#536">536</a>         <strong class="jxr_keyword">if</strong> (!nameSet.isEmpty()) {
-<a class="jxr_linenumber" name="537" href="#537">537</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Can't find '"</span> + nameSet + <span class="jxr_string">"' in "</span> + clz.getName());
-<a class="jxr_linenumber" name="538" href="#538">538</a>         }
-<a class="jxr_linenumber" name="539" href="#539">539</a>         String[] oldMethods;
-<a class="jxr_linenumber" name="540" href="#540">540</a>         String[] newMethods;
-<a class="jxr_linenumber" name="541" href="#541">541</a>         <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="542" href="#542">542</a>             oldMethods = excludedMethods.get();
-<a class="jxr_linenumber" name="543" href="#543">543</a>             newMethods = Arrays.copyOf(oldMethods, oldMethods.length + 2 * methodNames.length);
-<a class="jxr_linenumber" name="544" href="#544">544</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; methodNames.length; i++) {
-<a class="jxr_linenumber" name="545" href="#545">545</a>                 newMethods[oldMethods.length + i * 2] = clz.getName();
-<a class="jxr_linenumber" name="546" href="#546">546</a>                 newMethods[oldMethods.length + i * 2 + 1] = methodNames[i];
-<a class="jxr_linenumber" name="547" href="#547">547</a>             }
-<a class="jxr_linenumber" name="548" href="#548">548</a>         } <strong class="jxr_keyword">while</strong> (!excludedMethods.compareAndSet(oldMethods, newMethods));
-<a class="jxr_linenumber" name="549" href="#549">549</a>     }
-<a class="jxr_linenumber" name="550" href="#550">550</a> 
-<a class="jxr_linenumber" name="551" href="#551">551</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> <strong class="jxr_keyword">extends</strong> Throwable {
-<a class="jxr_linenumber" name="552" href="#552">552</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 6065153674892850720L;
-<a class="jxr_linenumber" name="553" href="#553">553</a> 
-<a class="jxr_linenumber" name="554" href="#554">554</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> BOTTOM = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>();
-<a class="jxr_linenumber" name="555" href="#555">555</a> 
-<a class="jxr_linenumber" name="556" href="#556">556</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> String hintString;
-<a class="jxr_linenumber" name="557" href="#557">557</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> next;
-<a class="jxr_linenumber" name="558" href="#558">558</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> pos;
-<a class="jxr_linenumber" name="559" href="#559">559</a> 
-<a class="jxr_linenumber" name="560" href="#560">560</a>         <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(<a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> next, Object hint) {
-<a class="jxr_linenumber" name="561" href="#561">561</a>             <em class="jxr_comment">// This needs to be generated even if toString() is never called as it may change later on.</em>
-<a class="jxr_linenumber" name="562" href="#562">562</a>             hintString = hint instanceof <a href="../../../io/netty/util/ResourceLeakHint.html">ResourceLeakHint</a> ? ((ResourceLeakHint) hint).toHintString() : hint.toString();
-<a class="jxr_linenumber" name="563" href="#563">563</a>             <strong class="jxr_keyword">this</strong>.next = next;
-<a class="jxr_linenumber" name="564" href="#564">564</a>             <strong class="jxr_keyword">this</strong>.pos = next.pos + 1;
-<a class="jxr_linenumber" name="565" href="#565">565</a>         }
-<a class="jxr_linenumber" name="566" href="#566">566</a> 
-<a class="jxr_linenumber" name="567" href="#567">567</a>         <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(<a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> next) {
-<a class="jxr_linenumber" name="568" href="#568">568</a>            hintString = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="569" href="#569">569</a>            <strong class="jxr_keyword">this</strong>.next = next;
-<a class="jxr_linenumber" name="570" href="#570">570</a>            <strong class="jxr_keyword">this</strong>.pos = next.pos + 1;
-<a class="jxr_linenumber" name="571" href="#571">571</a>         }
-<a class="jxr_linenumber" name="572" href="#572">572</a> 
-<a class="jxr_linenumber" name="573" href="#573">573</a>         <em class="jxr_comment">// Used to terminate the stack</em>
-<a class="jxr_linenumber" name="574" href="#574">574</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>() {
-<a class="jxr_linenumber" name="575" href="#575">575</a>             hintString = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="576" href="#576">576</a>             next = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="577" href="#577">577</a>             pos = -1;
-<a class="jxr_linenumber" name="578" href="#578">578</a>         }
-<a class="jxr_linenumber" name="579" href="#579">579</a> 
-<a class="jxr_linenumber" name="580" href="#580">580</a>         @Override
-<a class="jxr_linenumber" name="581" href="#581">581</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="582" href="#582">582</a>             StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(2048);
-<a class="jxr_linenumber" name="583" href="#583">583</a>             <strong class="jxr_keyword">if</strong> (hintString != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="584" href="#584">584</a>                 buf.append(<span class="jxr_string">"\tHint: "</span>).append(hintString).append(NEWLINE);
-<a class="jxr_linenumber" name="585" href="#585">585</a>             }
-<a class="jxr_linenumber" name="586" href="#586">586</a> 
-<a class="jxr_linenumber" name="587" href="#587">587</a>             <em class="jxr_comment">// Append the stack trace.</em>
-<a class="jxr_linenumber" name="588" href="#588">588</a>             StackTraceElement[] array = getStackTrace();
-<a class="jxr_linenumber" name="589" href="#589">589</a>             <em class="jxr_comment">// Skip the first three elements.</em>
-<a class="jxr_linenumber" name="590" href="#590">590</a>             out: <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 3; i &lt; array.length; i++) {
-<a class="jxr_linenumber" name="591" href="#591">591</a>                 StackTraceElement element = array[i];
-<a class="jxr_linenumber" name="592" href="#592">592</a>                 <em class="jxr_comment">// Strip the noisy stack trace elements.</em>
-<a class="jxr_linenumber" name="593" href="#593">593</a>                 String[] exclusions = excludedMethods.get();
-<a class="jxr_linenumber" name="594" href="#594">594</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> k = 0; k &lt; exclusions.length; k += 2) {
-<a class="jxr_linenumber" name="595" href="#595">595</a>                     <strong class="jxr_keyword">if</strong> (exclusions[k].equals(element.getClassName())
-<a class="jxr_linenumber" name="596" href="#596">596</a>                             &amp;&amp; exclusions[k + 1].equals(element.getMethodName())) {
-<a class="jxr_linenumber" name="597" href="#597">597</a>                         <strong class="jxr_keyword">continue</strong> out;
-<a class="jxr_linenumber" name="598" href="#598">598</a>                     }
-<a class="jxr_linenumber" name="599" href="#599">599</a>                 }
-<a class="jxr_linenumber" name="600" href="#600">600</a> 
-<a class="jxr_linenumber" name="601" href="#601">601</a>                 buf.append('\t');
-<a class="jxr_linenumber" name="602" href="#602">602</a>                 buf.append(element.toString());
-<a class="jxr_linenumber" name="603" href="#603">603</a>                 buf.append(NEWLINE);
-<a class="jxr_linenumber" name="604" href="#604">604</a>             }
-<a class="jxr_linenumber" name="605" href="#605">605</a>             <strong class="jxr_keyword">return</strong> buf.toString();
-<a class="jxr_linenumber" name="606" href="#606">606</a>         }
-<a class="jxr_linenumber" name="607" href="#607">607</a>     }
-<a class="jxr_linenumber" name="608" href="#608">608</a> 
-<a class="jxr_linenumber" name="609" href="#609">609</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a> {
-<a class="jxr_linenumber" name="610" href="#610">610</a>         <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a> INSTANCE = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a>();
-<a class="jxr_linenumber" name="611" href="#611">611</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> HASH = System.identityHashCode(INSTANCE);
-<a class="jxr_linenumber" name="612" href="#612">612</a> 
-<a class="jxr_linenumber" name="613" href="#613">613</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a>() {
-<a class="jxr_linenumber" name="614" href="#614">614</a>         }
-<a class="jxr_linenumber" name="615" href="#615">615</a> 
-<a class="jxr_linenumber" name="616" href="#616">616</a>         @Override
-<a class="jxr_linenumber" name="617" href="#617">617</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> hashCode() {
-<a class="jxr_linenumber" name="618" href="#618">618</a>             <strong class="jxr_keyword">return</strong> HASH;
-<a class="jxr_linenumber" name="619" href="#619">619</a>         }
-<a class="jxr_linenumber" name="620" href="#620">620</a> 
-<a class="jxr_linenumber" name="621" href="#621">621</a>         @Override
-<a class="jxr_linenumber" name="622" href="#622">622</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> equals(Object obj) {
-<a class="jxr_linenumber" name="623" href="#623">623</a>             <strong class="jxr_keyword">return</strong> obj == <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="624" href="#624">624</a>         }
-<a class="jxr_linenumber" name="625" href="#625">625</a>     }
-<a class="jxr_linenumber" name="626" href="#626">626</a> }
+<a class="jxr_linenumber" name="372" href="#372">372</a>             <em class="jxr_comment">// Create a new Record so we always have the creation stacktrace included.</em>
+<a class="jxr_linenumber" name="373" href="#373">373</a>             headUpdater.set(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(Record.BOTTOM));
+<a class="jxr_linenumber" name="374" href="#374">374</a>             <strong class="jxr_keyword">this</strong>.allLeaks = allLeaks;
+<a class="jxr_linenumber" name="375" href="#375">375</a>         }
+<a class="jxr_linenumber" name="376" href="#376">376</a> 
+<a class="jxr_linenumber" name="377" href="#377">377</a>         @Override
+<a class="jxr_linenumber" name="378" href="#378">378</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> record() {
+<a class="jxr_linenumber" name="379" href="#379">379</a>             record0(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="380" href="#380">380</a>         }
+<a class="jxr_linenumber" name="381" href="#381">381</a> 
+<a class="jxr_linenumber" name="382" href="#382">382</a>         @Override
+<a class="jxr_linenumber" name="383" href="#383">383</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> record(Object hint) {
+<a class="jxr_linenumber" name="384" href="#384">384</a>             record0(hint);
+<a class="jxr_linenumber" name="385" href="#385">385</a>         }
+<a class="jxr_linenumber" name="386" href="#386">386</a> 
+<a class="jxr_linenumber" name="387" href="#387">387</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="388" href="#388">388</a> <em class="jxr_javadoccomment">         * This method works by exponentially backing off as more records are present in the stack. Each record has a</em>
+<a class="jxr_linenumber" name="389" href="#389">389</a> <em class="jxr_javadoccomment">         * 1 / 2^n chance of dropping the top most record and replacing it with itself. This has a number of convenient</em>
+<a class="jxr_linenumber" name="390" href="#390">390</a> <em class="jxr_javadoccomment">         * properties:</em>
+<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="392" href="#392">392</a> <em class="jxr_javadoccomment">         * &lt;ol&gt;</em>
+<a class="jxr_linenumber" name="393" href="#393">393</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  The current record is always recorded. This is due to the compare and swap dropping the top most</em>
+<a class="jxr_linenumber" name="394" href="#394">394</a> <em class="jxr_javadoccomment">         *       record, rather than the to-be-pushed record.</em>
+<a class="jxr_linenumber" name="395" href="#395">395</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  The very last access will always be recorded. This comes as a property of 1.</em>
+<a class="jxr_linenumber" name="396" href="#396">396</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  It is possible to retain more records than the target, based upon the probability distribution.</em>
+<a class="jxr_linenumber" name="397" href="#397">397</a> <em class="jxr_javadoccomment">         * &lt;li&gt;  It is easy to keep a precise record of the number of elements in the stack, since each element has to</em>
+<a class="jxr_linenumber" name="398" href="#398">398</a> <em class="jxr_javadoccomment">         *     know how tall the stack is.</em>
+<a class="jxr_linenumber" name="399" href="#399">399</a> <em class="jxr_javadoccomment">         * &lt;/ol&gt;</em>
+<a class="jxr_linenumber" name="400" href="#400">400</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="401" href="#401">401</a> <em class="jxr_javadoccomment">         * In this particular implementation, there are also some advantages. A thread local random is used to decide</em>
+<a class="jxr_linenumber" name="402" href="#402">402</a> <em class="jxr_javadoccomment">         * if something should be recorded. This means that if there is a deterministic access pattern, it is now</em>
+<a class="jxr_linenumber" name="403" href="#403">403</a> <em class="jxr_javadoccomment">         * possible to see what other accesses occur, rather than always dropping them. Second, after</em>
+<a class="jxr_linenumber" name="404" href="#404">404</a> <em class="jxr_javadoccomment">         * {@link #TARGET_RECORDS} accesses, backoff occurs. This matches typical access patterns,</em>
+<a class="jxr_linenumber" name="405" href="#405">405</a> <em class="jxr_javadoccomment">         * where there are either a high number of accesses (i.e. a cached buffer), or low (an ephemeral buffer), but</em>
+<a class="jxr_linenumber" name="406" href="#406">406</a> <em class="jxr_javadoccomment">         * not many in between.</em>
+<a class="jxr_linenumber" name="407" href="#407">407</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="408" href="#408">408</a> <em class="jxr_javadoccomment">         * The use of atomics avoids serializing a high number of accesses, when most of the records will be thrown</em>
+<a class="jxr_linenumber" name="409" href="#409">409</a> <em class="jxr_javadoccomment">         * away. High contention only happens when there are very few existing records, which is only likely when the</em>
+<a class="jxr_linenumber" name="410" href="#410">410</a> <em class="jxr_javadoccomment">         * object isn't shared! If this is a problem, the loop can be aborted and the record dropped, because another</em>
+<a class="jxr_linenumber" name="411" href="#411">411</a> <em class="jxr_javadoccomment">         * thread won the race.</em>
+<a class="jxr_linenumber" name="412" href="#412">412</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="413" href="#413">413</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> record0(Object hint) {
+<a class="jxr_linenumber" name="414" href="#414">414</a>             <em class="jxr_comment">// Check TARGET_RECORDS &gt; 0 here to avoid similar check before remove from and add to lastRecords</em>
+<a class="jxr_linenumber" name="415" href="#415">415</a>             <strong class="jxr_keyword">if</strong> (TARGET_RECORDS &gt; 0) {
+<a class="jxr_linenumber" name="416" href="#416">416</a>                 <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> oldHead;
+<a class="jxr_linenumber" name="417" href="#417">417</a>                 <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> prevHead;
+<a class="jxr_linenumber" name="418" href="#418">418</a>                 <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> newHead;
+<a class="jxr_linenumber" name="419" href="#419">419</a>                 <strong class="jxr_keyword">boolean</strong> dropped;
+<a class="jxr_linenumber" name="420" href="#420">420</a>                 <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="421" href="#421">421</a>                     <strong class="jxr_keyword">if</strong> ((prevHead = oldHead = headUpdater.get(<strong class="jxr_keyword">this</strong>)) == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="422" href="#422">422</a>                         <em class="jxr_comment">// already closed.</em>
+<a class="jxr_linenumber" name="423" href="#423">423</a>                         <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="424" href="#424">424</a>                     }
+<a class="jxr_linenumber" name="425" href="#425">425</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> numElements = oldHead.pos + 1;
+<a class="jxr_linenumber" name="426" href="#426">426</a>                     <strong class="jxr_keyword">if</strong> (numElements &gt;= TARGET_RECORDS) {
+<a class="jxr_linenumber" name="427" href="#427">427</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> backOffFactor = Math.min(numElements - TARGET_RECORDS, 30);
+<a class="jxr_linenumber" name="428" href="#428">428</a>                         <strong class="jxr_keyword">if</strong> (dropped = PlatformDependent.threadLocalRandom().nextInt(1 &lt;&lt; backOffFactor) != 0) {
+<a class="jxr_linenumber" name="429" href="#429">429</a>                             prevHead = oldHead.next;
+<a class="jxr_linenumber" name="430" href="#430">430</a>                         }
+<a class="jxr_linenumber" name="431" href="#431">431</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="432" href="#432">432</a>                         dropped = false;
+<a class="jxr_linenumber" name="433" href="#433">433</a>                     }
+<a class="jxr_linenumber" name="434" href="#434">434</a>                     newHead = hint != <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(prevHead, hint) : <strong class="jxr_keyword">new</strong> Record(prevHead);
+<a class="jxr_linenumber" name="435" href="#435">435</a>                 } <strong class="jxr_keyword">while</strong> (!headUpdater.compareAndSet(<strong class="jxr_keyword">this</strong>, oldHead, newHead));
+<a class="jxr_linenumber" name="436" href="#436">436</a>                 <strong class="jxr_keyword">if</strong> (dropped) {
+<a class="jxr_linenumber" name="437" href="#437">437</a>                     droppedRecordsUpdater.incrementAndGet(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="438" href="#438">438</a>                 }
+<a class="jxr_linenumber" name="439" href="#439">439</a>             }
+<a class="jxr_linenumber" name="440" href="#440">440</a>         }
+<a class="jxr_linenumber" name="441" href="#441">441</a> 
+<a class="jxr_linenumber" name="442" href="#442">442</a>         <strong class="jxr_keyword">boolean</strong> dispose() {
+<a class="jxr_linenumber" name="443" href="#443">443</a>             clear();
+<a class="jxr_linenumber" name="444" href="#444">444</a>             <strong class="jxr_keyword">return</strong> allLeaks.remove(<strong class="jxr_keyword">this</strong>, LeakEntry.INSTANCE);
+<a class="jxr_linenumber" name="445" href="#445">445</a>         }
+<a class="jxr_linenumber" name="446" href="#446">446</a> 
+<a class="jxr_linenumber" name="447" href="#447">447</a>         @Override
+<a class="jxr_linenumber" name="448" href="#448">448</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> close() {
+<a class="jxr_linenumber" name="449" href="#449">449</a>             <em class="jxr_comment">// Use the ConcurrentMap remove method, which avoids allocating an iterator.</em>
+<a class="jxr_linenumber" name="450" href="#450">450</a>             <strong class="jxr_keyword">if</strong> (allLeaks.remove(<strong class="jxr_keyword">this</strong>, LeakEntry.INSTANCE)) {
+<a class="jxr_linenumber" name="451" href="#451">451</a>                 <em class="jxr_comment">// Call clear so the reference is not even enqueued.</em>
+<a class="jxr_linenumber" name="452" href="#452">452</a>                 clear();
+<a class="jxr_linenumber" name="453" href="#453">453</a>                 headUpdater.set(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="454" href="#454">454</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="455" href="#455">455</a>             }
+<a class="jxr_linenumber" name="456" href="#456">456</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="457" href="#457">457</a>         }
+<a class="jxr_linenumber" name="458" href="#458">458</a> 
+<a class="jxr_linenumber" name="459" href="#459">459</a>         @Override
+<a class="jxr_linenumber" name="460" href="#460">460</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> close(T trackedObject) {
+<a class="jxr_linenumber" name="461" href="#461">461</a>             <em class="jxr_comment">// Ensure that the object that was tracked is the same as the one that was passed to close(...).</em>
+<a class="jxr_linenumber" name="462" href="#462">462</a>             assert trackedHash == System.identityHashCode(trackedObject);
+<a class="jxr_linenumber" name="463" href="#463">463</a> 
+<a class="jxr_linenumber" name="464" href="#464">464</a>             <em class="jxr_comment">// We need to actually do the null check of the trackedObject after we close the leak because otherwise</em>
+<a class="jxr_linenumber" name="465" href="#465">465</a>             <em class="jxr_comment">// we may get false-positives reported by the ResourceLeakDetector. This can happen as the JIT / GC may</em>
+<a class="jxr_linenumber" name="466" href="#466">466</a>             <em class="jxr_comment">// be able to figure out that we do not need the trackedObject anymore and so already enqueue it for</em>
+<a class="jxr_linenumber" name="467" href="#467">467</a>             <em class="jxr_comment">// collection before we actually get a chance to close the enclosing ResourceLeak.</em>
+<a class="jxr_linenumber" name="468" href="#468">468</a>             <strong class="jxr_keyword">return</strong> close() &amp;&amp; trackedObject != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="469" href="#469">469</a>         }
+<a class="jxr_linenumber" name="470" href="#470">470</a> 
+<a class="jxr_linenumber" name="471" href="#471">471</a>         @Override
+<a class="jxr_linenumber" name="472" href="#472">472</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="473" href="#473">473</a>             <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> oldHead = headUpdater.getAndSet(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="474" href="#474">474</a>             <strong class="jxr_keyword">if</strong> (oldHead == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="475" href="#475">475</a>                 <em class="jxr_comment">// Already closed</em>
+<a class="jxr_linenumber" name="476" href="#476">476</a>                 <strong class="jxr_keyword">return</strong> EMPTY_STRING;
+<a class="jxr_linenumber" name="477" href="#477">477</a>             }
+<a class="jxr_linenumber" name="478" href="#478">478</a> 
+<a class="jxr_linenumber" name="479" href="#479">479</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> dropped = droppedRecordsUpdater.get(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="480" href="#480">480</a>             <strong class="jxr_keyword">int</strong> duped = 0;
+<a class="jxr_linenumber" name="481" href="#481">481</a> 
+<a class="jxr_linenumber" name="482" href="#482">482</a>             <strong class="jxr_keyword">int</strong> present = oldHead.pos + 1;
+<a class="jxr_linenumber" name="483" href="#483">483</a>             <em class="jxr_comment">// Guess about 2 kilobytes per stack trace</em>
+<a class="jxr_linenumber" name="484" href="#484">484</a>             StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(present * 2048).append(NEWLINE);
+<a class="jxr_linenumber" name="485" href="#485">485</a>             buf.append(<span class="jxr_string">"Recent access records: "</span>).append(NEWLINE);
+<a class="jxr_linenumber" name="486" href="#486">486</a> 
+<a class="jxr_linenumber" name="487" href="#487">487</a>             <strong class="jxr_keyword">int</strong> i = 1;
+<a class="jxr_linenumber" name="488" href="#488">488</a>             Set&lt;String&gt; seen = <strong class="jxr_keyword">new</strong> HashSet&lt;String&gt;(present);
+<a class="jxr_linenumber" name="489" href="#489">489</a>             <strong class="jxr_keyword">for</strong> (; oldHead != Record.BOTTOM; oldHead = oldHead.next) {
+<a class="jxr_linenumber" name="490" href="#490">490</a>                 String s = oldHead.toString();
+<a class="jxr_linenumber" name="491" href="#491">491</a>                 <strong class="jxr_keyword">if</strong> (seen.add(s)) {
+<a class="jxr_linenumber" name="492" href="#492">492</a>                     <strong class="jxr_keyword">if</strong> (oldHead.next == Record.BOTTOM) {
+<a class="jxr_linenumber" name="493" href="#493">493</a>                         buf.append(<span class="jxr_string">"Created at:"</span>).append(NEWLINE).append(s);
+<a class="jxr_linenumber" name="494" href="#494">494</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="495" href="#495">495</a>                         buf.append('#').append(i++).append(':').append(NEWLINE).append(s);
+<a class="jxr_linenumber" name="496" href="#496">496</a>                     }
+<a class="jxr_linenumber" name="497" href="#497">497</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="498" href="#498">498</a>                     duped++;
+<a class="jxr_linenumber" name="499" href="#499">499</a>                 }
+<a class="jxr_linenumber" name="500" href="#500">500</a>             }
+<a class="jxr_linenumber" name="501" href="#501">501</a> 
+<a class="jxr_linenumber" name="502" href="#502">502</a>             <strong class="jxr_keyword">if</strong> (duped &gt; 0) {
+<a class="jxr_linenumber" name="503" href="#503">503</a>                 buf.append(<span class="jxr_string">": "</span>)
+<a class="jxr_linenumber" name="504" href="#504">504</a>                         .append(dropped)
+<a class="jxr_linenumber" name="505" href="#505">505</a>                         .append(<span class="jxr_string">" leak records were discarded because they were duplicates"</span>)
+<a class="jxr_linenumber" name="506" href="#506">506</a>                         .append(NEWLINE);
+<a class="jxr_linenumber" name="507" href="#507">507</a>             }
+<a class="jxr_linenumber" name="508" href="#508">508</a> 
+<a class="jxr_linenumber" name="509" href="#509">509</a>             <strong class="jxr_keyword">if</strong> (dropped &gt; 0) {
+<a class="jxr_linenumber" name="510" href="#510">510</a>                 buf.append(<span class="jxr_string">": "</span>)
+<a class="jxr_linenumber" name="511" href="#511">511</a>                    .append(dropped)
+<a class="jxr_linenumber" name="512" href="#512">512</a>                    .append(<span class="jxr_string">" leak records were discarded because the leak record count is targeted to "</span>)
+<a class="jxr_linenumber" name="513" href="#513">513</a>                    .append(TARGET_RECORDS)
+<a class="jxr_linenumber" name="514" href="#514">514</a>                    .append(<span class="jxr_string">". Use system property "</span>)
+<a class="jxr_linenumber" name="515" href="#515">515</a>                    .append(PROP_TARGET_RECORDS)
+<a class="jxr_linenumber" name="516" href="#516">516</a>                    .append(<span class="jxr_string">" to increase the limit."</span>)
+<a class="jxr_linenumber" name="517" href="#517">517</a>                    .append(NEWLINE);
+<a class="jxr_linenumber" name="518" href="#518">518</a>             }
+<a class="jxr_linenumber" name="519" href="#519">519</a> 
+<a class="jxr_linenumber" name="520" href="#520">520</a>             buf.setLength(buf.length() - NEWLINE.length());
+<a class="jxr_linenumber" name="521" href="#521">521</a>             <strong class="jxr_keyword">return</strong> buf.toString();
+<a class="jxr_linenumber" name="522" href="#522">522</a>         }
+<a class="jxr_linenumber" name="523" href="#523">523</a>     }
+<a class="jxr_linenumber" name="524" href="#524">524</a> 
+<a class="jxr_linenumber" name="525" href="#525">525</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> AtomicReference&lt;String[]&gt; excludedMethods =
+<a class="jxr_linenumber" name="526" href="#526">526</a>             <strong class="jxr_keyword">new</strong> AtomicReference&lt;String[]&gt;(EmptyArrays.EMPTY_STRINGS);
+<a class="jxr_linenumber" name="527" href="#527">527</a> 
+<a class="jxr_linenumber" name="528" href="#528">528</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> addExclusions(Class clz, String ... methodNames) {
+<a class="jxr_linenumber" name="529" href="#529">529</a>         Set&lt;String&gt; nameSet = <strong class="jxr_keyword">new</strong> HashSet&lt;String&gt;(Arrays.asList(methodNames));
+<a class="jxr_linenumber" name="530" href="#530">530</a>         <em class="jxr_comment">// Use loop rather than lookup. This avoids knowing the parameters, and doesn't have to handle</em>
+<a class="jxr_linenumber" name="531" href="#531">531</a>         <em class="jxr_comment">// NoSuchMethodException.</em>
+<a class="jxr_linenumber" name="532" href="#532">532</a>         <strong class="jxr_keyword">for</strong> (Method method : clz.getDeclaredMethods()) {
+<a class="jxr_linenumber" name="533" href="#533">533</a>             <strong class="jxr_keyword">if</strong> (nameSet.remove(method.getName()) &amp;&amp; nameSet.isEmpty()) {
+<a class="jxr_linenumber" name="534" href="#534">534</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="535" href="#535">535</a>             }
+<a class="jxr_linenumber" name="536" href="#536">536</a>         }
+<a class="jxr_linenumber" name="537" href="#537">537</a>         <strong class="jxr_keyword">if</strong> (!nameSet.isEmpty()) {
+<a class="jxr_linenumber" name="538" href="#538">538</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Can't find '"</span> + nameSet + <span class="jxr_string">"' in "</span> + clz.getName());
+<a class="jxr_linenumber" name="539" href="#539">539</a>         }
+<a class="jxr_linenumber" name="540" href="#540">540</a>         String[] oldMethods;
+<a class="jxr_linenumber" name="541" href="#541">541</a>         String[] newMethods;
+<a class="jxr_linenumber" name="542" href="#542">542</a>         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="543" href="#543">543</a>             oldMethods = excludedMethods.get();
+<a class="jxr_linenumber" name="544" href="#544">544</a>             newMethods = Arrays.copyOf(oldMethods, oldMethods.length + 2 * methodNames.length);
+<a class="jxr_linenumber" name="545" href="#545">545</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; methodNames.length; i++) {
+<a class="jxr_linenumber" name="546" href="#546">546</a>                 newMethods[oldMethods.length + i * 2] = clz.getName();
+<a class="jxr_linenumber" name="547" href="#547">547</a>                 newMethods[oldMethods.length + i * 2 + 1] = methodNames[i];
+<a class="jxr_linenumber" name="548" href="#548">548</a>             }
+<a class="jxr_linenumber" name="549" href="#549">549</a>         } <strong class="jxr_keyword">while</strong> (!excludedMethods.compareAndSet(oldMethods, newMethods));
+<a class="jxr_linenumber" name="550" href="#550">550</a>     }
+<a class="jxr_linenumber" name="551" href="#551">551</a> 
+<a class="jxr_linenumber" name="552" href="#552">552</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> <strong class="jxr_keyword">extends</strong> Throwable {
+<a class="jxr_linenumber" name="553" href="#553">553</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 6065153674892850720L;
+<a class="jxr_linenumber" name="554" href="#554">554</a> 
+<a class="jxr_linenumber" name="555" href="#555">555</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> BOTTOM = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>();
+<a class="jxr_linenumber" name="556" href="#556">556</a> 
+<a class="jxr_linenumber" name="557" href="#557">557</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> String hintString;
+<a class="jxr_linenumber" name="558" href="#558">558</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> next;
+<a class="jxr_linenumber" name="559" href="#559">559</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> pos;
+<a class="jxr_linenumber" name="560" href="#560">560</a> 
+<a class="jxr_linenumber" name="561" href="#561">561</a>         <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(<a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> next, Object hint) {
+<a class="jxr_linenumber" name="562" href="#562">562</a>             <em class="jxr_comment">// This needs to be generated even if toString() is never called as it may change later on.</em>
+<a class="jxr_linenumber" name="563" href="#563">563</a>             hintString = hint instanceof <a href="../../../io/netty/util/ResourceLeakHint.html">ResourceLeakHint</a> ? ((ResourceLeakHint) hint).toHintString() : hint.toString();
+<a class="jxr_linenumber" name="564" href="#564">564</a>             <strong class="jxr_keyword">this</strong>.next = next;
+<a class="jxr_linenumber" name="565" href="#565">565</a>             <strong class="jxr_keyword">this</strong>.pos = next.pos + 1;
+<a class="jxr_linenumber" name="566" href="#566">566</a>         }
+<a class="jxr_linenumber" name="567" href="#567">567</a> 
+<a class="jxr_linenumber" name="568" href="#568">568</a>         <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>(<a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a> next) {
+<a class="jxr_linenumber" name="569" href="#569">569</a>            hintString = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="570" href="#570">570</a>            <strong class="jxr_keyword">this</strong>.next = next;
+<a class="jxr_linenumber" name="571" href="#571">571</a>            <strong class="jxr_keyword">this</strong>.pos = next.pos + 1;
+<a class="jxr_linenumber" name="572" href="#572">572</a>         }
+<a class="jxr_linenumber" name="573" href="#573">573</a> 
+<a class="jxr_linenumber" name="574" href="#574">574</a>         <em class="jxr_comment">// Used to terminate the stack</em>
+<a class="jxr_linenumber" name="575" href="#575">575</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">Record</a>() {
+<a class="jxr_linenumber" name="576" href="#576">576</a>             hintString = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="577" href="#577">577</a>             next = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="578" href="#578">578</a>             pos = -1;
+<a class="jxr_linenumber" name="579" href="#579">579</a>         }
+<a class="jxr_linenumber" name="580" href="#580">580</a> 
+<a class="jxr_linenumber" name="581" href="#581">581</a>         @Override
+<a class="jxr_linenumber" name="582" href="#582">582</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="583" href="#583">583</a>             StringBuilder buf = <strong class="jxr_keyword">new</strong> StringBuilder(2048);
+<a class="jxr_linenumber" name="584" href="#584">584</a>             <strong class="jxr_keyword">if</strong> (hintString != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="585" href="#585">585</a>                 buf.append(<span class="jxr_string">"\tHint: "</span>).append(hintString).append(NEWLINE);
+<a class="jxr_linenumber" name="586" href="#586">586</a>             }
+<a class="jxr_linenumber" name="587" href="#587">587</a> 
+<a class="jxr_linenumber" name="588" href="#588">588</a>             <em class="jxr_comment">// Append the stack trace.</em>
+<a class="jxr_linenumber" name="589" href="#589">589</a>             StackTraceElement[] array = getStackTrace();
+<a class="jxr_linenumber" name="590" href="#590">590</a>             <em class="jxr_comment">// Skip the first three elements.</em>
+<a class="jxr_linenumber" name="591" href="#591">591</a>             out: <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 3; i &lt; array.length; i++) {
+<a class="jxr_linenumber" name="592" href="#592">592</a>                 StackTraceElement element = array[i];
+<a class="jxr_linenumber" name="593" href="#593">593</a>                 <em class="jxr_comment">// Strip the noisy stack trace elements.</em>
+<a class="jxr_linenumber" name="594" href="#594">594</a>                 String[] exclusions = excludedMethods.get();
+<a class="jxr_linenumber" name="595" href="#595">595</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> k = 0; k &lt; exclusions.length; k += 2) {
+<a class="jxr_linenumber" name="596" href="#596">596</a>                     <strong class="jxr_keyword">if</strong> (exclusions[k].equals(element.getClassName())
+<a class="jxr_linenumber" name="597" href="#597">597</a>                             &amp;&amp; exclusions[k + 1].equals(element.getMethodName())) {
+<a class="jxr_linenumber" name="598" href="#598">598</a>                         <strong class="jxr_keyword">continue</strong> out;
+<a class="jxr_linenumber" name="599" href="#599">599</a>                     }
+<a class="jxr_linenumber" name="600" href="#600">600</a>                 }
+<a class="jxr_linenumber" name="601" href="#601">601</a> 
+<a class="jxr_linenumber" name="602" href="#602">602</a>                 buf.append('\t');
+<a class="jxr_linenumber" name="603" href="#603">603</a>                 buf.append(element.toString());
+<a class="jxr_linenumber" name="604" href="#604">604</a>                 buf.append(NEWLINE);
+<a class="jxr_linenumber" name="605" href="#605">605</a>             }
+<a class="jxr_linenumber" name="606" href="#606">606</a>             <strong class="jxr_keyword">return</strong> buf.toString();
+<a class="jxr_linenumber" name="607" href="#607">607</a>         }
+<a class="jxr_linenumber" name="608" href="#608">608</a>     }
+<a class="jxr_linenumber" name="609" href="#609">609</a> 
+<a class="jxr_linenumber" name="610" href="#610">610</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a> {
+<a class="jxr_linenumber" name="611" href="#611">611</a>         <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a> INSTANCE = <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a>();
+<a class="jxr_linenumber" name="612" href="#612">612</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> HASH = System.identityHashCode(INSTANCE);
+<a class="jxr_linenumber" name="613" href="#613">613</a> 
+<a class="jxr_linenumber" name="614" href="#614">614</a>         <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/util/ResourceLeakDetector.html">LeakEntry</a>() {
+<a class="jxr_linenumber" name="615" href="#615">615</a>         }
+<a class="jxr_linenumber" name="616" href="#616">616</a> 
+<a class="jxr_linenumber" name="617" href="#617">617</a>         @Override
+<a class="jxr_linenumber" name="618" href="#618">618</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> hashCode() {
+<a class="jxr_linenumber" name="619" href="#619">619</a>             <strong class="jxr_keyword">return</strong> HASH;
+<a class="jxr_linenumber" name="620" href="#620">620</a>         }
+<a class="jxr_linenumber" name="621" href="#621">621</a> 
+<a class="jxr_linenumber" name="622" href="#622">622</a>         @Override
+<a class="jxr_linenumber" name="623" href="#623">623</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> equals(Object obj) {
+<a class="jxr_linenumber" name="624" href="#624">624</a>             <strong class="jxr_keyword">return</strong> obj == <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="625" href="#625">625</a>         }
+<a class="jxr_linenumber" name="626" href="#626">626</a>     }
+<a class="jxr_linenumber" name="627" href="#627">627</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

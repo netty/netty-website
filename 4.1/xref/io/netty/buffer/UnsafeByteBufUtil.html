@@ -548,67 +548,97 @@
 <a class="jxr_linenumber" name="538" href="#538">538</a>     }
 <a class="jxr_linenumber" name="539" href="#539">539</a> 
 <a class="jxr_linenumber" name="540" href="#540">540</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setBytes(<a href="../../../io/netty/buffer/AbstractByteBuf.html">AbstractByteBuf</a> buf, <strong class="jxr_keyword">long</strong> addr, <strong class="jxr_keyword">int</strong> index, ByteBuffer src) {
-<a class="jxr_linenumber" name="541" href="#541">541</a>         buf.checkIndex(index, src.remaining());
-<a class="jxr_linenumber" name="542" href="#542">542</a> 
-<a class="jxr_linenumber" name="543" href="#543">543</a>         <strong class="jxr_keyword">int</strong> length = src.remaining();
-<a class="jxr_linenumber" name="544" href="#544">544</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
-<a class="jxr_linenumber" name="545" href="#545">545</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="546" href="#546">546</a>         }
-<a class="jxr_linenumber" name="547" href="#547">547</a> 
-<a class="jxr_linenumber" name="548" href="#548">548</a>         <strong class="jxr_keyword">if</strong> (src.isDirect()) {
-<a class="jxr_linenumber" name="549" href="#549">549</a>             <em class="jxr_comment">// Copy from direct memory</em>
-<a class="jxr_linenumber" name="550" href="#550">550</a>             <strong class="jxr_keyword">long</strong> srcAddress = PlatformDependent.directBufferAddress(src);
-<a class="jxr_linenumber" name="551" href="#551">551</a>             PlatformDependent.copyMemory(srcAddress + src.position(), addr, src.remaining());
-<a class="jxr_linenumber" name="552" href="#552">552</a>             src.position(src.position() + length);
-<a class="jxr_linenumber" name="553" href="#553">553</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (src.hasArray()) {
+<a class="jxr_linenumber" name="541" href="#541">541</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> length = src.remaining();
+<a class="jxr_linenumber" name="542" href="#542">542</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
+<a class="jxr_linenumber" name="543" href="#543">543</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="544" href="#544">544</a>         }
+<a class="jxr_linenumber" name="545" href="#545">545</a> 
+<a class="jxr_linenumber" name="546" href="#546">546</a>         <strong class="jxr_keyword">if</strong> (src.isDirect()) {
+<a class="jxr_linenumber" name="547" href="#547">547</a>             buf.checkIndex(index, length);
+<a class="jxr_linenumber" name="548" href="#548">548</a>             <em class="jxr_comment">// Copy from direct memory</em>
+<a class="jxr_linenumber" name="549" href="#549">549</a>             <strong class="jxr_keyword">long</strong> srcAddress = PlatformDependent.directBufferAddress(src);
+<a class="jxr_linenumber" name="550" href="#550">550</a>             PlatformDependent.copyMemory(srcAddress + src.position(), addr, length);
+<a class="jxr_linenumber" name="551" href="#551">551</a>             src.position(src.position() + length);
+<a class="jxr_linenumber" name="552" href="#552">552</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (src.hasArray()) {
+<a class="jxr_linenumber" name="553" href="#553">553</a>             buf.checkIndex(index, length);
 <a class="jxr_linenumber" name="554" href="#554">554</a>             <em class="jxr_comment">// Copy from array</em>
 <a class="jxr_linenumber" name="555" href="#555">555</a>             PlatformDependent.copyMemory(src.array(), src.arrayOffset() + src.position(), addr, length);
 <a class="jxr_linenumber" name="556" href="#556">556</a>             src.position(src.position() + length);
 <a class="jxr_linenumber" name="557" href="#557">557</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="558" href="#558">558</a>             <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> tmpBuf = buf.alloc().heapBuffer(length);
-<a class="jxr_linenumber" name="559" href="#559">559</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="560" href="#560">560</a>                 byte[] tmp = tmpBuf.array();
-<a class="jxr_linenumber" name="561" href="#561">561</a>                 src.get(tmp, tmpBuf.arrayOffset(), length); <em class="jxr_comment">// moves the src position too</em>
-<a class="jxr_linenumber" name="562" href="#562">562</a>                 PlatformDependent.copyMemory(tmp, tmpBuf.arrayOffset(), addr, length);
-<a class="jxr_linenumber" name="563" href="#563">563</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="564" href="#564">564</a>                 tmpBuf.release();
+<a class="jxr_linenumber" name="558" href="#558">558</a>             <strong class="jxr_keyword">if</strong> (length &lt; 8) {
+<a class="jxr_linenumber" name="559" href="#559">559</a>                 setSingleBytes(buf, addr, index, src, length);
+<a class="jxr_linenumber" name="560" href="#560">560</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="561" href="#561">561</a>                 <em class="jxr_comment">//no need to checkIndex: internalNioBuffer is already taking care of it</em>
+<a class="jxr_linenumber" name="562" href="#562">562</a>                 assert buf.nioBufferCount() == 1;
+<a class="jxr_linenumber" name="563" href="#563">563</a>                 <strong class="jxr_keyword">final</strong> ByteBuffer internalBuffer = buf.internalNioBuffer(index, length);
+<a class="jxr_linenumber" name="564" href="#564">564</a>                 internalBuffer.put(src);
 <a class="jxr_linenumber" name="565" href="#565">565</a>             }
 <a class="jxr_linenumber" name="566" href="#566">566</a>         }
 <a class="jxr_linenumber" name="567" href="#567">567</a>     }
 <a class="jxr_linenumber" name="568" href="#568">568</a> 
-<a class="jxr_linenumber" name="569" href="#569">569</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> getBytes(<a href="../../../io/netty/buffer/AbstractByteBuf.html">AbstractByteBuf</a> buf, <strong class="jxr_keyword">long</strong> addr, <strong class="jxr_keyword">int</strong> index, OutputStream out, <strong class="jxr_keyword">int</strong> length) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="570" href="#570">570</a>         buf.checkIndex(index, length);
-<a class="jxr_linenumber" name="571" href="#571">571</a>         <strong class="jxr_keyword">if</strong> (length != 0) {
-<a class="jxr_linenumber" name="572" href="#572">572</a>             <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> tmpBuf = buf.alloc().heapBuffer(length);
-<a class="jxr_linenumber" name="573" href="#573">573</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="574" href="#574">574</a>                 byte[] tmp = tmpBuf.array();
-<a class="jxr_linenumber" name="575" href="#575">575</a>                 <strong class="jxr_keyword">int</strong> offset = tmpBuf.arrayOffset();
-<a class="jxr_linenumber" name="576" href="#576">576</a>                 PlatformDependent.copyMemory(addr, tmp, offset, length);
-<a class="jxr_linenumber" name="577" href="#577">577</a>                 out.write(tmp, offset, length);
-<a class="jxr_linenumber" name="578" href="#578">578</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="579" href="#579">579</a>                 tmpBuf.release();
-<a class="jxr_linenumber" name="580" href="#580">580</a>             }
-<a class="jxr_linenumber" name="581" href="#581">581</a>         }
-<a class="jxr_linenumber" name="582" href="#582">582</a>     }
-<a class="jxr_linenumber" name="583" href="#583">583</a> 
-<a class="jxr_linenumber" name="584" href="#584">584</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setZero(<strong class="jxr_keyword">long</strong> addr, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="585" href="#585">585</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
-<a class="jxr_linenumber" name="586" href="#586">586</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="587" href="#587">587</a>         }
-<a class="jxr_linenumber" name="588" href="#588">588</a> 
-<a class="jxr_linenumber" name="589" href="#589">589</a>         PlatformDependent.setMemory(addr, length, ZERO);
-<a class="jxr_linenumber" name="590" href="#590">590</a>     }
-<a class="jxr_linenumber" name="591" href="#591">591</a> 
-<a class="jxr_linenumber" name="592" href="#592">592</a>     <strong class="jxr_keyword">static</strong> <a href="../../../io/netty/buffer/UnpooledUnsafeDirectByteBuf.html">UnpooledUnsafeDirectByteBuf</a> newUnsafeDirectByteBuf(
-<a class="jxr_linenumber" name="593" href="#593">593</a>             <a href="../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <strong class="jxr_keyword">int</strong> initialCapacity, <strong class="jxr_keyword">int</strong> maxCapacity) {
-<a class="jxr_linenumber" name="594" href="#594">594</a>         <strong class="jxr_keyword">if</strong> (PlatformDependent.useDirectBufferNoCleaner()) {
-<a class="jxr_linenumber" name="595" href="#595">595</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/buffer/UnpooledUnsafeNoCleanerDirectByteBuf.html">UnpooledUnsafeNoCleanerDirectByteBuf</a>(alloc, initialCapacity, maxCapacity);
-<a class="jxr_linenumber" name="596" href="#596">596</a>         }
-<a class="jxr_linenumber" name="597" href="#597">597</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/buffer/UnpooledUnsafeDirectByteBuf.html">UnpooledUnsafeDirectByteBuf</a>(alloc, initialCapacity, maxCapacity);
-<a class="jxr_linenumber" name="598" href="#598">598</a>     }
-<a class="jxr_linenumber" name="599" href="#599">599</a> 
-<a class="jxr_linenumber" name="600" href="#600">600</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/buffer/UnsafeByteBufUtil.html">UnsafeByteBufUtil</a>() { }
-<a class="jxr_linenumber" name="601" href="#601">601</a> }
+<a class="jxr_linenumber" name="569" href="#569">569</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setSingleBytes(<strong class="jxr_keyword">final</strong> <a href="../../../io/netty/buffer/AbstractByteBuf.html">AbstractByteBuf</a> buf, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> addr, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> index,
+<a class="jxr_linenumber" name="570" href="#570">570</a>                                        <strong class="jxr_keyword">final</strong> ByteBuffer src, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="571" href="#571">571</a>         buf.checkIndex(index, length);
+<a class="jxr_linenumber" name="572" href="#572">572</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> srcPosition = src.position();
+<a class="jxr_linenumber" name="573" href="#573">573</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> srcLimit = src.limit();
+<a class="jxr_linenumber" name="574" href="#574">574</a>         <strong class="jxr_keyword">long</strong> dstAddr = addr;
+<a class="jxr_linenumber" name="575" href="#575">575</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> srcIndex = srcPosition; srcIndex &lt; srcLimit; srcIndex++) {
+<a class="jxr_linenumber" name="576" href="#576">576</a>             <strong class="jxr_keyword">final</strong> byte value = src.get(srcIndex);
+<a class="jxr_linenumber" name="577" href="#577">577</a>             PlatformDependent.putByte(dstAddr, value);
+<a class="jxr_linenumber" name="578" href="#578">578</a>             dstAddr++;
+<a class="jxr_linenumber" name="579" href="#579">579</a>         }
+<a class="jxr_linenumber" name="580" href="#580">580</a>         src.position(srcLimit);
+<a class="jxr_linenumber" name="581" href="#581">581</a>     }
+<a class="jxr_linenumber" name="582" href="#582">582</a> 
+<a class="jxr_linenumber" name="583" href="#583">583</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> getBytes(<a href="../../../io/netty/buffer/AbstractByteBuf.html">AbstractByteBuf</a> buf, <strong class="jxr_keyword">long</strong> addr, <strong class="jxr_keyword">int</strong> index, OutputStream out, <strong class="jxr_keyword">int</strong> length) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="584" href="#584">584</a>         buf.checkIndex(index, length);
+<a class="jxr_linenumber" name="585" href="#585">585</a>         <strong class="jxr_keyword">if</strong> (length != 0) {
+<a class="jxr_linenumber" name="586" href="#586">586</a>             <strong class="jxr_keyword">int</strong> len = Math.min(length, ByteBufUtil.WRITE_CHUNK_SIZE);
+<a class="jxr_linenumber" name="587" href="#587">587</a>             <strong class="jxr_keyword">if</strong> (buf.alloc().isDirectBufferPooled()) {
+<a class="jxr_linenumber" name="588" href="#588">588</a>                 <em class="jxr_comment">// if direct buffers are pooled chances are good that heap buffers are pooled as well.</em>
+<a class="jxr_linenumber" name="589" href="#589">589</a>                 <a href="../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> tmpBuf = buf.alloc().heapBuffer(len);
+<a class="jxr_linenumber" name="590" href="#590">590</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="591" href="#591">591</a>                     byte[] tmp = tmpBuf.array();
+<a class="jxr_linenumber" name="592" href="#592">592</a>                     <strong class="jxr_keyword">int</strong> offset = tmpBuf.arrayOffset();
+<a class="jxr_linenumber" name="593" href="#593">593</a>                     getBytes(addr, tmp, offset, len, out, length);
+<a class="jxr_linenumber" name="594" href="#594">594</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="595" href="#595">595</a>                     tmpBuf.release();
+<a class="jxr_linenumber" name="596" href="#596">596</a>                 }
+<a class="jxr_linenumber" name="597" href="#597">597</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="598" href="#598">598</a>                 getBytes(addr, <strong class="jxr_keyword">new</strong> byte[len], 0, len, out, length);
+<a class="jxr_linenumber" name="599" href="#599">599</a>             }
+<a class="jxr_linenumber" name="600" href="#600">600</a>         }
+<a class="jxr_linenumber" name="601" href="#601">601</a>     }
+<a class="jxr_linenumber" name="602" href="#602">602</a> 
+<a class="jxr_linenumber" name="603" href="#603">603</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> getBytes(<strong class="jxr_keyword">long</strong> inAddr, byte[] in, <strong class="jxr_keyword">int</strong> inOffset, <strong class="jxr_keyword">int</strong> inLen, OutputStream out, <strong class="jxr_keyword">int</strong> outLen)
+<a class="jxr_linenumber" name="604" href="#604">604</a>             <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="605" href="#605">605</a>         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="606" href="#606">606</a>             <strong class="jxr_keyword">int</strong> len = Math.min(inLen, outLen);
+<a class="jxr_linenumber" name="607" href="#607">607</a>             PlatformDependent.copyMemory(inAddr, in, inOffset, len);
+<a class="jxr_linenumber" name="608" href="#608">608</a>             out.write(in, inOffset, len);
+<a class="jxr_linenumber" name="609" href="#609">609</a>             outLen -= len;
+<a class="jxr_linenumber" name="610" href="#610">610</a>             inAddr += len;
+<a class="jxr_linenumber" name="611" href="#611">611</a>         } <strong class="jxr_keyword">while</strong> (outLen &gt; 0);
+<a class="jxr_linenumber" name="612" href="#612">612</a>     }
+<a class="jxr_linenumber" name="613" href="#613">613</a> 
+<a class="jxr_linenumber" name="614" href="#614">614</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setZero(<strong class="jxr_keyword">long</strong> addr, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="615" href="#615">615</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
+<a class="jxr_linenumber" name="616" href="#616">616</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="617" href="#617">617</a>         }
+<a class="jxr_linenumber" name="618" href="#618">618</a> 
+<a class="jxr_linenumber" name="619" href="#619">619</a>         PlatformDependent.setMemory(addr, length, ZERO);
+<a class="jxr_linenumber" name="620" href="#620">620</a>     }
+<a class="jxr_linenumber" name="621" href="#621">621</a> 
+<a class="jxr_linenumber" name="622" href="#622">622</a>     <strong class="jxr_keyword">static</strong> <a href="../../../io/netty/buffer/UnpooledUnsafeDirectByteBuf.html">UnpooledUnsafeDirectByteBuf</a> newUnsafeDirectByteBuf(
+<a class="jxr_linenumber" name="623" href="#623">623</a>             <a href="../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <strong class="jxr_keyword">int</strong> initialCapacity, <strong class="jxr_keyword">int</strong> maxCapacity) {
+<a class="jxr_linenumber" name="624" href="#624">624</a>         <strong class="jxr_keyword">if</strong> (PlatformDependent.useDirectBufferNoCleaner()) {
+<a class="jxr_linenumber" name="625" href="#625">625</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/buffer/UnpooledUnsafeNoCleanerDirectByteBuf.html">UnpooledUnsafeNoCleanerDirectByteBuf</a>(alloc, initialCapacity, maxCapacity);
+<a class="jxr_linenumber" name="626" href="#626">626</a>         }
+<a class="jxr_linenumber" name="627" href="#627">627</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../io/netty/buffer/UnpooledUnsafeDirectByteBuf.html">UnpooledUnsafeDirectByteBuf</a>(alloc, initialCapacity, maxCapacity);
+<a class="jxr_linenumber" name="628" href="#628">628</a>     }
+<a class="jxr_linenumber" name="629" href="#629">629</a> 
+<a class="jxr_linenumber" name="630" href="#630">630</a>     <strong class="jxr_keyword">private</strong> <a href="../../../io/netty/buffer/UnsafeByteBufUtil.html">UnsafeByteBufUtil</a>() { }
+<a class="jxr_linenumber" name="631" href="#631">631</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

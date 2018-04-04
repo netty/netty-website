@@ -324,31 +324,31 @@
 <a class="jxr_linenumber" name="314" href="#314">314</a>         <em class="jxr_comment">// Create the user event to be fired once the upgrade completes.</em>
 <a class="jxr_linenumber" name="315" href="#315">315</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http/HttpServerUpgradeHandler.html">UpgradeEvent</a> event = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http/HttpServerUpgradeHandler.html">UpgradeEvent</a>(upgradeProtocol, request);
 <a class="jxr_linenumber" name="316" href="#316">316</a> 
-<a class="jxr_linenumber" name="317" href="#317">317</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http/HttpServerUpgradeHandler.html">UpgradeCodec</a> finalUpgradeCodec = upgradeCodec;
-<a class="jxr_linenumber" name="318" href="#318">318</a>         ctx.writeAndFlush(upgradeResponse).addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="319" href="#319">319</a>             @Override
-<a class="jxr_linenumber" name="320" href="#320">320</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="321" href="#321">321</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="322" href="#322">322</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
-<a class="jxr_linenumber" name="323" href="#323">323</a>                         <em class="jxr_comment">// Perform the upgrade to the new protocol.</em>
-<a class="jxr_linenumber" name="324" href="#324">324</a>                         sourceCodec.upgradeFrom(ctx);
-<a class="jxr_linenumber" name="325" href="#325">325</a>                         finalUpgradeCodec.upgradeTo(ctx, request);
+<a class="jxr_linenumber" name="317" href="#317">317</a>         <em class="jxr_comment">// After writing the upgrade response we immediately prepare the</em>
+<a class="jxr_linenumber" name="318" href="#318">318</a>         <em class="jxr_comment">// pipeline for the next protocol to avoid a race between completion</em>
+<a class="jxr_linenumber" name="319" href="#319">319</a>         <em class="jxr_comment">// of the write future and receiving data before the pipeline is</em>
+<a class="jxr_linenumber" name="320" href="#320">320</a>         <em class="jxr_comment">// restructured.</em>
+<a class="jxr_linenumber" name="321" href="#321">321</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="322" href="#322">322</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> writeComplete = ctx.writeAndFlush(upgradeResponse);
+<a class="jxr_linenumber" name="323" href="#323">323</a>             <em class="jxr_comment">// Perform the upgrade to the new protocol.</em>
+<a class="jxr_linenumber" name="324" href="#324">324</a>             sourceCodec.upgradeFrom(ctx);
+<a class="jxr_linenumber" name="325" href="#325">325</a>             upgradeCodec.upgradeTo(ctx, request);
 <a class="jxr_linenumber" name="326" href="#326">326</a> 
-<a class="jxr_linenumber" name="327" href="#327">327</a>                         <em class="jxr_comment">// Notify that the upgrade has occurred. Retain the event to offset</em>
-<a class="jxr_linenumber" name="328" href="#328">328</a>                         <em class="jxr_comment">// the release() in the finally block.</em>
-<a class="jxr_linenumber" name="329" href="#329">329</a>                         ctx.fireUserEventTriggered(event.retain());
-<a class="jxr_linenumber" name="330" href="#330">330</a> 
-<a class="jxr_linenumber" name="331" href="#331">331</a>                         <em class="jxr_comment">// Remove this handler from the pipeline.</em>
-<a class="jxr_linenumber" name="332" href="#332">332</a>                         ctx.pipeline().remove(HttpServerUpgradeHandler.<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="333" href="#333">333</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="334" href="#334">334</a>                         future.channel().close();
-<a class="jxr_linenumber" name="335" href="#335">335</a>                     }
-<a class="jxr_linenumber" name="336" href="#336">336</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="337" href="#337">337</a>                     <em class="jxr_comment">// Release the event if the upgrade event wasn't fired.</em>
-<a class="jxr_linenumber" name="338" href="#338">338</a>                     event.release();
-<a class="jxr_linenumber" name="339" href="#339">339</a>                 }
-<a class="jxr_linenumber" name="340" href="#340">340</a>             }
-<a class="jxr_linenumber" name="341" href="#341">341</a>         });
+<a class="jxr_linenumber" name="327" href="#327">327</a>             <em class="jxr_comment">// Remove this handler from the pipeline.</em>
+<a class="jxr_linenumber" name="328" href="#328">328</a>             ctx.pipeline().remove(HttpServerUpgradeHandler.<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="329" href="#329">329</a> 
+<a class="jxr_linenumber" name="330" href="#330">330</a>             <em class="jxr_comment">// Notify that the upgrade has occurred. Retain the event to offset</em>
+<a class="jxr_linenumber" name="331" href="#331">331</a>             <em class="jxr_comment">// the release() in the finally block.</em>
+<a class="jxr_linenumber" name="332" href="#332">332</a>             ctx.fireUserEventTriggered(event.retain());
+<a class="jxr_linenumber" name="333" href="#333">333</a> 
+<a class="jxr_linenumber" name="334" href="#334">334</a>             <em class="jxr_comment">// Add the listener last to avoid firing upgrade logic after</em>
+<a class="jxr_linenumber" name="335" href="#335">335</a>             <em class="jxr_comment">// the channel is already closed since the listener may fire</em>
+<a class="jxr_linenumber" name="336" href="#336">336</a>             <em class="jxr_comment">// immediately if the write failed eagerly.</em>
+<a class="jxr_linenumber" name="337" href="#337">337</a>             writeComplete.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+<a class="jxr_linenumber" name="338" href="#338">338</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="339" href="#339">339</a>             <em class="jxr_comment">// Release the event if the upgrade event wasn't fired.</em>
+<a class="jxr_linenumber" name="340" href="#340">340</a>             event.release();
+<a class="jxr_linenumber" name="341" href="#341">341</a>         }
 <a class="jxr_linenumber" name="342" href="#342">342</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="343" href="#343">343</a>     }
 <a class="jxr_linenumber" name="344" href="#344">344</a> 
