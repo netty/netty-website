@@ -168,7 +168,7 @@
 <a class="jxr_linenumber" name="158" href="#158">158</a>         } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="159" href="#159">159</a>             USE_DIRECT_BUFFER_NO_CLEANER = <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="160" href="#160">160</a>             <strong class="jxr_keyword">if</strong> (maxDirectMemory &lt; 0) {
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 maxDirectMemory = maxDirectMemory0();
+<a class="jxr_linenumber" name="161" href="#161">161</a>                 maxDirectMemory = MAX_DIRECT_MEMORY;
 <a class="jxr_linenumber" name="162" href="#162">162</a>                 <strong class="jxr_keyword">if</strong> (maxDirectMemory &lt;= 0) {
 <a class="jxr_linenumber" name="163" href="#163">163</a>                     DIRECT_MEMORY_COUNTER = <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="164" href="#164">164</a>                 } <strong class="jxr_keyword">else</strong> {
@@ -1003,385 +1003,389 @@
 <a class="jxr_linenumber" name="993" href="#993">993</a>         <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="994" href="#994">994</a>             systemClassLoader = getSystemClassLoader();
 <a class="jxr_linenumber" name="995" href="#995">995</a> 
-<a class="jxr_linenumber" name="996" href="#996">996</a>             <em class="jxr_comment">// On z/OS we should not use VM.maxDirectMemory() as it not reflects the correct value.</em>
-<a class="jxr_linenumber" name="997" href="#997">997</a>             <em class="jxr_comment">// See:</em>
-<a class="jxr_linenumber" name="998" href="#998">998</a>             <em class="jxr_comment">//  - https://github.com/netty/netty/issues/7654</em>
-<a class="jxr_linenumber" name="999" href="#999">999</a>             <strong class="jxr_keyword">if</strong> (!SystemPropertyUtil.get(<span class="jxr_string">"os.name"</span>, <span class="jxr_string">""</span>).toLowerCase().contains(<span class="jxr_string">"z/os"</span>)) {
-<a class="jxr_linenumber" name="1000" href="#1000">1000</a>                 <em class="jxr_comment">// Try to get from sun.misc.VM.maxDirectMemory() which should be most accurate.</em>
-<a class="jxr_linenumber" name="1001" href="#1001">1001</a>                 Class&lt;?&gt; vmClass = Class.forName(<span class="jxr_string">"sun.misc.VM"</span>, <strong class="jxr_keyword">true</strong>, systemClassLoader);
-<a class="jxr_linenumber" name="1002" href="#1002">1002</a>                 Method m = vmClass.getDeclaredMethod(<span class="jxr_string">"maxDirectMemory"</span>);
-<a class="jxr_linenumber" name="1003" href="#1003">1003</a>                 maxDirectMemory = ((Number) m.invoke(<strong class="jxr_keyword">null</strong>)).longValue();
-<a class="jxr_linenumber" name="1004" href="#1004">1004</a>             }
-<a class="jxr_linenumber" name="1005" href="#1005">1005</a>         } <strong class="jxr_keyword">catch</strong> (Throwable ignored) {
-<a class="jxr_linenumber" name="1006" href="#1006">1006</a>             <em class="jxr_comment">// Ignore</em>
-<a class="jxr_linenumber" name="1007" href="#1007">1007</a>         }
-<a class="jxr_linenumber" name="1008" href="#1008">1008</a> 
-<a class="jxr_linenumber" name="1009" href="#1009">1009</a>         <strong class="jxr_keyword">if</strong> (maxDirectMemory &gt; 0) {
-<a class="jxr_linenumber" name="1010" href="#1010">1010</a>             <strong class="jxr_keyword">return</strong> maxDirectMemory;
+<a class="jxr_linenumber" name="996" href="#996">996</a>             <em class="jxr_comment">// When using IBM J9 / Eclipse OpenJ9 we should not use VM.maxDirectMemory() as it not reflects the</em>
+<a class="jxr_linenumber" name="997" href="#997">997</a>             <em class="jxr_comment">// correct value.</em>
+<a class="jxr_linenumber" name="998" href="#998">998</a>             <em class="jxr_comment">// See:</em>
+<a class="jxr_linenumber" name="999" href="#999">999</a>             <em class="jxr_comment">//  - https://github.com/netty/netty/issues/7654</em>
+<a class="jxr_linenumber" name="1000" href="#1000">1000</a>             String vmName = SystemPropertyUtil.get(<span class="jxr_string">"java.vm.name"</span>, <span class="jxr_string">""</span>).toLowerCase();
+<a class="jxr_linenumber" name="1001" href="#1001">1001</a>             <strong class="jxr_keyword">if</strong> (!vmName.startsWith(<span class="jxr_string">"ibm j9"</span>) &amp;&amp;
+<a class="jxr_linenumber" name="1002" href="#1002">1002</a>                     <em class="jxr_comment">// https://github.com/eclipse/openj9/blob/openj9-0.8.0/runtime/include/vendor_version.h#L53</em>
+<a class="jxr_linenumber" name="1003" href="#1003">1003</a>                     !vmName.startsWith(<span class="jxr_string">"eclipse openj9"</span>)) {
+<a class="jxr_linenumber" name="1004" href="#1004">1004</a>                 <em class="jxr_comment">// Try to get from sun.misc.VM.maxDirectMemory() which should be most accurate.</em>
+<a class="jxr_linenumber" name="1005" href="#1005">1005</a>                 Class&lt;?&gt; vmClass = Class.forName(<span class="jxr_string">"sun.misc.VM"</span>, <strong class="jxr_keyword">true</strong>, systemClassLoader);
+<a class="jxr_linenumber" name="1006" href="#1006">1006</a>                 Method m = vmClass.getDeclaredMethod(<span class="jxr_string">"maxDirectMemory"</span>);
+<a class="jxr_linenumber" name="1007" href="#1007">1007</a>                 maxDirectMemory = ((Number) m.invoke(<strong class="jxr_keyword">null</strong>)).longValue();
+<a class="jxr_linenumber" name="1008" href="#1008">1008</a>             }
+<a class="jxr_linenumber" name="1009" href="#1009">1009</a>         } <strong class="jxr_keyword">catch</strong> (Throwable ignored) {
+<a class="jxr_linenumber" name="1010" href="#1010">1010</a>             <em class="jxr_comment">// Ignore</em>
 <a class="jxr_linenumber" name="1011" href="#1011">1011</a>         }
 <a class="jxr_linenumber" name="1012" href="#1012">1012</a> 
-<a class="jxr_linenumber" name="1013" href="#1013">1013</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1014" href="#1014">1014</a>             <em class="jxr_comment">// Now try to get the JVM option (-XX:MaxDirectMemorySize) and parse it.</em>
-<a class="jxr_linenumber" name="1015" href="#1015">1015</a>             <em class="jxr_comment">// Note that we are using reflection because Android doesn't have these classes.</em>
-<a class="jxr_linenumber" name="1016" href="#1016">1016</a>             Class&lt;?&gt; mgmtFactoryClass = Class.forName(
-<a class="jxr_linenumber" name="1017" href="#1017">1017</a>                     <span class="jxr_string">"java.lang.management.ManagementFactory"</span>, <strong class="jxr_keyword">true</strong>, systemClassLoader);
-<a class="jxr_linenumber" name="1018" href="#1018">1018</a>             Class&lt;?&gt; runtimeClass = Class.forName(
-<a class="jxr_linenumber" name="1019" href="#1019">1019</a>                     <span class="jxr_string">"java.lang.management.RuntimeMXBean"</span>, <strong class="jxr_keyword">true</strong>, systemClassLoader);
-<a class="jxr_linenumber" name="1020" href="#1020">1020</a> 
-<a class="jxr_linenumber" name="1021" href="#1021">1021</a>             Object runtime = mgmtFactoryClass.getDeclaredMethod(<span class="jxr_string">"getRuntimeMXBean"</span>).invoke(<strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="1022" href="#1022">1022</a> 
-<a class="jxr_linenumber" name="1023" href="#1023">1023</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="1024" href="#1024">1024</a>             List&lt;String&gt; vmArgs = (List&lt;String&gt;) runtimeClass.getDeclaredMethod(<span class="jxr_string">"getInputArguments"</span>).invoke(runtime);
-<a class="jxr_linenumber" name="1025" href="#1025">1025</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = vmArgs.size() - 1; i &gt;= 0; i --) {
-<a class="jxr_linenumber" name="1026" href="#1026">1026</a>                 Matcher m = MAX_DIRECT_MEMORY_SIZE_ARG_PATTERN.matcher(vmArgs.get(i));
-<a class="jxr_linenumber" name="1027" href="#1027">1027</a>                 <strong class="jxr_keyword">if</strong> (!m.matches()) {
-<a class="jxr_linenumber" name="1028" href="#1028">1028</a>                     <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="1029" href="#1029">1029</a>                 }
-<a class="jxr_linenumber" name="1030" href="#1030">1030</a> 
-<a class="jxr_linenumber" name="1031" href="#1031">1031</a>                 maxDirectMemory = Long.parseLong(m.group(1));
-<a class="jxr_linenumber" name="1032" href="#1032">1032</a>                 <strong class="jxr_keyword">switch</strong> (m.group(2).charAt(0)) {
-<a class="jxr_linenumber" name="1033" href="#1033">1033</a>                     <strong class="jxr_keyword">case</strong> 'k': <strong class="jxr_keyword">case</strong> 'K':
-<a class="jxr_linenumber" name="1034" href="#1034">1034</a>                         maxDirectMemory *= 1024;
-<a class="jxr_linenumber" name="1035" href="#1035">1035</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1036" href="#1036">1036</a>                     <strong class="jxr_keyword">case</strong> 'm': <strong class="jxr_keyword">case</strong> 'M':
-<a class="jxr_linenumber" name="1037" href="#1037">1037</a>                         maxDirectMemory *= 1024 * 1024;
-<a class="jxr_linenumber" name="1038" href="#1038">1038</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1039" href="#1039">1039</a>                     <strong class="jxr_keyword">case</strong> 'g': <strong class="jxr_keyword">case</strong> 'G':
-<a class="jxr_linenumber" name="1040" href="#1040">1040</a>                         maxDirectMemory *= 1024 * 1024 * 1024;
-<a class="jxr_linenumber" name="1041" href="#1041">1041</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                 }
-<a class="jxr_linenumber" name="1043" href="#1043">1043</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="1044" href="#1044">1044</a>             }
-<a class="jxr_linenumber" name="1045" href="#1045">1045</a>         } <strong class="jxr_keyword">catch</strong> (Throwable ignored) {
-<a class="jxr_linenumber" name="1046" href="#1046">1046</a>             <em class="jxr_comment">// Ignore</em>
-<a class="jxr_linenumber" name="1047" href="#1047">1047</a>         }
-<a class="jxr_linenumber" name="1048" href="#1048">1048</a> 
-<a class="jxr_linenumber" name="1049" href="#1049">1049</a>         <strong class="jxr_keyword">if</strong> (maxDirectMemory &lt;= 0) {
-<a class="jxr_linenumber" name="1050" href="#1050">1050</a>             maxDirectMemory = Runtime.getRuntime().maxMemory();
-<a class="jxr_linenumber" name="1051" href="#1051">1051</a>             logger.debug(<span class="jxr_string">"maxDirectMemory: {} bytes (maybe)"</span>, maxDirectMemory);
-<a class="jxr_linenumber" name="1052" href="#1052">1052</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1053" href="#1053">1053</a>             logger.debug(<span class="jxr_string">"maxDirectMemory: {} bytes"</span>, maxDirectMemory);
-<a class="jxr_linenumber" name="1054" href="#1054">1054</a>         }
-<a class="jxr_linenumber" name="1055" href="#1055">1055</a> 
-<a class="jxr_linenumber" name="1056" href="#1056">1056</a>         <strong class="jxr_keyword">return</strong> maxDirectMemory;
-<a class="jxr_linenumber" name="1057" href="#1057">1057</a>     }
-<a class="jxr_linenumber" name="1058" href="#1058">1058</a> 
-<a class="jxr_linenumber" name="1059" href="#1059">1059</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> File tmpdir0() {
-<a class="jxr_linenumber" name="1060" href="#1060">1060</a>         File f;
-<a class="jxr_linenumber" name="1061" href="#1061">1061</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1062" href="#1062">1062</a>             f = toDirectory(SystemPropertyUtil.get(<span class="jxr_string">"io.netty.tmpdir"</span>));
-<a class="jxr_linenumber" name="1063" href="#1063">1063</a>             <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1064" href="#1064">1064</a>                 logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {}"</span>, f);
-<a class="jxr_linenumber" name="1065" href="#1065">1065</a>                 <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1066" href="#1066">1066</a>             }
-<a class="jxr_linenumber" name="1067" href="#1067">1067</a> 
-<a class="jxr_linenumber" name="1068" href="#1068">1068</a>             f = toDirectory(SystemPropertyUtil.get(<span class="jxr_string">"java.io.tmpdir"</span>));
-<a class="jxr_linenumber" name="1069" href="#1069">1069</a>             <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1070" href="#1070">1070</a>                 logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (java.io.tmpdir)"</span>, f);
-<a class="jxr_linenumber" name="1071" href="#1071">1071</a>                 <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1072" href="#1072">1072</a>             }
-<a class="jxr_linenumber" name="1073" href="#1073">1073</a> 
-<a class="jxr_linenumber" name="1074" href="#1074">1074</a>             <em class="jxr_comment">// This shouldn't happen, but just in case ..</em>
-<a class="jxr_linenumber" name="1075" href="#1075">1075</a>             <strong class="jxr_keyword">if</strong> (isWindows()) {
-<a class="jxr_linenumber" name="1076" href="#1076">1076</a>                 f = toDirectory(System.getenv(<span class="jxr_string">"TEMP"</span>));
-<a class="jxr_linenumber" name="1077" href="#1077">1077</a>                 <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1078" href="#1078">1078</a>                     logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (%TEMP%)"</span>, f);
-<a class="jxr_linenumber" name="1079" href="#1079">1079</a>                     <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1080" href="#1080">1080</a>                 }
-<a class="jxr_linenumber" name="1081" href="#1081">1081</a> 
-<a class="jxr_linenumber" name="1082" href="#1082">1082</a>                 String userprofile = System.getenv(<span class="jxr_string">"USERPROFILE"</span>);
-<a class="jxr_linenumber" name="1083" href="#1083">1083</a>                 <strong class="jxr_keyword">if</strong> (userprofile != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1084" href="#1084">1084</a>                     f = toDirectory(userprofile + <span class="jxr_string">"&#92;&#92;AppData&#92;&#92;Local&#92;&#92;Temp"</span>);
-<a class="jxr_linenumber" name="1085" href="#1085">1085</a>                     <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1086" href="#1086">1086</a>                         logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (%USERPROFILE%&#92;&#92;AppData&#92;&#92;Local&#92;&#92;Temp)"</span>, f);
-<a class="jxr_linenumber" name="1087" href="#1087">1087</a>                         <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1088" href="#1088">1088</a>                     }
-<a class="jxr_linenumber" name="1089" href="#1089">1089</a> 
-<a class="jxr_linenumber" name="1090" href="#1090">1090</a>                     f = toDirectory(userprofile + <span class="jxr_string">"&#92;&#92;Local Settings&#92;&#92;Temp"</span>);
-<a class="jxr_linenumber" name="1091" href="#1091">1091</a>                     <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1092" href="#1092">1092</a>                         logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (%USERPROFILE%&#92;&#92;Local Settings&#92;&#92;Temp)"</span>, f);
-<a class="jxr_linenumber" name="1093" href="#1093">1093</a>                         <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1094" href="#1094">1094</a>                     }
-<a class="jxr_linenumber" name="1095" href="#1095">1095</a>                 }
-<a class="jxr_linenumber" name="1096" href="#1096">1096</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1097" href="#1097">1097</a>                 f = toDirectory(System.getenv(<span class="jxr_string">"TMPDIR"</span>));
-<a class="jxr_linenumber" name="1098" href="#1098">1098</a>                 <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1099" href="#1099">1099</a>                     logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} ($TMPDIR)"</span>, f);
-<a class="jxr_linenumber" name="1100" href="#1100">1100</a>                     <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1101" href="#1101">1101</a>                 }
-<a class="jxr_linenumber" name="1102" href="#1102">1102</a>             }
-<a class="jxr_linenumber" name="1103" href="#1103">1103</a>         } <strong class="jxr_keyword">catch</strong> (Throwable ignored) {
-<a class="jxr_linenumber" name="1104" href="#1104">1104</a>             <em class="jxr_comment">// Environment variable inaccessible</em>
-<a class="jxr_linenumber" name="1105" href="#1105">1105</a>         }
-<a class="jxr_linenumber" name="1106" href="#1106">1106</a> 
-<a class="jxr_linenumber" name="1107" href="#1107">1107</a>         <em class="jxr_comment">// Last resort.</em>
-<a class="jxr_linenumber" name="1108" href="#1108">1108</a>         <strong class="jxr_keyword">if</strong> (isWindows()) {
-<a class="jxr_linenumber" name="1109" href="#1109">1109</a>             f = <strong class="jxr_keyword">new</strong> File(<span class="jxr_string">"C:&#92;&#92;Windows&#92;&#92;Temp"</span>);
-<a class="jxr_linenumber" name="1110" href="#1110">1110</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1111" href="#1111">1111</a>             f = <strong class="jxr_keyword">new</strong> File(<span class="jxr_string">"/tmp"</span>);
-<a class="jxr_linenumber" name="1112" href="#1112">1112</a>         }
-<a class="jxr_linenumber" name="1113" href="#1113">1113</a> 
-<a class="jxr_linenumber" name="1114" href="#1114">1114</a>         logger.warn(<span class="jxr_string">"Failed to get the temporary directory; falling back to: {}"</span>, f);
-<a class="jxr_linenumber" name="1115" href="#1115">1115</a>         <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1116" href="#1116">1116</a>     }
+<a class="jxr_linenumber" name="1013" href="#1013">1013</a>         <strong class="jxr_keyword">if</strong> (maxDirectMemory &gt; 0) {
+<a class="jxr_linenumber" name="1014" href="#1014">1014</a>             <strong class="jxr_keyword">return</strong> maxDirectMemory;
+<a class="jxr_linenumber" name="1015" href="#1015">1015</a>         }
+<a class="jxr_linenumber" name="1016" href="#1016">1016</a> 
+<a class="jxr_linenumber" name="1017" href="#1017">1017</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1018" href="#1018">1018</a>             <em class="jxr_comment">// Now try to get the JVM option (-XX:MaxDirectMemorySize) and parse it.</em>
+<a class="jxr_linenumber" name="1019" href="#1019">1019</a>             <em class="jxr_comment">// Note that we are using reflection because Android doesn't have these classes.</em>
+<a class="jxr_linenumber" name="1020" href="#1020">1020</a>             Class&lt;?&gt; mgmtFactoryClass = Class.forName(
+<a class="jxr_linenumber" name="1021" href="#1021">1021</a>                     <span class="jxr_string">"java.lang.management.ManagementFactory"</span>, <strong class="jxr_keyword">true</strong>, systemClassLoader);
+<a class="jxr_linenumber" name="1022" href="#1022">1022</a>             Class&lt;?&gt; runtimeClass = Class.forName(
+<a class="jxr_linenumber" name="1023" href="#1023">1023</a>                     <span class="jxr_string">"java.lang.management.RuntimeMXBean"</span>, <strong class="jxr_keyword">true</strong>, systemClassLoader);
+<a class="jxr_linenumber" name="1024" href="#1024">1024</a> 
+<a class="jxr_linenumber" name="1025" href="#1025">1025</a>             Object runtime = mgmtFactoryClass.getDeclaredMethod(<span class="jxr_string">"getRuntimeMXBean"</span>).invoke(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="1026" href="#1026">1026</a> 
+<a class="jxr_linenumber" name="1027" href="#1027">1027</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="1028" href="#1028">1028</a>             List&lt;String&gt; vmArgs = (List&lt;String&gt;) runtimeClass.getDeclaredMethod(<span class="jxr_string">"getInputArguments"</span>).invoke(runtime);
+<a class="jxr_linenumber" name="1029" href="#1029">1029</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = vmArgs.size() - 1; i &gt;= 0; i --) {
+<a class="jxr_linenumber" name="1030" href="#1030">1030</a>                 Matcher m = MAX_DIRECT_MEMORY_SIZE_ARG_PATTERN.matcher(vmArgs.get(i));
+<a class="jxr_linenumber" name="1031" href="#1031">1031</a>                 <strong class="jxr_keyword">if</strong> (!m.matches()) {
+<a class="jxr_linenumber" name="1032" href="#1032">1032</a>                     <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="1033" href="#1033">1033</a>                 }
+<a class="jxr_linenumber" name="1034" href="#1034">1034</a> 
+<a class="jxr_linenumber" name="1035" href="#1035">1035</a>                 maxDirectMemory = Long.parseLong(m.group(1));
+<a class="jxr_linenumber" name="1036" href="#1036">1036</a>                 <strong class="jxr_keyword">switch</strong> (m.group(2).charAt(0)) {
+<a class="jxr_linenumber" name="1037" href="#1037">1037</a>                     <strong class="jxr_keyword">case</strong> 'k': <strong class="jxr_keyword">case</strong> 'K':
+<a class="jxr_linenumber" name="1038" href="#1038">1038</a>                         maxDirectMemory *= 1024;
+<a class="jxr_linenumber" name="1039" href="#1039">1039</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1040" href="#1040">1040</a>                     <strong class="jxr_keyword">case</strong> 'm': <strong class="jxr_keyword">case</strong> 'M':
+<a class="jxr_linenumber" name="1041" href="#1041">1041</a>                         maxDirectMemory *= 1024 * 1024;
+<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1043" href="#1043">1043</a>                     <strong class="jxr_keyword">case</strong> 'g': <strong class="jxr_keyword">case</strong> 'G':
+<a class="jxr_linenumber" name="1044" href="#1044">1044</a>                         maxDirectMemory *= 1024 * 1024 * 1024;
+<a class="jxr_linenumber" name="1045" href="#1045">1045</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1046" href="#1046">1046</a>                 }
+<a class="jxr_linenumber" name="1047" href="#1047">1047</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="1048" href="#1048">1048</a>             }
+<a class="jxr_linenumber" name="1049" href="#1049">1049</a>         } <strong class="jxr_keyword">catch</strong> (Throwable ignored) {
+<a class="jxr_linenumber" name="1050" href="#1050">1050</a>             <em class="jxr_comment">// Ignore</em>
+<a class="jxr_linenumber" name="1051" href="#1051">1051</a>         }
+<a class="jxr_linenumber" name="1052" href="#1052">1052</a> 
+<a class="jxr_linenumber" name="1053" href="#1053">1053</a>         <strong class="jxr_keyword">if</strong> (maxDirectMemory &lt;= 0) {
+<a class="jxr_linenumber" name="1054" href="#1054">1054</a>             maxDirectMemory = Runtime.getRuntime().maxMemory();
+<a class="jxr_linenumber" name="1055" href="#1055">1055</a>             logger.debug(<span class="jxr_string">"maxDirectMemory: {} bytes (maybe)"</span>, maxDirectMemory);
+<a class="jxr_linenumber" name="1056" href="#1056">1056</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1057" href="#1057">1057</a>             logger.debug(<span class="jxr_string">"maxDirectMemory: {} bytes"</span>, maxDirectMemory);
+<a class="jxr_linenumber" name="1058" href="#1058">1058</a>         }
+<a class="jxr_linenumber" name="1059" href="#1059">1059</a> 
+<a class="jxr_linenumber" name="1060" href="#1060">1060</a>         <strong class="jxr_keyword">return</strong> maxDirectMemory;
+<a class="jxr_linenumber" name="1061" href="#1061">1061</a>     }
+<a class="jxr_linenumber" name="1062" href="#1062">1062</a> 
+<a class="jxr_linenumber" name="1063" href="#1063">1063</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> File tmpdir0() {
+<a class="jxr_linenumber" name="1064" href="#1064">1064</a>         File f;
+<a class="jxr_linenumber" name="1065" href="#1065">1065</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1066" href="#1066">1066</a>             f = toDirectory(SystemPropertyUtil.get(<span class="jxr_string">"io.netty.tmpdir"</span>));
+<a class="jxr_linenumber" name="1067" href="#1067">1067</a>             <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1068" href="#1068">1068</a>                 logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {}"</span>, f);
+<a class="jxr_linenumber" name="1069" href="#1069">1069</a>                 <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1070" href="#1070">1070</a>             }
+<a class="jxr_linenumber" name="1071" href="#1071">1071</a> 
+<a class="jxr_linenumber" name="1072" href="#1072">1072</a>             f = toDirectory(SystemPropertyUtil.get(<span class="jxr_string">"java.io.tmpdir"</span>));
+<a class="jxr_linenumber" name="1073" href="#1073">1073</a>             <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1074" href="#1074">1074</a>                 logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (java.io.tmpdir)"</span>, f);
+<a class="jxr_linenumber" name="1075" href="#1075">1075</a>                 <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1076" href="#1076">1076</a>             }
+<a class="jxr_linenumber" name="1077" href="#1077">1077</a> 
+<a class="jxr_linenumber" name="1078" href="#1078">1078</a>             <em class="jxr_comment">// This shouldn't happen, but just in case ..</em>
+<a class="jxr_linenumber" name="1079" href="#1079">1079</a>             <strong class="jxr_keyword">if</strong> (isWindows()) {
+<a class="jxr_linenumber" name="1080" href="#1080">1080</a>                 f = toDirectory(System.getenv(<span class="jxr_string">"TEMP"</span>));
+<a class="jxr_linenumber" name="1081" href="#1081">1081</a>                 <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1082" href="#1082">1082</a>                     logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (%TEMP%)"</span>, f);
+<a class="jxr_linenumber" name="1083" href="#1083">1083</a>                     <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1084" href="#1084">1084</a>                 }
+<a class="jxr_linenumber" name="1085" href="#1085">1085</a> 
+<a class="jxr_linenumber" name="1086" href="#1086">1086</a>                 String userprofile = System.getenv(<span class="jxr_string">"USERPROFILE"</span>);
+<a class="jxr_linenumber" name="1087" href="#1087">1087</a>                 <strong class="jxr_keyword">if</strong> (userprofile != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1088" href="#1088">1088</a>                     f = toDirectory(userprofile + <span class="jxr_string">"&#92;&#92;AppData&#92;&#92;Local&#92;&#92;Temp"</span>);
+<a class="jxr_linenumber" name="1089" href="#1089">1089</a>                     <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1090" href="#1090">1090</a>                         logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (%USERPROFILE%&#92;&#92;AppData&#92;&#92;Local&#92;&#92;Temp)"</span>, f);
+<a class="jxr_linenumber" name="1091" href="#1091">1091</a>                         <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1092" href="#1092">1092</a>                     }
+<a class="jxr_linenumber" name="1093" href="#1093">1093</a> 
+<a class="jxr_linenumber" name="1094" href="#1094">1094</a>                     f = toDirectory(userprofile + <span class="jxr_string">"&#92;&#92;Local Settings&#92;&#92;Temp"</span>);
+<a class="jxr_linenumber" name="1095" href="#1095">1095</a>                     <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1096" href="#1096">1096</a>                         logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} (%USERPROFILE%&#92;&#92;Local Settings&#92;&#92;Temp)"</span>, f);
+<a class="jxr_linenumber" name="1097" href="#1097">1097</a>                         <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1098" href="#1098">1098</a>                     }
+<a class="jxr_linenumber" name="1099" href="#1099">1099</a>                 }
+<a class="jxr_linenumber" name="1100" href="#1100">1100</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1101" href="#1101">1101</a>                 f = toDirectory(System.getenv(<span class="jxr_string">"TMPDIR"</span>));
+<a class="jxr_linenumber" name="1102" href="#1102">1102</a>                 <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1103" href="#1103">1103</a>                     logger.debug(<span class="jxr_string">"-Dio.netty.tmpdir: {} ($TMPDIR)"</span>, f);
+<a class="jxr_linenumber" name="1104" href="#1104">1104</a>                     <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1105" href="#1105">1105</a>                 }
+<a class="jxr_linenumber" name="1106" href="#1106">1106</a>             }
+<a class="jxr_linenumber" name="1107" href="#1107">1107</a>         } <strong class="jxr_keyword">catch</strong> (Throwable ignored) {
+<a class="jxr_linenumber" name="1108" href="#1108">1108</a>             <em class="jxr_comment">// Environment variable inaccessible</em>
+<a class="jxr_linenumber" name="1109" href="#1109">1109</a>         }
+<a class="jxr_linenumber" name="1110" href="#1110">1110</a> 
+<a class="jxr_linenumber" name="1111" href="#1111">1111</a>         <em class="jxr_comment">// Last resort.</em>
+<a class="jxr_linenumber" name="1112" href="#1112">1112</a>         <strong class="jxr_keyword">if</strong> (isWindows()) {
+<a class="jxr_linenumber" name="1113" href="#1113">1113</a>             f = <strong class="jxr_keyword">new</strong> File(<span class="jxr_string">"C:&#92;&#92;Windows&#92;&#92;Temp"</span>);
+<a class="jxr_linenumber" name="1114" href="#1114">1114</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1115" href="#1115">1115</a>             f = <strong class="jxr_keyword">new</strong> File(<span class="jxr_string">"/tmp"</span>);
+<a class="jxr_linenumber" name="1116" href="#1116">1116</a>         }
 <a class="jxr_linenumber" name="1117" href="#1117">1117</a> 
-<a class="jxr_linenumber" name="1118" href="#1118">1118</a>     @SuppressWarnings(<span class="jxr_string">"ResultOfMethodCallIgnored"</span>)
-<a class="jxr_linenumber" name="1119" href="#1119">1119</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> File toDirectory(String path) {
-<a class="jxr_linenumber" name="1120" href="#1120">1120</a>         <strong class="jxr_keyword">if</strong> (path == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1121" href="#1121">1121</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="1122" href="#1122">1122</a>         }
-<a class="jxr_linenumber" name="1123" href="#1123">1123</a> 
-<a class="jxr_linenumber" name="1124" href="#1124">1124</a>         File f = <strong class="jxr_keyword">new</strong> File(path);
-<a class="jxr_linenumber" name="1125" href="#1125">1125</a>         f.mkdirs();
-<a class="jxr_linenumber" name="1126" href="#1126">1126</a> 
-<a class="jxr_linenumber" name="1127" href="#1127">1127</a>         <strong class="jxr_keyword">if</strong> (!f.isDirectory()) {
-<a class="jxr_linenumber" name="1128" href="#1128">1128</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="1129" href="#1129">1129</a>         }
+<a class="jxr_linenumber" name="1118" href="#1118">1118</a>         logger.warn(<span class="jxr_string">"Failed to get the temporary directory; falling back to: {}"</span>, f);
+<a class="jxr_linenumber" name="1119" href="#1119">1119</a>         <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1120" href="#1120">1120</a>     }
+<a class="jxr_linenumber" name="1121" href="#1121">1121</a> 
+<a class="jxr_linenumber" name="1122" href="#1122">1122</a>     @SuppressWarnings(<span class="jxr_string">"ResultOfMethodCallIgnored"</span>)
+<a class="jxr_linenumber" name="1123" href="#1123">1123</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> File toDirectory(String path) {
+<a class="jxr_linenumber" name="1124" href="#1124">1124</a>         <strong class="jxr_keyword">if</strong> (path == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1125" href="#1125">1125</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="1126" href="#1126">1126</a>         }
+<a class="jxr_linenumber" name="1127" href="#1127">1127</a> 
+<a class="jxr_linenumber" name="1128" href="#1128">1128</a>         File f = <strong class="jxr_keyword">new</strong> File(path);
+<a class="jxr_linenumber" name="1129" href="#1129">1129</a>         f.mkdirs();
 <a class="jxr_linenumber" name="1130" href="#1130">1130</a> 
-<a class="jxr_linenumber" name="1131" href="#1131">1131</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1132" href="#1132">1132</a>             <strong class="jxr_keyword">return</strong> f.getAbsoluteFile();
-<a class="jxr_linenumber" name="1133" href="#1133">1133</a>         } <strong class="jxr_keyword">catch</strong> (Exception ignored) {
-<a class="jxr_linenumber" name="1134" href="#1134">1134</a>             <strong class="jxr_keyword">return</strong> f;
-<a class="jxr_linenumber" name="1135" href="#1135">1135</a>         }
-<a class="jxr_linenumber" name="1136" href="#1136">1136</a>     }
-<a class="jxr_linenumber" name="1137" href="#1137">1137</a> 
-<a class="jxr_linenumber" name="1138" href="#1138">1138</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> bitMode0() {
-<a class="jxr_linenumber" name="1139" href="#1139">1139</a>         <em class="jxr_comment">// Check user-specified bit mode first.</em>
-<a class="jxr_linenumber" name="1140" href="#1140">1140</a>         <strong class="jxr_keyword">int</strong> bitMode = SystemPropertyUtil.getInt(<span class="jxr_string">"io.netty.bitMode"</span>, 0);
-<a class="jxr_linenumber" name="1141" href="#1141">1141</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
-<a class="jxr_linenumber" name="1142" href="#1142">1142</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {}"</span>, bitMode);
-<a class="jxr_linenumber" name="1143" href="#1143">1143</a>             <strong class="jxr_keyword">return</strong> bitMode;
-<a class="jxr_linenumber" name="1144" href="#1144">1144</a>         }
-<a class="jxr_linenumber" name="1145" href="#1145">1145</a> 
-<a class="jxr_linenumber" name="1146" href="#1146">1146</a>         <em class="jxr_comment">// And then the vendor specific ones which is probably most reliable.</em>
-<a class="jxr_linenumber" name="1147" href="#1147">1147</a>         bitMode = SystemPropertyUtil.getInt(<span class="jxr_string">"sun.arch.data.model"</span>, 0);
-<a class="jxr_linenumber" name="1148" href="#1148">1148</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
-<a class="jxr_linenumber" name="1149" href="#1149">1149</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {} (sun.arch.data.model)"</span>, bitMode);
-<a class="jxr_linenumber" name="1150" href="#1150">1150</a>             <strong class="jxr_keyword">return</strong> bitMode;
-<a class="jxr_linenumber" name="1151" href="#1151">1151</a>         }
-<a class="jxr_linenumber" name="1152" href="#1152">1152</a>         bitMode = SystemPropertyUtil.getInt(<span class="jxr_string">"com.ibm.vm.bitmode"</span>, 0);
-<a class="jxr_linenumber" name="1153" href="#1153">1153</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
-<a class="jxr_linenumber" name="1154" href="#1154">1154</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {} (com.ibm.vm.bitmode)"</span>, bitMode);
-<a class="jxr_linenumber" name="1155" href="#1155">1155</a>             <strong class="jxr_keyword">return</strong> bitMode;
-<a class="jxr_linenumber" name="1156" href="#1156">1156</a>         }
-<a class="jxr_linenumber" name="1157" href="#1157">1157</a> 
-<a class="jxr_linenumber" name="1158" href="#1158">1158</a>         <em class="jxr_comment">// os.arch also gives us a good hint.</em>
-<a class="jxr_linenumber" name="1159" href="#1159">1159</a>         String arch = SystemPropertyUtil.get(<span class="jxr_string">"os.arch"</span>, <span class="jxr_string">""</span>).toLowerCase(Locale.US).trim();
-<a class="jxr_linenumber" name="1160" href="#1160">1160</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"amd64"</span>.equals(arch) || <span class="jxr_string">"x86_64"</span>.equals(arch)) {
-<a class="jxr_linenumber" name="1161" href="#1161">1161</a>             bitMode = 64;
-<a class="jxr_linenumber" name="1162" href="#1162">1162</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"i386"</span>.equals(arch) || <span class="jxr_string">"i486"</span>.equals(arch) || <span class="jxr_string">"i586"</span>.equals(arch) || <span class="jxr_string">"i686"</span>.equals(arch)) {
-<a class="jxr_linenumber" name="1163" href="#1163">1163</a>             bitMode = 32;
-<a class="jxr_linenumber" name="1164" href="#1164">1164</a>         }
-<a class="jxr_linenumber" name="1165" href="#1165">1165</a> 
-<a class="jxr_linenumber" name="1166" href="#1166">1166</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
-<a class="jxr_linenumber" name="1167" href="#1167">1167</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {} (os.arch: {})"</span>, bitMode, arch);
+<a class="jxr_linenumber" name="1131" href="#1131">1131</a>         <strong class="jxr_keyword">if</strong> (!f.isDirectory()) {
+<a class="jxr_linenumber" name="1132" href="#1132">1132</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="1133" href="#1133">1133</a>         }
+<a class="jxr_linenumber" name="1134" href="#1134">1134</a> 
+<a class="jxr_linenumber" name="1135" href="#1135">1135</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1136" href="#1136">1136</a>             <strong class="jxr_keyword">return</strong> f.getAbsoluteFile();
+<a class="jxr_linenumber" name="1137" href="#1137">1137</a>         } <strong class="jxr_keyword">catch</strong> (Exception ignored) {
+<a class="jxr_linenumber" name="1138" href="#1138">1138</a>             <strong class="jxr_keyword">return</strong> f;
+<a class="jxr_linenumber" name="1139" href="#1139">1139</a>         }
+<a class="jxr_linenumber" name="1140" href="#1140">1140</a>     }
+<a class="jxr_linenumber" name="1141" href="#1141">1141</a> 
+<a class="jxr_linenumber" name="1142" href="#1142">1142</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> bitMode0() {
+<a class="jxr_linenumber" name="1143" href="#1143">1143</a>         <em class="jxr_comment">// Check user-specified bit mode first.</em>
+<a class="jxr_linenumber" name="1144" href="#1144">1144</a>         <strong class="jxr_keyword">int</strong> bitMode = SystemPropertyUtil.getInt(<span class="jxr_string">"io.netty.bitMode"</span>, 0);
+<a class="jxr_linenumber" name="1145" href="#1145">1145</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
+<a class="jxr_linenumber" name="1146" href="#1146">1146</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {}"</span>, bitMode);
+<a class="jxr_linenumber" name="1147" href="#1147">1147</a>             <strong class="jxr_keyword">return</strong> bitMode;
+<a class="jxr_linenumber" name="1148" href="#1148">1148</a>         }
+<a class="jxr_linenumber" name="1149" href="#1149">1149</a> 
+<a class="jxr_linenumber" name="1150" href="#1150">1150</a>         <em class="jxr_comment">// And then the vendor specific ones which is probably most reliable.</em>
+<a class="jxr_linenumber" name="1151" href="#1151">1151</a>         bitMode = SystemPropertyUtil.getInt(<span class="jxr_string">"sun.arch.data.model"</span>, 0);
+<a class="jxr_linenumber" name="1152" href="#1152">1152</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
+<a class="jxr_linenumber" name="1153" href="#1153">1153</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {} (sun.arch.data.model)"</span>, bitMode);
+<a class="jxr_linenumber" name="1154" href="#1154">1154</a>             <strong class="jxr_keyword">return</strong> bitMode;
+<a class="jxr_linenumber" name="1155" href="#1155">1155</a>         }
+<a class="jxr_linenumber" name="1156" href="#1156">1156</a>         bitMode = SystemPropertyUtil.getInt(<span class="jxr_string">"com.ibm.vm.bitmode"</span>, 0);
+<a class="jxr_linenumber" name="1157" href="#1157">1157</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
+<a class="jxr_linenumber" name="1158" href="#1158">1158</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {} (com.ibm.vm.bitmode)"</span>, bitMode);
+<a class="jxr_linenumber" name="1159" href="#1159">1159</a>             <strong class="jxr_keyword">return</strong> bitMode;
+<a class="jxr_linenumber" name="1160" href="#1160">1160</a>         }
+<a class="jxr_linenumber" name="1161" href="#1161">1161</a> 
+<a class="jxr_linenumber" name="1162" href="#1162">1162</a>         <em class="jxr_comment">// os.arch also gives us a good hint.</em>
+<a class="jxr_linenumber" name="1163" href="#1163">1163</a>         String arch = SystemPropertyUtil.get(<span class="jxr_string">"os.arch"</span>, <span class="jxr_string">""</span>).toLowerCase(Locale.US).trim();
+<a class="jxr_linenumber" name="1164" href="#1164">1164</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"amd64"</span>.equals(arch) || <span class="jxr_string">"x86_64"</span>.equals(arch)) {
+<a class="jxr_linenumber" name="1165" href="#1165">1165</a>             bitMode = 64;
+<a class="jxr_linenumber" name="1166" href="#1166">1166</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"i386"</span>.equals(arch) || <span class="jxr_string">"i486"</span>.equals(arch) || <span class="jxr_string">"i586"</span>.equals(arch) || <span class="jxr_string">"i686"</span>.equals(arch)) {
+<a class="jxr_linenumber" name="1167" href="#1167">1167</a>             bitMode = 32;
 <a class="jxr_linenumber" name="1168" href="#1168">1168</a>         }
 <a class="jxr_linenumber" name="1169" href="#1169">1169</a> 
-<a class="jxr_linenumber" name="1170" href="#1170">1170</a>         <em class="jxr_comment">// Last resort: guess from VM name and then fall back to most common 64-bit mode.</em>
-<a class="jxr_linenumber" name="1171" href="#1171">1171</a>         String vm = SystemPropertyUtil.get(<span class="jxr_string">"java.vm.name"</span>, <span class="jxr_string">""</span>).toLowerCase(Locale.US);
-<a class="jxr_linenumber" name="1172" href="#1172">1172</a>         Pattern BIT_PATTERN = Pattern.compile(<span class="jxr_string">"([1-9][0-9]+)-?bit"</span>);
-<a class="jxr_linenumber" name="1173" href="#1173">1173</a>         Matcher m = BIT_PATTERN.matcher(vm);
-<a class="jxr_linenumber" name="1174" href="#1174">1174</a>         <strong class="jxr_keyword">if</strong> (m.find()) {
-<a class="jxr_linenumber" name="1175" href="#1175">1175</a>             <strong class="jxr_keyword">return</strong> Integer.parseInt(m.group(1));
-<a class="jxr_linenumber" name="1176" href="#1176">1176</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1177" href="#1177">1177</a>             <strong class="jxr_keyword">return</strong> 64;
-<a class="jxr_linenumber" name="1178" href="#1178">1178</a>         }
-<a class="jxr_linenumber" name="1179" href="#1179">1179</a>     }
-<a class="jxr_linenumber" name="1180" href="#1180">1180</a> 
-<a class="jxr_linenumber" name="1181" href="#1181">1181</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> addressSize0() {
-<a class="jxr_linenumber" name="1182" href="#1182">1182</a>         <strong class="jxr_keyword">if</strong> (!hasUnsafe()) {
-<a class="jxr_linenumber" name="1183" href="#1183">1183</a>             <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="1184" href="#1184">1184</a>         }
-<a class="jxr_linenumber" name="1185" href="#1185">1185</a>         <strong class="jxr_keyword">return</strong> PlatformDependent0.addressSize();
-<a class="jxr_linenumber" name="1186" href="#1186">1186</a>     }
-<a class="jxr_linenumber" name="1187" href="#1187">1187</a> 
-<a class="jxr_linenumber" name="1188" href="#1188">1188</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> byteArrayBaseOffset0() {
-<a class="jxr_linenumber" name="1189" href="#1189">1189</a>         <strong class="jxr_keyword">if</strong> (!hasUnsafe()) {
-<a class="jxr_linenumber" name="1190" href="#1190">1190</a>             <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="1191" href="#1191">1191</a>         }
-<a class="jxr_linenumber" name="1192" href="#1192">1192</a>         <strong class="jxr_keyword">return</strong> PlatformDependent0.byteArrayBaseOffset();
-<a class="jxr_linenumber" name="1193" href="#1193">1193</a>     }
-<a class="jxr_linenumber" name="1194" href="#1194">1194</a> 
-<a class="jxr_linenumber" name="1195" href="#1195">1195</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> equalsSafe(byte[] bytes1, <strong class="jxr_keyword">int</strong> startPos1, byte[] bytes2, <strong class="jxr_keyword">int</strong> startPos2, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="1196" href="#1196">1196</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startPos1 + length;
-<a class="jxr_linenumber" name="1197" href="#1197">1197</a>         <strong class="jxr_keyword">for</strong> (; startPos1 &lt; end; ++startPos1, ++startPos2) {
-<a class="jxr_linenumber" name="1198" href="#1198">1198</a>             <strong class="jxr_keyword">if</strong> (bytes1[startPos1] != bytes2[startPos2]) {
-<a class="jxr_linenumber" name="1199" href="#1199">1199</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="1200" href="#1200">1200</a>             }
-<a class="jxr_linenumber" name="1201" href="#1201">1201</a>         }
-<a class="jxr_linenumber" name="1202" href="#1202">1202</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1203" href="#1203">1203</a>     }
-<a class="jxr_linenumber" name="1204" href="#1204">1204</a> 
-<a class="jxr_linenumber" name="1205" href="#1205">1205</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isZeroSafe(byte[] bytes, <strong class="jxr_keyword">int</strong> startPos, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="1206" href="#1206">1206</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startPos + length;
-<a class="jxr_linenumber" name="1207" href="#1207">1207</a>         <strong class="jxr_keyword">for</strong> (; startPos &lt; end; ++startPos) {
-<a class="jxr_linenumber" name="1208" href="#1208">1208</a>             <strong class="jxr_keyword">if</strong> (bytes[startPos] != 0) {
-<a class="jxr_linenumber" name="1209" href="#1209">1209</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="1210" href="#1210">1210</a>             }
-<a class="jxr_linenumber" name="1211" href="#1211">1211</a>         }
-<a class="jxr_linenumber" name="1212" href="#1212">1212</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1213" href="#1213">1213</a>     }
-<a class="jxr_linenumber" name="1214" href="#1214">1214</a> 
-<a class="jxr_linenumber" name="1215" href="#1215">1215</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="1216" href="#1216">1216</a> <em class="jxr_javadoccomment">     * Package private for testing purposes only!</em>
-<a class="jxr_linenumber" name="1217" href="#1217">1217</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="1218" href="#1218">1218</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> hashCodeAsciiSafe(byte[] bytes, <strong class="jxr_keyword">int</strong> startPos, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="1219" href="#1219">1219</a>         <strong class="jxr_keyword">int</strong> hash = HASH_CODE_ASCII_SEED;
-<a class="jxr_linenumber" name="1220" href="#1220">1220</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> remainingBytes = length &amp; 7;
-<a class="jxr_linenumber" name="1221" href="#1221">1221</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startPos + remainingBytes;
-<a class="jxr_linenumber" name="1222" href="#1222">1222</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = startPos - 8 + length; i &gt;= end; i -= 8) {
-<a class="jxr_linenumber" name="1223" href="#1223">1223</a>             hash = PlatformDependent0.hashCodeAsciiCompute(getLongSafe(bytes, i), hash);
-<a class="jxr_linenumber" name="1224" href="#1224">1224</a>         }
-<a class="jxr_linenumber" name="1225" href="#1225">1225</a>         <strong class="jxr_keyword">switch</strong>(remainingBytes) {
-<a class="jxr_linenumber" name="1226" href="#1226">1226</a>         <strong class="jxr_keyword">case</strong> 7:
-<a class="jxr_linenumber" name="1227" href="#1227">1227</a>             <strong class="jxr_keyword">return</strong> ((hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]))
-<a class="jxr_linenumber" name="1228" href="#1228">1228</a>                           * HASH_CODE_C2 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos + 1)))
-<a class="jxr_linenumber" name="1229" href="#1229">1229</a>                           * HASH_CODE_C1 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos + 3));
-<a class="jxr_linenumber" name="1230" href="#1230">1230</a>         <strong class="jxr_keyword">case</strong> 6:
-<a class="jxr_linenumber" name="1231" href="#1231">1231</a>             <strong class="jxr_keyword">return</strong> (hash * HASH_CODE_C1 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos)))
-<a class="jxr_linenumber" name="1232" href="#1232">1232</a>                          * HASH_CODE_C2 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos + 2));
-<a class="jxr_linenumber" name="1233" href="#1233">1233</a>         <strong class="jxr_keyword">case</strong> 5:
-<a class="jxr_linenumber" name="1234" href="#1234">1234</a>             <strong class="jxr_keyword">return</strong> (hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]))
-<a class="jxr_linenumber" name="1235" href="#1235">1235</a>                          * HASH_CODE_C2 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos + 1));
-<a class="jxr_linenumber" name="1236" href="#1236">1236</a>         <strong class="jxr_keyword">case</strong> 4:
-<a class="jxr_linenumber" name="1237" href="#1237">1237</a>             <strong class="jxr_keyword">return</strong> hash * HASH_CODE_C1 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos));
-<a class="jxr_linenumber" name="1238" href="#1238">1238</a>         <strong class="jxr_keyword">case</strong> 3:
-<a class="jxr_linenumber" name="1239" href="#1239">1239</a>             <strong class="jxr_keyword">return</strong> (hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]))
-<a class="jxr_linenumber" name="1240" href="#1240">1240</a>                          * HASH_CODE_C2 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos + 1));
-<a class="jxr_linenumber" name="1241" href="#1241">1241</a>         <strong class="jxr_keyword">case</strong> 2:
-<a class="jxr_linenumber" name="1242" href="#1242">1242</a>             <strong class="jxr_keyword">return</strong> hash * HASH_CODE_C1 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos));
-<a class="jxr_linenumber" name="1243" href="#1243">1243</a>         <strong class="jxr_keyword">case</strong> 1:
-<a class="jxr_linenumber" name="1244" href="#1244">1244</a>             <strong class="jxr_keyword">return</strong> hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]);
-<a class="jxr_linenumber" name="1245" href="#1245">1245</a>         <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="1246" href="#1246">1246</a>             <strong class="jxr_keyword">return</strong> hash;
-<a class="jxr_linenumber" name="1247" href="#1247">1247</a>         }
-<a class="jxr_linenumber" name="1248" href="#1248">1248</a>     }
-<a class="jxr_linenumber" name="1249" href="#1249">1249</a> 
-<a class="jxr_linenumber" name="1250" href="#1250">1250</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> String normalizedArch() {
-<a class="jxr_linenumber" name="1251" href="#1251">1251</a>         <strong class="jxr_keyword">return</strong> NORMALIZED_ARCH;
+<a class="jxr_linenumber" name="1170" href="#1170">1170</a>         <strong class="jxr_keyword">if</strong> (bitMode &gt; 0) {
+<a class="jxr_linenumber" name="1171" href="#1171">1171</a>             logger.debug(<span class="jxr_string">"-Dio.netty.bitMode: {} (os.arch: {})"</span>, bitMode, arch);
+<a class="jxr_linenumber" name="1172" href="#1172">1172</a>         }
+<a class="jxr_linenumber" name="1173" href="#1173">1173</a> 
+<a class="jxr_linenumber" name="1174" href="#1174">1174</a>         <em class="jxr_comment">// Last resort: guess from VM name and then fall back to most common 64-bit mode.</em>
+<a class="jxr_linenumber" name="1175" href="#1175">1175</a>         String vm = SystemPropertyUtil.get(<span class="jxr_string">"java.vm.name"</span>, <span class="jxr_string">""</span>).toLowerCase(Locale.US);
+<a class="jxr_linenumber" name="1176" href="#1176">1176</a>         Pattern BIT_PATTERN = Pattern.compile(<span class="jxr_string">"([1-9][0-9]+)-?bit"</span>);
+<a class="jxr_linenumber" name="1177" href="#1177">1177</a>         Matcher m = BIT_PATTERN.matcher(vm);
+<a class="jxr_linenumber" name="1178" href="#1178">1178</a>         <strong class="jxr_keyword">if</strong> (m.find()) {
+<a class="jxr_linenumber" name="1179" href="#1179">1179</a>             <strong class="jxr_keyword">return</strong> Integer.parseInt(m.group(1));
+<a class="jxr_linenumber" name="1180" href="#1180">1180</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1181" href="#1181">1181</a>             <strong class="jxr_keyword">return</strong> 64;
+<a class="jxr_linenumber" name="1182" href="#1182">1182</a>         }
+<a class="jxr_linenumber" name="1183" href="#1183">1183</a>     }
+<a class="jxr_linenumber" name="1184" href="#1184">1184</a> 
+<a class="jxr_linenumber" name="1185" href="#1185">1185</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> addressSize0() {
+<a class="jxr_linenumber" name="1186" href="#1186">1186</a>         <strong class="jxr_keyword">if</strong> (!hasUnsafe()) {
+<a class="jxr_linenumber" name="1187" href="#1187">1187</a>             <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="1188" href="#1188">1188</a>         }
+<a class="jxr_linenumber" name="1189" href="#1189">1189</a>         <strong class="jxr_keyword">return</strong> PlatformDependent0.addressSize();
+<a class="jxr_linenumber" name="1190" href="#1190">1190</a>     }
+<a class="jxr_linenumber" name="1191" href="#1191">1191</a> 
+<a class="jxr_linenumber" name="1192" href="#1192">1192</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> byteArrayBaseOffset0() {
+<a class="jxr_linenumber" name="1193" href="#1193">1193</a>         <strong class="jxr_keyword">if</strong> (!hasUnsafe()) {
+<a class="jxr_linenumber" name="1194" href="#1194">1194</a>             <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="1195" href="#1195">1195</a>         }
+<a class="jxr_linenumber" name="1196" href="#1196">1196</a>         <strong class="jxr_keyword">return</strong> PlatformDependent0.byteArrayBaseOffset();
+<a class="jxr_linenumber" name="1197" href="#1197">1197</a>     }
+<a class="jxr_linenumber" name="1198" href="#1198">1198</a> 
+<a class="jxr_linenumber" name="1199" href="#1199">1199</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> equalsSafe(byte[] bytes1, <strong class="jxr_keyword">int</strong> startPos1, byte[] bytes2, <strong class="jxr_keyword">int</strong> startPos2, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="1200" href="#1200">1200</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startPos1 + length;
+<a class="jxr_linenumber" name="1201" href="#1201">1201</a>         <strong class="jxr_keyword">for</strong> (; startPos1 &lt; end; ++startPos1, ++startPos2) {
+<a class="jxr_linenumber" name="1202" href="#1202">1202</a>             <strong class="jxr_keyword">if</strong> (bytes1[startPos1] != bytes2[startPos2]) {
+<a class="jxr_linenumber" name="1203" href="#1203">1203</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="1204" href="#1204">1204</a>             }
+<a class="jxr_linenumber" name="1205" href="#1205">1205</a>         }
+<a class="jxr_linenumber" name="1206" href="#1206">1206</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1207" href="#1207">1207</a>     }
+<a class="jxr_linenumber" name="1208" href="#1208">1208</a> 
+<a class="jxr_linenumber" name="1209" href="#1209">1209</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isZeroSafe(byte[] bytes, <strong class="jxr_keyword">int</strong> startPos, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="1210" href="#1210">1210</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startPos + length;
+<a class="jxr_linenumber" name="1211" href="#1211">1211</a>         <strong class="jxr_keyword">for</strong> (; startPos &lt; end; ++startPos) {
+<a class="jxr_linenumber" name="1212" href="#1212">1212</a>             <strong class="jxr_keyword">if</strong> (bytes[startPos] != 0) {
+<a class="jxr_linenumber" name="1213" href="#1213">1213</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="1214" href="#1214">1214</a>             }
+<a class="jxr_linenumber" name="1215" href="#1215">1215</a>         }
+<a class="jxr_linenumber" name="1216" href="#1216">1216</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1217" href="#1217">1217</a>     }
+<a class="jxr_linenumber" name="1218" href="#1218">1218</a> 
+<a class="jxr_linenumber" name="1219" href="#1219">1219</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="1220" href="#1220">1220</a> <em class="jxr_javadoccomment">     * Package private for testing purposes only!</em>
+<a class="jxr_linenumber" name="1221" href="#1221">1221</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="1222" href="#1222">1222</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> hashCodeAsciiSafe(byte[] bytes, <strong class="jxr_keyword">int</strong> startPos, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="1223" href="#1223">1223</a>         <strong class="jxr_keyword">int</strong> hash = HASH_CODE_ASCII_SEED;
+<a class="jxr_linenumber" name="1224" href="#1224">1224</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> remainingBytes = length &amp; 7;
+<a class="jxr_linenumber" name="1225" href="#1225">1225</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startPos + remainingBytes;
+<a class="jxr_linenumber" name="1226" href="#1226">1226</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = startPos - 8 + length; i &gt;= end; i -= 8) {
+<a class="jxr_linenumber" name="1227" href="#1227">1227</a>             hash = PlatformDependent0.hashCodeAsciiCompute(getLongSafe(bytes, i), hash);
+<a class="jxr_linenumber" name="1228" href="#1228">1228</a>         }
+<a class="jxr_linenumber" name="1229" href="#1229">1229</a>         <strong class="jxr_keyword">switch</strong>(remainingBytes) {
+<a class="jxr_linenumber" name="1230" href="#1230">1230</a>         <strong class="jxr_keyword">case</strong> 7:
+<a class="jxr_linenumber" name="1231" href="#1231">1231</a>             <strong class="jxr_keyword">return</strong> ((hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]))
+<a class="jxr_linenumber" name="1232" href="#1232">1232</a>                           * HASH_CODE_C2 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos + 1)))
+<a class="jxr_linenumber" name="1233" href="#1233">1233</a>                           * HASH_CODE_C1 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos + 3));
+<a class="jxr_linenumber" name="1234" href="#1234">1234</a>         <strong class="jxr_keyword">case</strong> 6:
+<a class="jxr_linenumber" name="1235" href="#1235">1235</a>             <strong class="jxr_keyword">return</strong> (hash * HASH_CODE_C1 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos)))
+<a class="jxr_linenumber" name="1236" href="#1236">1236</a>                          * HASH_CODE_C2 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos + 2));
+<a class="jxr_linenumber" name="1237" href="#1237">1237</a>         <strong class="jxr_keyword">case</strong> 5:
+<a class="jxr_linenumber" name="1238" href="#1238">1238</a>             <strong class="jxr_keyword">return</strong> (hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]))
+<a class="jxr_linenumber" name="1239" href="#1239">1239</a>                          * HASH_CODE_C2 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos + 1));
+<a class="jxr_linenumber" name="1240" href="#1240">1240</a>         <strong class="jxr_keyword">case</strong> 4:
+<a class="jxr_linenumber" name="1241" href="#1241">1241</a>             <strong class="jxr_keyword">return</strong> hash * HASH_CODE_C1 + hashCodeAsciiSanitize(getIntSafe(bytes, startPos));
+<a class="jxr_linenumber" name="1242" href="#1242">1242</a>         <strong class="jxr_keyword">case</strong> 3:
+<a class="jxr_linenumber" name="1243" href="#1243">1243</a>             <strong class="jxr_keyword">return</strong> (hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]))
+<a class="jxr_linenumber" name="1244" href="#1244">1244</a>                          * HASH_CODE_C2 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos + 1));
+<a class="jxr_linenumber" name="1245" href="#1245">1245</a>         <strong class="jxr_keyword">case</strong> 2:
+<a class="jxr_linenumber" name="1246" href="#1246">1246</a>             <strong class="jxr_keyword">return</strong> hash * HASH_CODE_C1 + hashCodeAsciiSanitize(getShortSafe(bytes, startPos));
+<a class="jxr_linenumber" name="1247" href="#1247">1247</a>         <strong class="jxr_keyword">case</strong> 1:
+<a class="jxr_linenumber" name="1248" href="#1248">1248</a>             <strong class="jxr_keyword">return</strong> hash * HASH_CODE_C1 + hashCodeAsciiSanitize(bytes[startPos]);
+<a class="jxr_linenumber" name="1249" href="#1249">1249</a>         <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="1250" href="#1250">1250</a>             <strong class="jxr_keyword">return</strong> hash;
+<a class="jxr_linenumber" name="1251" href="#1251">1251</a>         }
 <a class="jxr_linenumber" name="1252" href="#1252">1252</a>     }
 <a class="jxr_linenumber" name="1253" href="#1253">1253</a> 
-<a class="jxr_linenumber" name="1254" href="#1254">1254</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> String normalizedOs() {
-<a class="jxr_linenumber" name="1255" href="#1255">1255</a>         <strong class="jxr_keyword">return</strong> NORMALIZED_OS;
+<a class="jxr_linenumber" name="1254" href="#1254">1254</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> String normalizedArch() {
+<a class="jxr_linenumber" name="1255" href="#1255">1255</a>         <strong class="jxr_keyword">return</strong> NORMALIZED_ARCH;
 <a class="jxr_linenumber" name="1256" href="#1256">1256</a>     }
 <a class="jxr_linenumber" name="1257" href="#1257">1257</a> 
-<a class="jxr_linenumber" name="1258" href="#1258">1258</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String normalize(String value) {
-<a class="jxr_linenumber" name="1259" href="#1259">1259</a>         <strong class="jxr_keyword">return</strong> value.toLowerCase(Locale.US).replaceAll(<span class="jxr_string">"[^a-z0-9]+"</span>, <span class="jxr_string">""</span>);
+<a class="jxr_linenumber" name="1258" href="#1258">1258</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> String normalizedOs() {
+<a class="jxr_linenumber" name="1259" href="#1259">1259</a>         <strong class="jxr_keyword">return</strong> NORMALIZED_OS;
 <a class="jxr_linenumber" name="1260" href="#1260">1260</a>     }
 <a class="jxr_linenumber" name="1261" href="#1261">1261</a> 
-<a class="jxr_linenumber" name="1262" href="#1262">1262</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String normalizeArch(String value) {
-<a class="jxr_linenumber" name="1263" href="#1263">1263</a>         value = normalize(value);
-<a class="jxr_linenumber" name="1264" href="#1264">1264</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(x8664|amd64|ia32e|em64t|x64)$"</span>)) {
-<a class="jxr_linenumber" name="1265" href="#1265">1265</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"x86_64"</span>;
-<a class="jxr_linenumber" name="1266" href="#1266">1266</a>         }
-<a class="jxr_linenumber" name="1267" href="#1267">1267</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(x8632|x86|i[3-6]86|ia32|x32)$"</span>)) {
-<a class="jxr_linenumber" name="1268" href="#1268">1268</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"x86_32"</span>;
-<a class="jxr_linenumber" name="1269" href="#1269">1269</a>         }
-<a class="jxr_linenumber" name="1270" href="#1270">1270</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(ia64|itanium64)$"</span>)) {
-<a class="jxr_linenumber" name="1271" href="#1271">1271</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"itanium_64"</span>;
-<a class="jxr_linenumber" name="1272" href="#1272">1272</a>         }
-<a class="jxr_linenumber" name="1273" href="#1273">1273</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(sparc|sparc32)$"</span>)) {
-<a class="jxr_linenumber" name="1274" href="#1274">1274</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"sparc_32"</span>;
-<a class="jxr_linenumber" name="1275" href="#1275">1275</a>         }
-<a class="jxr_linenumber" name="1276" href="#1276">1276</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(sparcv9|sparc64)$"</span>)) {
-<a class="jxr_linenumber" name="1277" href="#1277">1277</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"sparc_64"</span>;
-<a class="jxr_linenumber" name="1278" href="#1278">1278</a>         }
-<a class="jxr_linenumber" name="1279" href="#1279">1279</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(arm|arm32)$"</span>)) {
-<a class="jxr_linenumber" name="1280" href="#1280">1280</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"arm_32"</span>;
-<a class="jxr_linenumber" name="1281" href="#1281">1281</a>         }
-<a class="jxr_linenumber" name="1282" href="#1282">1282</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"aarch64"</span>.equals(value)) {
-<a class="jxr_linenumber" name="1283" href="#1283">1283</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"aarch_64"</span>;
-<a class="jxr_linenumber" name="1284" href="#1284">1284</a>         }
-<a class="jxr_linenumber" name="1285" href="#1285">1285</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(ppc|ppc32)$"</span>)) {
-<a class="jxr_linenumber" name="1286" href="#1286">1286</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"ppc_32"</span>;
-<a class="jxr_linenumber" name="1287" href="#1287">1287</a>         }
-<a class="jxr_linenumber" name="1288" href="#1288">1288</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"ppc64"</span>.equals(value)) {
-<a class="jxr_linenumber" name="1289" href="#1289">1289</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"ppc_64"</span>;
-<a class="jxr_linenumber" name="1290" href="#1290">1290</a>         }
-<a class="jxr_linenumber" name="1291" href="#1291">1291</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"ppc64le"</span>.equals(value)) {
-<a class="jxr_linenumber" name="1292" href="#1292">1292</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"ppcle_64"</span>;
-<a class="jxr_linenumber" name="1293" href="#1293">1293</a>         }
-<a class="jxr_linenumber" name="1294" href="#1294">1294</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"s390"</span>.equals(value)) {
-<a class="jxr_linenumber" name="1295" href="#1295">1295</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"s390_32"</span>;
-<a class="jxr_linenumber" name="1296" href="#1296">1296</a>         }
-<a class="jxr_linenumber" name="1297" href="#1297">1297</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"s390x"</span>.equals(value)) {
-<a class="jxr_linenumber" name="1298" href="#1298">1298</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"s390_64"</span>;
-<a class="jxr_linenumber" name="1299" href="#1299">1299</a>         }
-<a class="jxr_linenumber" name="1300" href="#1300">1300</a> 
-<a class="jxr_linenumber" name="1301" href="#1301">1301</a>         <strong class="jxr_keyword">return</strong> <span class="jxr_string">"unknown"</span>;
-<a class="jxr_linenumber" name="1302" href="#1302">1302</a>     }
-<a class="jxr_linenumber" name="1303" href="#1303">1303</a> 
-<a class="jxr_linenumber" name="1304" href="#1304">1304</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String normalizeOs(String value) {
-<a class="jxr_linenumber" name="1305" href="#1305">1305</a>         value = normalize(value);
-<a class="jxr_linenumber" name="1306" href="#1306">1306</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"aix"</span>)) {
-<a class="jxr_linenumber" name="1307" href="#1307">1307</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"aix"</span>;
-<a class="jxr_linenumber" name="1308" href="#1308">1308</a>         }
-<a class="jxr_linenumber" name="1309" href="#1309">1309</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"hpux"</span>)) {
-<a class="jxr_linenumber" name="1310" href="#1310">1310</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"hpux"</span>;
-<a class="jxr_linenumber" name="1311" href="#1311">1311</a>         }
-<a class="jxr_linenumber" name="1312" href="#1312">1312</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"os400"</span>)) {
-<a class="jxr_linenumber" name="1313" href="#1313">1313</a>             <em class="jxr_comment">// Avoid the names such as os4000</em>
-<a class="jxr_linenumber" name="1314" href="#1314">1314</a>             <strong class="jxr_keyword">if</strong> (value.length() &lt;= 5 || !Character.isDigit(value.charAt(5))) {
-<a class="jxr_linenumber" name="1315" href="#1315">1315</a>                 <strong class="jxr_keyword">return</strong> <span class="jxr_string">"os400"</span>;
-<a class="jxr_linenumber" name="1316" href="#1316">1316</a>             }
-<a class="jxr_linenumber" name="1317" href="#1317">1317</a>         }
-<a class="jxr_linenumber" name="1318" href="#1318">1318</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"linux"</span>)) {
-<a class="jxr_linenumber" name="1319" href="#1319">1319</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"linux"</span>;
-<a class="jxr_linenumber" name="1320" href="#1320">1320</a>         }
-<a class="jxr_linenumber" name="1321" href="#1321">1321</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"macosx"</span>) || value.startsWith(<span class="jxr_string">"osx"</span>)) {
-<a class="jxr_linenumber" name="1322" href="#1322">1322</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"osx"</span>;
-<a class="jxr_linenumber" name="1323" href="#1323">1323</a>         }
-<a class="jxr_linenumber" name="1324" href="#1324">1324</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"freebsd"</span>)) {
-<a class="jxr_linenumber" name="1325" href="#1325">1325</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"freebsd"</span>;
-<a class="jxr_linenumber" name="1326" href="#1326">1326</a>         }
-<a class="jxr_linenumber" name="1327" href="#1327">1327</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"openbsd"</span>)) {
-<a class="jxr_linenumber" name="1328" href="#1328">1328</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"openbsd"</span>;
-<a class="jxr_linenumber" name="1329" href="#1329">1329</a>         }
-<a class="jxr_linenumber" name="1330" href="#1330">1330</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"netbsd"</span>)) {
-<a class="jxr_linenumber" name="1331" href="#1331">1331</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"netbsd"</span>;
-<a class="jxr_linenumber" name="1332" href="#1332">1332</a>         }
-<a class="jxr_linenumber" name="1333" href="#1333">1333</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"solaris"</span>) || value.startsWith(<span class="jxr_string">"sunos"</span>)) {
-<a class="jxr_linenumber" name="1334" href="#1334">1334</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"sunos"</span>;
-<a class="jxr_linenumber" name="1335" href="#1335">1335</a>         }
-<a class="jxr_linenumber" name="1336" href="#1336">1336</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"windows"</span>)) {
-<a class="jxr_linenumber" name="1337" href="#1337">1337</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"windows"</span>;
-<a class="jxr_linenumber" name="1338" href="#1338">1338</a>         }
-<a class="jxr_linenumber" name="1339" href="#1339">1339</a> 
-<a class="jxr_linenumber" name="1340" href="#1340">1340</a>         <strong class="jxr_keyword">return</strong> <span class="jxr_string">"unknown"</span>;
-<a class="jxr_linenumber" name="1341" href="#1341">1341</a>     }
-<a class="jxr_linenumber" name="1342" href="#1342">1342</a> 
-<a class="jxr_linenumber" name="1343" href="#1343">1343</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/internal/PlatformDependent.html">AtomicLongCounter</a> <strong class="jxr_keyword">extends</strong> AtomicLong <strong class="jxr_keyword">implements</strong> <a href="../../../../io/netty/util/internal/LongCounter.html">LongCounter</a> {
-<a class="jxr_linenumber" name="1344" href="#1344">1344</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 4074772784610639305L;
-<a class="jxr_linenumber" name="1345" href="#1345">1345</a> 
-<a class="jxr_linenumber" name="1346" href="#1346">1346</a>         @Override
-<a class="jxr_linenumber" name="1347" href="#1347">1347</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> add(<strong class="jxr_keyword">long</strong> delta) {
-<a class="jxr_linenumber" name="1348" href="#1348">1348</a>             addAndGet(delta);
-<a class="jxr_linenumber" name="1349" href="#1349">1349</a>         }
-<a class="jxr_linenumber" name="1350" href="#1350">1350</a> 
-<a class="jxr_linenumber" name="1351" href="#1351">1351</a>         @Override
-<a class="jxr_linenumber" name="1352" href="#1352">1352</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> increment() {
-<a class="jxr_linenumber" name="1353" href="#1353">1353</a>             incrementAndGet();
-<a class="jxr_linenumber" name="1354" href="#1354">1354</a>         }
-<a class="jxr_linenumber" name="1355" href="#1355">1355</a> 
-<a class="jxr_linenumber" name="1356" href="#1356">1356</a>         @Override
-<a class="jxr_linenumber" name="1357" href="#1357">1357</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> decrement() {
-<a class="jxr_linenumber" name="1358" href="#1358">1358</a>             decrementAndGet();
-<a class="jxr_linenumber" name="1359" href="#1359">1359</a>         }
-<a class="jxr_linenumber" name="1360" href="#1360">1360</a> 
-<a class="jxr_linenumber" name="1361" href="#1361">1361</a>         @Override
-<a class="jxr_linenumber" name="1362" href="#1362">1362</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> value() {
-<a class="jxr_linenumber" name="1363" href="#1363">1363</a>             <strong class="jxr_keyword">return</strong> get();
-<a class="jxr_linenumber" name="1364" href="#1364">1364</a>         }
-<a class="jxr_linenumber" name="1365" href="#1365">1365</a>     }
-<a class="jxr_linenumber" name="1366" href="#1366">1366</a> 
-<a class="jxr_linenumber" name="1367" href="#1367">1367</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">interface</strong> <a href="../../../../io/netty/util/internal/PlatformDependent.html">ThreadLocalRandomProvider</a> {
-<a class="jxr_linenumber" name="1368" href="#1368">1368</a>         Random current();
+<a class="jxr_linenumber" name="1262" href="#1262">1262</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String normalize(String value) {
+<a class="jxr_linenumber" name="1263" href="#1263">1263</a>         <strong class="jxr_keyword">return</strong> value.toLowerCase(Locale.US).replaceAll(<span class="jxr_string">"[^a-z0-9]+"</span>, <span class="jxr_string">""</span>);
+<a class="jxr_linenumber" name="1264" href="#1264">1264</a>     }
+<a class="jxr_linenumber" name="1265" href="#1265">1265</a> 
+<a class="jxr_linenumber" name="1266" href="#1266">1266</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String normalizeArch(String value) {
+<a class="jxr_linenumber" name="1267" href="#1267">1267</a>         value = normalize(value);
+<a class="jxr_linenumber" name="1268" href="#1268">1268</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(x8664|amd64|ia32e|em64t|x64)$"</span>)) {
+<a class="jxr_linenumber" name="1269" href="#1269">1269</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"x86_64"</span>;
+<a class="jxr_linenumber" name="1270" href="#1270">1270</a>         }
+<a class="jxr_linenumber" name="1271" href="#1271">1271</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(x8632|x86|i[3-6]86|ia32|x32)$"</span>)) {
+<a class="jxr_linenumber" name="1272" href="#1272">1272</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"x86_32"</span>;
+<a class="jxr_linenumber" name="1273" href="#1273">1273</a>         }
+<a class="jxr_linenumber" name="1274" href="#1274">1274</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(ia64|itanium64)$"</span>)) {
+<a class="jxr_linenumber" name="1275" href="#1275">1275</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"itanium_64"</span>;
+<a class="jxr_linenumber" name="1276" href="#1276">1276</a>         }
+<a class="jxr_linenumber" name="1277" href="#1277">1277</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(sparc|sparc32)$"</span>)) {
+<a class="jxr_linenumber" name="1278" href="#1278">1278</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"sparc_32"</span>;
+<a class="jxr_linenumber" name="1279" href="#1279">1279</a>         }
+<a class="jxr_linenumber" name="1280" href="#1280">1280</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(sparcv9|sparc64)$"</span>)) {
+<a class="jxr_linenumber" name="1281" href="#1281">1281</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"sparc_64"</span>;
+<a class="jxr_linenumber" name="1282" href="#1282">1282</a>         }
+<a class="jxr_linenumber" name="1283" href="#1283">1283</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(arm|arm32)$"</span>)) {
+<a class="jxr_linenumber" name="1284" href="#1284">1284</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"arm_32"</span>;
+<a class="jxr_linenumber" name="1285" href="#1285">1285</a>         }
+<a class="jxr_linenumber" name="1286" href="#1286">1286</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"aarch64"</span>.equals(value)) {
+<a class="jxr_linenumber" name="1287" href="#1287">1287</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"aarch_64"</span>;
+<a class="jxr_linenumber" name="1288" href="#1288">1288</a>         }
+<a class="jxr_linenumber" name="1289" href="#1289">1289</a>         <strong class="jxr_keyword">if</strong> (value.matches(<span class="jxr_string">"^(ppc|ppc32)$"</span>)) {
+<a class="jxr_linenumber" name="1290" href="#1290">1290</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"ppc_32"</span>;
+<a class="jxr_linenumber" name="1291" href="#1291">1291</a>         }
+<a class="jxr_linenumber" name="1292" href="#1292">1292</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"ppc64"</span>.equals(value)) {
+<a class="jxr_linenumber" name="1293" href="#1293">1293</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"ppc_64"</span>;
+<a class="jxr_linenumber" name="1294" href="#1294">1294</a>         }
+<a class="jxr_linenumber" name="1295" href="#1295">1295</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"ppc64le"</span>.equals(value)) {
+<a class="jxr_linenumber" name="1296" href="#1296">1296</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"ppcle_64"</span>;
+<a class="jxr_linenumber" name="1297" href="#1297">1297</a>         }
+<a class="jxr_linenumber" name="1298" href="#1298">1298</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"s390"</span>.equals(value)) {
+<a class="jxr_linenumber" name="1299" href="#1299">1299</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"s390_32"</span>;
+<a class="jxr_linenumber" name="1300" href="#1300">1300</a>         }
+<a class="jxr_linenumber" name="1301" href="#1301">1301</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"s390x"</span>.equals(value)) {
+<a class="jxr_linenumber" name="1302" href="#1302">1302</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"s390_64"</span>;
+<a class="jxr_linenumber" name="1303" href="#1303">1303</a>         }
+<a class="jxr_linenumber" name="1304" href="#1304">1304</a> 
+<a class="jxr_linenumber" name="1305" href="#1305">1305</a>         <strong class="jxr_keyword">return</strong> <span class="jxr_string">"unknown"</span>;
+<a class="jxr_linenumber" name="1306" href="#1306">1306</a>     }
+<a class="jxr_linenumber" name="1307" href="#1307">1307</a> 
+<a class="jxr_linenumber" name="1308" href="#1308">1308</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String normalizeOs(String value) {
+<a class="jxr_linenumber" name="1309" href="#1309">1309</a>         value = normalize(value);
+<a class="jxr_linenumber" name="1310" href="#1310">1310</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"aix"</span>)) {
+<a class="jxr_linenumber" name="1311" href="#1311">1311</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"aix"</span>;
+<a class="jxr_linenumber" name="1312" href="#1312">1312</a>         }
+<a class="jxr_linenumber" name="1313" href="#1313">1313</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"hpux"</span>)) {
+<a class="jxr_linenumber" name="1314" href="#1314">1314</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"hpux"</span>;
+<a class="jxr_linenumber" name="1315" href="#1315">1315</a>         }
+<a class="jxr_linenumber" name="1316" href="#1316">1316</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"os400"</span>)) {
+<a class="jxr_linenumber" name="1317" href="#1317">1317</a>             <em class="jxr_comment">// Avoid the names such as os4000</em>
+<a class="jxr_linenumber" name="1318" href="#1318">1318</a>             <strong class="jxr_keyword">if</strong> (value.length() &lt;= 5 || !Character.isDigit(value.charAt(5))) {
+<a class="jxr_linenumber" name="1319" href="#1319">1319</a>                 <strong class="jxr_keyword">return</strong> <span class="jxr_string">"os400"</span>;
+<a class="jxr_linenumber" name="1320" href="#1320">1320</a>             }
+<a class="jxr_linenumber" name="1321" href="#1321">1321</a>         }
+<a class="jxr_linenumber" name="1322" href="#1322">1322</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"linux"</span>)) {
+<a class="jxr_linenumber" name="1323" href="#1323">1323</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"linux"</span>;
+<a class="jxr_linenumber" name="1324" href="#1324">1324</a>         }
+<a class="jxr_linenumber" name="1325" href="#1325">1325</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"macosx"</span>) || value.startsWith(<span class="jxr_string">"osx"</span>)) {
+<a class="jxr_linenumber" name="1326" href="#1326">1326</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"osx"</span>;
+<a class="jxr_linenumber" name="1327" href="#1327">1327</a>         }
+<a class="jxr_linenumber" name="1328" href="#1328">1328</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"freebsd"</span>)) {
+<a class="jxr_linenumber" name="1329" href="#1329">1329</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"freebsd"</span>;
+<a class="jxr_linenumber" name="1330" href="#1330">1330</a>         }
+<a class="jxr_linenumber" name="1331" href="#1331">1331</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"openbsd"</span>)) {
+<a class="jxr_linenumber" name="1332" href="#1332">1332</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"openbsd"</span>;
+<a class="jxr_linenumber" name="1333" href="#1333">1333</a>         }
+<a class="jxr_linenumber" name="1334" href="#1334">1334</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"netbsd"</span>)) {
+<a class="jxr_linenumber" name="1335" href="#1335">1335</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"netbsd"</span>;
+<a class="jxr_linenumber" name="1336" href="#1336">1336</a>         }
+<a class="jxr_linenumber" name="1337" href="#1337">1337</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"solaris"</span>) || value.startsWith(<span class="jxr_string">"sunos"</span>)) {
+<a class="jxr_linenumber" name="1338" href="#1338">1338</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"sunos"</span>;
+<a class="jxr_linenumber" name="1339" href="#1339">1339</a>         }
+<a class="jxr_linenumber" name="1340" href="#1340">1340</a>         <strong class="jxr_keyword">if</strong> (value.startsWith(<span class="jxr_string">"windows"</span>)) {
+<a class="jxr_linenumber" name="1341" href="#1341">1341</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"windows"</span>;
+<a class="jxr_linenumber" name="1342" href="#1342">1342</a>         }
+<a class="jxr_linenumber" name="1343" href="#1343">1343</a> 
+<a class="jxr_linenumber" name="1344" href="#1344">1344</a>         <strong class="jxr_keyword">return</strong> <span class="jxr_string">"unknown"</span>;
+<a class="jxr_linenumber" name="1345" href="#1345">1345</a>     }
+<a class="jxr_linenumber" name="1346" href="#1346">1346</a> 
+<a class="jxr_linenumber" name="1347" href="#1347">1347</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/internal/PlatformDependent.html">AtomicLongCounter</a> <strong class="jxr_keyword">extends</strong> AtomicLong <strong class="jxr_keyword">implements</strong> <a href="../../../../io/netty/util/internal/LongCounter.html">LongCounter</a> {
+<a class="jxr_linenumber" name="1348" href="#1348">1348</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 4074772784610639305L;
+<a class="jxr_linenumber" name="1349" href="#1349">1349</a> 
+<a class="jxr_linenumber" name="1350" href="#1350">1350</a>         @Override
+<a class="jxr_linenumber" name="1351" href="#1351">1351</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> add(<strong class="jxr_keyword">long</strong> delta) {
+<a class="jxr_linenumber" name="1352" href="#1352">1352</a>             addAndGet(delta);
+<a class="jxr_linenumber" name="1353" href="#1353">1353</a>         }
+<a class="jxr_linenumber" name="1354" href="#1354">1354</a> 
+<a class="jxr_linenumber" name="1355" href="#1355">1355</a>         @Override
+<a class="jxr_linenumber" name="1356" href="#1356">1356</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> increment() {
+<a class="jxr_linenumber" name="1357" href="#1357">1357</a>             incrementAndGet();
+<a class="jxr_linenumber" name="1358" href="#1358">1358</a>         }
+<a class="jxr_linenumber" name="1359" href="#1359">1359</a> 
+<a class="jxr_linenumber" name="1360" href="#1360">1360</a>         @Override
+<a class="jxr_linenumber" name="1361" href="#1361">1361</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> decrement() {
+<a class="jxr_linenumber" name="1362" href="#1362">1362</a>             decrementAndGet();
+<a class="jxr_linenumber" name="1363" href="#1363">1363</a>         }
+<a class="jxr_linenumber" name="1364" href="#1364">1364</a> 
+<a class="jxr_linenumber" name="1365" href="#1365">1365</a>         @Override
+<a class="jxr_linenumber" name="1366" href="#1366">1366</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> value() {
+<a class="jxr_linenumber" name="1367" href="#1367">1367</a>             <strong class="jxr_keyword">return</strong> get();
+<a class="jxr_linenumber" name="1368" href="#1368">1368</a>         }
 <a class="jxr_linenumber" name="1369" href="#1369">1369</a>     }
 <a class="jxr_linenumber" name="1370" href="#1370">1370</a> 
-<a class="jxr_linenumber" name="1371" href="#1371">1371</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/util/internal/PlatformDependent.html">PlatformDependent</a>() {
-<a class="jxr_linenumber" name="1372" href="#1372">1372</a>         <em class="jxr_comment">// only static method supported</em>
+<a class="jxr_linenumber" name="1371" href="#1371">1371</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">interface</strong> <a href="../../../../io/netty/util/internal/PlatformDependent.html">ThreadLocalRandomProvider</a> {
+<a class="jxr_linenumber" name="1372" href="#1372">1372</a>         Random current();
 <a class="jxr_linenumber" name="1373" href="#1373">1373</a>     }
-<a class="jxr_linenumber" name="1374" href="#1374">1374</a> }
+<a class="jxr_linenumber" name="1374" href="#1374">1374</a> 
+<a class="jxr_linenumber" name="1375" href="#1375">1375</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/util/internal/PlatformDependent.html">PlatformDependent</a>() {
+<a class="jxr_linenumber" name="1376" href="#1376">1376</a>         <em class="jxr_comment">// only static method supported</em>
+<a class="jxr_linenumber" name="1377" href="#1377">1377</a>     }
+<a class="jxr_linenumber" name="1378" href="#1378">1378</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
