@@ -218,152 +218,156 @@
 <a class="jxr_linenumber" name="208" href="#208">208</a>                 <strong class="jxr_keyword">switch</strong> (strategy) {
 <a class="jxr_linenumber" name="209" href="#209">209</a>                     <strong class="jxr_keyword">case</strong> SelectStrategy.CONTINUE:
 <a class="jxr_linenumber" name="210" href="#210">210</a>                         <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="211" href="#211">211</a>                     <strong class="jxr_keyword">case</strong> SelectStrategy.SELECT:
-<a class="jxr_linenumber" name="212" href="#212">212</a>                         strategy = kqueueWait(WAKEN_UP_UPDATER.getAndSet(<strong class="jxr_keyword">this</strong>, 0) == 1);
-<a class="jxr_linenumber" name="213" href="#213">213</a> 
-<a class="jxr_linenumber" name="214" href="#214">214</a>                         <em class="jxr_comment">// 'wakenUp.compareAndSet(false, true)' is always evaluated</em>
-<a class="jxr_linenumber" name="215" href="#215">215</a>                         <em class="jxr_comment">// before calling 'selector.wakeup()' to reduce the wake-up</em>
-<a class="jxr_linenumber" name="216" href="#216">216</a>                         <em class="jxr_comment">// overhead. (Selector.wakeup() is an expensive operation.)</em>
-<a class="jxr_linenumber" name="217" href="#217">217</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="218" href="#218">218</a>                         <em class="jxr_comment">// However, there is a race condition in this approach.</em>
-<a class="jxr_linenumber" name="219" href="#219">219</a>                         <em class="jxr_comment">// The race condition is triggered when 'wakenUp' is set to</em>
-<a class="jxr_linenumber" name="220" href="#220">220</a>                         <em class="jxr_comment">// true too early.</em>
+<a class="jxr_linenumber" name="211" href="#211">211</a> 
+<a class="jxr_linenumber" name="212" href="#212">212</a>                     <strong class="jxr_keyword">case</strong> SelectStrategy.BUSY_WAIT:
+<a class="jxr_linenumber" name="213" href="#213">213</a>                         <em class="jxr_comment">// fall-through to SELECT since the busy-wait is not supported with kqueue</em>
+<a class="jxr_linenumber" name="214" href="#214">214</a> 
+<a class="jxr_linenumber" name="215" href="#215">215</a>                     <strong class="jxr_keyword">case</strong> SelectStrategy.SELECT:
+<a class="jxr_linenumber" name="216" href="#216">216</a>                         strategy = kqueueWait(WAKEN_UP_UPDATER.getAndSet(<strong class="jxr_keyword">this</strong>, 0) == 1);
+<a class="jxr_linenumber" name="217" href="#217">217</a> 
+<a class="jxr_linenumber" name="218" href="#218">218</a>                         <em class="jxr_comment">// 'wakenUp.compareAndSet(false, true)' is always evaluated</em>
+<a class="jxr_linenumber" name="219" href="#219">219</a>                         <em class="jxr_comment">// before calling 'selector.wakeup()' to reduce the wake-up</em>
+<a class="jxr_linenumber" name="220" href="#220">220</a>                         <em class="jxr_comment">// overhead. (Selector.wakeup() is an expensive operation.)</em>
 <a class="jxr_linenumber" name="221" href="#221">221</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="222" href="#222">222</a>                         <em class="jxr_comment">// 'wakenUp' is set to true too early if:</em>
-<a class="jxr_linenumber" name="223" href="#223">223</a>                         <em class="jxr_comment">// 1) Selector is waken up between 'wakenUp.set(false)' and</em>
-<a class="jxr_linenumber" name="224" href="#224">224</a>                         <em class="jxr_comment">//    'selector.select(...)'. (BAD)</em>
-<a class="jxr_linenumber" name="225" href="#225">225</a>                         <em class="jxr_comment">// 2) Selector is waken up between 'selector.select(...)' and</em>
-<a class="jxr_linenumber" name="226" href="#226">226</a>                         <em class="jxr_comment">//    'if (wakenUp.get()) { ... }'. (OK)</em>
-<a class="jxr_linenumber" name="227" href="#227">227</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="228" href="#228">228</a>                         <em class="jxr_comment">// In the first case, 'wakenUp' is set to true and the</em>
-<a class="jxr_linenumber" name="229" href="#229">229</a>                         <em class="jxr_comment">// following 'selector.select(...)' will wake up immediately.</em>
-<a class="jxr_linenumber" name="230" href="#230">230</a>                         <em class="jxr_comment">// Until 'wakenUp' is set to false again in the next round,</em>
-<a class="jxr_linenumber" name="231" href="#231">231</a>                         <em class="jxr_comment">// 'wakenUp.compareAndSet(false, true)' will fail, and therefore</em>
-<a class="jxr_linenumber" name="232" href="#232">232</a>                         <em class="jxr_comment">// any attempt to wake up the Selector will fail, too, causing</em>
-<a class="jxr_linenumber" name="233" href="#233">233</a>                         <em class="jxr_comment">// the following 'selector.select(...)' call to block</em>
-<a class="jxr_linenumber" name="234" href="#234">234</a>                         <em class="jxr_comment">// unnecessarily.</em>
-<a class="jxr_linenumber" name="235" href="#235">235</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="236" href="#236">236</a>                         <em class="jxr_comment">// To fix this problem, we wake up the selector again if wakenUp</em>
-<a class="jxr_linenumber" name="237" href="#237">237</a>                         <em class="jxr_comment">// is true immediately after selector.select(...).</em>
-<a class="jxr_linenumber" name="238" href="#238">238</a>                         <em class="jxr_comment">// It is inefficient in that it wakes up the selector for both</em>
-<a class="jxr_linenumber" name="239" href="#239">239</a>                         <em class="jxr_comment">// the first case (BAD - wake-up required) and the second case</em>
-<a class="jxr_linenumber" name="240" href="#240">240</a>                         <em class="jxr_comment">// (OK - no wake-up required).</em>
-<a class="jxr_linenumber" name="241" href="#241">241</a> 
-<a class="jxr_linenumber" name="242" href="#242">242</a>                         <strong class="jxr_keyword">if</strong> (wakenUp == 1) {
-<a class="jxr_linenumber" name="243" href="#243">243</a>                             wakeup();
-<a class="jxr_linenumber" name="244" href="#244">244</a>                         }
-<a class="jxr_linenumber" name="245" href="#245">245</a>                         <em class="jxr_comment">// fallthrough</em>
-<a class="jxr_linenumber" name="246" href="#246">246</a>                     <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="247" href="#247">247</a>                 }
-<a class="jxr_linenumber" name="248" href="#248">248</a> 
-<a class="jxr_linenumber" name="249" href="#249">249</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ioRatio = <strong class="jxr_keyword">this</strong>.ioRatio;
-<a class="jxr_linenumber" name="250" href="#250">250</a>                 <strong class="jxr_keyword">if</strong> (ioRatio == 100) {
-<a class="jxr_linenumber" name="251" href="#251">251</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="252" href="#252">252</a>                         <strong class="jxr_keyword">if</strong> (strategy &gt; 0) {
-<a class="jxr_linenumber" name="253" href="#253">253</a>                             processReady(strategy);
-<a class="jxr_linenumber" name="254" href="#254">254</a>                         }
-<a class="jxr_linenumber" name="255" href="#255">255</a>                     } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="256" href="#256">256</a>                         runAllTasks();
-<a class="jxr_linenumber" name="257" href="#257">257</a>                     }
-<a class="jxr_linenumber" name="258" href="#258">258</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="259" href="#259">259</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> ioStartTime = System.nanoTime();
-<a class="jxr_linenumber" name="260" href="#260">260</a> 
-<a class="jxr_linenumber" name="261" href="#261">261</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="262" href="#262">262</a>                         <strong class="jxr_keyword">if</strong> (strategy &gt; 0) {
-<a class="jxr_linenumber" name="263" href="#263">263</a>                             processReady(strategy);
-<a class="jxr_linenumber" name="264" href="#264">264</a>                         }
-<a class="jxr_linenumber" name="265" href="#265">265</a>                     } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="266" href="#266">266</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> ioTime = System.nanoTime() - ioStartTime;
-<a class="jxr_linenumber" name="267" href="#267">267</a>                         runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
-<a class="jxr_linenumber" name="268" href="#268">268</a>                     }
-<a class="jxr_linenumber" name="269" href="#269">269</a>                 }
-<a class="jxr_linenumber" name="270" href="#270">270</a>                 <strong class="jxr_keyword">if</strong> (allowGrowing &amp;&amp; strategy == eventList.capacity()) {
-<a class="jxr_linenumber" name="271" href="#271">271</a>                     <em class="jxr_comment">//increase the size of the array as we needed the whole space for the events</em>
-<a class="jxr_linenumber" name="272" href="#272">272</a>                     eventList.realloc(false);
+<a class="jxr_linenumber" name="222" href="#222">222</a>                         <em class="jxr_comment">// However, there is a race condition in this approach.</em>
+<a class="jxr_linenumber" name="223" href="#223">223</a>                         <em class="jxr_comment">// The race condition is triggered when 'wakenUp' is set to</em>
+<a class="jxr_linenumber" name="224" href="#224">224</a>                         <em class="jxr_comment">// true too early.</em>
+<a class="jxr_linenumber" name="225" href="#225">225</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="226" href="#226">226</a>                         <em class="jxr_comment">// 'wakenUp' is set to true too early if:</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a>                         <em class="jxr_comment">// 1) Selector is waken up between 'wakenUp.set(false)' and</em>
+<a class="jxr_linenumber" name="228" href="#228">228</a>                         <em class="jxr_comment">//    'selector.select(...)'. (BAD)</em>
+<a class="jxr_linenumber" name="229" href="#229">229</a>                         <em class="jxr_comment">// 2) Selector is waken up between 'selector.select(...)' and</em>
+<a class="jxr_linenumber" name="230" href="#230">230</a>                         <em class="jxr_comment">//    'if (wakenUp.get()) { ... }'. (OK)</em>
+<a class="jxr_linenumber" name="231" href="#231">231</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="232" href="#232">232</a>                         <em class="jxr_comment">// In the first case, 'wakenUp' is set to true and the</em>
+<a class="jxr_linenumber" name="233" href="#233">233</a>                         <em class="jxr_comment">// following 'selector.select(...)' will wake up immediately.</em>
+<a class="jxr_linenumber" name="234" href="#234">234</a>                         <em class="jxr_comment">// Until 'wakenUp' is set to false again in the next round,</em>
+<a class="jxr_linenumber" name="235" href="#235">235</a>                         <em class="jxr_comment">// 'wakenUp.compareAndSet(false, true)' will fail, and therefore</em>
+<a class="jxr_linenumber" name="236" href="#236">236</a>                         <em class="jxr_comment">// any attempt to wake up the Selector will fail, too, causing</em>
+<a class="jxr_linenumber" name="237" href="#237">237</a>                         <em class="jxr_comment">// the following 'selector.select(...)' call to block</em>
+<a class="jxr_linenumber" name="238" href="#238">238</a>                         <em class="jxr_comment">// unnecessarily.</em>
+<a class="jxr_linenumber" name="239" href="#239">239</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="240" href="#240">240</a>                         <em class="jxr_comment">// To fix this problem, we wake up the selector again if wakenUp</em>
+<a class="jxr_linenumber" name="241" href="#241">241</a>                         <em class="jxr_comment">// is true immediately after selector.select(...).</em>
+<a class="jxr_linenumber" name="242" href="#242">242</a>                         <em class="jxr_comment">// It is inefficient in that it wakes up the selector for both</em>
+<a class="jxr_linenumber" name="243" href="#243">243</a>                         <em class="jxr_comment">// the first case (BAD - wake-up required) and the second case</em>
+<a class="jxr_linenumber" name="244" href="#244">244</a>                         <em class="jxr_comment">// (OK - no wake-up required).</em>
+<a class="jxr_linenumber" name="245" href="#245">245</a> 
+<a class="jxr_linenumber" name="246" href="#246">246</a>                         <strong class="jxr_keyword">if</strong> (wakenUp == 1) {
+<a class="jxr_linenumber" name="247" href="#247">247</a>                             wakeup();
+<a class="jxr_linenumber" name="248" href="#248">248</a>                         }
+<a class="jxr_linenumber" name="249" href="#249">249</a>                         <em class="jxr_comment">// fallthrough</em>
+<a class="jxr_linenumber" name="250" href="#250">250</a>                     <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="251" href="#251">251</a>                 }
+<a class="jxr_linenumber" name="252" href="#252">252</a> 
+<a class="jxr_linenumber" name="253" href="#253">253</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> ioRatio = <strong class="jxr_keyword">this</strong>.ioRatio;
+<a class="jxr_linenumber" name="254" href="#254">254</a>                 <strong class="jxr_keyword">if</strong> (ioRatio == 100) {
+<a class="jxr_linenumber" name="255" href="#255">255</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="256" href="#256">256</a>                         <strong class="jxr_keyword">if</strong> (strategy &gt; 0) {
+<a class="jxr_linenumber" name="257" href="#257">257</a>                             processReady(strategy);
+<a class="jxr_linenumber" name="258" href="#258">258</a>                         }
+<a class="jxr_linenumber" name="259" href="#259">259</a>                     } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="260" href="#260">260</a>                         runAllTasks();
+<a class="jxr_linenumber" name="261" href="#261">261</a>                     }
+<a class="jxr_linenumber" name="262" href="#262">262</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="263" href="#263">263</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> ioStartTime = System.nanoTime();
+<a class="jxr_linenumber" name="264" href="#264">264</a> 
+<a class="jxr_linenumber" name="265" href="#265">265</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="266" href="#266">266</a>                         <strong class="jxr_keyword">if</strong> (strategy &gt; 0) {
+<a class="jxr_linenumber" name="267" href="#267">267</a>                             processReady(strategy);
+<a class="jxr_linenumber" name="268" href="#268">268</a>                         }
+<a class="jxr_linenumber" name="269" href="#269">269</a>                     } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="270" href="#270">270</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> ioTime = System.nanoTime() - ioStartTime;
+<a class="jxr_linenumber" name="271" href="#271">271</a>                         runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
+<a class="jxr_linenumber" name="272" href="#272">272</a>                     }
 <a class="jxr_linenumber" name="273" href="#273">273</a>                 }
-<a class="jxr_linenumber" name="274" href="#274">274</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="275" href="#275">275</a>                 handleLoopException(t);
-<a class="jxr_linenumber" name="276" href="#276">276</a>             }
-<a class="jxr_linenumber" name="277" href="#277">277</a>             <em class="jxr_comment">// Always handle shutdown even if the loop processing threw an exception.</em>
-<a class="jxr_linenumber" name="278" href="#278">278</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="279" href="#279">279</a>                 <strong class="jxr_keyword">if</strong> (isShuttingDown()) {
-<a class="jxr_linenumber" name="280" href="#280">280</a>                     closeAll();
-<a class="jxr_linenumber" name="281" href="#281">281</a>                     <strong class="jxr_keyword">if</strong> (confirmShutdown()) {
-<a class="jxr_linenumber" name="282" href="#282">282</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="283" href="#283">283</a>                     }
-<a class="jxr_linenumber" name="284" href="#284">284</a>                 }
-<a class="jxr_linenumber" name="285" href="#285">285</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="286" href="#286">286</a>                 handleLoopException(t);
-<a class="jxr_linenumber" name="287" href="#287">287</a>             }
-<a class="jxr_linenumber" name="288" href="#288">288</a>         }
-<a class="jxr_linenumber" name="289" href="#289">289</a>     }
-<a class="jxr_linenumber" name="290" href="#290">290</a> 
-<a class="jxr_linenumber" name="291" href="#291">291</a>     @Override
-<a class="jxr_linenumber" name="292" href="#292">292</a>     <strong class="jxr_keyword">protected</strong> Queue&lt;Runnable&gt; newTaskQueue(<strong class="jxr_keyword">int</strong> maxPendingTasks) {
-<a class="jxr_linenumber" name="293" href="#293">293</a>         <em class="jxr_comment">// This event loop never calls takeTask()</em>
-<a class="jxr_linenumber" name="294" href="#294">294</a>         <strong class="jxr_keyword">return</strong> maxPendingTasks == Integer.MAX_VALUE ? PlatformDependent.&lt;Runnable&gt;newMpscQueue()
-<a class="jxr_linenumber" name="295" href="#295">295</a>                                                     : PlatformDependent.&lt;Runnable&gt;newMpscQueue(maxPendingTasks);
-<a class="jxr_linenumber" name="296" href="#296">296</a>     }
-<a class="jxr_linenumber" name="297" href="#297">297</a> 
-<a class="jxr_linenumber" name="298" href="#298">298</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="299" href="#299">299</a> <em class="jxr_javadoccomment">     * Returns the percentage of the desired amount of time spent for I/O in the event loop.</em>
-<a class="jxr_linenumber" name="300" href="#300">300</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="301" href="#301">301</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getIoRatio() {
-<a class="jxr_linenumber" name="302" href="#302">302</a>         <strong class="jxr_keyword">return</strong> ioRatio;
-<a class="jxr_linenumber" name="303" href="#303">303</a>     }
-<a class="jxr_linenumber" name="304" href="#304">304</a> 
-<a class="jxr_linenumber" name="305" href="#305">305</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="306" href="#306">306</a> <em class="jxr_javadoccomment">     * Sets the percentage of the desired amount of time spent for I/O in the event loop.  The default value is</em>
-<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.</em>
-<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="309" href="#309">309</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> setIoRatio(<strong class="jxr_keyword">int</strong> ioRatio) {
-<a class="jxr_linenumber" name="310" href="#310">310</a>         <strong class="jxr_keyword">if</strong> (ioRatio &lt;= 0 || ioRatio &gt; 100) {
-<a class="jxr_linenumber" name="311" href="#311">311</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"ioRatio: "</span> + ioRatio + <span class="jxr_string">" (expected: 0 &lt; ioRatio &lt;= 100)"</span>);
-<a class="jxr_linenumber" name="312" href="#312">312</a>         }
-<a class="jxr_linenumber" name="313" href="#313">313</a>         <strong class="jxr_keyword">this</strong>.ioRatio = ioRatio;
-<a class="jxr_linenumber" name="314" href="#314">314</a>     }
-<a class="jxr_linenumber" name="315" href="#315">315</a> 
-<a class="jxr_linenumber" name="316" href="#316">316</a>     @Override
-<a class="jxr_linenumber" name="317" href="#317">317</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> cleanup() {
-<a class="jxr_linenumber" name="318" href="#318">318</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="319" href="#319">319</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="320" href="#320">320</a>                 kqueueFd.close();
-<a class="jxr_linenumber" name="321" href="#321">321</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="322" href="#322">322</a>                 logger.warn(<span class="jxr_string">"Failed to close the kqueue fd."</span>, e);
-<a class="jxr_linenumber" name="323" href="#323">323</a>             }
-<a class="jxr_linenumber" name="324" href="#324">324</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="325" href="#325">325</a>             <em class="jxr_comment">// Cleanup all native memory!</em>
-<a class="jxr_linenumber" name="326" href="#326">326</a> 
-<a class="jxr_linenumber" name="327" href="#327">327</a>             <em class="jxr_comment">// The JNI channel pointers should already be deleted because we should wait on kevent before this method,</em>
-<a class="jxr_linenumber" name="328" href="#328">328</a>             <em class="jxr_comment">// but lets just be sure we cleanup native memory.</em>
-<a class="jxr_linenumber" name="329" href="#329">329</a>             deleteJniChannelPointers();
-<a class="jxr_linenumber" name="330" href="#330">330</a>             jniChannelPointers.free();
-<a class="jxr_linenumber" name="331" href="#331">331</a> 
-<a class="jxr_linenumber" name="332" href="#332">332</a>             changeList.free();
-<a class="jxr_linenumber" name="333" href="#333">333</a>             eventList.free();
-<a class="jxr_linenumber" name="334" href="#334">334</a>         }
-<a class="jxr_linenumber" name="335" href="#335">335</a>     }
-<a class="jxr_linenumber" name="336" href="#336">336</a> 
-<a class="jxr_linenumber" name="337" href="#337">337</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeAll() {
-<a class="jxr_linenumber" name="338" href="#338">338</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="339" href="#339">339</a>             kqueueWaitNow();
-<a class="jxr_linenumber" name="340" href="#340">340</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="341" href="#341">341</a>             <em class="jxr_comment">// ignore on close</em>
-<a class="jxr_linenumber" name="342" href="#342">342</a>         }
-<a class="jxr_linenumber" name="343" href="#343">343</a>     }
-<a class="jxr_linenumber" name="344" href="#344">344</a> 
-<a class="jxr_linenumber" name="345" href="#345">345</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> handleLoopException(Throwable t) {
-<a class="jxr_linenumber" name="346" href="#346">346</a>         logger.warn(<span class="jxr_string">"Unexpected exception in the selector loop."</span>, t);
-<a class="jxr_linenumber" name="347" href="#347">347</a> 
-<a class="jxr_linenumber" name="348" href="#348">348</a>         <em class="jxr_comment">// Prevent possible consecutive immediate failures that lead to</em>
-<a class="jxr_linenumber" name="349" href="#349">349</a>         <em class="jxr_comment">// excessive CPU consumption.</em>
-<a class="jxr_linenumber" name="350" href="#350">350</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="351" href="#351">351</a>             Thread.sleep(1000);
-<a class="jxr_linenumber" name="352" href="#352">352</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
-<a class="jxr_linenumber" name="353" href="#353">353</a>             <em class="jxr_comment">// Ignore.</em>
-<a class="jxr_linenumber" name="354" href="#354">354</a>         }
-<a class="jxr_linenumber" name="355" href="#355">355</a>     }
-<a class="jxr_linenumber" name="356" href="#356">356</a> }
+<a class="jxr_linenumber" name="274" href="#274">274</a>                 <strong class="jxr_keyword">if</strong> (allowGrowing &amp;&amp; strategy == eventList.capacity()) {
+<a class="jxr_linenumber" name="275" href="#275">275</a>                     <em class="jxr_comment">//increase the size of the array as we needed the whole space for the events</em>
+<a class="jxr_linenumber" name="276" href="#276">276</a>                     eventList.realloc(false);
+<a class="jxr_linenumber" name="277" href="#277">277</a>                 }
+<a class="jxr_linenumber" name="278" href="#278">278</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="279" href="#279">279</a>                 handleLoopException(t);
+<a class="jxr_linenumber" name="280" href="#280">280</a>             }
+<a class="jxr_linenumber" name="281" href="#281">281</a>             <em class="jxr_comment">// Always handle shutdown even if the loop processing threw an exception.</em>
+<a class="jxr_linenumber" name="282" href="#282">282</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="283" href="#283">283</a>                 <strong class="jxr_keyword">if</strong> (isShuttingDown()) {
+<a class="jxr_linenumber" name="284" href="#284">284</a>                     closeAll();
+<a class="jxr_linenumber" name="285" href="#285">285</a>                     <strong class="jxr_keyword">if</strong> (confirmShutdown()) {
+<a class="jxr_linenumber" name="286" href="#286">286</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="287" href="#287">287</a>                     }
+<a class="jxr_linenumber" name="288" href="#288">288</a>                 }
+<a class="jxr_linenumber" name="289" href="#289">289</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="290" href="#290">290</a>                 handleLoopException(t);
+<a class="jxr_linenumber" name="291" href="#291">291</a>             }
+<a class="jxr_linenumber" name="292" href="#292">292</a>         }
+<a class="jxr_linenumber" name="293" href="#293">293</a>     }
+<a class="jxr_linenumber" name="294" href="#294">294</a> 
+<a class="jxr_linenumber" name="295" href="#295">295</a>     @Override
+<a class="jxr_linenumber" name="296" href="#296">296</a>     <strong class="jxr_keyword">protected</strong> Queue&lt;Runnable&gt; newTaskQueue(<strong class="jxr_keyword">int</strong> maxPendingTasks) {
+<a class="jxr_linenumber" name="297" href="#297">297</a>         <em class="jxr_comment">// This event loop never calls takeTask()</em>
+<a class="jxr_linenumber" name="298" href="#298">298</a>         <strong class="jxr_keyword">return</strong> maxPendingTasks == Integer.MAX_VALUE ? PlatformDependent.&lt;Runnable&gt;newMpscQueue()
+<a class="jxr_linenumber" name="299" href="#299">299</a>                                                     : PlatformDependent.&lt;Runnable&gt;newMpscQueue(maxPendingTasks);
+<a class="jxr_linenumber" name="300" href="#300">300</a>     }
+<a class="jxr_linenumber" name="301" href="#301">301</a> 
+<a class="jxr_linenumber" name="302" href="#302">302</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="303" href="#303">303</a> <em class="jxr_javadoccomment">     * Returns the percentage of the desired amount of time spent for I/O in the event loop.</em>
+<a class="jxr_linenumber" name="304" href="#304">304</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="305" href="#305">305</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getIoRatio() {
+<a class="jxr_linenumber" name="306" href="#306">306</a>         <strong class="jxr_keyword">return</strong> ioRatio;
+<a class="jxr_linenumber" name="307" href="#307">307</a>     }
+<a class="jxr_linenumber" name="308" href="#308">308</a> 
+<a class="jxr_linenumber" name="309" href="#309">309</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="310" href="#310">310</a> <em class="jxr_javadoccomment">     * Sets the percentage of the desired amount of time spent for I/O in the event loop.  The default value is</em>
+<a class="jxr_linenumber" name="311" href="#311">311</a> <em class="jxr_javadoccomment">     * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.</em>
+<a class="jxr_linenumber" name="312" href="#312">312</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="313" href="#313">313</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> setIoRatio(<strong class="jxr_keyword">int</strong> ioRatio) {
+<a class="jxr_linenumber" name="314" href="#314">314</a>         <strong class="jxr_keyword">if</strong> (ioRatio &lt;= 0 || ioRatio &gt; 100) {
+<a class="jxr_linenumber" name="315" href="#315">315</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"ioRatio: "</span> + ioRatio + <span class="jxr_string">" (expected: 0 &lt; ioRatio &lt;= 100)"</span>);
+<a class="jxr_linenumber" name="316" href="#316">316</a>         }
+<a class="jxr_linenumber" name="317" href="#317">317</a>         <strong class="jxr_keyword">this</strong>.ioRatio = ioRatio;
+<a class="jxr_linenumber" name="318" href="#318">318</a>     }
+<a class="jxr_linenumber" name="319" href="#319">319</a> 
+<a class="jxr_linenumber" name="320" href="#320">320</a>     @Override
+<a class="jxr_linenumber" name="321" href="#321">321</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> cleanup() {
+<a class="jxr_linenumber" name="322" href="#322">322</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="323" href="#323">323</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="324" href="#324">324</a>                 kqueueFd.close();
+<a class="jxr_linenumber" name="325" href="#325">325</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="326" href="#326">326</a>                 logger.warn(<span class="jxr_string">"Failed to close the kqueue fd."</span>, e);
+<a class="jxr_linenumber" name="327" href="#327">327</a>             }
+<a class="jxr_linenumber" name="328" href="#328">328</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="329" href="#329">329</a>             <em class="jxr_comment">// Cleanup all native memory!</em>
+<a class="jxr_linenumber" name="330" href="#330">330</a> 
+<a class="jxr_linenumber" name="331" href="#331">331</a>             <em class="jxr_comment">// The JNI channel pointers should already be deleted because we should wait on kevent before this method,</em>
+<a class="jxr_linenumber" name="332" href="#332">332</a>             <em class="jxr_comment">// but lets just be sure we cleanup native memory.</em>
+<a class="jxr_linenumber" name="333" href="#333">333</a>             deleteJniChannelPointers();
+<a class="jxr_linenumber" name="334" href="#334">334</a>             jniChannelPointers.free();
+<a class="jxr_linenumber" name="335" href="#335">335</a> 
+<a class="jxr_linenumber" name="336" href="#336">336</a>             changeList.free();
+<a class="jxr_linenumber" name="337" href="#337">337</a>             eventList.free();
+<a class="jxr_linenumber" name="338" href="#338">338</a>         }
+<a class="jxr_linenumber" name="339" href="#339">339</a>     }
+<a class="jxr_linenumber" name="340" href="#340">340</a> 
+<a class="jxr_linenumber" name="341" href="#341">341</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeAll() {
+<a class="jxr_linenumber" name="342" href="#342">342</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="343" href="#343">343</a>             kqueueWaitNow();
+<a class="jxr_linenumber" name="344" href="#344">344</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="345" href="#345">345</a>             <em class="jxr_comment">// ignore on close</em>
+<a class="jxr_linenumber" name="346" href="#346">346</a>         }
+<a class="jxr_linenumber" name="347" href="#347">347</a>     }
+<a class="jxr_linenumber" name="348" href="#348">348</a> 
+<a class="jxr_linenumber" name="349" href="#349">349</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> handleLoopException(Throwable t) {
+<a class="jxr_linenumber" name="350" href="#350">350</a>         logger.warn(<span class="jxr_string">"Unexpected exception in the selector loop."</span>, t);
+<a class="jxr_linenumber" name="351" href="#351">351</a> 
+<a class="jxr_linenumber" name="352" href="#352">352</a>         <em class="jxr_comment">// Prevent possible consecutive immediate failures that lead to</em>
+<a class="jxr_linenumber" name="353" href="#353">353</a>         <em class="jxr_comment">// excessive CPU consumption.</em>
+<a class="jxr_linenumber" name="354" href="#354">354</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="355" href="#355">355</a>             Thread.sleep(1000);
+<a class="jxr_linenumber" name="356" href="#356">356</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
+<a class="jxr_linenumber" name="357" href="#357">357</a>             <em class="jxr_comment">// Ignore.</em>
+<a class="jxr_linenumber" name="358" href="#358">358</a>         }
+<a class="jxr_linenumber" name="359" href="#359">359</a>     }
+<a class="jxr_linenumber" name="360" href="#360">360</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

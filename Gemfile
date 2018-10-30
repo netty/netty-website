@@ -8,6 +8,7 @@ gem 'uglifier', '~> 2.7.2'
 gem 'therubyracer', '~> 0.12.2'
 gem 'coffee-rails', '~> 4.1.1'
 
+gem 'eventmachine', '~> 1.2.7'
 gem 'disqus', '~> 1.0.4'
 gem 'nokogiri', '~> 1.8.1'
 gem 'htmlentities', '~> 4.3.4'
