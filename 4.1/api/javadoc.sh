@@ -1,1 +1,1 @@
-/Users/norman/.jabba/jdk/zulu@1.8.181/Contents/Home/jre/../bin/javadoc @options @packages
+/jdk/jre/../bin/javadoc @options @packages
