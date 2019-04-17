@@ -262,125 +262,163 @@
 <a class="jxr_linenumber" name="252" href="#252">252</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> OpenSslX509KeyManagerFactory newEngineBased(X509Certificate[] certificateChain, String password)
 <a class="jxr_linenumber" name="253" href="#253">253</a>             <strong class="jxr_keyword">throws</strong> CertificateException, IOException,
 <a class="jxr_linenumber" name="254" href="#254">254</a>                    KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
-<a class="jxr_linenumber" name="255" href="#255">255</a>         KeyStore store = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslEngineKeyStore</a>(certificateChain.clone());
+<a class="jxr_linenumber" name="255" href="#255">255</a>         KeyStore store = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslKeyStore</a>(certificateChain.clone(), false);
 <a class="jxr_linenumber" name="256" href="#256">256</a>         store.load(<strong class="jxr_keyword">null</strong>, <strong class="jxr_keyword">null</strong>);
 <a class="jxr_linenumber" name="257" href="#257">257</a>         OpenSslX509KeyManagerFactory factory = <strong class="jxr_keyword">new</strong> OpenSslX509KeyManagerFactory();
 <a class="jxr_linenumber" name="258" href="#258">258</a>         factory.init(store, password == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : password.toCharArray());
 <a class="jxr_linenumber" name="259" href="#259">259</a>         <strong class="jxr_keyword">return</strong> factory;
 <a class="jxr_linenumber" name="260" href="#260">260</a>     }
 <a class="jxr_linenumber" name="261" href="#261">261</a> 
-<a class="jxr_linenumber" name="262" href="#262">262</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslEngineKeyStore</a> <strong class="jxr_keyword">extends</strong> KeyStore {
-<a class="jxr_linenumber" name="263" href="#263">263</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslEngineKeyStore</a>(<strong class="jxr_keyword">final</strong> X509Certificate[] certificateChain) {
-<a class="jxr_linenumber" name="264" href="#264">264</a>             <strong class="jxr_keyword">super</strong>(<strong class="jxr_keyword">new</strong> KeyStoreSpi() {
-<a class="jxr_linenumber" name="265" href="#265">265</a> 
-<a class="jxr_linenumber" name="266" href="#266">266</a>                 <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Date creationDate = <strong class="jxr_keyword">new</strong> Date();
-<a class="jxr_linenumber" name="267" href="#267">267</a> 
-<a class="jxr_linenumber" name="268" href="#268">268</a>                 @Override
-<a class="jxr_linenumber" name="269" href="#269">269</a>                 <strong class="jxr_keyword">public</strong> Key engineGetKey(String alias, <strong class="jxr_keyword">char</strong>[] password) <strong class="jxr_keyword">throws</strong> UnrecoverableKeyException {
-<a class="jxr_linenumber" name="270" href="#270">270</a>                     <strong class="jxr_keyword">if</strong> (engineContainsAlias(alias)) {
-<a class="jxr_linenumber" name="271" href="#271">271</a>                         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="272" href="#272">272</a>                             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslPrivateKey.html">OpenSslPrivateKey</a>(SSL.loadPrivateKeyFromEngine(
-<a class="jxr_linenumber" name="273" href="#273">273</a>                                             alias, password == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : <strong class="jxr_keyword">new</strong> String(password)));
-<a class="jxr_linenumber" name="274" href="#274">274</a>                         } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="275" href="#275">275</a>                             UnrecoverableKeyException keyException =
-<a class="jxr_linenumber" name="276" href="#276">276</a>                                     <strong class="jxr_keyword">new</strong> UnrecoverableKeyException(<span class="jxr_string">"Unable to load key from engine"</span>);
-<a class="jxr_linenumber" name="277" href="#277">277</a>                             keyException.initCause(e);
-<a class="jxr_linenumber" name="278" href="#278">278</a>                             <strong class="jxr_keyword">throw</strong> keyException;
-<a class="jxr_linenumber" name="279" href="#279">279</a>                         }
-<a class="jxr_linenumber" name="280" href="#280">280</a>                     }
-<a class="jxr_linenumber" name="281" href="#281">281</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="282" href="#282">282</a>                 }
-<a class="jxr_linenumber" name="283" href="#283">283</a> 
-<a class="jxr_linenumber" name="284" href="#284">284</a>                 @Override
-<a class="jxr_linenumber" name="285" href="#285">285</a>                 <strong class="jxr_keyword">public</strong> Certificate[] engineGetCertificateChain(String alias) {
-<a class="jxr_linenumber" name="286" href="#286">286</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias)? certificateChain.clone() : <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="287" href="#287">287</a>                 }
-<a class="jxr_linenumber" name="288" href="#288">288</a> 
-<a class="jxr_linenumber" name="289" href="#289">289</a>                 @Override
-<a class="jxr_linenumber" name="290" href="#290">290</a>                 <strong class="jxr_keyword">public</strong> Certificate engineGetCertificate(String alias) {
-<a class="jxr_linenumber" name="291" href="#291">291</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias)? certificateChain[0] : <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="292" href="#292">292</a>                 }
+<a class="jxr_linenumber" name="262" href="#262">262</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="263" href="#263">263</a> <em class="jxr_javadoccomment">     * See {@link OpenSslX509KeyManagerFactory#newEngineBased(X509Certificate[], String)}.</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="265" href="#265">265</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> OpenSslX509KeyManagerFactory newKeyless(File chain)
+<a class="jxr_linenumber" name="266" href="#266">266</a>             <strong class="jxr_keyword">throws</strong> CertificateException, IOException,
+<a class="jxr_linenumber" name="267" href="#267">267</a>             KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
+<a class="jxr_linenumber" name="268" href="#268">268</a>         <strong class="jxr_keyword">return</strong> newKeyless(SslContext.toX509Certificates(chain));
+<a class="jxr_linenumber" name="269" href="#269">269</a>     }
+<a class="jxr_linenumber" name="270" href="#270">270</a> 
+<a class="jxr_linenumber" name="271" href="#271">271</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="272" href="#272">272</a> <em class="jxr_javadoccomment">     * See {@link OpenSslX509KeyManagerFactory#newEngineBased(X509Certificate[], String)}.</em>
+<a class="jxr_linenumber" name="273" href="#273">273</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="274" href="#274">274</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> OpenSslX509KeyManagerFactory newKeyless(InputStream chain)
+<a class="jxr_linenumber" name="275" href="#275">275</a>             <strong class="jxr_keyword">throws</strong> CertificateException, IOException,
+<a class="jxr_linenumber" name="276" href="#276">276</a>             KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
+<a class="jxr_linenumber" name="277" href="#277">277</a>         <strong class="jxr_keyword">return</strong> newKeyless(SslContext.toX509Certificates(chain));
+<a class="jxr_linenumber" name="278" href="#278">278</a>     }
+<a class="jxr_linenumber" name="279" href="#279">279</a> 
+<a class="jxr_linenumber" name="280" href="#280">280</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="281" href="#281">281</a> <em class="jxr_javadoccomment">     * Returns a new initialized {@link OpenSslX509KeyManagerFactory} which will provide its private key by using the</em>
+<a class="jxr_linenumber" name="282" href="#282">282</a> <em class="jxr_javadoccomment">     * {@link OpenSslPrivateKeyMethod}.</em>
+<a class="jxr_linenumber" name="283" href="#283">283</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="284" href="#284">284</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> OpenSslX509KeyManagerFactory newKeyless(X509Certificate... certificateChain)
+<a class="jxr_linenumber" name="285" href="#285">285</a>             <strong class="jxr_keyword">throws</strong> CertificateException, IOException,
+<a class="jxr_linenumber" name="286" href="#286">286</a>             KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
+<a class="jxr_linenumber" name="287" href="#287">287</a>         KeyStore store = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslKeyStore</a>(certificateChain.clone(), <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="288" href="#288">288</a>         store.load(<strong class="jxr_keyword">null</strong>, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="289" href="#289">289</a>         OpenSslX509KeyManagerFactory factory = <strong class="jxr_keyword">new</strong> OpenSslX509KeyManagerFactory();
+<a class="jxr_linenumber" name="290" href="#290">290</a>         factory.init(store, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="291" href="#291">291</a>         <strong class="jxr_keyword">return</strong> factory;
+<a class="jxr_linenumber" name="292" href="#292">292</a>     }
 <a class="jxr_linenumber" name="293" href="#293">293</a> 
-<a class="jxr_linenumber" name="294" href="#294">294</a>                 @Override
-<a class="jxr_linenumber" name="295" href="#295">295</a>                 <strong class="jxr_keyword">public</strong> Date engineGetCreationDate(String alias) {
-<a class="jxr_linenumber" name="296" href="#296">296</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias)? creationDate : <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="297" href="#297">297</a>                 }
-<a class="jxr_linenumber" name="298" href="#298">298</a> 
-<a class="jxr_linenumber" name="299" href="#299">299</a>                 @Override
-<a class="jxr_linenumber" name="300" href="#300">300</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineSetKeyEntry(String alias, Key key, <strong class="jxr_keyword">char</strong>[] password, Certificate[] chain)
-<a class="jxr_linenumber" name="301" href="#301">301</a>                         <strong class="jxr_keyword">throws</strong> KeyStoreException {
-<a class="jxr_linenumber" name="302" href="#302">302</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
-<a class="jxr_linenumber" name="303" href="#303">303</a>                 }
-<a class="jxr_linenumber" name="304" href="#304">304</a> 
-<a class="jxr_linenumber" name="305" href="#305">305</a>                 @Override
-<a class="jxr_linenumber" name="306" href="#306">306</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineSetKeyEntry(String alias, byte[] key, Certificate[] chain) <strong class="jxr_keyword">throws</strong> KeyStoreException {
-<a class="jxr_linenumber" name="307" href="#307">307</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
-<a class="jxr_linenumber" name="308" href="#308">308</a>                 }
-<a class="jxr_linenumber" name="309" href="#309">309</a> 
-<a class="jxr_linenumber" name="310" href="#310">310</a>                 @Override
-<a class="jxr_linenumber" name="311" href="#311">311</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineSetCertificateEntry(String alias, Certificate cert) <strong class="jxr_keyword">throws</strong> KeyStoreException {
-<a class="jxr_linenumber" name="312" href="#312">312</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
-<a class="jxr_linenumber" name="313" href="#313">313</a>                 }
-<a class="jxr_linenumber" name="314" href="#314">314</a> 
-<a class="jxr_linenumber" name="315" href="#315">315</a>                 @Override
-<a class="jxr_linenumber" name="316" href="#316">316</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineDeleteEntry(String alias) <strong class="jxr_keyword">throws</strong> KeyStoreException {
-<a class="jxr_linenumber" name="317" href="#317">317</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
-<a class="jxr_linenumber" name="318" href="#318">318</a>                 }
-<a class="jxr_linenumber" name="319" href="#319">319</a> 
-<a class="jxr_linenumber" name="320" href="#320">320</a>                 @Override
-<a class="jxr_linenumber" name="321" href="#321">321</a>                 <strong class="jxr_keyword">public</strong> Enumeration&lt;String&gt; engineAliases() {
-<a class="jxr_linenumber" name="322" href="#322">322</a>                     <strong class="jxr_keyword">return</strong> Collections.enumeration(Collections.singleton(SslContext.ALIAS));
-<a class="jxr_linenumber" name="323" href="#323">323</a>                 }
-<a class="jxr_linenumber" name="324" href="#324">324</a> 
-<a class="jxr_linenumber" name="325" href="#325">325</a>                 @Override
-<a class="jxr_linenumber" name="326" href="#326">326</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> engineContainsAlias(String alias) {
-<a class="jxr_linenumber" name="327" href="#327">327</a>                     <strong class="jxr_keyword">return</strong> SslContext.ALIAS.equals(alias);
-<a class="jxr_linenumber" name="328" href="#328">328</a>                 }
-<a class="jxr_linenumber" name="329" href="#329">329</a> 
-<a class="jxr_linenumber" name="330" href="#330">330</a>                 @Override
-<a class="jxr_linenumber" name="331" href="#331">331</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> engineSize() {
-<a class="jxr_linenumber" name="332" href="#332">332</a>                     <strong class="jxr_keyword">return</strong> 1;
-<a class="jxr_linenumber" name="333" href="#333">333</a>                 }
-<a class="jxr_linenumber" name="334" href="#334">334</a> 
-<a class="jxr_linenumber" name="335" href="#335">335</a>                 @Override
-<a class="jxr_linenumber" name="336" href="#336">336</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> engineIsKeyEntry(String alias) {
-<a class="jxr_linenumber" name="337" href="#337">337</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias);
-<a class="jxr_linenumber" name="338" href="#338">338</a>                 }
-<a class="jxr_linenumber" name="339" href="#339">339</a> 
-<a class="jxr_linenumber" name="340" href="#340">340</a>                 @Override
-<a class="jxr_linenumber" name="341" href="#341">341</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> engineIsCertificateEntry(String alias) {
-<a class="jxr_linenumber" name="342" href="#342">342</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias);
-<a class="jxr_linenumber" name="343" href="#343">343</a>                 }
-<a class="jxr_linenumber" name="344" href="#344">344</a> 
-<a class="jxr_linenumber" name="345" href="#345">345</a>                 @Override
-<a class="jxr_linenumber" name="346" href="#346">346</a>                 <strong class="jxr_keyword">public</strong> String engineGetCertificateAlias(Certificate cert) {
-<a class="jxr_linenumber" name="347" href="#347">347</a>                     <strong class="jxr_keyword">if</strong> (cert instanceof X509Certificate) {
-<a class="jxr_linenumber" name="348" href="#348">348</a>                         <strong class="jxr_keyword">for</strong> (X509Certificate x509Certificate : certificateChain) {
-<a class="jxr_linenumber" name="349" href="#349">349</a>                             <strong class="jxr_keyword">if</strong> (x509Certificate.equals(cert)) {
-<a class="jxr_linenumber" name="350" href="#350">350</a>                                 <strong class="jxr_keyword">return</strong> SslContext.ALIAS;
-<a class="jxr_linenumber" name="351" href="#351">351</a>                             }
-<a class="jxr_linenumber" name="352" href="#352">352</a>                         }
-<a class="jxr_linenumber" name="353" href="#353">353</a>                     }
-<a class="jxr_linenumber" name="354" href="#354">354</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="355" href="#355">355</a>                 }
-<a class="jxr_linenumber" name="356" href="#356">356</a> 
-<a class="jxr_linenumber" name="357" href="#357">357</a>                 @Override
-<a class="jxr_linenumber" name="358" href="#358">358</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineStore(OutputStream stream, <strong class="jxr_keyword">char</strong>[] password) {
-<a class="jxr_linenumber" name="359" href="#359">359</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
-<a class="jxr_linenumber" name="360" href="#360">360</a>                 }
-<a class="jxr_linenumber" name="361" href="#361">361</a> 
-<a class="jxr_linenumber" name="362" href="#362">362</a>                 @Override
-<a class="jxr_linenumber" name="363" href="#363">363</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineLoad(InputStream stream, <strong class="jxr_keyword">char</strong>[] password) {
-<a class="jxr_linenumber" name="364" href="#364">364</a>                     <strong class="jxr_keyword">if</strong> (stream != <strong class="jxr_keyword">null</strong> &amp;&amp; password != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="365" href="#365">365</a>                         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
-<a class="jxr_linenumber" name="366" href="#366">366</a>                     }
-<a class="jxr_linenumber" name="367" href="#367">367</a>                 }
-<a class="jxr_linenumber" name="368" href="#368">368</a>             }, <strong class="jxr_keyword">null</strong>, <span class="jxr_string">"native"</span>);
-<a class="jxr_linenumber" name="369" href="#369">369</a> 
-<a class="jxr_linenumber" name="370" href="#370">370</a>             OpenSsl.ensureAvailability();
-<a class="jxr_linenumber" name="371" href="#371">371</a>         }
-<a class="jxr_linenumber" name="372" href="#372">372</a>     }
-<a class="jxr_linenumber" name="373" href="#373">373</a> }
+<a class="jxr_linenumber" name="294" href="#294">294</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslKeyStore</a> <strong class="jxr_keyword">extends</strong> KeyStore {
+<a class="jxr_linenumber" name="295" href="#295">295</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/OpenSslX509KeyManagerFactory.html">OpenSslKeyStore</a>(<strong class="jxr_keyword">final</strong> X509Certificate[] certificateChain, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> keyless) {
+<a class="jxr_linenumber" name="296" href="#296">296</a>             <strong class="jxr_keyword">super</strong>(<strong class="jxr_keyword">new</strong> KeyStoreSpi() {
+<a class="jxr_linenumber" name="297" href="#297">297</a> 
+<a class="jxr_linenumber" name="298" href="#298">298</a>                 <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Date creationDate = <strong class="jxr_keyword">new</strong> Date();
+<a class="jxr_linenumber" name="299" href="#299">299</a> 
+<a class="jxr_linenumber" name="300" href="#300">300</a>                 @Override
+<a class="jxr_linenumber" name="301" href="#301">301</a>                 <strong class="jxr_keyword">public</strong> Key engineGetKey(String alias, <strong class="jxr_keyword">char</strong>[] password) <strong class="jxr_keyword">throws</strong> UnrecoverableKeyException {
+<a class="jxr_linenumber" name="302" href="#302">302</a>                     <strong class="jxr_keyword">if</strong> (engineContainsAlias(alias)) {
+<a class="jxr_linenumber" name="303" href="#303">303</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> privateKeyAddress;
+<a class="jxr_linenumber" name="304" href="#304">304</a>                         <strong class="jxr_keyword">if</strong> (keyless) {
+<a class="jxr_linenumber" name="305" href="#305">305</a>                             privateKeyAddress = 0;
+<a class="jxr_linenumber" name="306" href="#306">306</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="307" href="#307">307</a>                             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="308" href="#308">308</a>                                 privateKeyAddress = SSL.loadPrivateKeyFromEngine(
+<a class="jxr_linenumber" name="309" href="#309">309</a>                                         alias, password == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : <strong class="jxr_keyword">new</strong> String(password));
+<a class="jxr_linenumber" name="310" href="#310">310</a>                             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="311" href="#311">311</a>                                 UnrecoverableKeyException keyException =
+<a class="jxr_linenumber" name="312" href="#312">312</a>                                         <strong class="jxr_keyword">new</strong> UnrecoverableKeyException(<span class="jxr_string">"Unable to load key from engine"</span>);
+<a class="jxr_linenumber" name="313" href="#313">313</a>                                 keyException.initCause(e);
+<a class="jxr_linenumber" name="314" href="#314">314</a>                                 <strong class="jxr_keyword">throw</strong> keyException;
+<a class="jxr_linenumber" name="315" href="#315">315</a>                             }
+<a class="jxr_linenumber" name="316" href="#316">316</a>                         }
+<a class="jxr_linenumber" name="317" href="#317">317</a>                         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslPrivateKey.html">OpenSslPrivateKey</a>(privateKeyAddress);
+<a class="jxr_linenumber" name="318" href="#318">318</a>                     }
+<a class="jxr_linenumber" name="319" href="#319">319</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="320" href="#320">320</a>                 }
+<a class="jxr_linenumber" name="321" href="#321">321</a> 
+<a class="jxr_linenumber" name="322" href="#322">322</a>                 @Override
+<a class="jxr_linenumber" name="323" href="#323">323</a>                 <strong class="jxr_keyword">public</strong> Certificate[] engineGetCertificateChain(String alias) {
+<a class="jxr_linenumber" name="324" href="#324">324</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias)? certificateChain.clone() : <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="325" href="#325">325</a>                 }
+<a class="jxr_linenumber" name="326" href="#326">326</a> 
+<a class="jxr_linenumber" name="327" href="#327">327</a>                 @Override
+<a class="jxr_linenumber" name="328" href="#328">328</a>                 <strong class="jxr_keyword">public</strong> Certificate engineGetCertificate(String alias) {
+<a class="jxr_linenumber" name="329" href="#329">329</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias)? certificateChain[0] : <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="330" href="#330">330</a>                 }
+<a class="jxr_linenumber" name="331" href="#331">331</a> 
+<a class="jxr_linenumber" name="332" href="#332">332</a>                 @Override
+<a class="jxr_linenumber" name="333" href="#333">333</a>                 <strong class="jxr_keyword">public</strong> Date engineGetCreationDate(String alias) {
+<a class="jxr_linenumber" name="334" href="#334">334</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias)? creationDate : <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="335" href="#335">335</a>                 }
+<a class="jxr_linenumber" name="336" href="#336">336</a> 
+<a class="jxr_linenumber" name="337" href="#337">337</a>                 @Override
+<a class="jxr_linenumber" name="338" href="#338">338</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineSetKeyEntry(String alias, Key key, <strong class="jxr_keyword">char</strong>[] password, Certificate[] chain)
+<a class="jxr_linenumber" name="339" href="#339">339</a>                         <strong class="jxr_keyword">throws</strong> KeyStoreException {
+<a class="jxr_linenumber" name="340" href="#340">340</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
+<a class="jxr_linenumber" name="341" href="#341">341</a>                 }
+<a class="jxr_linenumber" name="342" href="#342">342</a> 
+<a class="jxr_linenumber" name="343" href="#343">343</a>                 @Override
+<a class="jxr_linenumber" name="344" href="#344">344</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineSetKeyEntry(String alias, byte[] key, Certificate[] chain) <strong class="jxr_keyword">throws</strong> KeyStoreException {
+<a class="jxr_linenumber" name="345" href="#345">345</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
+<a class="jxr_linenumber" name="346" href="#346">346</a>                 }
+<a class="jxr_linenumber" name="347" href="#347">347</a> 
+<a class="jxr_linenumber" name="348" href="#348">348</a>                 @Override
+<a class="jxr_linenumber" name="349" href="#349">349</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineSetCertificateEntry(String alias, Certificate cert) <strong class="jxr_keyword">throws</strong> KeyStoreException {
+<a class="jxr_linenumber" name="350" href="#350">350</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
+<a class="jxr_linenumber" name="351" href="#351">351</a>                 }
+<a class="jxr_linenumber" name="352" href="#352">352</a> 
+<a class="jxr_linenumber" name="353" href="#353">353</a>                 @Override
+<a class="jxr_linenumber" name="354" href="#354">354</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineDeleteEntry(String alias) <strong class="jxr_keyword">throws</strong> KeyStoreException {
+<a class="jxr_linenumber" name="355" href="#355">355</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> KeyStoreException(<span class="jxr_string">"Not supported"</span>);
+<a class="jxr_linenumber" name="356" href="#356">356</a>                 }
+<a class="jxr_linenumber" name="357" href="#357">357</a> 
+<a class="jxr_linenumber" name="358" href="#358">358</a>                 @Override
+<a class="jxr_linenumber" name="359" href="#359">359</a>                 <strong class="jxr_keyword">public</strong> Enumeration&lt;String&gt; engineAliases() {
+<a class="jxr_linenumber" name="360" href="#360">360</a>                     <strong class="jxr_keyword">return</strong> Collections.enumeration(Collections.singleton(SslContext.ALIAS));
+<a class="jxr_linenumber" name="361" href="#361">361</a>                 }
+<a class="jxr_linenumber" name="362" href="#362">362</a> 
+<a class="jxr_linenumber" name="363" href="#363">363</a>                 @Override
+<a class="jxr_linenumber" name="364" href="#364">364</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> engineContainsAlias(String alias) {
+<a class="jxr_linenumber" name="365" href="#365">365</a>                     <strong class="jxr_keyword">return</strong> SslContext.ALIAS.equals(alias);
+<a class="jxr_linenumber" name="366" href="#366">366</a>                 }
+<a class="jxr_linenumber" name="367" href="#367">367</a> 
+<a class="jxr_linenumber" name="368" href="#368">368</a>                 @Override
+<a class="jxr_linenumber" name="369" href="#369">369</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> engineSize() {
+<a class="jxr_linenumber" name="370" href="#370">370</a>                     <strong class="jxr_keyword">return</strong> 1;
+<a class="jxr_linenumber" name="371" href="#371">371</a>                 }
+<a class="jxr_linenumber" name="372" href="#372">372</a> 
+<a class="jxr_linenumber" name="373" href="#373">373</a>                 @Override
+<a class="jxr_linenumber" name="374" href="#374">374</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> engineIsKeyEntry(String alias) {
+<a class="jxr_linenumber" name="375" href="#375">375</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias);
+<a class="jxr_linenumber" name="376" href="#376">376</a>                 }
+<a class="jxr_linenumber" name="377" href="#377">377</a> 
+<a class="jxr_linenumber" name="378" href="#378">378</a>                 @Override
+<a class="jxr_linenumber" name="379" href="#379">379</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> engineIsCertificateEntry(String alias) {
+<a class="jxr_linenumber" name="380" href="#380">380</a>                     <strong class="jxr_keyword">return</strong> engineContainsAlias(alias);
+<a class="jxr_linenumber" name="381" href="#381">381</a>                 }
+<a class="jxr_linenumber" name="382" href="#382">382</a> 
+<a class="jxr_linenumber" name="383" href="#383">383</a>                 @Override
+<a class="jxr_linenumber" name="384" href="#384">384</a>                 <strong class="jxr_keyword">public</strong> String engineGetCertificateAlias(Certificate cert) {
+<a class="jxr_linenumber" name="385" href="#385">385</a>                     <strong class="jxr_keyword">if</strong> (cert instanceof X509Certificate) {
+<a class="jxr_linenumber" name="386" href="#386">386</a>                         <strong class="jxr_keyword">for</strong> (X509Certificate x509Certificate : certificateChain) {
+<a class="jxr_linenumber" name="387" href="#387">387</a>                             <strong class="jxr_keyword">if</strong> (x509Certificate.equals(cert)) {
+<a class="jxr_linenumber" name="388" href="#388">388</a>                                 <strong class="jxr_keyword">return</strong> SslContext.ALIAS;
+<a class="jxr_linenumber" name="389" href="#389">389</a>                             }
+<a class="jxr_linenumber" name="390" href="#390">390</a>                         }
+<a class="jxr_linenumber" name="391" href="#391">391</a>                     }
+<a class="jxr_linenumber" name="392" href="#392">392</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="393" href="#393">393</a>                 }
+<a class="jxr_linenumber" name="394" href="#394">394</a> 
+<a class="jxr_linenumber" name="395" href="#395">395</a>                 @Override
+<a class="jxr_linenumber" name="396" href="#396">396</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineStore(OutputStream stream, <strong class="jxr_keyword">char</strong>[] password) {
+<a class="jxr_linenumber" name="397" href="#397">397</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
+<a class="jxr_linenumber" name="398" href="#398">398</a>                 }
+<a class="jxr_linenumber" name="399" href="#399">399</a> 
+<a class="jxr_linenumber" name="400" href="#400">400</a>                 @Override
+<a class="jxr_linenumber" name="401" href="#401">401</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> engineLoad(InputStream stream, <strong class="jxr_keyword">char</strong>[] password) {
+<a class="jxr_linenumber" name="402" href="#402">402</a>                     <strong class="jxr_keyword">if</strong> (stream != <strong class="jxr_keyword">null</strong> &amp;&amp; password != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="403" href="#403">403</a>                         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
+<a class="jxr_linenumber" name="404" href="#404">404</a>                     }
+<a class="jxr_linenumber" name="405" href="#405">405</a>                 }
+<a class="jxr_linenumber" name="406" href="#406">406</a>             }, <strong class="jxr_keyword">null</strong>, <span class="jxr_string">"native"</span>);
+<a class="jxr_linenumber" name="407" href="#407">407</a> 
+<a class="jxr_linenumber" name="408" href="#408">408</a>             OpenSsl.ensureAvailability();
+<a class="jxr_linenumber" name="409" href="#409">409</a>         }
+<a class="jxr_linenumber" name="410" href="#410">410</a>     }
+<a class="jxr_linenumber" name="411" href="#411">411</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
