@@ -487,490 +487,498 @@
 <a class="jxr_linenumber" name="477" href="#477">477</a>         doGracefulShutdown(ctx, f, promise);
 <a class="jxr_linenumber" name="478" href="#478">478</a>     }
 <a class="jxr_linenumber" name="479" href="#479">479</a> 
-<a class="jxr_linenumber" name="480" href="#480">480</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> doGracefulShutdown(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="481" href="#481">481</a>         <strong class="jxr_keyword">if</strong> (isGracefulShutdownComplete()) {
-<a class="jxr_linenumber" name="482" href="#482">482</a>             <em class="jxr_comment">// If there are no active streams, close immediately after the GO_AWAY write completes.</em>
-<a class="jxr_linenumber" name="483" href="#483">483</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(ctx, promise));
-<a class="jxr_linenumber" name="484" href="#484">484</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="485" href="#485">485</a>             <em class="jxr_comment">// If there are active streams we should wait until they are all closed before closing the connection.</em>
-<a class="jxr_linenumber" name="486" href="#486">486</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a> tmp = gracefulShutdownTimeoutMillis &lt; 0 ?
-<a class="jxr_linenumber" name="487" href="#487">487</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(ctx, promise) :
-<a class="jxr_linenumber" name="488" href="#488">488</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(ctx, promise, gracefulShutdownTimeoutMillis, MILLISECONDS);
-<a class="jxr_linenumber" name="489" href="#489">489</a>             <em class="jxr_comment">// The ClosingChannelFutureListener will cascade promise completion. We need to always notify the</em>
-<a class="jxr_linenumber" name="490" href="#490">490</a>             <em class="jxr_comment">// new ClosingChannelFutureListener when the graceful close completes if the promise is not null.</em>
-<a class="jxr_linenumber" name="491" href="#491">491</a>             <strong class="jxr_keyword">if</strong> (closeListener == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="492" href="#492">492</a>                 closeListener = tmp;
-<a class="jxr_linenumber" name="493" href="#493">493</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (promise != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="494" href="#494">494</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> oldCloseListener = closeListener;
-<a class="jxr_linenumber" name="495" href="#495">495</a>                 closeListener = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="496" href="#496">496</a>                     @Override
-<a class="jxr_linenumber" name="497" href="#497">497</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="498" href="#498">498</a>                         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="499" href="#499">499</a>                             oldCloseListener.operationComplete(future);
-<a class="jxr_linenumber" name="500" href="#500">500</a>                         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="501" href="#501">501</a>                             tmp.operationComplete(future);
-<a class="jxr_linenumber" name="502" href="#502">502</a>                         }
-<a class="jxr_linenumber" name="503" href="#503">503</a>                     }
-<a class="jxr_linenumber" name="504" href="#504">504</a>                 };
-<a class="jxr_linenumber" name="505" href="#505">505</a>             }
-<a class="jxr_linenumber" name="506" href="#506">506</a>         }
-<a class="jxr_linenumber" name="507" href="#507">507</a>     }
-<a class="jxr_linenumber" name="508" href="#508">508</a> 
-<a class="jxr_linenumber" name="509" href="#509">509</a>     @Override
-<a class="jxr_linenumber" name="510" href="#510">510</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> deregister(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="511" href="#511">511</a>         ctx.deregister(promise);
-<a class="jxr_linenumber" name="512" href="#512">512</a>     }
-<a class="jxr_linenumber" name="513" href="#513">513</a> 
-<a class="jxr_linenumber" name="514" href="#514">514</a>     @Override
-<a class="jxr_linenumber" name="515" href="#515">515</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="516" href="#516">516</a>         ctx.read();
-<a class="jxr_linenumber" name="517" href="#517">517</a>     }
-<a class="jxr_linenumber" name="518" href="#518">518</a> 
-<a class="jxr_linenumber" name="519" href="#519">519</a>     @Override
-<a class="jxr_linenumber" name="520" href="#520">520</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="521" href="#521">521</a>         ctx.write(msg, promise);
-<a class="jxr_linenumber" name="522" href="#522">522</a>     }
-<a class="jxr_linenumber" name="523" href="#523">523</a> 
-<a class="jxr_linenumber" name="524" href="#524">524</a>     @Override
-<a class="jxr_linenumber" name="525" href="#525">525</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadComplete(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="526" href="#526">526</a>         <em class="jxr_comment">// Trigger flush after read on the assumption that flush is cheap if there is nothing to write and that</em>
-<a class="jxr_linenumber" name="527" href="#527">527</a>         <em class="jxr_comment">// for flow-control the read may release window that causes data to be written that can now be flushed.</em>
-<a class="jxr_linenumber" name="528" href="#528">528</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="529" href="#529">529</a>             <em class="jxr_comment">// First call channelReadComplete0(...) as this may produce more data that we want to flush</em>
-<a class="jxr_linenumber" name="530" href="#530">530</a>             channelReadComplete0(ctx);
-<a class="jxr_linenumber" name="531" href="#531">531</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="532" href="#532">532</a>             flush(ctx);
-<a class="jxr_linenumber" name="533" href="#533">533</a>         }
-<a class="jxr_linenumber" name="534" href="#534">534</a>     }
-<a class="jxr_linenumber" name="535" href="#535">535</a> 
-<a class="jxr_linenumber" name="536" href="#536">536</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> channelReadComplete0(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="537" href="#537">537</a>         <em class="jxr_comment">// Discard bytes of the cumulation buffer if needed.</em>
-<a class="jxr_linenumber" name="538" href="#538">538</a>         discardSomeReadBytes();
-<a class="jxr_linenumber" name="539" href="#539">539</a> 
-<a class="jxr_linenumber" name="540" href="#540">540</a>         <em class="jxr_comment">// Ensure we never stale the HTTP/2 Channel. Flow-control is enforced by HTTP/2.</em>
-<a class="jxr_linenumber" name="541" href="#541">541</a>         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="542" href="#542">542</a>         <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7540#section-5.2.2</em>
-<a class="jxr_linenumber" name="543" href="#543">543</a>         <strong class="jxr_keyword">if</strong> (!ctx.channel().config().isAutoRead()) {
-<a class="jxr_linenumber" name="544" href="#544">544</a>             ctx.read();
-<a class="jxr_linenumber" name="545" href="#545">545</a>         }
-<a class="jxr_linenumber" name="546" href="#546">546</a> 
-<a class="jxr_linenumber" name="547" href="#547">547</a>         ctx.fireChannelReadComplete();
-<a class="jxr_linenumber" name="548" href="#548">548</a>     }
-<a class="jxr_linenumber" name="549" href="#549">549</a> 
-<a class="jxr_linenumber" name="550" href="#550">550</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="551" href="#551">551</a> <em class="jxr_javadoccomment">     * Handles {@link Http2Exception} objects that were thrown from other handlers. Ignores all other exceptions.</em>
-<a class="jxr_linenumber" name="552" href="#552">552</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="553" href="#553">553</a>     @Override
-<a class="jxr_linenumber" name="554" href="#554">554</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="555" href="#555">555</a>         <strong class="jxr_keyword">if</strong> (getEmbeddedHttp2Exception(cause) != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="556" href="#556">556</a>             <em class="jxr_comment">// Some exception in the causality chain is an Http2Exception - handle it.</em>
-<a class="jxr_linenumber" name="557" href="#557">557</a>             onError(ctx, false, cause);
-<a class="jxr_linenumber" name="558" href="#558">558</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="559" href="#559">559</a>             <strong class="jxr_keyword">super</strong>.exceptionCaught(ctx, cause);
-<a class="jxr_linenumber" name="560" href="#560">560</a>         }
-<a class="jxr_linenumber" name="561" href="#561">561</a>     }
-<a class="jxr_linenumber" name="562" href="#562">562</a> 
-<a class="jxr_linenumber" name="563" href="#563">563</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="564" href="#564">564</a> <em class="jxr_javadoccomment">     * Closes the local side of the given stream. If this causes the stream to be closed, adds a</em>
-<a class="jxr_linenumber" name="565" href="#565">565</a> <em class="jxr_javadoccomment">     * hook to close the channel after the given future completes.</em>
-<a class="jxr_linenumber" name="566" href="#566">566</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="567" href="#567">567</a> <em class="jxr_javadoccomment">     * @param stream the stream to be half closed.</em>
-<a class="jxr_linenumber" name="568" href="#568">568</a> <em class="jxr_javadoccomment">     * @param future If closing, the future after which to close the channel.</em>
-<a class="jxr_linenumber" name="569" href="#569">569</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="570" href="#570">570</a>     @Override
-<a class="jxr_linenumber" name="571" href="#571">571</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeStreamLocal(Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="572" href="#572">572</a>         <strong class="jxr_keyword">switch</strong> (stream.state()) {
-<a class="jxr_linenumber" name="573" href="#573">573</a>             <strong class="jxr_keyword">case</strong> HALF_CLOSED_LOCAL:
-<a class="jxr_linenumber" name="574" href="#574">574</a>             <strong class="jxr_keyword">case</strong> OPEN:
-<a class="jxr_linenumber" name="575" href="#575">575</a>                 stream.closeLocalSide();
-<a class="jxr_linenumber" name="576" href="#576">576</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="577" href="#577">577</a>             <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="578" href="#578">578</a>                 closeStream(stream, future);
-<a class="jxr_linenumber" name="579" href="#579">579</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="580" href="#580">580</a>         }
-<a class="jxr_linenumber" name="581" href="#581">581</a>     }
-<a class="jxr_linenumber" name="582" href="#582">582</a> 
-<a class="jxr_linenumber" name="583" href="#583">583</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="584" href="#584">584</a> <em class="jxr_javadoccomment">     * Closes the remote side of the given stream. If this causes the stream to be closed, adds a</em>
-<a class="jxr_linenumber" name="585" href="#585">585</a> <em class="jxr_javadoccomment">     * hook to close the channel after the given future completes.</em>
-<a class="jxr_linenumber" name="586" href="#586">586</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="587" href="#587">587</a> <em class="jxr_javadoccomment">     * @param stream the stream to be half closed.</em>
-<a class="jxr_linenumber" name="588" href="#588">588</a> <em class="jxr_javadoccomment">     * @param future If closing, the future after which to close the channel.</em>
-<a class="jxr_linenumber" name="589" href="#589">589</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="590" href="#590">590</a>     @Override
-<a class="jxr_linenumber" name="591" href="#591">591</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeStreamRemote(Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="592" href="#592">592</a>         <strong class="jxr_keyword">switch</strong> (stream.state()) {
-<a class="jxr_linenumber" name="593" href="#593">593</a>             <strong class="jxr_keyword">case</strong> HALF_CLOSED_REMOTE:
-<a class="jxr_linenumber" name="594" href="#594">594</a>             <strong class="jxr_keyword">case</strong> OPEN:
-<a class="jxr_linenumber" name="595" href="#595">595</a>                 stream.closeRemoteSide();
-<a class="jxr_linenumber" name="596" href="#596">596</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="597" href="#597">597</a>             <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="598" href="#598">598</a>                 closeStream(stream, future);
-<a class="jxr_linenumber" name="599" href="#599">599</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="600" href="#600">600</a>         }
-<a class="jxr_linenumber" name="601" href="#601">601</a>     }
-<a class="jxr_linenumber" name="602" href="#602">602</a> 
-<a class="jxr_linenumber" name="603" href="#603">603</a>     @Override
-<a class="jxr_linenumber" name="604" href="#604">604</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeStream(<strong class="jxr_keyword">final</strong> Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="605" href="#605">605</a>         stream.close();
-<a class="jxr_linenumber" name="606" href="#606">606</a> 
-<a class="jxr_linenumber" name="607" href="#607">607</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
-<a class="jxr_linenumber" name="608" href="#608">608</a>             checkCloseConnection(future);
-<a class="jxr_linenumber" name="609" href="#609">609</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="610" href="#610">610</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="611" href="#611">611</a>                 @Override
-<a class="jxr_linenumber" name="612" href="#612">612</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="613" href="#613">613</a>                     checkCloseConnection(future);
-<a class="jxr_linenumber" name="614" href="#614">614</a>                 }
-<a class="jxr_linenumber" name="615" href="#615">615</a>             });
-<a class="jxr_linenumber" name="616" href="#616">616</a>         }
-<a class="jxr_linenumber" name="617" href="#617">617</a>     }
-<a class="jxr_linenumber" name="618" href="#618">618</a> 
-<a class="jxr_linenumber" name="619" href="#619">619</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="620" href="#620">620</a> <em class="jxr_javadoccomment">     * Central handler for all exceptions caught during HTTP/2 processing.</em>
-<a class="jxr_linenumber" name="621" href="#621">621</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="622" href="#622">622</a>     @Override
-<a class="jxr_linenumber" name="623" href="#623">623</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">boolean</strong> outbound, Throwable cause) {
-<a class="jxr_linenumber" name="624" href="#624">624</a>         Http2Exception embedded = getEmbeddedHttp2Exception(cause);
-<a class="jxr_linenumber" name="625" href="#625">625</a>         <strong class="jxr_keyword">if</strong> (isStreamError(embedded)) {
-<a class="jxr_linenumber" name="626" href="#626">626</a>             onStreamError(ctx, outbound, cause, (StreamException) embedded);
-<a class="jxr_linenumber" name="627" href="#627">627</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (embedded instanceof CompositeStreamException) {
-<a class="jxr_linenumber" name="628" href="#628">628</a>             <a href="../../../../../io/netty/handler/codec/http2/Http2Exception.html">CompositeStreamException</a> compositException = (CompositeStreamException) embedded;
-<a class="jxr_linenumber" name="629" href="#629">629</a>             <strong class="jxr_keyword">for</strong> (StreamException streamException : compositException) {
-<a class="jxr_linenumber" name="630" href="#630">630</a>                 onStreamError(ctx, outbound, cause, streamException);
-<a class="jxr_linenumber" name="631" href="#631">631</a>             }
-<a class="jxr_linenumber" name="632" href="#632">632</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="633" href="#633">633</a>             onConnectionError(ctx, outbound, cause, embedded);
-<a class="jxr_linenumber" name="634" href="#634">634</a>         }
-<a class="jxr_linenumber" name="635" href="#635">635</a>         ctx.flush();
-<a class="jxr_linenumber" name="636" href="#636">636</a>     }
-<a class="jxr_linenumber" name="637" href="#637">637</a> 
-<a class="jxr_linenumber" name="638" href="#638">638</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="639" href="#639">639</a> <em class="jxr_javadoccomment">     * Called by the graceful shutdown logic to determine when it is safe to close the connection. Returns {@code true}</em>
-<a class="jxr_linenumber" name="640" href="#640">640</a> <em class="jxr_javadoccomment">     * if the graceful shutdown has completed and the connection can be safely closed. This implementation just</em>
-<a class="jxr_linenumber" name="641" href="#641">641</a> <em class="jxr_javadoccomment">     * guarantees that there are no active streams. Subclasses may override to provide additional checks.</em>
-<a class="jxr_linenumber" name="642" href="#642">642</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="643" href="#643">643</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isGracefulShutdownComplete() {
-<a class="jxr_linenumber" name="644" href="#644">644</a>         <strong class="jxr_keyword">return</strong> connection().numActiveStreams() == 0;
-<a class="jxr_linenumber" name="645" href="#645">645</a>     }
-<a class="jxr_linenumber" name="646" href="#646">646</a> 
-<a class="jxr_linenumber" name="647" href="#647">647</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="648" href="#648">648</a> <em class="jxr_javadoccomment">     * Handler for a connection error. Sends a GO_AWAY frame to the remote endpoint. Once all</em>
-<a class="jxr_linenumber" name="649" href="#649">649</a> <em class="jxr_javadoccomment">     * streams are closed, the connection is shut down.</em>
-<a class="jxr_linenumber" name="650" href="#650">650</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="651" href="#651">651</a> <em class="jxr_javadoccomment">     * @param ctx the channel context</em>
-<a class="jxr_linenumber" name="652" href="#652">652</a> <em class="jxr_javadoccomment">     * @param outbound {@code true} if the error was caused by an outbound operation.</em>
-<a class="jxr_linenumber" name="653" href="#653">653</a> <em class="jxr_javadoccomment">     * @param cause the exception that was caught</em>
-<a class="jxr_linenumber" name="654" href="#654">654</a> <em class="jxr_javadoccomment">     * @param http2Ex the {@link Http2Exception} that is embedded in the causality chain. This may</em>
-<a class="jxr_linenumber" name="655" href="#655">655</a> <em class="jxr_javadoccomment">     *            be {@code null} if it's an unknown exception.</em>
-<a class="jxr_linenumber" name="656" href="#656">656</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="657" href="#657">657</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> onConnectionError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">boolean</strong> outbound,
-<a class="jxr_linenumber" name="658" href="#658">658</a>                                      Throwable cause, Http2Exception http2Ex) {
-<a class="jxr_linenumber" name="659" href="#659">659</a>         <strong class="jxr_keyword">if</strong> (http2Ex == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="660" href="#660">660</a>             http2Ex = <strong class="jxr_keyword">new</strong> Http2Exception(INTERNAL_ERROR, cause.getMessage(), cause);
-<a class="jxr_linenumber" name="661" href="#661">661</a>         }
-<a class="jxr_linenumber" name="662" href="#662">662</a> 
-<a class="jxr_linenumber" name="663" href="#663">663</a>         <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise = ctx.newPromise();
-<a class="jxr_linenumber" name="664" href="#664">664</a>         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future = goAway(ctx, http2Ex, ctx.newPromise());
-<a class="jxr_linenumber" name="665" href="#665">665</a>         <strong class="jxr_keyword">if</strong> (http2Ex.shutdownHint() == Http2Exception.ShutdownHint.GRACEFUL_SHUTDOWN) {
-<a class="jxr_linenumber" name="666" href="#666">666</a>             doGracefulShutdown(ctx, future, promise);
-<a class="jxr_linenumber" name="667" href="#667">667</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="668" href="#668">668</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(ctx, promise));
+<a class="jxr_linenumber" name="480" href="#480">480</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> newClosingChannelFutureListener(
+<a class="jxr_linenumber" name="481" href="#481">481</a>             <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="482" href="#482">482</a>         <strong class="jxr_keyword">long</strong> gracefulShutdownTimeoutMillis = <strong class="jxr_keyword">this</strong>.gracefulShutdownTimeoutMillis;
+<a class="jxr_linenumber" name="483" href="#483">483</a>         <strong class="jxr_keyword">return</strong> gracefulShutdownTimeoutMillis &lt; 0 ?
+<a class="jxr_linenumber" name="484" href="#484">484</a>                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(ctx, promise) :
+<a class="jxr_linenumber" name="485" href="#485">485</a>                 <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(ctx, promise, gracefulShutdownTimeoutMillis, MILLISECONDS);
+<a class="jxr_linenumber" name="486" href="#486">486</a>     }
+<a class="jxr_linenumber" name="487" href="#487">487</a> 
+<a class="jxr_linenumber" name="488" href="#488">488</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> doGracefulShutdown(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="489" href="#489">489</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> listener = newClosingChannelFutureListener(ctx, promise);
+<a class="jxr_linenumber" name="490" href="#490">490</a>         <strong class="jxr_keyword">if</strong> (isGracefulShutdownComplete()) {
+<a class="jxr_linenumber" name="491" href="#491">491</a>             <em class="jxr_comment">// If there are no active streams, close immediately after the GO_AWAY write completes or the timeout</em>
+<a class="jxr_linenumber" name="492" href="#492">492</a>             <em class="jxr_comment">// elapsed.</em>
+<a class="jxr_linenumber" name="493" href="#493">493</a>             future.addListener(listener);
+<a class="jxr_linenumber" name="494" href="#494">494</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="495" href="#495">495</a>             <em class="jxr_comment">// If there are active streams we should wait until they are all closed before closing the connection.</em>
+<a class="jxr_linenumber" name="496" href="#496">496</a> 
+<a class="jxr_linenumber" name="497" href="#497">497</a>             <em class="jxr_comment">// The ClosingChannelFutureListener will cascade promise completion. We need to always notify the</em>
+<a class="jxr_linenumber" name="498" href="#498">498</a>             <em class="jxr_comment">// new ClosingChannelFutureListener when the graceful close completes if the promise is not null.</em>
+<a class="jxr_linenumber" name="499" href="#499">499</a>             <strong class="jxr_keyword">if</strong> (closeListener == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="500" href="#500">500</a>                 closeListener = listener;
+<a class="jxr_linenumber" name="501" href="#501">501</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (promise != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="502" href="#502">502</a>                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> oldCloseListener = closeListener;
+<a class="jxr_linenumber" name="503" href="#503">503</a>                 closeListener = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="504" href="#504">504</a>                     @Override
+<a class="jxr_linenumber" name="505" href="#505">505</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="506" href="#506">506</a>                         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="507" href="#507">507</a>                             oldCloseListener.operationComplete(future);
+<a class="jxr_linenumber" name="508" href="#508">508</a>                         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="509" href="#509">509</a>                             listener.operationComplete(future);
+<a class="jxr_linenumber" name="510" href="#510">510</a>                         }
+<a class="jxr_linenumber" name="511" href="#511">511</a>                     }
+<a class="jxr_linenumber" name="512" href="#512">512</a>                 };
+<a class="jxr_linenumber" name="513" href="#513">513</a>             }
+<a class="jxr_linenumber" name="514" href="#514">514</a>         }
+<a class="jxr_linenumber" name="515" href="#515">515</a>     }
+<a class="jxr_linenumber" name="516" href="#516">516</a> 
+<a class="jxr_linenumber" name="517" href="#517">517</a>     @Override
+<a class="jxr_linenumber" name="518" href="#518">518</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> deregister(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="519" href="#519">519</a>         ctx.deregister(promise);
+<a class="jxr_linenumber" name="520" href="#520">520</a>     }
+<a class="jxr_linenumber" name="521" href="#521">521</a> 
+<a class="jxr_linenumber" name="522" href="#522">522</a>     @Override
+<a class="jxr_linenumber" name="523" href="#523">523</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="524" href="#524">524</a>         ctx.read();
+<a class="jxr_linenumber" name="525" href="#525">525</a>     }
+<a class="jxr_linenumber" name="526" href="#526">526</a> 
+<a class="jxr_linenumber" name="527" href="#527">527</a>     @Override
+<a class="jxr_linenumber" name="528" href="#528">528</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="529" href="#529">529</a>         ctx.write(msg, promise);
+<a class="jxr_linenumber" name="530" href="#530">530</a>     }
+<a class="jxr_linenumber" name="531" href="#531">531</a> 
+<a class="jxr_linenumber" name="532" href="#532">532</a>     @Override
+<a class="jxr_linenumber" name="533" href="#533">533</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadComplete(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="534" href="#534">534</a>         <em class="jxr_comment">// Trigger flush after read on the assumption that flush is cheap if there is nothing to write and that</em>
+<a class="jxr_linenumber" name="535" href="#535">535</a>         <em class="jxr_comment">// for flow-control the read may release window that causes data to be written that can now be flushed.</em>
+<a class="jxr_linenumber" name="536" href="#536">536</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="537" href="#537">537</a>             <em class="jxr_comment">// First call channelReadComplete0(...) as this may produce more data that we want to flush</em>
+<a class="jxr_linenumber" name="538" href="#538">538</a>             channelReadComplete0(ctx);
+<a class="jxr_linenumber" name="539" href="#539">539</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="540" href="#540">540</a>             flush(ctx);
+<a class="jxr_linenumber" name="541" href="#541">541</a>         }
+<a class="jxr_linenumber" name="542" href="#542">542</a>     }
+<a class="jxr_linenumber" name="543" href="#543">543</a> 
+<a class="jxr_linenumber" name="544" href="#544">544</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> channelReadComplete0(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="545" href="#545">545</a>         <em class="jxr_comment">// Discard bytes of the cumulation buffer if needed.</em>
+<a class="jxr_linenumber" name="546" href="#546">546</a>         discardSomeReadBytes();
+<a class="jxr_linenumber" name="547" href="#547">547</a> 
+<a class="jxr_linenumber" name="548" href="#548">548</a>         <em class="jxr_comment">// Ensure we never stale the HTTP/2 Channel. Flow-control is enforced by HTTP/2.</em>
+<a class="jxr_linenumber" name="549" href="#549">549</a>         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="550" href="#550">550</a>         <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7540#section-5.2.2</em>
+<a class="jxr_linenumber" name="551" href="#551">551</a>         <strong class="jxr_keyword">if</strong> (!ctx.channel().config().isAutoRead()) {
+<a class="jxr_linenumber" name="552" href="#552">552</a>             ctx.read();
+<a class="jxr_linenumber" name="553" href="#553">553</a>         }
+<a class="jxr_linenumber" name="554" href="#554">554</a> 
+<a class="jxr_linenumber" name="555" href="#555">555</a>         ctx.fireChannelReadComplete();
+<a class="jxr_linenumber" name="556" href="#556">556</a>     }
+<a class="jxr_linenumber" name="557" href="#557">557</a> 
+<a class="jxr_linenumber" name="558" href="#558">558</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="559" href="#559">559</a> <em class="jxr_javadoccomment">     * Handles {@link Http2Exception} objects that were thrown from other handlers. Ignores all other exceptions.</em>
+<a class="jxr_linenumber" name="560" href="#560">560</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="561" href="#561">561</a>     @Override
+<a class="jxr_linenumber" name="562" href="#562">562</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="563" href="#563">563</a>         <strong class="jxr_keyword">if</strong> (getEmbeddedHttp2Exception(cause) != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="564" href="#564">564</a>             <em class="jxr_comment">// Some exception in the causality chain is an Http2Exception - handle it.</em>
+<a class="jxr_linenumber" name="565" href="#565">565</a>             onError(ctx, false, cause);
+<a class="jxr_linenumber" name="566" href="#566">566</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="567" href="#567">567</a>             <strong class="jxr_keyword">super</strong>.exceptionCaught(ctx, cause);
+<a class="jxr_linenumber" name="568" href="#568">568</a>         }
+<a class="jxr_linenumber" name="569" href="#569">569</a>     }
+<a class="jxr_linenumber" name="570" href="#570">570</a> 
+<a class="jxr_linenumber" name="571" href="#571">571</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="572" href="#572">572</a> <em class="jxr_javadoccomment">     * Closes the local side of the given stream. If this causes the stream to be closed, adds a</em>
+<a class="jxr_linenumber" name="573" href="#573">573</a> <em class="jxr_javadoccomment">     * hook to close the channel after the given future completes.</em>
+<a class="jxr_linenumber" name="574" href="#574">574</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="575" href="#575">575</a> <em class="jxr_javadoccomment">     * @param stream the stream to be half closed.</em>
+<a class="jxr_linenumber" name="576" href="#576">576</a> <em class="jxr_javadoccomment">     * @param future If closing, the future after which to close the channel.</em>
+<a class="jxr_linenumber" name="577" href="#577">577</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="578" href="#578">578</a>     @Override
+<a class="jxr_linenumber" name="579" href="#579">579</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeStreamLocal(Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="580" href="#580">580</a>         <strong class="jxr_keyword">switch</strong> (stream.state()) {
+<a class="jxr_linenumber" name="581" href="#581">581</a>             <strong class="jxr_keyword">case</strong> HALF_CLOSED_LOCAL:
+<a class="jxr_linenumber" name="582" href="#582">582</a>             <strong class="jxr_keyword">case</strong> OPEN:
+<a class="jxr_linenumber" name="583" href="#583">583</a>                 stream.closeLocalSide();
+<a class="jxr_linenumber" name="584" href="#584">584</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="585" href="#585">585</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="586" href="#586">586</a>                 closeStream(stream, future);
+<a class="jxr_linenumber" name="587" href="#587">587</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="588" href="#588">588</a>         }
+<a class="jxr_linenumber" name="589" href="#589">589</a>     }
+<a class="jxr_linenumber" name="590" href="#590">590</a> 
+<a class="jxr_linenumber" name="591" href="#591">591</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="592" href="#592">592</a> <em class="jxr_javadoccomment">     * Closes the remote side of the given stream. If this causes the stream to be closed, adds a</em>
+<a class="jxr_linenumber" name="593" href="#593">593</a> <em class="jxr_javadoccomment">     * hook to close the channel after the given future completes.</em>
+<a class="jxr_linenumber" name="594" href="#594">594</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="595" href="#595">595</a> <em class="jxr_javadoccomment">     * @param stream the stream to be half closed.</em>
+<a class="jxr_linenumber" name="596" href="#596">596</a> <em class="jxr_javadoccomment">     * @param future If closing, the future after which to close the channel.</em>
+<a class="jxr_linenumber" name="597" href="#597">597</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="598" href="#598">598</a>     @Override
+<a class="jxr_linenumber" name="599" href="#599">599</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeStreamRemote(Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="600" href="#600">600</a>         <strong class="jxr_keyword">switch</strong> (stream.state()) {
+<a class="jxr_linenumber" name="601" href="#601">601</a>             <strong class="jxr_keyword">case</strong> HALF_CLOSED_REMOTE:
+<a class="jxr_linenumber" name="602" href="#602">602</a>             <strong class="jxr_keyword">case</strong> OPEN:
+<a class="jxr_linenumber" name="603" href="#603">603</a>                 stream.closeRemoteSide();
+<a class="jxr_linenumber" name="604" href="#604">604</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="605" href="#605">605</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="606" href="#606">606</a>                 closeStream(stream, future);
+<a class="jxr_linenumber" name="607" href="#607">607</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="608" href="#608">608</a>         }
+<a class="jxr_linenumber" name="609" href="#609">609</a>     }
+<a class="jxr_linenumber" name="610" href="#610">610</a> 
+<a class="jxr_linenumber" name="611" href="#611">611</a>     @Override
+<a class="jxr_linenumber" name="612" href="#612">612</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> closeStream(<strong class="jxr_keyword">final</strong> Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="613" href="#613">613</a>         stream.close();
+<a class="jxr_linenumber" name="614" href="#614">614</a> 
+<a class="jxr_linenumber" name="615" href="#615">615</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
+<a class="jxr_linenumber" name="616" href="#616">616</a>             checkCloseConnection(future);
+<a class="jxr_linenumber" name="617" href="#617">617</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="618" href="#618">618</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="619" href="#619">619</a>                 @Override
+<a class="jxr_linenumber" name="620" href="#620">620</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="621" href="#621">621</a>                     checkCloseConnection(future);
+<a class="jxr_linenumber" name="622" href="#622">622</a>                 }
+<a class="jxr_linenumber" name="623" href="#623">623</a>             });
+<a class="jxr_linenumber" name="624" href="#624">624</a>         }
+<a class="jxr_linenumber" name="625" href="#625">625</a>     }
+<a class="jxr_linenumber" name="626" href="#626">626</a> 
+<a class="jxr_linenumber" name="627" href="#627">627</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="628" href="#628">628</a> <em class="jxr_javadoccomment">     * Central handler for all exceptions caught during HTTP/2 processing.</em>
+<a class="jxr_linenumber" name="629" href="#629">629</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="630" href="#630">630</a>     @Override
+<a class="jxr_linenumber" name="631" href="#631">631</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">boolean</strong> outbound, Throwable cause) {
+<a class="jxr_linenumber" name="632" href="#632">632</a>         Http2Exception embedded = getEmbeddedHttp2Exception(cause);
+<a class="jxr_linenumber" name="633" href="#633">633</a>         <strong class="jxr_keyword">if</strong> (isStreamError(embedded)) {
+<a class="jxr_linenumber" name="634" href="#634">634</a>             onStreamError(ctx, outbound, cause, (StreamException) embedded);
+<a class="jxr_linenumber" name="635" href="#635">635</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (embedded instanceof CompositeStreamException) {
+<a class="jxr_linenumber" name="636" href="#636">636</a>             <a href="../../../../../io/netty/handler/codec/http2/Http2Exception.html">CompositeStreamException</a> compositException = (CompositeStreamException) embedded;
+<a class="jxr_linenumber" name="637" href="#637">637</a>             <strong class="jxr_keyword">for</strong> (StreamException streamException : compositException) {
+<a class="jxr_linenumber" name="638" href="#638">638</a>                 onStreamError(ctx, outbound, cause, streamException);
+<a class="jxr_linenumber" name="639" href="#639">639</a>             }
+<a class="jxr_linenumber" name="640" href="#640">640</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="641" href="#641">641</a>             onConnectionError(ctx, outbound, cause, embedded);
+<a class="jxr_linenumber" name="642" href="#642">642</a>         }
+<a class="jxr_linenumber" name="643" href="#643">643</a>         ctx.flush();
+<a class="jxr_linenumber" name="644" href="#644">644</a>     }
+<a class="jxr_linenumber" name="645" href="#645">645</a> 
+<a class="jxr_linenumber" name="646" href="#646">646</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="647" href="#647">647</a> <em class="jxr_javadoccomment">     * Called by the graceful shutdown logic to determine when it is safe to close the connection. Returns {@code true}</em>
+<a class="jxr_linenumber" name="648" href="#648">648</a> <em class="jxr_javadoccomment">     * if the graceful shutdown has completed and the connection can be safely closed. This implementation just</em>
+<a class="jxr_linenumber" name="649" href="#649">649</a> <em class="jxr_javadoccomment">     * guarantees that there are no active streams. Subclasses may override to provide additional checks.</em>
+<a class="jxr_linenumber" name="650" href="#650">650</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="651" href="#651">651</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isGracefulShutdownComplete() {
+<a class="jxr_linenumber" name="652" href="#652">652</a>         <strong class="jxr_keyword">return</strong> connection().numActiveStreams() == 0;
+<a class="jxr_linenumber" name="653" href="#653">653</a>     }
+<a class="jxr_linenumber" name="654" href="#654">654</a> 
+<a class="jxr_linenumber" name="655" href="#655">655</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="656" href="#656">656</a> <em class="jxr_javadoccomment">     * Handler for a connection error. Sends a GO_AWAY frame to the remote endpoint. Once all</em>
+<a class="jxr_linenumber" name="657" href="#657">657</a> <em class="jxr_javadoccomment">     * streams are closed, the connection is shut down.</em>
+<a class="jxr_linenumber" name="658" href="#658">658</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="659" href="#659">659</a> <em class="jxr_javadoccomment">     * @param ctx the channel context</em>
+<a class="jxr_linenumber" name="660" href="#660">660</a> <em class="jxr_javadoccomment">     * @param outbound {@code true} if the error was caused by an outbound operation.</em>
+<a class="jxr_linenumber" name="661" href="#661">661</a> <em class="jxr_javadoccomment">     * @param cause the exception that was caught</em>
+<a class="jxr_linenumber" name="662" href="#662">662</a> <em class="jxr_javadoccomment">     * @param http2Ex the {@link Http2Exception} that is embedded in the causality chain. This may</em>
+<a class="jxr_linenumber" name="663" href="#663">663</a> <em class="jxr_javadoccomment">     *            be {@code null} if it's an unknown exception.</em>
+<a class="jxr_linenumber" name="664" href="#664">664</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="665" href="#665">665</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> onConnectionError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">boolean</strong> outbound,
+<a class="jxr_linenumber" name="666" href="#666">666</a>                                      Throwable cause, Http2Exception http2Ex) {
+<a class="jxr_linenumber" name="667" href="#667">667</a>         <strong class="jxr_keyword">if</strong> (http2Ex == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="668" href="#668">668</a>             http2Ex = <strong class="jxr_keyword">new</strong> Http2Exception(INTERNAL_ERROR, cause.getMessage(), cause);
 <a class="jxr_linenumber" name="669" href="#669">669</a>         }
-<a class="jxr_linenumber" name="670" href="#670">670</a>     }
-<a class="jxr_linenumber" name="671" href="#671">671</a> 
-<a class="jxr_linenumber" name="672" href="#672">672</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="673" href="#673">673</a> <em class="jxr_javadoccomment">     * Handler for a stream error. Sends a {@code RST_STREAM} frame to the remote endpoint and closes the</em>
-<a class="jxr_linenumber" name="674" href="#674">674</a> <em class="jxr_javadoccomment">     * stream.</em>
-<a class="jxr_linenumber" name="675" href="#675">675</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="676" href="#676">676</a> <em class="jxr_javadoccomment">     * @param ctx the channel context</em>
-<a class="jxr_linenumber" name="677" href="#677">677</a> <em class="jxr_javadoccomment">     * @param outbound {@code true} if the error was caused by an outbound operation.</em>
-<a class="jxr_linenumber" name="678" href="#678">678</a> <em class="jxr_javadoccomment">     * @param cause the exception that was caught</em>
-<a class="jxr_linenumber" name="679" href="#679">679</a> <em class="jxr_javadoccomment">     * @param http2Ex the {@link StreamException} that is embedded in the causality chain.</em>
-<a class="jxr_linenumber" name="680" href="#680">680</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="681" href="#681">681</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> onStreamError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">boolean</strong> outbound,
-<a class="jxr_linenumber" name="682" href="#682">682</a>                                  @SuppressWarnings(<span class="jxr_string">"unused"</span>) Throwable cause, <a href="../../../../../io/netty/handler/codec/http2/Http2Exception.html">StreamException</a> http2Ex) {
-<a class="jxr_linenumber" name="683" href="#683">683</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> streamId = http2Ex.streamId();
-<a class="jxr_linenumber" name="684" href="#684">684</a>         Http2Stream stream = connection().stream(streamId);
-<a class="jxr_linenumber" name="685" href="#685">685</a> 
-<a class="jxr_linenumber" name="686" href="#686">686</a>         <em class="jxr_comment">//if this is caused by reading headers that are too large, send a header with status 431</em>
-<a class="jxr_linenumber" name="687" href="#687">687</a>         <strong class="jxr_keyword">if</strong> (http2Ex instanceof Http2Exception.HeaderListSizeException &amp;&amp;
-<a class="jxr_linenumber" name="688" href="#688">688</a>             ((Http2Exception.HeaderListSizeException) http2Ex).duringDecode() &amp;&amp;
-<a class="jxr_linenumber" name="689" href="#689">689</a>             connection().isServer()) {
-<a class="jxr_linenumber" name="690" href="#690">690</a> 
-<a class="jxr_linenumber" name="691" href="#691">691</a>             <em class="jxr_comment">// NOTE We have to check to make sure that a stream exists before we send our reply.</em>
-<a class="jxr_linenumber" name="692" href="#692">692</a>             <em class="jxr_comment">// We likely always create the stream below as the stream isn't created until the</em>
-<a class="jxr_linenumber" name="693" href="#693">693</a>             <em class="jxr_comment">// header block is completely processed.</em>
-<a class="jxr_linenumber" name="694" href="#694">694</a> 
-<a class="jxr_linenumber" name="695" href="#695">695</a>             <em class="jxr_comment">// The case of a streamId referring to a stream which was already closed is handled</em>
-<a class="jxr_linenumber" name="696" href="#696">696</a>             <em class="jxr_comment">// by createStream and will land us in the catch block below</em>
-<a class="jxr_linenumber" name="697" href="#697">697</a>             <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="698" href="#698">698</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="699" href="#699">699</a>                     stream = encoder.connection().remote().createStream(streamId, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="700" href="#700">700</a>                 } <strong class="jxr_keyword">catch</strong> (Http2Exception e) {
-<a class="jxr_linenumber" name="701" href="#701">701</a>                     resetUnknownStream(ctx, streamId, http2Ex.error().code(), ctx.newPromise());
-<a class="jxr_linenumber" name="702" href="#702">702</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="703" href="#703">703</a>                 }
-<a class="jxr_linenumber" name="704" href="#704">704</a>             }
-<a class="jxr_linenumber" name="705" href="#705">705</a> 
-<a class="jxr_linenumber" name="706" href="#706">706</a>             <em class="jxr_comment">// ensure that we have not already sent headers on this stream</em>
-<a class="jxr_linenumber" name="707" href="#707">707</a>             <strong class="jxr_keyword">if</strong> (stream != <strong class="jxr_keyword">null</strong> &amp;&amp; !stream.isHeadersSent()) {
-<a class="jxr_linenumber" name="708" href="#708">708</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="709" href="#709">709</a>                     handleServerHeaderDecodeSizeError(ctx, stream);
-<a class="jxr_linenumber" name="710" href="#710">710</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable cause2) {
-<a class="jxr_linenumber" name="711" href="#711">711</a>                     onError(ctx, outbound, connectionError(INTERNAL_ERROR, cause2, <span class="jxr_string">"Error DecodeSizeError"</span>));
-<a class="jxr_linenumber" name="712" href="#712">712</a>                 }
-<a class="jxr_linenumber" name="713" href="#713">713</a>             }
-<a class="jxr_linenumber" name="714" href="#714">714</a>         }
-<a class="jxr_linenumber" name="715" href="#715">715</a> 
-<a class="jxr_linenumber" name="716" href="#716">716</a>         <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="717" href="#717">717</a>             <strong class="jxr_keyword">if</strong> (!outbound || connection().local().mayHaveCreatedStream(streamId)) {
-<a class="jxr_linenumber" name="718" href="#718">718</a>                 resetUnknownStream(ctx, streamId, http2Ex.error().code(), ctx.newPromise());
-<a class="jxr_linenumber" name="719" href="#719">719</a>             }
-<a class="jxr_linenumber" name="720" href="#720">720</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="721" href="#721">721</a>             resetStream(ctx, stream, http2Ex.error().code(), ctx.newPromise());
+<a class="jxr_linenumber" name="670" href="#670">670</a> 
+<a class="jxr_linenumber" name="671" href="#671">671</a>         <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise = ctx.newPromise();
+<a class="jxr_linenumber" name="672" href="#672">672</a>         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future = goAway(ctx, http2Ex, ctx.newPromise());
+<a class="jxr_linenumber" name="673" href="#673">673</a>         <strong class="jxr_keyword">if</strong> (http2Ex.shutdownHint() == Http2Exception.ShutdownHint.GRACEFUL_SHUTDOWN) {
+<a class="jxr_linenumber" name="674" href="#674">674</a>             doGracefulShutdown(ctx, future, promise);
+<a class="jxr_linenumber" name="675" href="#675">675</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="676" href="#676">676</a>             future.addListener(newClosingChannelFutureListener(ctx, promise));
+<a class="jxr_linenumber" name="677" href="#677">677</a>         }
+<a class="jxr_linenumber" name="678" href="#678">678</a>     }
+<a class="jxr_linenumber" name="679" href="#679">679</a> 
+<a class="jxr_linenumber" name="680" href="#680">680</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="681" href="#681">681</a> <em class="jxr_javadoccomment">     * Handler for a stream error. Sends a {@code RST_STREAM} frame to the remote endpoint and closes the</em>
+<a class="jxr_linenumber" name="682" href="#682">682</a> <em class="jxr_javadoccomment">     * stream.</em>
+<a class="jxr_linenumber" name="683" href="#683">683</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="684" href="#684">684</a> <em class="jxr_javadoccomment">     * @param ctx the channel context</em>
+<a class="jxr_linenumber" name="685" href="#685">685</a> <em class="jxr_javadoccomment">     * @param outbound {@code true} if the error was caused by an outbound operation.</em>
+<a class="jxr_linenumber" name="686" href="#686">686</a> <em class="jxr_javadoccomment">     * @param cause the exception that was caught</em>
+<a class="jxr_linenumber" name="687" href="#687">687</a> <em class="jxr_javadoccomment">     * @param http2Ex the {@link StreamException} that is embedded in the causality chain.</em>
+<a class="jxr_linenumber" name="688" href="#688">688</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="689" href="#689">689</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> onStreamError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">boolean</strong> outbound,
+<a class="jxr_linenumber" name="690" href="#690">690</a>                                  @SuppressWarnings(<span class="jxr_string">"unused"</span>) Throwable cause, <a href="../../../../../io/netty/handler/codec/http2/Http2Exception.html">StreamException</a> http2Ex) {
+<a class="jxr_linenumber" name="691" href="#691">691</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> streamId = http2Ex.streamId();
+<a class="jxr_linenumber" name="692" href="#692">692</a>         Http2Stream stream = connection().stream(streamId);
+<a class="jxr_linenumber" name="693" href="#693">693</a> 
+<a class="jxr_linenumber" name="694" href="#694">694</a>         <em class="jxr_comment">//if this is caused by reading headers that are too large, send a header with status 431</em>
+<a class="jxr_linenumber" name="695" href="#695">695</a>         <strong class="jxr_keyword">if</strong> (http2Ex instanceof Http2Exception.HeaderListSizeException &amp;&amp;
+<a class="jxr_linenumber" name="696" href="#696">696</a>             ((Http2Exception.HeaderListSizeException) http2Ex).duringDecode() &amp;&amp;
+<a class="jxr_linenumber" name="697" href="#697">697</a>             connection().isServer()) {
+<a class="jxr_linenumber" name="698" href="#698">698</a> 
+<a class="jxr_linenumber" name="699" href="#699">699</a>             <em class="jxr_comment">// NOTE We have to check to make sure that a stream exists before we send our reply.</em>
+<a class="jxr_linenumber" name="700" href="#700">700</a>             <em class="jxr_comment">// We likely always create the stream below as the stream isn't created until the</em>
+<a class="jxr_linenumber" name="701" href="#701">701</a>             <em class="jxr_comment">// header block is completely processed.</em>
+<a class="jxr_linenumber" name="702" href="#702">702</a> 
+<a class="jxr_linenumber" name="703" href="#703">703</a>             <em class="jxr_comment">// The case of a streamId referring to a stream which was already closed is handled</em>
+<a class="jxr_linenumber" name="704" href="#704">704</a>             <em class="jxr_comment">// by createStream and will land us in the catch block below</em>
+<a class="jxr_linenumber" name="705" href="#705">705</a>             <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="706" href="#706">706</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="707" href="#707">707</a>                     stream = encoder.connection().remote().createStream(streamId, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="708" href="#708">708</a>                 } <strong class="jxr_keyword">catch</strong> (Http2Exception e) {
+<a class="jxr_linenumber" name="709" href="#709">709</a>                     resetUnknownStream(ctx, streamId, http2Ex.error().code(), ctx.newPromise());
+<a class="jxr_linenumber" name="710" href="#710">710</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="711" href="#711">711</a>                 }
+<a class="jxr_linenumber" name="712" href="#712">712</a>             }
+<a class="jxr_linenumber" name="713" href="#713">713</a> 
+<a class="jxr_linenumber" name="714" href="#714">714</a>             <em class="jxr_comment">// ensure that we have not already sent headers on this stream</em>
+<a class="jxr_linenumber" name="715" href="#715">715</a>             <strong class="jxr_keyword">if</strong> (stream != <strong class="jxr_keyword">null</strong> &amp;&amp; !stream.isHeadersSent()) {
+<a class="jxr_linenumber" name="716" href="#716">716</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="717" href="#717">717</a>                     handleServerHeaderDecodeSizeError(ctx, stream);
+<a class="jxr_linenumber" name="718" href="#718">718</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable cause2) {
+<a class="jxr_linenumber" name="719" href="#719">719</a>                     onError(ctx, outbound, connectionError(INTERNAL_ERROR, cause2, <span class="jxr_string">"Error DecodeSizeError"</span>));
+<a class="jxr_linenumber" name="720" href="#720">720</a>                 }
+<a class="jxr_linenumber" name="721" href="#721">721</a>             }
 <a class="jxr_linenumber" name="722" href="#722">722</a>         }
-<a class="jxr_linenumber" name="723" href="#723">723</a>     }
-<a class="jxr_linenumber" name="724" href="#724">724</a> 
-<a class="jxr_linenumber" name="725" href="#725">725</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="726" href="#726">726</a> <em class="jxr_javadoccomment">     * Notifies client that this server has received headers that are larger than what it is</em>
-<a class="jxr_linenumber" name="727" href="#727">727</a> <em class="jxr_javadoccomment">     * willing to accept. Override to change behavior.</em>
-<a class="jxr_linenumber" name="728" href="#728">728</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="729" href="#729">729</a> <em class="jxr_javadoccomment">     * @param ctx the channel context</em>
-<a class="jxr_linenumber" name="730" href="#730">730</a> <em class="jxr_javadoccomment">     * @param stream the Http2Stream on which the header was received</em>
-<a class="jxr_linenumber" name="731" href="#731">731</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="732" href="#732">732</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handleServerHeaderDecodeSizeError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Stream stream) {
-<a class="jxr_linenumber" name="733" href="#733">733</a>         encoder().writeHeaders(ctx, stream.id(), HEADERS_TOO_LARGE_HEADERS, 0, <strong class="jxr_keyword">true</strong>, ctx.newPromise());
-<a class="jxr_linenumber" name="734" href="#734">734</a>     }
-<a class="jxr_linenumber" name="735" href="#735">735</a> 
-<a class="jxr_linenumber" name="736" href="#736">736</a>     <strong class="jxr_keyword">protected</strong> Http2FrameWriter frameWriter() {
-<a class="jxr_linenumber" name="737" href="#737">737</a>         <strong class="jxr_keyword">return</strong> encoder().frameWriter();
-<a class="jxr_linenumber" name="738" href="#738">738</a>     }
-<a class="jxr_linenumber" name="739" href="#739">739</a> 
-<a class="jxr_linenumber" name="740" href="#740">740</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="741" href="#741">741</a> <em class="jxr_javadoccomment">     * Sends a {@code RST_STREAM} frame even if we don't know about the stream. This error condition is most likely</em>
-<a class="jxr_linenumber" name="742" href="#742">742</a> <em class="jxr_javadoccomment">     * triggered by the first frame of a stream being invalid. That is, there was an error reading the frame before</em>
-<a class="jxr_linenumber" name="743" href="#743">743</a> <em class="jxr_javadoccomment">     * we could create a new stream.</em>
-<a class="jxr_linenumber" name="744" href="#744">744</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="745" href="#745">745</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> resetUnknownStream(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode,
-<a class="jxr_linenumber" name="746" href="#746">746</a>                                              <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="747" href="#747">747</a>         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future = frameWriter().writeRstStream(ctx, streamId, errorCode, promise);
-<a class="jxr_linenumber" name="748" href="#748">748</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
-<a class="jxr_linenumber" name="749" href="#749">749</a>             closeConnectionOnError(ctx, future);
-<a class="jxr_linenumber" name="750" href="#750">750</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="751" href="#751">751</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="752" href="#752">752</a>                 @Override
-<a class="jxr_linenumber" name="753" href="#753">753</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="754" href="#754">754</a>                     closeConnectionOnError(ctx, future);
-<a class="jxr_linenumber" name="755" href="#755">755</a>                 }
-<a class="jxr_linenumber" name="756" href="#756">756</a>             });
-<a class="jxr_linenumber" name="757" href="#757">757</a>         }
-<a class="jxr_linenumber" name="758" href="#758">758</a>         <strong class="jxr_keyword">return</strong> future;
-<a class="jxr_linenumber" name="759" href="#759">759</a>     }
-<a class="jxr_linenumber" name="760" href="#760">760</a> 
-<a class="jxr_linenumber" name="761" href="#761">761</a>     @Override
-<a class="jxr_linenumber" name="762" href="#762">762</a>     <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> resetStream(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode,
-<a class="jxr_linenumber" name="763" href="#763">763</a>                                      <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="764" href="#764">764</a>         <strong class="jxr_keyword">final</strong> Http2Stream stream = connection().stream(streamId);
-<a class="jxr_linenumber" name="765" href="#765">765</a>         <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="766" href="#766">766</a>             <strong class="jxr_keyword">return</strong> resetUnknownStream(ctx, streamId, errorCode, promise.unvoid());
-<a class="jxr_linenumber" name="767" href="#767">767</a>         }
+<a class="jxr_linenumber" name="723" href="#723">723</a> 
+<a class="jxr_linenumber" name="724" href="#724">724</a>         <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="725" href="#725">725</a>             <strong class="jxr_keyword">if</strong> (!outbound || connection().local().mayHaveCreatedStream(streamId)) {
+<a class="jxr_linenumber" name="726" href="#726">726</a>                 resetUnknownStream(ctx, streamId, http2Ex.error().code(), ctx.newPromise());
+<a class="jxr_linenumber" name="727" href="#727">727</a>             }
+<a class="jxr_linenumber" name="728" href="#728">728</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="729" href="#729">729</a>             resetStream(ctx, stream, http2Ex.error().code(), ctx.newPromise());
+<a class="jxr_linenumber" name="730" href="#730">730</a>         }
+<a class="jxr_linenumber" name="731" href="#731">731</a>     }
+<a class="jxr_linenumber" name="732" href="#732">732</a> 
+<a class="jxr_linenumber" name="733" href="#733">733</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="734" href="#734">734</a> <em class="jxr_javadoccomment">     * Notifies client that this server has received headers that are larger than what it is</em>
+<a class="jxr_linenumber" name="735" href="#735">735</a> <em class="jxr_javadoccomment">     * willing to accept. Override to change behavior.</em>
+<a class="jxr_linenumber" name="736" href="#736">736</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="737" href="#737">737</a> <em class="jxr_javadoccomment">     * @param ctx the channel context</em>
+<a class="jxr_linenumber" name="738" href="#738">738</a> <em class="jxr_javadoccomment">     * @param stream the Http2Stream on which the header was received</em>
+<a class="jxr_linenumber" name="739" href="#739">739</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="740" href="#740">740</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handleServerHeaderDecodeSizeError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Stream stream) {
+<a class="jxr_linenumber" name="741" href="#741">741</a>         encoder().writeHeaders(ctx, stream.id(), HEADERS_TOO_LARGE_HEADERS, 0, <strong class="jxr_keyword">true</strong>, ctx.newPromise());
+<a class="jxr_linenumber" name="742" href="#742">742</a>     }
+<a class="jxr_linenumber" name="743" href="#743">743</a> 
+<a class="jxr_linenumber" name="744" href="#744">744</a>     <strong class="jxr_keyword">protected</strong> Http2FrameWriter frameWriter() {
+<a class="jxr_linenumber" name="745" href="#745">745</a>         <strong class="jxr_keyword">return</strong> encoder().frameWriter();
+<a class="jxr_linenumber" name="746" href="#746">746</a>     }
+<a class="jxr_linenumber" name="747" href="#747">747</a> 
+<a class="jxr_linenumber" name="748" href="#748">748</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="749" href="#749">749</a> <em class="jxr_javadoccomment">     * Sends a {@code RST_STREAM} frame even if we don't know about the stream. This error condition is most likely</em>
+<a class="jxr_linenumber" name="750" href="#750">750</a> <em class="jxr_javadoccomment">     * triggered by the first frame of a stream being invalid. That is, there was an error reading the frame before</em>
+<a class="jxr_linenumber" name="751" href="#751">751</a> <em class="jxr_javadoccomment">     * we could create a new stream.</em>
+<a class="jxr_linenumber" name="752" href="#752">752</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="753" href="#753">753</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> resetUnknownStream(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode,
+<a class="jxr_linenumber" name="754" href="#754">754</a>                                              <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="755" href="#755">755</a>         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future = frameWriter().writeRstStream(ctx, streamId, errorCode, promise);
+<a class="jxr_linenumber" name="756" href="#756">756</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
+<a class="jxr_linenumber" name="757" href="#757">757</a>             closeConnectionOnError(ctx, future);
+<a class="jxr_linenumber" name="758" href="#758">758</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="759" href="#759">759</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="760" href="#760">760</a>                 @Override
+<a class="jxr_linenumber" name="761" href="#761">761</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="762" href="#762">762</a>                     closeConnectionOnError(ctx, future);
+<a class="jxr_linenumber" name="763" href="#763">763</a>                 }
+<a class="jxr_linenumber" name="764" href="#764">764</a>             });
+<a class="jxr_linenumber" name="765" href="#765">765</a>         }
+<a class="jxr_linenumber" name="766" href="#766">766</a>         <strong class="jxr_keyword">return</strong> future;
+<a class="jxr_linenumber" name="767" href="#767">767</a>     }
 <a class="jxr_linenumber" name="768" href="#768">768</a> 
-<a class="jxr_linenumber" name="769" href="#769">769</a>        <strong class="jxr_keyword">return</strong> resetStream(ctx, stream, errorCode, promise);
-<a class="jxr_linenumber" name="770" href="#770">770</a>     }
-<a class="jxr_linenumber" name="771" href="#771">771</a> 
-<a class="jxr_linenumber" name="772" href="#772">772</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> resetStream(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> Http2Stream stream,
-<a class="jxr_linenumber" name="773" href="#773">773</a>                                       <strong class="jxr_keyword">long</strong> errorCode, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="774" href="#774">774</a>         promise = promise.unvoid();
-<a class="jxr_linenumber" name="775" href="#775">775</a>         <strong class="jxr_keyword">if</strong> (stream.isResetSent()) {
-<a class="jxr_linenumber" name="776" href="#776">776</a>             <em class="jxr_comment">// Don't write a RST_STREAM frame if we have already written one.</em>
-<a class="jxr_linenumber" name="777" href="#777">777</a>             <strong class="jxr_keyword">return</strong> promise.setSuccess();
-<a class="jxr_linenumber" name="778" href="#778">778</a>         }
-<a class="jxr_linenumber" name="779" href="#779">779</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future;
-<a class="jxr_linenumber" name="780" href="#780">780</a>         <em class="jxr_comment">// If the remote peer is not aware of the steam, then we are not allowed to send a RST_STREAM</em>
-<a class="jxr_linenumber" name="781" href="#781">781</a>         <em class="jxr_comment">// https://tools.ietf.org/html/rfc7540#section-6.4.</em>
-<a class="jxr_linenumber" name="782" href="#782">782</a>         <strong class="jxr_keyword">if</strong> (stream.state() == IDLE ||
-<a class="jxr_linenumber" name="783" href="#783">783</a>             connection().local().created(stream) &amp;&amp; !stream.isHeadersSent() &amp;&amp; !stream.isPushPromiseSent()) {
-<a class="jxr_linenumber" name="784" href="#784">784</a>             future = promise.setSuccess();
-<a class="jxr_linenumber" name="785" href="#785">785</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="786" href="#786">786</a>             future = frameWriter().writeRstStream(ctx, stream.id(), errorCode, promise);
-<a class="jxr_linenumber" name="787" href="#787">787</a>         }
-<a class="jxr_linenumber" name="788" href="#788">788</a> 
-<a class="jxr_linenumber" name="789" href="#789">789</a>         <em class="jxr_comment">// Synchronously set the resetSent flag to prevent any subsequent calls</em>
-<a class="jxr_linenumber" name="790" href="#790">790</a>         <em class="jxr_comment">// from resulting in multiple reset frames being sent.</em>
-<a class="jxr_linenumber" name="791" href="#791">791</a>         stream.resetSent();
-<a class="jxr_linenumber" name="792" href="#792">792</a> 
-<a class="jxr_linenumber" name="793" href="#793">793</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
-<a class="jxr_linenumber" name="794" href="#794">794</a>             processRstStreamWriteResult(ctx, stream, future);
-<a class="jxr_linenumber" name="795" href="#795">795</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="796" href="#796">796</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="797" href="#797">797</a>                 @Override
-<a class="jxr_linenumber" name="798" href="#798">798</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="799" href="#799">799</a>                     processRstStreamWriteResult(ctx, stream, future);
-<a class="jxr_linenumber" name="800" href="#800">800</a>                 }
-<a class="jxr_linenumber" name="801" href="#801">801</a>             });
-<a class="jxr_linenumber" name="802" href="#802">802</a>         }
-<a class="jxr_linenumber" name="803" href="#803">803</a> 
-<a class="jxr_linenumber" name="804" href="#804">804</a>         <strong class="jxr_keyword">return</strong> future;
-<a class="jxr_linenumber" name="805" href="#805">805</a>     }
-<a class="jxr_linenumber" name="806" href="#806">806</a> 
-<a class="jxr_linenumber" name="807" href="#807">807</a>     @Override
-<a class="jxr_linenumber" name="808" href="#808">808</a>     <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> goAway(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> lastStreamId, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> errorCode,
-<a class="jxr_linenumber" name="809" href="#809">809</a>                                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="810" href="#810">810</a>         promise = promise.unvoid();
-<a class="jxr_linenumber" name="811" href="#811">811</a>         <strong class="jxr_keyword">final</strong> Http2Connection connection = connection();
-<a class="jxr_linenumber" name="812" href="#812">812</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="813" href="#813">813</a>             <strong class="jxr_keyword">if</strong> (!connection.goAwaySent(lastStreamId, errorCode, debugData)) {
-<a class="jxr_linenumber" name="814" href="#814">814</a>                 debugData.release();
-<a class="jxr_linenumber" name="815" href="#815">815</a>                 promise.trySuccess();
-<a class="jxr_linenumber" name="816" href="#816">816</a>                 <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="817" href="#817">817</a>             }
-<a class="jxr_linenumber" name="818" href="#818">818</a>         } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="819" href="#819">819</a>             debugData.release();
-<a class="jxr_linenumber" name="820" href="#820">820</a>             promise.tryFailure(cause);
-<a class="jxr_linenumber" name="821" href="#821">821</a>             <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="822" href="#822">822</a>         }
-<a class="jxr_linenumber" name="823" href="#823">823</a> 
-<a class="jxr_linenumber" name="824" href="#824">824</a>         <em class="jxr_comment">// Need to retain before we write the buffer because if we do it after the refCnt could already be 0 and</em>
-<a class="jxr_linenumber" name="825" href="#825">825</a>         <em class="jxr_comment">// result in an IllegalRefCountException.</em>
-<a class="jxr_linenumber" name="826" href="#826">826</a>         debugData.retain();
-<a class="jxr_linenumber" name="827" href="#827">827</a>         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future = frameWriter().writeGoAway(ctx, lastStreamId, errorCode, debugData, promise);
-<a class="jxr_linenumber" name="828" href="#828">828</a> 
-<a class="jxr_linenumber" name="829" href="#829">829</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
-<a class="jxr_linenumber" name="830" href="#830">830</a>             processGoAwayWriteResult(ctx, lastStreamId, errorCode, debugData, future);
-<a class="jxr_linenumber" name="831" href="#831">831</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="832" href="#832">832</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="833" href="#833">833</a>                 @Override
-<a class="jxr_linenumber" name="834" href="#834">834</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="835" href="#835">835</a>                     processGoAwayWriteResult(ctx, lastStreamId, errorCode, debugData, future);
-<a class="jxr_linenumber" name="836" href="#836">836</a>                 }
-<a class="jxr_linenumber" name="837" href="#837">837</a>             });
-<a class="jxr_linenumber" name="838" href="#838">838</a>         }
-<a class="jxr_linenumber" name="839" href="#839">839</a> 
-<a class="jxr_linenumber" name="840" href="#840">840</a>         <strong class="jxr_keyword">return</strong> future;
-<a class="jxr_linenumber" name="841" href="#841">841</a>     }
-<a class="jxr_linenumber" name="842" href="#842">842</a> 
-<a class="jxr_linenumber" name="843" href="#843">843</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="844" href="#844">844</a> <em class="jxr_javadoccomment">     * Closes the connection if the graceful shutdown process has completed.</em>
-<a class="jxr_linenumber" name="845" href="#845">845</a> <em class="jxr_javadoccomment">     * @param future Represents the status that will be passed to the {@link #closeListener}.</em>
-<a class="jxr_linenumber" name="846" href="#846">846</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="847" href="#847">847</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> checkCloseConnection(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="848" href="#848">848</a>         <em class="jxr_comment">// If this connection is closing and the graceful shutdown has completed, close the connection</em>
-<a class="jxr_linenumber" name="849" href="#849">849</a>         <em class="jxr_comment">// once this operation completes.</em>
-<a class="jxr_linenumber" name="850" href="#850">850</a>         <strong class="jxr_keyword">if</strong> (closeListener != <strong class="jxr_keyword">null</strong> &amp;&amp; isGracefulShutdownComplete()) {
-<a class="jxr_linenumber" name="851" href="#851">851</a>             <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> closeListener = <strong class="jxr_keyword">this</strong>.closeListener;
-<a class="jxr_linenumber" name="852" href="#852">852</a>             <em class="jxr_comment">// This method could be called multiple times</em>
-<a class="jxr_linenumber" name="853" href="#853">853</a>             <em class="jxr_comment">// and we don't want to notify the closeListener multiple times.</em>
-<a class="jxr_linenumber" name="854" href="#854">854</a>             <strong class="jxr_keyword">this</strong>.closeListener = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="855" href="#855">855</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="856" href="#856">856</a>                 closeListener.operationComplete(future);
-<a class="jxr_linenumber" name="857" href="#857">857</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="858" href="#858">858</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"Close listener threw an unexpected exception"</span>, e);
-<a class="jxr_linenumber" name="859" href="#859">859</a>             }
-<a class="jxr_linenumber" name="860" href="#860">860</a>         }
-<a class="jxr_linenumber" name="861" href="#861">861</a>     }
-<a class="jxr_linenumber" name="862" href="#862">862</a> 
-<a class="jxr_linenumber" name="863" href="#863">863</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="864" href="#864">864</a> <em class="jxr_javadoccomment">     * Close the remote endpoint with with a {@code GO_AWAY} frame. Does &lt;strong&gt;not&lt;/strong&gt; flush</em>
-<a class="jxr_linenumber" name="865" href="#865">865</a> <em class="jxr_javadoccomment">     * immediately, this is the responsibility of the caller.</em>
-<a class="jxr_linenumber" name="866" href="#866">866</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="867" href="#867">867</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> goAway(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Exception cause, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="868" href="#868">868</a>         <strong class="jxr_keyword">long</strong> errorCode = cause != <strong class="jxr_keyword">null</strong> ? cause.error().code() : NO_ERROR.code();
-<a class="jxr_linenumber" name="869" href="#869">869</a>         <strong class="jxr_keyword">int</strong> lastKnownStream = connection().remote().lastStreamCreated();
-<a class="jxr_linenumber" name="870" href="#870">870</a>         <strong class="jxr_keyword">return</strong> goAway(ctx, lastKnownStream, errorCode, Http2CodecUtil.toByteBuf(ctx, cause), promise);
-<a class="jxr_linenumber" name="871" href="#871">871</a>     }
-<a class="jxr_linenumber" name="872" href="#872">872</a> 
-<a class="jxr_linenumber" name="873" href="#873">873</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> processRstStreamWriteResult(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="874" href="#874">874</a>         <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
-<a class="jxr_linenumber" name="875" href="#875">875</a>             closeStream(stream, future);
-<a class="jxr_linenumber" name="876" href="#876">876</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="877" href="#877">877</a>             <em class="jxr_comment">// The connection will be closed and so no need to change the resetSent flag to false.</em>
-<a class="jxr_linenumber" name="878" href="#878">878</a>             onConnectionError(ctx, <strong class="jxr_keyword">true</strong>, future.cause(), <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="879" href="#879">879</a>         }
-<a class="jxr_linenumber" name="880" href="#880">880</a>     }
-<a class="jxr_linenumber" name="881" href="#881">881</a> 
-<a class="jxr_linenumber" name="882" href="#882">882</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeConnectionOnError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="883" href="#883">883</a>         <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="884" href="#884">884</a>             onConnectionError(ctx, <strong class="jxr_keyword">true</strong>, future.cause(), <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="885" href="#885">885</a>         }
-<a class="jxr_linenumber" name="886" href="#886">886</a>     }
-<a class="jxr_linenumber" name="887" href="#887">887</a> 
-<a class="jxr_linenumber" name="888" href="#888">888</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="889" href="#889">889</a> <em class="jxr_javadoccomment">     * Returns the client preface string if this is a client connection, otherwise returns {@code null}.</em>
-<a class="jxr_linenumber" name="890" href="#890">890</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="891" href="#891">891</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> clientPrefaceString(Http2Connection connection) {
-<a class="jxr_linenumber" name="892" href="#892">892</a>         <strong class="jxr_keyword">return</strong> connection.isServer() ? connectionPrefaceBuf() : <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="893" href="#893">893</a>     }
-<a class="jxr_linenumber" name="894" href="#894">894</a> 
-<a class="jxr_linenumber" name="895" href="#895">895</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> processGoAwayWriteResult(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> lastStreamId,
-<a class="jxr_linenumber" name="896" href="#896">896</a>                                                  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> errorCode, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="897" href="#897">897</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="898" href="#898">898</a>             <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
-<a class="jxr_linenumber" name="899" href="#899">899</a>                 <strong class="jxr_keyword">if</strong> (errorCode != NO_ERROR.code()) {
-<a class="jxr_linenumber" name="900" href="#900">900</a>                     <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="901" href="#901">901</a>                         logger.debug(<span class="jxr_string">"{} Sent GOAWAY: lastStreamId '{}', errorCode '{}', "</span> +
-<a class="jxr_linenumber" name="902" href="#902">902</a>                                      <span class="jxr_string">"debugData '{}'. Forcing shutdown of the connection."</span>,
-<a class="jxr_linenumber" name="903" href="#903">903</a>                                      ctx.channel(), lastStreamId, errorCode, debugData.toString(UTF_8), future.cause());
-<a class="jxr_linenumber" name="904" href="#904">904</a>                     }
-<a class="jxr_linenumber" name="905" href="#905">905</a>                     ctx.close();
-<a class="jxr_linenumber" name="906" href="#906">906</a>                 }
-<a class="jxr_linenumber" name="907" href="#907">907</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="908" href="#908">908</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="909" href="#909">909</a>                     logger.debug(<span class="jxr_string">"{} Sending GOAWAY failed: lastStreamId '{}', errorCode '{}', "</span> +
-<a class="jxr_linenumber" name="910" href="#910">910</a>                                  <span class="jxr_string">"debugData '{}'. Forcing shutdown of the connection."</span>,
-<a class="jxr_linenumber" name="911" href="#911">911</a>                                  ctx.channel(), lastStreamId, errorCode, debugData.toString(UTF_8), future.cause());
-<a class="jxr_linenumber" name="912" href="#912">912</a>                 }
-<a class="jxr_linenumber" name="913" href="#913">913</a>                 ctx.close();
-<a class="jxr_linenumber" name="914" href="#914">914</a>             }
-<a class="jxr_linenumber" name="915" href="#915">915</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="916" href="#916">916</a>             <em class="jxr_comment">// We're done with the debug data now.</em>
-<a class="jxr_linenumber" name="917" href="#917">917</a>             debugData.release();
-<a class="jxr_linenumber" name="918" href="#918">918</a>         }
-<a class="jxr_linenumber" name="919" href="#919">919</a>     }
-<a class="jxr_linenumber" name="920" href="#920">920</a> 
-<a class="jxr_linenumber" name="921" href="#921">921</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="922" href="#922">922</a> <em class="jxr_javadoccomment">     * Closes the channel when the future completes.</em>
-<a class="jxr_linenumber" name="923" href="#923">923</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="924" href="#924">924</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a> <strong class="jxr_keyword">implements</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> {
-<a class="jxr_linenumber" name="925" href="#925">925</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
-<a class="jxr_linenumber" name="926" href="#926">926</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
-<a class="jxr_linenumber" name="927" href="#927">927</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutTask;
+<a class="jxr_linenumber" name="769" href="#769">769</a>     @Override
+<a class="jxr_linenumber" name="770" href="#770">770</a>     <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> resetStream(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode,
+<a class="jxr_linenumber" name="771" href="#771">771</a>                                      <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="772" href="#772">772</a>         <strong class="jxr_keyword">final</strong> Http2Stream stream = connection().stream(streamId);
+<a class="jxr_linenumber" name="773" href="#773">773</a>         <strong class="jxr_keyword">if</strong> (stream == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="774" href="#774">774</a>             <strong class="jxr_keyword">return</strong> resetUnknownStream(ctx, streamId, errorCode, promise.unvoid());
+<a class="jxr_linenumber" name="775" href="#775">775</a>         }
+<a class="jxr_linenumber" name="776" href="#776">776</a> 
+<a class="jxr_linenumber" name="777" href="#777">777</a>        <strong class="jxr_keyword">return</strong> resetStream(ctx, stream, errorCode, promise);
+<a class="jxr_linenumber" name="778" href="#778">778</a>     }
+<a class="jxr_linenumber" name="779" href="#779">779</a> 
+<a class="jxr_linenumber" name="780" href="#780">780</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> resetStream(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> Http2Stream stream,
+<a class="jxr_linenumber" name="781" href="#781">781</a>                                       <strong class="jxr_keyword">long</strong> errorCode, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="782" href="#782">782</a>         promise = promise.unvoid();
+<a class="jxr_linenumber" name="783" href="#783">783</a>         <strong class="jxr_keyword">if</strong> (stream.isResetSent()) {
+<a class="jxr_linenumber" name="784" href="#784">784</a>             <em class="jxr_comment">// Don't write a RST_STREAM frame if we have already written one.</em>
+<a class="jxr_linenumber" name="785" href="#785">785</a>             <strong class="jxr_keyword">return</strong> promise.setSuccess();
+<a class="jxr_linenumber" name="786" href="#786">786</a>         }
+<a class="jxr_linenumber" name="787" href="#787">787</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future;
+<a class="jxr_linenumber" name="788" href="#788">788</a>         <em class="jxr_comment">// If the remote peer is not aware of the steam, then we are not allowed to send a RST_STREAM</em>
+<a class="jxr_linenumber" name="789" href="#789">789</a>         <em class="jxr_comment">// https://tools.ietf.org/html/rfc7540#section-6.4.</em>
+<a class="jxr_linenumber" name="790" href="#790">790</a>         <strong class="jxr_keyword">if</strong> (stream.state() == IDLE ||
+<a class="jxr_linenumber" name="791" href="#791">791</a>             connection().local().created(stream) &amp;&amp; !stream.isHeadersSent() &amp;&amp; !stream.isPushPromiseSent()) {
+<a class="jxr_linenumber" name="792" href="#792">792</a>             future = promise.setSuccess();
+<a class="jxr_linenumber" name="793" href="#793">793</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="794" href="#794">794</a>             future = frameWriter().writeRstStream(ctx, stream.id(), errorCode, promise);
+<a class="jxr_linenumber" name="795" href="#795">795</a>         }
+<a class="jxr_linenumber" name="796" href="#796">796</a> 
+<a class="jxr_linenumber" name="797" href="#797">797</a>         <em class="jxr_comment">// Synchronously set the resetSent flag to prevent any subsequent calls</em>
+<a class="jxr_linenumber" name="798" href="#798">798</a>         <em class="jxr_comment">// from resulting in multiple reset frames being sent.</em>
+<a class="jxr_linenumber" name="799" href="#799">799</a>         stream.resetSent();
+<a class="jxr_linenumber" name="800" href="#800">800</a> 
+<a class="jxr_linenumber" name="801" href="#801">801</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
+<a class="jxr_linenumber" name="802" href="#802">802</a>             processRstStreamWriteResult(ctx, stream, future);
+<a class="jxr_linenumber" name="803" href="#803">803</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="804" href="#804">804</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="805" href="#805">805</a>                 @Override
+<a class="jxr_linenumber" name="806" href="#806">806</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="807" href="#807">807</a>                     processRstStreamWriteResult(ctx, stream, future);
+<a class="jxr_linenumber" name="808" href="#808">808</a>                 }
+<a class="jxr_linenumber" name="809" href="#809">809</a>             });
+<a class="jxr_linenumber" name="810" href="#810">810</a>         }
+<a class="jxr_linenumber" name="811" href="#811">811</a> 
+<a class="jxr_linenumber" name="812" href="#812">812</a>         <strong class="jxr_keyword">return</strong> future;
+<a class="jxr_linenumber" name="813" href="#813">813</a>     }
+<a class="jxr_linenumber" name="814" href="#814">814</a> 
+<a class="jxr_linenumber" name="815" href="#815">815</a>     @Override
+<a class="jxr_linenumber" name="816" href="#816">816</a>     <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> goAway(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> lastStreamId, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> errorCode,
+<a class="jxr_linenumber" name="817" href="#817">817</a>                                 <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="818" href="#818">818</a>         promise = promise.unvoid();
+<a class="jxr_linenumber" name="819" href="#819">819</a>         <strong class="jxr_keyword">final</strong> Http2Connection connection = connection();
+<a class="jxr_linenumber" name="820" href="#820">820</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="821" href="#821">821</a>             <strong class="jxr_keyword">if</strong> (!connection.goAwaySent(lastStreamId, errorCode, debugData)) {
+<a class="jxr_linenumber" name="822" href="#822">822</a>                 debugData.release();
+<a class="jxr_linenumber" name="823" href="#823">823</a>                 promise.trySuccess();
+<a class="jxr_linenumber" name="824" href="#824">824</a>                 <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="825" href="#825">825</a>             }
+<a class="jxr_linenumber" name="826" href="#826">826</a>         } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="827" href="#827">827</a>             debugData.release();
+<a class="jxr_linenumber" name="828" href="#828">828</a>             promise.tryFailure(cause);
+<a class="jxr_linenumber" name="829" href="#829">829</a>             <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="830" href="#830">830</a>         }
+<a class="jxr_linenumber" name="831" href="#831">831</a> 
+<a class="jxr_linenumber" name="832" href="#832">832</a>         <em class="jxr_comment">// Need to retain before we write the buffer because if we do it after the refCnt could already be 0 and</em>
+<a class="jxr_linenumber" name="833" href="#833">833</a>         <em class="jxr_comment">// result in an IllegalRefCountException.</em>
+<a class="jxr_linenumber" name="834" href="#834">834</a>         debugData.retain();
+<a class="jxr_linenumber" name="835" href="#835">835</a>         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future = frameWriter().writeGoAway(ctx, lastStreamId, errorCode, debugData, promise);
+<a class="jxr_linenumber" name="836" href="#836">836</a> 
+<a class="jxr_linenumber" name="837" href="#837">837</a>         <strong class="jxr_keyword">if</strong> (future.isDone()) {
+<a class="jxr_linenumber" name="838" href="#838">838</a>             processGoAwayWriteResult(ctx, lastStreamId, errorCode, debugData, future);
+<a class="jxr_linenumber" name="839" href="#839">839</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="840" href="#840">840</a>             future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="841" href="#841">841</a>                 @Override
+<a class="jxr_linenumber" name="842" href="#842">842</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="843" href="#843">843</a>                     processGoAwayWriteResult(ctx, lastStreamId, errorCode, debugData, future);
+<a class="jxr_linenumber" name="844" href="#844">844</a>                 }
+<a class="jxr_linenumber" name="845" href="#845">845</a>             });
+<a class="jxr_linenumber" name="846" href="#846">846</a>         }
+<a class="jxr_linenumber" name="847" href="#847">847</a> 
+<a class="jxr_linenumber" name="848" href="#848">848</a>         <strong class="jxr_keyword">return</strong> future;
+<a class="jxr_linenumber" name="849" href="#849">849</a>     }
+<a class="jxr_linenumber" name="850" href="#850">850</a> 
+<a class="jxr_linenumber" name="851" href="#851">851</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="852" href="#852">852</a> <em class="jxr_javadoccomment">     * Closes the connection if the graceful shutdown process has completed.</em>
+<a class="jxr_linenumber" name="853" href="#853">853</a> <em class="jxr_javadoccomment">     * @param future Represents the status that will be passed to the {@link #closeListener}.</em>
+<a class="jxr_linenumber" name="854" href="#854">854</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="855" href="#855">855</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> checkCloseConnection(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="856" href="#856">856</a>         <em class="jxr_comment">// If this connection is closing and the graceful shutdown has completed, close the connection</em>
+<a class="jxr_linenumber" name="857" href="#857">857</a>         <em class="jxr_comment">// once this operation completes.</em>
+<a class="jxr_linenumber" name="858" href="#858">858</a>         <strong class="jxr_keyword">if</strong> (closeListener != <strong class="jxr_keyword">null</strong> &amp;&amp; isGracefulShutdownComplete()) {
+<a class="jxr_linenumber" name="859" href="#859">859</a>             <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> closeListener = <strong class="jxr_keyword">this</strong>.closeListener;
+<a class="jxr_linenumber" name="860" href="#860">860</a>             <em class="jxr_comment">// This method could be called multiple times</em>
+<a class="jxr_linenumber" name="861" href="#861">861</a>             <em class="jxr_comment">// and we don't want to notify the closeListener multiple times.</em>
+<a class="jxr_linenumber" name="862" href="#862">862</a>             <strong class="jxr_keyword">this</strong>.closeListener = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="863" href="#863">863</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="864" href="#864">864</a>                 closeListener.operationComplete(future);
+<a class="jxr_linenumber" name="865" href="#865">865</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="866" href="#866">866</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"Close listener threw an unexpected exception"</span>, e);
+<a class="jxr_linenumber" name="867" href="#867">867</a>             }
+<a class="jxr_linenumber" name="868" href="#868">868</a>         }
+<a class="jxr_linenumber" name="869" href="#869">869</a>     }
+<a class="jxr_linenumber" name="870" href="#870">870</a> 
+<a class="jxr_linenumber" name="871" href="#871">871</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="872" href="#872">872</a> <em class="jxr_javadoccomment">     * Close the remote endpoint with with a {@code GO_AWAY} frame. Does &lt;strong&gt;not&lt;/strong&gt; flush</em>
+<a class="jxr_linenumber" name="873" href="#873">873</a> <em class="jxr_javadoccomment">     * immediately, this is the responsibility of the caller.</em>
+<a class="jxr_linenumber" name="874" href="#874">874</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="875" href="#875">875</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> goAway(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Exception cause, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="876" href="#876">876</a>         <strong class="jxr_keyword">long</strong> errorCode = cause != <strong class="jxr_keyword">null</strong> ? cause.error().code() : NO_ERROR.code();
+<a class="jxr_linenumber" name="877" href="#877">877</a>         <strong class="jxr_keyword">int</strong> lastKnownStream = connection().remote().lastStreamCreated();
+<a class="jxr_linenumber" name="878" href="#878">878</a>         <strong class="jxr_keyword">return</strong> goAway(ctx, lastKnownStream, errorCode, Http2CodecUtil.toByteBuf(ctx, cause), promise);
+<a class="jxr_linenumber" name="879" href="#879">879</a>     }
+<a class="jxr_linenumber" name="880" href="#880">880</a> 
+<a class="jxr_linenumber" name="881" href="#881">881</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> processRstStreamWriteResult(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Stream stream, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="882" href="#882">882</a>         <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
+<a class="jxr_linenumber" name="883" href="#883">883</a>             closeStream(stream, future);
+<a class="jxr_linenumber" name="884" href="#884">884</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="885" href="#885">885</a>             <em class="jxr_comment">// The connection will be closed and so no need to change the resetSent flag to false.</em>
+<a class="jxr_linenumber" name="886" href="#886">886</a>             onConnectionError(ctx, <strong class="jxr_keyword">true</strong>, future.cause(), <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="887" href="#887">887</a>         }
+<a class="jxr_linenumber" name="888" href="#888">888</a>     }
+<a class="jxr_linenumber" name="889" href="#889">889</a> 
+<a class="jxr_linenumber" name="890" href="#890">890</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeConnectionOnError(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="891" href="#891">891</a>         <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="892" href="#892">892</a>             onConnectionError(ctx, <strong class="jxr_keyword">true</strong>, future.cause(), <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="893" href="#893">893</a>         }
+<a class="jxr_linenumber" name="894" href="#894">894</a>     }
+<a class="jxr_linenumber" name="895" href="#895">895</a> 
+<a class="jxr_linenumber" name="896" href="#896">896</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="897" href="#897">897</a> <em class="jxr_javadoccomment">     * Returns the client preface string if this is a client connection, otherwise returns {@code null}.</em>
+<a class="jxr_linenumber" name="898" href="#898">898</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="899" href="#899">899</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> clientPrefaceString(Http2Connection connection) {
+<a class="jxr_linenumber" name="900" href="#900">900</a>         <strong class="jxr_keyword">return</strong> connection.isServer() ? connectionPrefaceBuf() : <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="901" href="#901">901</a>     }
+<a class="jxr_linenumber" name="902" href="#902">902</a> 
+<a class="jxr_linenumber" name="903" href="#903">903</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> processGoAwayWriteResult(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> lastStreamId,
+<a class="jxr_linenumber" name="904" href="#904">904</a>                                                  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> errorCode, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData, <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="905" href="#905">905</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="906" href="#906">906</a>             <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
+<a class="jxr_linenumber" name="907" href="#907">907</a>                 <strong class="jxr_keyword">if</strong> (errorCode != NO_ERROR.code()) {
+<a class="jxr_linenumber" name="908" href="#908">908</a>                     <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="909" href="#909">909</a>                         logger.debug(<span class="jxr_string">"{} Sent GOAWAY: lastStreamId '{}', errorCode '{}', "</span> +
+<a class="jxr_linenumber" name="910" href="#910">910</a>                                      <span class="jxr_string">"debugData '{}'. Forcing shutdown of the connection."</span>,
+<a class="jxr_linenumber" name="911" href="#911">911</a>                                      ctx.channel(), lastStreamId, errorCode, debugData.toString(UTF_8), future.cause());
+<a class="jxr_linenumber" name="912" href="#912">912</a>                     }
+<a class="jxr_linenumber" name="913" href="#913">913</a>                     ctx.close();
+<a class="jxr_linenumber" name="914" href="#914">914</a>                 }
+<a class="jxr_linenumber" name="915" href="#915">915</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="916" href="#916">916</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="917" href="#917">917</a>                     logger.debug(<span class="jxr_string">"{} Sending GOAWAY failed: lastStreamId '{}', errorCode '{}', "</span> +
+<a class="jxr_linenumber" name="918" href="#918">918</a>                                  <span class="jxr_string">"debugData '{}'. Forcing shutdown of the connection."</span>,
+<a class="jxr_linenumber" name="919" href="#919">919</a>                                  ctx.channel(), lastStreamId, errorCode, debugData.toString(UTF_8), future.cause());
+<a class="jxr_linenumber" name="920" href="#920">920</a>                 }
+<a class="jxr_linenumber" name="921" href="#921">921</a>                 ctx.close();
+<a class="jxr_linenumber" name="922" href="#922">922</a>             }
+<a class="jxr_linenumber" name="923" href="#923">923</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="924" href="#924">924</a>             <em class="jxr_comment">// We're done with the debug data now.</em>
+<a class="jxr_linenumber" name="925" href="#925">925</a>             debugData.release();
+<a class="jxr_linenumber" name="926" href="#926">926</a>         }
+<a class="jxr_linenumber" name="927" href="#927">927</a>     }
 <a class="jxr_linenumber" name="928" href="#928">928</a> 
-<a class="jxr_linenumber" name="929" href="#929">929</a>         <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="930" href="#930">930</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="931" href="#931">931</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="932" href="#932">932</a>             timeoutTask = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="933" href="#933">933</a>         }
-<a class="jxr_linenumber" name="934" href="#934">934</a> 
-<a class="jxr_linenumber" name="935" href="#935">935</a>         <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise,
-<a class="jxr_linenumber" name="936" href="#936">936</a>                                      <strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) {
-<a class="jxr_linenumber" name="937" href="#937">937</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="938" href="#938">938</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
-<a class="jxr_linenumber" name="939" href="#939">939</a>             timeoutTask = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="940" href="#940">940</a>                 @Override
-<a class="jxr_linenumber" name="941" href="#941">941</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="942" href="#942">942</a>                     doClose();
-<a class="jxr_linenumber" name="943" href="#943">943</a>                 }
-<a class="jxr_linenumber" name="944" href="#944">944</a>             }, timeout, unit);
-<a class="jxr_linenumber" name="945" href="#945">945</a>         }
-<a class="jxr_linenumber" name="946" href="#946">946</a> 
-<a class="jxr_linenumber" name="947" href="#947">947</a>         @Override
-<a class="jxr_linenumber" name="948" href="#948">948</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> sentGoAwayFuture) {
-<a class="jxr_linenumber" name="949" href="#949">949</a>             <strong class="jxr_keyword">if</strong> (timeoutTask != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="950" href="#950">950</a>                 timeoutTask.cancel(false);
-<a class="jxr_linenumber" name="951" href="#951">951</a>             }
-<a class="jxr_linenumber" name="952" href="#952">952</a>             doClose();
+<a class="jxr_linenumber" name="929" href="#929">929</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="930" href="#930">930</a> <em class="jxr_javadoccomment">     * Closes the channel when the future completes.</em>
+<a class="jxr_linenumber" name="931" href="#931">931</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="932" href="#932">932</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a> <strong class="jxr_keyword">implements</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a> {
+<a class="jxr_linenumber" name="933" href="#933">933</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx;
+<a class="jxr_linenumber" name="934" href="#934">934</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise;
+<a class="jxr_linenumber" name="935" href="#935">935</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutTask;
+<a class="jxr_linenumber" name="936" href="#936">936</a> 
+<a class="jxr_linenumber" name="937" href="#937">937</a>         <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="938" href="#938">938</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="939" href="#939">939</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
+<a class="jxr_linenumber" name="940" href="#940">940</a>             timeoutTask = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="941" href="#941">941</a>         }
+<a class="jxr_linenumber" name="942" href="#942">942</a> 
+<a class="jxr_linenumber" name="943" href="#943">943</a>         <a href="../../../../../io/netty/handler/codec/http2/Http2ConnectionHandler.html">ClosingChannelFutureListener</a>(<strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise,
+<a class="jxr_linenumber" name="944" href="#944">944</a>                                      <strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) {
+<a class="jxr_linenumber" name="945" href="#945">945</a>             <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="946" href="#946">946</a>             <strong class="jxr_keyword">this</strong>.promise = promise;
+<a class="jxr_linenumber" name="947" href="#947">947</a>             timeoutTask = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="948" href="#948">948</a>                 @Override
+<a class="jxr_linenumber" name="949" href="#949">949</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="950" href="#950">950</a>                     doClose();
+<a class="jxr_linenumber" name="951" href="#951">951</a>                 }
+<a class="jxr_linenumber" name="952" href="#952">952</a>             }, timeout, unit);
 <a class="jxr_linenumber" name="953" href="#953">953</a>         }
 <a class="jxr_linenumber" name="954" href="#954">954</a> 
-<a class="jxr_linenumber" name="955" href="#955">955</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> doClose() {
-<a class="jxr_linenumber" name="956" href="#956">956</a>             <strong class="jxr_keyword">if</strong> (promise == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="957" href="#957">957</a>                 ctx.close();
-<a class="jxr_linenumber" name="958" href="#958">958</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="959" href="#959">959</a>                 ctx.close(promise);
-<a class="jxr_linenumber" name="960" href="#960">960</a>             }
+<a class="jxr_linenumber" name="955" href="#955">955</a>         @Override
+<a class="jxr_linenumber" name="956" href="#956">956</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> sentGoAwayFuture) {
+<a class="jxr_linenumber" name="957" href="#957">957</a>             <strong class="jxr_keyword">if</strong> (timeoutTask != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="958" href="#958">958</a>                 timeoutTask.cancel(false);
+<a class="jxr_linenumber" name="959" href="#959">959</a>             }
+<a class="jxr_linenumber" name="960" href="#960">960</a>             doClose();
 <a class="jxr_linenumber" name="961" href="#961">961</a>         }
-<a class="jxr_linenumber" name="962" href="#962">962</a>     }
-<a class="jxr_linenumber" name="963" href="#963">963</a> }
+<a class="jxr_linenumber" name="962" href="#962">962</a> 
+<a class="jxr_linenumber" name="963" href="#963">963</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> doClose() {
+<a class="jxr_linenumber" name="964" href="#964">964</a>             <strong class="jxr_keyword">if</strong> (promise == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="965" href="#965">965</a>                 ctx.close();
+<a class="jxr_linenumber" name="966" href="#966">966</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="967" href="#967">967</a>                 ctx.close(promise);
+<a class="jxr_linenumber" name="968" href="#968">968</a>             }
+<a class="jxr_linenumber" name="969" href="#969">969</a>         }
+<a class="jxr_linenumber" name="970" href="#970">970</a>     }
+<a class="jxr_linenumber" name="971" href="#971">971</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

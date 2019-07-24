@@ -138,54 +138,55 @@
 <a class="jxr_linenumber" name="128" href="#128">128</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="129" href="#129">129</a>     @Override
 <a class="jxr_linenumber" name="130" href="#130">130</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> newHandshakeResponse(<a href="../../../../../../io/netty/handler/codec/http/FullHttpRequest.html">FullHttpRequest</a> req, <a href="../../../../../../io/netty/handler/codec/http/HttpHeaders.html">HttpHeaders</a> headers) {
-<a class="jxr_linenumber" name="131" href="#131">131</a> 
-<a class="jxr_linenumber" name="132" href="#132">132</a>         <a href="../../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> res =
-<a class="jxr_linenumber" name="133" href="#133">133</a>                 <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html">DefaultFullHttpResponse</a>(HTTP_1_1, HttpResponseStatus.SWITCHING_PROTOCOLS);
-<a class="jxr_linenumber" name="134" href="#134">134</a> 
-<a class="jxr_linenumber" name="135" href="#135">135</a>         <strong class="jxr_keyword">if</strong> (headers != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="136" href="#136">136</a>             res.headers().add(headers);
-<a class="jxr_linenumber" name="137" href="#137">137</a>         }
-<a class="jxr_linenumber" name="138" href="#138">138</a> 
-<a class="jxr_linenumber" name="139" href="#139">139</a>         CharSequence key = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_KEY);
-<a class="jxr_linenumber" name="140" href="#140">140</a>         <strong class="jxr_keyword">if</strong> (key == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="141" href="#141">141</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html">WebSocketHandshakeException</a>(<span class="jxr_string">"not a WebSocket request: missing key"</span>);
+<a class="jxr_linenumber" name="131" href="#131">131</a>         CharSequence key = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_KEY);
+<a class="jxr_linenumber" name="132" href="#132">132</a>         <strong class="jxr_keyword">if</strong> (key == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="133" href="#133">133</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html">WebSocketHandshakeException</a>(<span class="jxr_string">"not a WebSocket request: missing key"</span>);
+<a class="jxr_linenumber" name="134" href="#134">134</a>         }
+<a class="jxr_linenumber" name="135" href="#135">135</a> 
+<a class="jxr_linenumber" name="136" href="#136">136</a>         <a href="../../../../../../io/netty/handler/codec/http/FullHttpResponse.html">FullHttpResponse</a> res =
+<a class="jxr_linenumber" name="137" href="#137">137</a>                 <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html">DefaultFullHttpResponse</a>(HTTP_1_1, HttpResponseStatus.SWITCHING_PROTOCOLS,
+<a class="jxr_linenumber" name="138" href="#138">138</a>                         req.content().alloc().buffer(0));
+<a class="jxr_linenumber" name="139" href="#139">139</a> 
+<a class="jxr_linenumber" name="140" href="#140">140</a>         <strong class="jxr_keyword">if</strong> (headers != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="141" href="#141">141</a>             res.headers().add(headers);
 <a class="jxr_linenumber" name="142" href="#142">142</a>         }
-<a class="jxr_linenumber" name="143" href="#143">143</a>         String acceptSeed = key + WEBSOCKET_07_ACCEPT_GUID;
-<a class="jxr_linenumber" name="144" href="#144">144</a>         byte[] sha1 = WebSocketUtil.sha1(acceptSeed.getBytes(CharsetUtil.US_ASCII));
-<a class="jxr_linenumber" name="145" href="#145">145</a>         String accept = WebSocketUtil.base64(sha1);
-<a class="jxr_linenumber" name="146" href="#146">146</a> 
-<a class="jxr_linenumber" name="147" href="#147">147</a>         <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="148" href="#148">148</a>             logger.debug(<span class="jxr_string">"WebSocket version 07 server handshake key: {}, response: {}."</span>, key, accept);
-<a class="jxr_linenumber" name="149" href="#149">149</a>         }
-<a class="jxr_linenumber" name="150" href="#150">150</a> 
-<a class="jxr_linenumber" name="151" href="#151">151</a>         res.headers().add(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET);
-<a class="jxr_linenumber" name="152" href="#152">152</a>         res.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE);
-<a class="jxr_linenumber" name="153" href="#153">153</a>         res.headers().add(HttpHeaderNames.SEC_WEBSOCKET_ACCEPT, accept);
-<a class="jxr_linenumber" name="154" href="#154">154</a> 
-<a class="jxr_linenumber" name="155" href="#155">155</a>         String subprotocols = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL);
-<a class="jxr_linenumber" name="156" href="#156">156</a>         <strong class="jxr_keyword">if</strong> (subprotocols != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="157" href="#157">157</a>             String selectedSubprotocol = selectSubprotocol(subprotocols);
-<a class="jxr_linenumber" name="158" href="#158">158</a>             <strong class="jxr_keyword">if</strong> (selectedSubprotocol == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="159" href="#159">159</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="160" href="#160">160</a>                     logger.debug(<span class="jxr_string">"Requested subprotocol(s) not supported: {}"</span>, subprotocols);
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 }
-<a class="jxr_linenumber" name="162" href="#162">162</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="163" href="#163">163</a>                 res.headers().add(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL, selectedSubprotocol);
-<a class="jxr_linenumber" name="164" href="#164">164</a>             }
-<a class="jxr_linenumber" name="165" href="#165">165</a>         }
-<a class="jxr_linenumber" name="166" href="#166">166</a>         <strong class="jxr_keyword">return</strong> res;
-<a class="jxr_linenumber" name="167" href="#167">167</a>     }
-<a class="jxr_linenumber" name="168" href="#168">168</a> 
-<a class="jxr_linenumber" name="169" href="#169">169</a>     @Override
-<a class="jxr_linenumber" name="170" href="#170">170</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketFrameDecoder.html">WebSocketFrameDecoder</a> newWebsocketDecoder() {
-<a class="jxr_linenumber" name="171" href="#171">171</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> WebSocket07FrameDecoder(decoderConfig());
-<a class="jxr_linenumber" name="172" href="#172">172</a>     }
-<a class="jxr_linenumber" name="173" href="#173">173</a> 
-<a class="jxr_linenumber" name="174" href="#174">174</a>     @Override
-<a class="jxr_linenumber" name="175" href="#175">175</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketFrameEncoder.html">WebSocketFrameEncoder</a> newWebSocketEncoder() {
-<a class="jxr_linenumber" name="176" href="#176">176</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> WebSocket07FrameEncoder(false);
-<a class="jxr_linenumber" name="177" href="#177">177</a>     }
-<a class="jxr_linenumber" name="178" href="#178">178</a> }
+<a class="jxr_linenumber" name="143" href="#143">143</a> 
+<a class="jxr_linenumber" name="144" href="#144">144</a>         String acceptSeed = key + WEBSOCKET_07_ACCEPT_GUID;
+<a class="jxr_linenumber" name="145" href="#145">145</a>         byte[] sha1 = WebSocketUtil.sha1(acceptSeed.getBytes(CharsetUtil.US_ASCII));
+<a class="jxr_linenumber" name="146" href="#146">146</a>         String accept = WebSocketUtil.base64(sha1);
+<a class="jxr_linenumber" name="147" href="#147">147</a> 
+<a class="jxr_linenumber" name="148" href="#148">148</a>         <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="149" href="#149">149</a>             logger.debug(<span class="jxr_string">"WebSocket version 07 server handshake key: {}, response: {}."</span>, key, accept);
+<a class="jxr_linenumber" name="150" href="#150">150</a>         }
+<a class="jxr_linenumber" name="151" href="#151">151</a> 
+<a class="jxr_linenumber" name="152" href="#152">152</a>         res.headers().add(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET);
+<a class="jxr_linenumber" name="153" href="#153">153</a>         res.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE);
+<a class="jxr_linenumber" name="154" href="#154">154</a>         res.headers().add(HttpHeaderNames.SEC_WEBSOCKET_ACCEPT, accept);
+<a class="jxr_linenumber" name="155" href="#155">155</a> 
+<a class="jxr_linenumber" name="156" href="#156">156</a>         String subprotocols = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL);
+<a class="jxr_linenumber" name="157" href="#157">157</a>         <strong class="jxr_keyword">if</strong> (subprotocols != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="158" href="#158">158</a>             String selectedSubprotocol = selectSubprotocol(subprotocols);
+<a class="jxr_linenumber" name="159" href="#159">159</a>             <strong class="jxr_keyword">if</strong> (selectedSubprotocol == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="160" href="#160">160</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="161" href="#161">161</a>                     logger.debug(<span class="jxr_string">"Requested subprotocol(s) not supported: {}"</span>, subprotocols);
+<a class="jxr_linenumber" name="162" href="#162">162</a>                 }
+<a class="jxr_linenumber" name="163" href="#163">163</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="164" href="#164">164</a>                 res.headers().add(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL, selectedSubprotocol);
+<a class="jxr_linenumber" name="165" href="#165">165</a>             }
+<a class="jxr_linenumber" name="166" href="#166">166</a>         }
+<a class="jxr_linenumber" name="167" href="#167">167</a>         <strong class="jxr_keyword">return</strong> res;
+<a class="jxr_linenumber" name="168" href="#168">168</a>     }
+<a class="jxr_linenumber" name="169" href="#169">169</a> 
+<a class="jxr_linenumber" name="170" href="#170">170</a>     @Override
+<a class="jxr_linenumber" name="171" href="#171">171</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketFrameDecoder.html">WebSocketFrameDecoder</a> newWebsocketDecoder() {
+<a class="jxr_linenumber" name="172" href="#172">172</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> WebSocket07FrameDecoder(decoderConfig());
+<a class="jxr_linenumber" name="173" href="#173">173</a>     }
+<a class="jxr_linenumber" name="174" href="#174">174</a> 
+<a class="jxr_linenumber" name="175" href="#175">175</a>     @Override
+<a class="jxr_linenumber" name="176" href="#176">176</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketFrameEncoder.html">WebSocketFrameEncoder</a> newWebSocketEncoder() {
+<a class="jxr_linenumber" name="177" href="#177">177</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> WebSocket07FrameEncoder(false);
+<a class="jxr_linenumber" name="178" href="#178">178</a>     }
+<a class="jxr_linenumber" name="179" href="#179">179</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

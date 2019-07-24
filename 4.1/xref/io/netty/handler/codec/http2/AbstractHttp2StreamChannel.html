@@ -780,290 +780,297 @@
 <a class="jxr_linenumber" name="770" href="#770">770</a>             }
 <a class="jxr_linenumber" name="771" href="#771">771</a>         }
 <a class="jxr_linenumber" name="772" href="#772">772</a> 
-<a class="jxr_linenumber" name="773" href="#773">773</a>         <strong class="jxr_keyword">void</strong> doBeginRead() {
-<a class="jxr_linenumber" name="774" href="#774">774</a>             Object message;
-<a class="jxr_linenumber" name="775" href="#775">775</a>             <strong class="jxr_keyword">if</strong> (inboundBuffer == <strong class="jxr_keyword">null</strong> || (message = inboundBuffer.poll()) == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="776" href="#776">776</a>                 <strong class="jxr_keyword">if</strong> (readEOS) {
-<a class="jxr_linenumber" name="777" href="#777">777</a>                     unsafe.closeForcibly();
-<a class="jxr_linenumber" name="778" href="#778">778</a>                 }
-<a class="jxr_linenumber" name="779" href="#779">779</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="780" href="#780">780</a>                 <strong class="jxr_keyword">final</strong> RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();
-<a class="jxr_linenumber" name="781" href="#781">781</a>                 allocHandle.reset(config());
-<a class="jxr_linenumber" name="782" href="#782">782</a>                 <strong class="jxr_keyword">boolean</strong> continueReading = false;
-<a class="jxr_linenumber" name="783" href="#783">783</a>                 <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="784" href="#784">784</a>                     flowControlledBytes += doRead0((Http2Frame) message, allocHandle);
-<a class="jxr_linenumber" name="785" href="#785">785</a>                 } <strong class="jxr_keyword">while</strong> ((readEOS || (continueReading = allocHandle.continueReading())) &amp;&amp;
-<a class="jxr_linenumber" name="786" href="#786">786</a>                         (message = inboundBuffer.poll()) != <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="787" href="#787">787</a> 
-<a class="jxr_linenumber" name="788" href="#788">788</a>                 <strong class="jxr_keyword">if</strong> (continueReading &amp;&amp; isParentReadInProgress() &amp;&amp; !readEOS) {
-<a class="jxr_linenumber" name="789" href="#789">789</a>                     <em class="jxr_comment">// Currently the parent and child channel are on the same EventLoop thread. If the parent is</em>
-<a class="jxr_linenumber" name="790" href="#790">790</a>                     <em class="jxr_comment">// currently reading it is possile that more frames will be delivered to this child channel. In</em>
-<a class="jxr_linenumber" name="791" href="#791">791</a>                     <em class="jxr_comment">// the case that this child channel still wants to read we delay the channelReadComplete on this</em>
-<a class="jxr_linenumber" name="792" href="#792">792</a>                     <em class="jxr_comment">// child channel until the parent is done reading.</em>
-<a class="jxr_linenumber" name="793" href="#793">793</a>                     <strong class="jxr_keyword">if</strong> (!readCompletePending) {
-<a class="jxr_linenumber" name="794" href="#794">794</a>                         readCompletePending = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="795" href="#795">795</a>                         addChannelToReadCompletePendingQueue();
-<a class="jxr_linenumber" name="796" href="#796">796</a>                     }
-<a class="jxr_linenumber" name="797" href="#797">797</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="798" href="#798">798</a>                     notifyReadComplete(allocHandle, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="799" href="#799">799</a>                 }
-<a class="jxr_linenumber" name="800" href="#800">800</a>             }
-<a class="jxr_linenumber" name="801" href="#801">801</a>         }
-<a class="jxr_linenumber" name="802" href="#802">802</a> 
-<a class="jxr_linenumber" name="803" href="#803">803</a>         <strong class="jxr_keyword">void</strong> readEOS() {
-<a class="jxr_linenumber" name="804" href="#804">804</a>             readEOS = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="805" href="#805">805</a>         }
-<a class="jxr_linenumber" name="806" href="#806">806</a> 
-<a class="jxr_linenumber" name="807" href="#807">807</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> updateLocalWindowIfNeeded() {
-<a class="jxr_linenumber" name="808" href="#808">808</a>             <strong class="jxr_keyword">if</strong> (flowControlledBytes != 0) {
-<a class="jxr_linenumber" name="809" href="#809">809</a>                 <strong class="jxr_keyword">int</strong> bytes = flowControlledBytes;
-<a class="jxr_linenumber" name="810" href="#810">810</a>                 flowControlledBytes = 0;
-<a class="jxr_linenumber" name="811" href="#811">811</a>                 write0(parentContext(), <strong class="jxr_keyword">new</strong> DefaultHttp2WindowUpdateFrame(bytes).stream(stream));
-<a class="jxr_linenumber" name="812" href="#812">812</a>                 writeDoneAndNoFlush = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="813" href="#813">813</a>             }
-<a class="jxr_linenumber" name="814" href="#814">814</a>         }
-<a class="jxr_linenumber" name="815" href="#815">815</a> 
-<a class="jxr_linenumber" name="816" href="#816">816</a>         <strong class="jxr_keyword">void</strong> notifyReadComplete(RecvByteBufAllocator.Handle allocHandle, <strong class="jxr_keyword">boolean</strong> forceReadComplete) {
-<a class="jxr_linenumber" name="817" href="#817">817</a>             <strong class="jxr_keyword">if</strong> (!readCompletePending &amp;&amp; !forceReadComplete) {
-<a class="jxr_linenumber" name="818" href="#818">818</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="819" href="#819">819</a>             }
-<a class="jxr_linenumber" name="820" href="#820">820</a>             <em class="jxr_comment">// Set to false just in case we added the channel multiple times before.</em>
-<a class="jxr_linenumber" name="821" href="#821">821</a>             readCompletePending = false;
+<a class="jxr_linenumber" name="773" href="#773">773</a>         <strong class="jxr_keyword">private</strong> Object pollQueuedMessage() {
+<a class="jxr_linenumber" name="774" href="#774">774</a>             <strong class="jxr_keyword">return</strong> inboundBuffer == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : inboundBuffer.poll();
+<a class="jxr_linenumber" name="775" href="#775">775</a>         }
+<a class="jxr_linenumber" name="776" href="#776">776</a> 
+<a class="jxr_linenumber" name="777" href="#777">777</a>         <strong class="jxr_keyword">void</strong> doBeginRead() {
+<a class="jxr_linenumber" name="778" href="#778">778</a>             <em class="jxr_comment">// Process messages until there are none left (or the user stopped requesting) and also handle EOS.</em>
+<a class="jxr_linenumber" name="779" href="#779">779</a>             <strong class="jxr_keyword">while</strong> (readStatus != ReadStatus.IDLE) {
+<a class="jxr_linenumber" name="780" href="#780">780</a>                 Object message = pollQueuedMessage();
+<a class="jxr_linenumber" name="781" href="#781">781</a>                 <strong class="jxr_keyword">if</strong> (message == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="782" href="#782">782</a>                     <strong class="jxr_keyword">if</strong> (readEOS) {
+<a class="jxr_linenumber" name="783" href="#783">783</a>                         unsafe.closeForcibly();
+<a class="jxr_linenumber" name="784" href="#784">784</a>                     }
+<a class="jxr_linenumber" name="785" href="#785">785</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="786" href="#786">786</a>                 }
+<a class="jxr_linenumber" name="787" href="#787">787</a>                 <strong class="jxr_keyword">final</strong> RecvByteBufAllocator.Handle allocHandle = recvBufAllocHandle();
+<a class="jxr_linenumber" name="788" href="#788">788</a>                 allocHandle.reset(config());
+<a class="jxr_linenumber" name="789" href="#789">789</a>                 <strong class="jxr_keyword">boolean</strong> continueReading = false;
+<a class="jxr_linenumber" name="790" href="#790">790</a>                 <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="791" href="#791">791</a>                     flowControlledBytes += doRead0((Http2Frame) message, allocHandle);
+<a class="jxr_linenumber" name="792" href="#792">792</a>                 } <strong class="jxr_keyword">while</strong> ((readEOS || (continueReading = allocHandle.continueReading()))
+<a class="jxr_linenumber" name="793" href="#793">793</a>                         &amp;&amp; (message = pollQueuedMessage()) != <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="794" href="#794">794</a> 
+<a class="jxr_linenumber" name="795" href="#795">795</a>                 <strong class="jxr_keyword">if</strong> (continueReading &amp;&amp; isParentReadInProgress() &amp;&amp; !readEOS) {
+<a class="jxr_linenumber" name="796" href="#796">796</a>                     <em class="jxr_comment">// Currently the parent and child channel are on the same EventLoop thread. If the parent is</em>
+<a class="jxr_linenumber" name="797" href="#797">797</a>                     <em class="jxr_comment">// currently reading it is possible that more frames will be delivered to this child channel. In</em>
+<a class="jxr_linenumber" name="798" href="#798">798</a>                     <em class="jxr_comment">// the case that this child channel still wants to read we delay the channelReadComplete on this</em>
+<a class="jxr_linenumber" name="799" href="#799">799</a>                     <em class="jxr_comment">// child channel until the parent is done reading.</em>
+<a class="jxr_linenumber" name="800" href="#800">800</a>                     <strong class="jxr_keyword">if</strong> (!readCompletePending) {
+<a class="jxr_linenumber" name="801" href="#801">801</a>                         readCompletePending = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="802" href="#802">802</a>                         addChannelToReadCompletePendingQueue();
+<a class="jxr_linenumber" name="803" href="#803">803</a>                     }
+<a class="jxr_linenumber" name="804" href="#804">804</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="805" href="#805">805</a>                     notifyReadComplete(allocHandle, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="806" href="#806">806</a>                 }
+<a class="jxr_linenumber" name="807" href="#807">807</a>             }
+<a class="jxr_linenumber" name="808" href="#808">808</a>         }
+<a class="jxr_linenumber" name="809" href="#809">809</a> 
+<a class="jxr_linenumber" name="810" href="#810">810</a>         <strong class="jxr_keyword">void</strong> readEOS() {
+<a class="jxr_linenumber" name="811" href="#811">811</a>             readEOS = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="812" href="#812">812</a>         }
+<a class="jxr_linenumber" name="813" href="#813">813</a> 
+<a class="jxr_linenumber" name="814" href="#814">814</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> updateLocalWindowIfNeeded() {
+<a class="jxr_linenumber" name="815" href="#815">815</a>             <strong class="jxr_keyword">if</strong> (flowControlledBytes != 0) {
+<a class="jxr_linenumber" name="816" href="#816">816</a>                 <strong class="jxr_keyword">int</strong> bytes = flowControlledBytes;
+<a class="jxr_linenumber" name="817" href="#817">817</a>                 flowControlledBytes = 0;
+<a class="jxr_linenumber" name="818" href="#818">818</a>                 write0(parentContext(), <strong class="jxr_keyword">new</strong> DefaultHttp2WindowUpdateFrame(bytes).stream(stream));
+<a class="jxr_linenumber" name="819" href="#819">819</a>                 writeDoneAndNoFlush = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="820" href="#820">820</a>             }
+<a class="jxr_linenumber" name="821" href="#821">821</a>         }
 <a class="jxr_linenumber" name="822" href="#822">822</a> 
-<a class="jxr_linenumber" name="823" href="#823">823</a>             <strong class="jxr_keyword">if</strong> (readStatus == ReadStatus.REQUESTED) {
-<a class="jxr_linenumber" name="824" href="#824">824</a>                 readStatus = ReadStatus.IN_PROGRESS;
-<a class="jxr_linenumber" name="825" href="#825">825</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="826" href="#826">826</a>                 readStatus = ReadStatus.IDLE;
-<a class="jxr_linenumber" name="827" href="#827">827</a>             }
-<a class="jxr_linenumber" name="828" href="#828">828</a> 
-<a class="jxr_linenumber" name="829" href="#829">829</a>             updateLocalWindowIfNeeded();
-<a class="jxr_linenumber" name="830" href="#830">830</a> 
-<a class="jxr_linenumber" name="831" href="#831">831</a>             allocHandle.readComplete();
-<a class="jxr_linenumber" name="832" href="#832">832</a>             pipeline().fireChannelReadComplete();
-<a class="jxr_linenumber" name="833" href="#833">833</a>             <em class="jxr_comment">// Reading data may result in frames being written (e.g. WINDOW_UPDATE, RST, etc..). If the parent</em>
-<a class="jxr_linenumber" name="834" href="#834">834</a>             <em class="jxr_comment">// channel is not currently reading we need to force a flush at the child channel, because we cannot</em>
-<a class="jxr_linenumber" name="835" href="#835">835</a>             <em class="jxr_comment">// rely upon flush occurring in channelReadComplete on the parent channel.</em>
-<a class="jxr_linenumber" name="836" href="#836">836</a>             flush();
-<a class="jxr_linenumber" name="837" href="#837">837</a>             <strong class="jxr_keyword">if</strong> (readEOS) {
-<a class="jxr_linenumber" name="838" href="#838">838</a>                 unsafe.closeForcibly();
-<a class="jxr_linenumber" name="839" href="#839">839</a>             }
-<a class="jxr_linenumber" name="840" href="#840">840</a>         }
-<a class="jxr_linenumber" name="841" href="#841">841</a> 
-<a class="jxr_linenumber" name="842" href="#842">842</a>         @SuppressWarnings(<span class="jxr_string">"deprecation"</span>)
-<a class="jxr_linenumber" name="843" href="#843">843</a>         <strong class="jxr_keyword">int</strong> doRead0(Http2Frame frame, RecvByteBufAllocator.Handle allocHandle) {
-<a class="jxr_linenumber" name="844" href="#844">844</a>             pipeline().fireChannelRead(frame);
-<a class="jxr_linenumber" name="845" href="#845">845</a>             allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="846" href="#846">846</a> 
-<a class="jxr_linenumber" name="847" href="#847">847</a>             <strong class="jxr_keyword">if</strong> (frame instanceof Http2DataFrame) {
-<a class="jxr_linenumber" name="848" href="#848">848</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> numBytesToBeConsumed = ((Http2DataFrame) frame).initialFlowControlledBytes();
-<a class="jxr_linenumber" name="849" href="#849">849</a>                 allocHandle.attemptedBytesRead(numBytesToBeConsumed);
-<a class="jxr_linenumber" name="850" href="#850">850</a>                 allocHandle.lastBytesRead(numBytesToBeConsumed);
-<a class="jxr_linenumber" name="851" href="#851">851</a>                 <strong class="jxr_keyword">return</strong> numBytesToBeConsumed;
-<a class="jxr_linenumber" name="852" href="#852">852</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="853" href="#853">853</a>                 allocHandle.attemptedBytesRead(MIN_HTTP2_FRAME_SIZE);
-<a class="jxr_linenumber" name="854" href="#854">854</a>                 allocHandle.lastBytesRead(MIN_HTTP2_FRAME_SIZE);
-<a class="jxr_linenumber" name="855" href="#855">855</a>             }
-<a class="jxr_linenumber" name="856" href="#856">856</a>             <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="857" href="#857">857</a>         }
-<a class="jxr_linenumber" name="858" href="#858">858</a> 
-<a class="jxr_linenumber" name="859" href="#859">859</a>         @Override
-<a class="jxr_linenumber" name="860" href="#860">860</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(Object msg, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="861" href="#861">861</a>             <em class="jxr_comment">// After this point its not possible to cancel a write anymore.</em>
-<a class="jxr_linenumber" name="862" href="#862">862</a>             <strong class="jxr_keyword">if</strong> (!promise.setUncancellable()) {
-<a class="jxr_linenumber" name="863" href="#863">863</a>                 ReferenceCountUtil.release(msg);
-<a class="jxr_linenumber" name="864" href="#864">864</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="865" href="#865">865</a>             }
-<a class="jxr_linenumber" name="866" href="#866">866</a> 
-<a class="jxr_linenumber" name="867" href="#867">867</a>             <strong class="jxr_keyword">if</strong> (!isActive() ||
-<a class="jxr_linenumber" name="868" href="#868">868</a>                     <em class="jxr_comment">// Once the outbound side was closed we should not allow header / data frames</em>
-<a class="jxr_linenumber" name="869" href="#869">869</a>                     outboundClosed &amp;&amp; (msg instanceof Http2HeadersFrame || msg instanceof Http2DataFrame)) {
+<a class="jxr_linenumber" name="823" href="#823">823</a>         <strong class="jxr_keyword">void</strong> notifyReadComplete(RecvByteBufAllocator.Handle allocHandle, <strong class="jxr_keyword">boolean</strong> forceReadComplete) {
+<a class="jxr_linenumber" name="824" href="#824">824</a>             <strong class="jxr_keyword">if</strong> (!readCompletePending &amp;&amp; !forceReadComplete) {
+<a class="jxr_linenumber" name="825" href="#825">825</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="826" href="#826">826</a>             }
+<a class="jxr_linenumber" name="827" href="#827">827</a>             <em class="jxr_comment">// Set to false just in case we added the channel multiple times before.</em>
+<a class="jxr_linenumber" name="828" href="#828">828</a>             readCompletePending = false;
+<a class="jxr_linenumber" name="829" href="#829">829</a> 
+<a class="jxr_linenumber" name="830" href="#830">830</a>             <strong class="jxr_keyword">if</strong> (readStatus == ReadStatus.REQUESTED) {
+<a class="jxr_linenumber" name="831" href="#831">831</a>                 readStatus = ReadStatus.IN_PROGRESS;
+<a class="jxr_linenumber" name="832" href="#832">832</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="833" href="#833">833</a>                 readStatus = ReadStatus.IDLE;
+<a class="jxr_linenumber" name="834" href="#834">834</a>             }
+<a class="jxr_linenumber" name="835" href="#835">835</a> 
+<a class="jxr_linenumber" name="836" href="#836">836</a>             updateLocalWindowIfNeeded();
+<a class="jxr_linenumber" name="837" href="#837">837</a> 
+<a class="jxr_linenumber" name="838" href="#838">838</a>             allocHandle.readComplete();
+<a class="jxr_linenumber" name="839" href="#839">839</a>             pipeline().fireChannelReadComplete();
+<a class="jxr_linenumber" name="840" href="#840">840</a>             <em class="jxr_comment">// Reading data may result in frames being written (e.g. WINDOW_UPDATE, RST, etc..). If the parent</em>
+<a class="jxr_linenumber" name="841" href="#841">841</a>             <em class="jxr_comment">// channel is not currently reading we need to force a flush at the child channel, because we cannot</em>
+<a class="jxr_linenumber" name="842" href="#842">842</a>             <em class="jxr_comment">// rely upon flush occurring in channelReadComplete on the parent channel.</em>
+<a class="jxr_linenumber" name="843" href="#843">843</a>             flush();
+<a class="jxr_linenumber" name="844" href="#844">844</a>             <strong class="jxr_keyword">if</strong> (readEOS) {
+<a class="jxr_linenumber" name="845" href="#845">845</a>                 unsafe.closeForcibly();
+<a class="jxr_linenumber" name="846" href="#846">846</a>             }
+<a class="jxr_linenumber" name="847" href="#847">847</a>         }
+<a class="jxr_linenumber" name="848" href="#848">848</a> 
+<a class="jxr_linenumber" name="849" href="#849">849</a>         @SuppressWarnings(<span class="jxr_string">"deprecation"</span>)
+<a class="jxr_linenumber" name="850" href="#850">850</a>         <strong class="jxr_keyword">int</strong> doRead0(Http2Frame frame, RecvByteBufAllocator.Handle allocHandle) {
+<a class="jxr_linenumber" name="851" href="#851">851</a>             pipeline().fireChannelRead(frame);
+<a class="jxr_linenumber" name="852" href="#852">852</a>             allocHandle.incMessagesRead(1);
+<a class="jxr_linenumber" name="853" href="#853">853</a> 
+<a class="jxr_linenumber" name="854" href="#854">854</a>             <strong class="jxr_keyword">if</strong> (frame instanceof Http2DataFrame) {
+<a class="jxr_linenumber" name="855" href="#855">855</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> numBytesToBeConsumed = ((Http2DataFrame) frame).initialFlowControlledBytes();
+<a class="jxr_linenumber" name="856" href="#856">856</a>                 allocHandle.attemptedBytesRead(numBytesToBeConsumed);
+<a class="jxr_linenumber" name="857" href="#857">857</a>                 allocHandle.lastBytesRead(numBytesToBeConsumed);
+<a class="jxr_linenumber" name="858" href="#858">858</a>                 <strong class="jxr_keyword">return</strong> numBytesToBeConsumed;
+<a class="jxr_linenumber" name="859" href="#859">859</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="860" href="#860">860</a>                 allocHandle.attemptedBytesRead(MIN_HTTP2_FRAME_SIZE);
+<a class="jxr_linenumber" name="861" href="#861">861</a>                 allocHandle.lastBytesRead(MIN_HTTP2_FRAME_SIZE);
+<a class="jxr_linenumber" name="862" href="#862">862</a>             }
+<a class="jxr_linenumber" name="863" href="#863">863</a>             <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="864" href="#864">864</a>         }
+<a class="jxr_linenumber" name="865" href="#865">865</a> 
+<a class="jxr_linenumber" name="866" href="#866">866</a>         @Override
+<a class="jxr_linenumber" name="867" href="#867">867</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> write(Object msg, <strong class="jxr_keyword">final</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="868" href="#868">868</a>             <em class="jxr_comment">// After this point its not possible to cancel a write anymore.</em>
+<a class="jxr_linenumber" name="869" href="#869">869</a>             <strong class="jxr_keyword">if</strong> (!promise.setUncancellable()) {
 <a class="jxr_linenumber" name="870" href="#870">870</a>                 ReferenceCountUtil.release(msg);
-<a class="jxr_linenumber" name="871" href="#871">871</a>                 promise.setFailure(<strong class="jxr_keyword">new</strong> ClosedChannelException());
-<a class="jxr_linenumber" name="872" href="#872">872</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="873" href="#873">873</a>             }
-<a class="jxr_linenumber" name="874" href="#874">874</a> 
-<a class="jxr_linenumber" name="875" href="#875">875</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="876" href="#876">876</a>                 <strong class="jxr_keyword">if</strong> (msg instanceof Http2StreamFrame) {
-<a class="jxr_linenumber" name="877" href="#877">877</a>                     Http2StreamFrame frame = validateStreamFrame((Http2StreamFrame) msg).stream(stream());
-<a class="jxr_linenumber" name="878" href="#878">878</a>                     <strong class="jxr_keyword">if</strong> (!firstFrameWritten &amp;&amp; !isStreamIdValid(stream().id())) {
-<a class="jxr_linenumber" name="879" href="#879">879</a>                         <strong class="jxr_keyword">if</strong> (!(frame instanceof Http2HeadersFrame)) {
-<a class="jxr_linenumber" name="880" href="#880">880</a>                             ReferenceCountUtil.release(frame);
-<a class="jxr_linenumber" name="881" href="#881">881</a>                             promise.setFailure(
-<a class="jxr_linenumber" name="882" href="#882">882</a>                                     <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"The first frame must be a headers frame. Was: "</span>
-<a class="jxr_linenumber" name="883" href="#883">883</a>                                             + frame.name()));
-<a class="jxr_linenumber" name="884" href="#884">884</a>                             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="885" href="#885">885</a>                         }
-<a class="jxr_linenumber" name="886" href="#886">886</a>                         firstFrameWritten = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="887" href="#887">887</a>                         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f = write0(parentContext(), frame);
-<a class="jxr_linenumber" name="888" href="#888">888</a>                         <strong class="jxr_keyword">if</strong> (f.isDone()) {
-<a class="jxr_linenumber" name="889" href="#889">889</a>                             firstWriteComplete(f, promise);
-<a class="jxr_linenumber" name="890" href="#890">890</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="891" href="#891">891</a>                             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> bytes = FlowControlledFrameSizeEstimator.HANDLE_INSTANCE.size(msg);
-<a class="jxr_linenumber" name="892" href="#892">892</a>                             incrementPendingOutboundBytes(bytes, false);
-<a class="jxr_linenumber" name="893" href="#893">893</a>                             f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="894" href="#894">894</a>                                 @Override
-<a class="jxr_linenumber" name="895" href="#895">895</a>                                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="896" href="#896">896</a>                                     firstWriteComplete(future, promise);
-<a class="jxr_linenumber" name="897" href="#897">897</a>                                     decrementPendingOutboundBytes(bytes, false);
-<a class="jxr_linenumber" name="898" href="#898">898</a>                                 }
-<a class="jxr_linenumber" name="899" href="#899">899</a>                             });
-<a class="jxr_linenumber" name="900" href="#900">900</a>                             writeDoneAndNoFlush = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="901" href="#901">901</a>                         }
-<a class="jxr_linenumber" name="902" href="#902">902</a>                         <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="903" href="#903">903</a>                     }
-<a class="jxr_linenumber" name="904" href="#904">904</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="905" href="#905">905</a>                     String msgStr = msg.toString();
-<a class="jxr_linenumber" name="906" href="#906">906</a>                     ReferenceCountUtil.release(msg);
-<a class="jxr_linenumber" name="907" href="#907">907</a>                     promise.setFailure(<strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="908" href="#908">908</a>                             <span class="jxr_string">"Message must be an "</span> + StringUtil.simpleClassName(Http2StreamFrame.<strong class="jxr_keyword">class</strong>) +
-<a class="jxr_linenumber" name="909" href="#909">909</a>                                     <span class="jxr_string">": "</span> + msgStr));
-<a class="jxr_linenumber" name="910" href="#910">910</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="911" href="#911">911</a>                 }
-<a class="jxr_linenumber" name="912" href="#912">912</a> 
-<a class="jxr_linenumber" name="913" href="#913">913</a>                 <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f = write0(parentContext(), msg);
-<a class="jxr_linenumber" name="914" href="#914">914</a>                 <strong class="jxr_keyword">if</strong> (f.isDone()) {
-<a class="jxr_linenumber" name="915" href="#915">915</a>                     writeComplete(f, promise);
-<a class="jxr_linenumber" name="916" href="#916">916</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="917" href="#917">917</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> bytes = FlowControlledFrameSizeEstimator.HANDLE_INSTANCE.size(msg);
-<a class="jxr_linenumber" name="918" href="#918">918</a>                     incrementPendingOutboundBytes(bytes, false);
-<a class="jxr_linenumber" name="919" href="#919">919</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="920" href="#920">920</a>                         @Override
-<a class="jxr_linenumber" name="921" href="#921">921</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
-<a class="jxr_linenumber" name="922" href="#922">922</a>                             writeComplete(future, promise);
-<a class="jxr_linenumber" name="923" href="#923">923</a>                             decrementPendingOutboundBytes(bytes, false);
-<a class="jxr_linenumber" name="924" href="#924">924</a>                         }
-<a class="jxr_linenumber" name="925" href="#925">925</a>                     });
-<a class="jxr_linenumber" name="926" href="#926">926</a>                     writeDoneAndNoFlush = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="927" href="#927">927</a>                 }
-<a class="jxr_linenumber" name="928" href="#928">928</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="929" href="#929">929</a>                 promise.tryFailure(t);
-<a class="jxr_linenumber" name="930" href="#930">930</a>             }
-<a class="jxr_linenumber" name="931" href="#931">931</a>         }
-<a class="jxr_linenumber" name="932" href="#932">932</a> 
-<a class="jxr_linenumber" name="933" href="#933">933</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> firstWriteComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="934" href="#934">934</a>             Throwable cause = future.cause();
-<a class="jxr_linenumber" name="935" href="#935">935</a>             <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="936" href="#936">936</a>                 promise.setSuccess();
-<a class="jxr_linenumber" name="937" href="#937">937</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="938" href="#938">938</a>                 <em class="jxr_comment">// If the first write fails there is not much we can do, just close</em>
-<a class="jxr_linenumber" name="939" href="#939">939</a>                 closeForcibly();
-<a class="jxr_linenumber" name="940" href="#940">940</a>                 promise.setFailure(wrapStreamClosedError(cause));
-<a class="jxr_linenumber" name="941" href="#941">941</a>             }
-<a class="jxr_linenumber" name="942" href="#942">942</a>         }
-<a class="jxr_linenumber" name="943" href="#943">943</a> 
-<a class="jxr_linenumber" name="944" href="#944">944</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="945" href="#945">945</a>             Throwable cause = future.cause();
-<a class="jxr_linenumber" name="946" href="#946">946</a>             <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="947" href="#947">947</a>                 promise.setSuccess();
-<a class="jxr_linenumber" name="948" href="#948">948</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="949" href="#949">949</a>                 Throwable error = wrapStreamClosedError(cause);
-<a class="jxr_linenumber" name="950" href="#950">950</a>                 <em class="jxr_comment">// To make it more consistent with AbstractChannel we handle all IOExceptions here.</em>
-<a class="jxr_linenumber" name="951" href="#951">951</a>                 <strong class="jxr_keyword">if</strong> (error instanceof IOException) {
-<a class="jxr_linenumber" name="952" href="#952">952</a>                     <strong class="jxr_keyword">if</strong> (config.isAutoClose()) {
-<a class="jxr_linenumber" name="953" href="#953">953</a>                         <em class="jxr_comment">// Close channel if needed.</em>
-<a class="jxr_linenumber" name="954" href="#954">954</a>                         closeForcibly();
-<a class="jxr_linenumber" name="955" href="#955">955</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="956" href="#956">956</a>                         <em class="jxr_comment">// TODO: Once Http2StreamChannel extends DuplexChannel we should call shutdownOutput(...)</em>
-<a class="jxr_linenumber" name="957" href="#957">957</a>                         outboundClosed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="958" href="#958">958</a>                     }
-<a class="jxr_linenumber" name="959" href="#959">959</a>                 }
-<a class="jxr_linenumber" name="960" href="#960">960</a>                 promise.setFailure(error);
-<a class="jxr_linenumber" name="961" href="#961">961</a>             }
-<a class="jxr_linenumber" name="962" href="#962">962</a>         }
-<a class="jxr_linenumber" name="963" href="#963">963</a> 
-<a class="jxr_linenumber" name="964" href="#964">964</a>         <strong class="jxr_keyword">private</strong> Throwable wrapStreamClosedError(Throwable cause) {
-<a class="jxr_linenumber" name="965" href="#965">965</a>             <em class="jxr_comment">// If the error was caused by STREAM_CLOSED we should use a ClosedChannelException to better</em>
-<a class="jxr_linenumber" name="966" href="#966">966</a>             <em class="jxr_comment">// mimic other transports and make it easier to reason about what exceptions to expect.</em>
-<a class="jxr_linenumber" name="967" href="#967">967</a>             <strong class="jxr_keyword">if</strong> (cause instanceof Http2Exception &amp;&amp; ((Http2Exception) cause).error() == Http2Error.STREAM_CLOSED) {
-<a class="jxr_linenumber" name="968" href="#968">968</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> ClosedChannelException().initCause(cause);
-<a class="jxr_linenumber" name="969" href="#969">969</a>             }
-<a class="jxr_linenumber" name="970" href="#970">970</a>             <strong class="jxr_keyword">return</strong> cause;
-<a class="jxr_linenumber" name="971" href="#971">971</a>         }
-<a class="jxr_linenumber" name="972" href="#972">972</a> 
-<a class="jxr_linenumber" name="973" href="#973">973</a>         <strong class="jxr_keyword">private</strong> Http2StreamFrame validateStreamFrame(Http2StreamFrame frame) {
-<a class="jxr_linenumber" name="974" href="#974">974</a>             <strong class="jxr_keyword">if</strong> (frame.stream() != <strong class="jxr_keyword">null</strong> &amp;&amp; frame.stream() != stream) {
-<a class="jxr_linenumber" name="975" href="#975">975</a>                 String msgString = frame.toString();
-<a class="jxr_linenumber" name="976" href="#976">976</a>                 ReferenceCountUtil.release(frame);
-<a class="jxr_linenumber" name="977" href="#977">977</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="978" href="#978">978</a>                         <span class="jxr_string">"Stream "</span> + frame.stream() + <span class="jxr_string">" must not be set on the frame: "</span> + msgString);
-<a class="jxr_linenumber" name="979" href="#979">979</a>             }
-<a class="jxr_linenumber" name="980" href="#980">980</a>             <strong class="jxr_keyword">return</strong> frame;
-<a class="jxr_linenumber" name="981" href="#981">981</a>         }
-<a class="jxr_linenumber" name="982" href="#982">982</a> 
-<a class="jxr_linenumber" name="983" href="#983">983</a>         @Override
-<a class="jxr_linenumber" name="984" href="#984">984</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> flush() {
-<a class="jxr_linenumber" name="985" href="#985">985</a>             <em class="jxr_comment">// If we are currently in the parent channel's read loop we should just ignore the flush.</em>
-<a class="jxr_linenumber" name="986" href="#986">986</a>             <em class="jxr_comment">// We will ensure we trigger ctx.flush() after we processed all Channels later on and</em>
-<a class="jxr_linenumber" name="987" href="#987">987</a>             <em class="jxr_comment">// so aggregate the flushes. This is done as ctx.flush() is expensive when as it may trigger an</em>
-<a class="jxr_linenumber" name="988" href="#988">988</a>             <em class="jxr_comment">// write(...) or writev(...) operation on the socket.</em>
-<a class="jxr_linenumber" name="989" href="#989">989</a>             <strong class="jxr_keyword">if</strong> (!writeDoneAndNoFlush || isParentReadInProgress()) {
-<a class="jxr_linenumber" name="990" href="#990">990</a>                 <em class="jxr_comment">// There is nothing to flush so this is a NOOP.</em>
-<a class="jxr_linenumber" name="991" href="#991">991</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="992" href="#992">992</a>             }
-<a class="jxr_linenumber" name="993" href="#993">993</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="994" href="#994">994</a>                 flush0(parentContext());
-<a class="jxr_linenumber" name="995" href="#995">995</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="996" href="#996">996</a>                 writeDoneAndNoFlush = false;
-<a class="jxr_linenumber" name="997" href="#997">997</a>             }
-<a class="jxr_linenumber" name="998" href="#998">998</a>         }
-<a class="jxr_linenumber" name="999" href="#999">999</a> 
-<a class="jxr_linenumber" name="1000" href="#1000">1000</a>         @Override
-<a class="jxr_linenumber" name="1001" href="#1001">1001</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> voidPromise() {
-<a class="jxr_linenumber" name="1002" href="#1002">1002</a>             <strong class="jxr_keyword">return</strong> unsafeVoidPromise;
-<a class="jxr_linenumber" name="1003" href="#1003">1003</a>         }
-<a class="jxr_linenumber" name="1004" href="#1004">1004</a> 
-<a class="jxr_linenumber" name="1005" href="#1005">1005</a>         @Override
-<a class="jxr_linenumber" name="1006" href="#1006">1006</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelOutboundBuffer.html">ChannelOutboundBuffer</a> outboundBuffer() {
-<a class="jxr_linenumber" name="1007" href="#1007">1007</a>             <em class="jxr_comment">// Always return null as we not use the ChannelOutboundBuffer and not even support it.</em>
-<a class="jxr_linenumber" name="1008" href="#1008">1008</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="1009" href="#1009">1009</a>         }
-<a class="jxr_linenumber" name="1010" href="#1010">1010</a>     }
+<a class="jxr_linenumber" name="871" href="#871">871</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="872" href="#872">872</a>             }
+<a class="jxr_linenumber" name="873" href="#873">873</a> 
+<a class="jxr_linenumber" name="874" href="#874">874</a>             <strong class="jxr_keyword">if</strong> (!isActive() ||
+<a class="jxr_linenumber" name="875" href="#875">875</a>                     <em class="jxr_comment">// Once the outbound side was closed we should not allow header / data frames</em>
+<a class="jxr_linenumber" name="876" href="#876">876</a>                     outboundClosed &amp;&amp; (msg instanceof Http2HeadersFrame || msg instanceof Http2DataFrame)) {
+<a class="jxr_linenumber" name="877" href="#877">877</a>                 ReferenceCountUtil.release(msg);
+<a class="jxr_linenumber" name="878" href="#878">878</a>                 promise.setFailure(<strong class="jxr_keyword">new</strong> ClosedChannelException());
+<a class="jxr_linenumber" name="879" href="#879">879</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="880" href="#880">880</a>             }
+<a class="jxr_linenumber" name="881" href="#881">881</a> 
+<a class="jxr_linenumber" name="882" href="#882">882</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="883" href="#883">883</a>                 <strong class="jxr_keyword">if</strong> (msg instanceof Http2StreamFrame) {
+<a class="jxr_linenumber" name="884" href="#884">884</a>                     Http2StreamFrame frame = validateStreamFrame((Http2StreamFrame) msg).stream(stream());
+<a class="jxr_linenumber" name="885" href="#885">885</a>                     <strong class="jxr_keyword">if</strong> (!firstFrameWritten &amp;&amp; !isStreamIdValid(stream().id())) {
+<a class="jxr_linenumber" name="886" href="#886">886</a>                         <strong class="jxr_keyword">if</strong> (!(frame instanceof Http2HeadersFrame)) {
+<a class="jxr_linenumber" name="887" href="#887">887</a>                             ReferenceCountUtil.release(frame);
+<a class="jxr_linenumber" name="888" href="#888">888</a>                             promise.setFailure(
+<a class="jxr_linenumber" name="889" href="#889">889</a>                                     <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"The first frame must be a headers frame. Was: "</span>
+<a class="jxr_linenumber" name="890" href="#890">890</a>                                             + frame.name()));
+<a class="jxr_linenumber" name="891" href="#891">891</a>                             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="892" href="#892">892</a>                         }
+<a class="jxr_linenumber" name="893" href="#893">893</a>                         firstFrameWritten = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="894" href="#894">894</a>                         <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f = write0(parentContext(), frame);
+<a class="jxr_linenumber" name="895" href="#895">895</a>                         <strong class="jxr_keyword">if</strong> (f.isDone()) {
+<a class="jxr_linenumber" name="896" href="#896">896</a>                             firstWriteComplete(f, promise);
+<a class="jxr_linenumber" name="897" href="#897">897</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="898" href="#898">898</a>                             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> bytes = FlowControlledFrameSizeEstimator.HANDLE_INSTANCE.size(msg);
+<a class="jxr_linenumber" name="899" href="#899">899</a>                             incrementPendingOutboundBytes(bytes, false);
+<a class="jxr_linenumber" name="900" href="#900">900</a>                             f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="901" href="#901">901</a>                                 @Override
+<a class="jxr_linenumber" name="902" href="#902">902</a>                                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="903" href="#903">903</a>                                     firstWriteComplete(future, promise);
+<a class="jxr_linenumber" name="904" href="#904">904</a>                                     decrementPendingOutboundBytes(bytes, false);
+<a class="jxr_linenumber" name="905" href="#905">905</a>                                 }
+<a class="jxr_linenumber" name="906" href="#906">906</a>                             });
+<a class="jxr_linenumber" name="907" href="#907">907</a>                             writeDoneAndNoFlush = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="908" href="#908">908</a>                         }
+<a class="jxr_linenumber" name="909" href="#909">909</a>                         <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="910" href="#910">910</a>                     }
+<a class="jxr_linenumber" name="911" href="#911">911</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="912" href="#912">912</a>                     String msgStr = msg.toString();
+<a class="jxr_linenumber" name="913" href="#913">913</a>                     ReferenceCountUtil.release(msg);
+<a class="jxr_linenumber" name="914" href="#914">914</a>                     promise.setFailure(<strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="915" href="#915">915</a>                             <span class="jxr_string">"Message must be an "</span> + StringUtil.simpleClassName(Http2StreamFrame.<strong class="jxr_keyword">class</strong>) +
+<a class="jxr_linenumber" name="916" href="#916">916</a>                                     <span class="jxr_string">": "</span> + msgStr));
+<a class="jxr_linenumber" name="917" href="#917">917</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="918" href="#918">918</a>                 }
+<a class="jxr_linenumber" name="919" href="#919">919</a> 
+<a class="jxr_linenumber" name="920" href="#920">920</a>                 <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f = write0(parentContext(), msg);
+<a class="jxr_linenumber" name="921" href="#921">921</a>                 <strong class="jxr_keyword">if</strong> (f.isDone()) {
+<a class="jxr_linenumber" name="922" href="#922">922</a>                     writeComplete(f, promise);
+<a class="jxr_linenumber" name="923" href="#923">923</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="924" href="#924">924</a>                     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> bytes = FlowControlledFrameSizeEstimator.HANDLE_INSTANCE.size(msg);
+<a class="jxr_linenumber" name="925" href="#925">925</a>                     incrementPendingOutboundBytes(bytes, false);
+<a class="jxr_linenumber" name="926" href="#926">926</a>                     f.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="927" href="#927">927</a>                         @Override
+<a class="jxr_linenumber" name="928" href="#928">928</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future) {
+<a class="jxr_linenumber" name="929" href="#929">929</a>                             writeComplete(future, promise);
+<a class="jxr_linenumber" name="930" href="#930">930</a>                             decrementPendingOutboundBytes(bytes, false);
+<a class="jxr_linenumber" name="931" href="#931">931</a>                         }
+<a class="jxr_linenumber" name="932" href="#932">932</a>                     });
+<a class="jxr_linenumber" name="933" href="#933">933</a>                     writeDoneAndNoFlush = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="934" href="#934">934</a>                 }
+<a class="jxr_linenumber" name="935" href="#935">935</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="936" href="#936">936</a>                 promise.tryFailure(t);
+<a class="jxr_linenumber" name="937" href="#937">937</a>             }
+<a class="jxr_linenumber" name="938" href="#938">938</a>         }
+<a class="jxr_linenumber" name="939" href="#939">939</a> 
+<a class="jxr_linenumber" name="940" href="#940">940</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> firstWriteComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="941" href="#941">941</a>             Throwable cause = future.cause();
+<a class="jxr_linenumber" name="942" href="#942">942</a>             <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="943" href="#943">943</a>                 promise.setSuccess();
+<a class="jxr_linenumber" name="944" href="#944">944</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="945" href="#945">945</a>                 <em class="jxr_comment">// If the first write fails there is not much we can do, just close</em>
+<a class="jxr_linenumber" name="946" href="#946">946</a>                 closeForcibly();
+<a class="jxr_linenumber" name="947" href="#947">947</a>                 promise.setFailure(wrapStreamClosedError(cause));
+<a class="jxr_linenumber" name="948" href="#948">948</a>             }
+<a class="jxr_linenumber" name="949" href="#949">949</a>         }
+<a class="jxr_linenumber" name="950" href="#950">950</a> 
+<a class="jxr_linenumber" name="951" href="#951">951</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeComplete(<a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="952" href="#952">952</a>             Throwable cause = future.cause();
+<a class="jxr_linenumber" name="953" href="#953">953</a>             <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="954" href="#954">954</a>                 promise.setSuccess();
+<a class="jxr_linenumber" name="955" href="#955">955</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="956" href="#956">956</a>                 Throwable error = wrapStreamClosedError(cause);
+<a class="jxr_linenumber" name="957" href="#957">957</a>                 <em class="jxr_comment">// To make it more consistent with AbstractChannel we handle all IOExceptions here.</em>
+<a class="jxr_linenumber" name="958" href="#958">958</a>                 <strong class="jxr_keyword">if</strong> (error instanceof IOException) {
+<a class="jxr_linenumber" name="959" href="#959">959</a>                     <strong class="jxr_keyword">if</strong> (config.isAutoClose()) {
+<a class="jxr_linenumber" name="960" href="#960">960</a>                         <em class="jxr_comment">// Close channel if needed.</em>
+<a class="jxr_linenumber" name="961" href="#961">961</a>                         closeForcibly();
+<a class="jxr_linenumber" name="962" href="#962">962</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="963" href="#963">963</a>                         <em class="jxr_comment">// TODO: Once Http2StreamChannel extends DuplexChannel we should call shutdownOutput(...)</em>
+<a class="jxr_linenumber" name="964" href="#964">964</a>                         outboundClosed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="965" href="#965">965</a>                     }
+<a class="jxr_linenumber" name="966" href="#966">966</a>                 }
+<a class="jxr_linenumber" name="967" href="#967">967</a>                 promise.setFailure(error);
+<a class="jxr_linenumber" name="968" href="#968">968</a>             }
+<a class="jxr_linenumber" name="969" href="#969">969</a>         }
+<a class="jxr_linenumber" name="970" href="#970">970</a> 
+<a class="jxr_linenumber" name="971" href="#971">971</a>         <strong class="jxr_keyword">private</strong> Throwable wrapStreamClosedError(Throwable cause) {
+<a class="jxr_linenumber" name="972" href="#972">972</a>             <em class="jxr_comment">// If the error was caused by STREAM_CLOSED we should use a ClosedChannelException to better</em>
+<a class="jxr_linenumber" name="973" href="#973">973</a>             <em class="jxr_comment">// mimic other transports and make it easier to reason about what exceptions to expect.</em>
+<a class="jxr_linenumber" name="974" href="#974">974</a>             <strong class="jxr_keyword">if</strong> (cause instanceof Http2Exception &amp;&amp; ((Http2Exception) cause).error() == Http2Error.STREAM_CLOSED) {
+<a class="jxr_linenumber" name="975" href="#975">975</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> ClosedChannelException().initCause(cause);
+<a class="jxr_linenumber" name="976" href="#976">976</a>             }
+<a class="jxr_linenumber" name="977" href="#977">977</a>             <strong class="jxr_keyword">return</strong> cause;
+<a class="jxr_linenumber" name="978" href="#978">978</a>         }
+<a class="jxr_linenumber" name="979" href="#979">979</a> 
+<a class="jxr_linenumber" name="980" href="#980">980</a>         <strong class="jxr_keyword">private</strong> Http2StreamFrame validateStreamFrame(Http2StreamFrame frame) {
+<a class="jxr_linenumber" name="981" href="#981">981</a>             <strong class="jxr_keyword">if</strong> (frame.stream() != <strong class="jxr_keyword">null</strong> &amp;&amp; frame.stream() != stream) {
+<a class="jxr_linenumber" name="982" href="#982">982</a>                 String msgString = frame.toString();
+<a class="jxr_linenumber" name="983" href="#983">983</a>                 ReferenceCountUtil.release(frame);
+<a class="jxr_linenumber" name="984" href="#984">984</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="985" href="#985">985</a>                         <span class="jxr_string">"Stream "</span> + frame.stream() + <span class="jxr_string">" must not be set on the frame: "</span> + msgString);
+<a class="jxr_linenumber" name="986" href="#986">986</a>             }
+<a class="jxr_linenumber" name="987" href="#987">987</a>             <strong class="jxr_keyword">return</strong> frame;
+<a class="jxr_linenumber" name="988" href="#988">988</a>         }
+<a class="jxr_linenumber" name="989" href="#989">989</a> 
+<a class="jxr_linenumber" name="990" href="#990">990</a>         @Override
+<a class="jxr_linenumber" name="991" href="#991">991</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> flush() {
+<a class="jxr_linenumber" name="992" href="#992">992</a>             <em class="jxr_comment">// If we are currently in the parent channel's read loop we should just ignore the flush.</em>
+<a class="jxr_linenumber" name="993" href="#993">993</a>             <em class="jxr_comment">// We will ensure we trigger ctx.flush() after we processed all Channels later on and</em>
+<a class="jxr_linenumber" name="994" href="#994">994</a>             <em class="jxr_comment">// so aggregate the flushes. This is done as ctx.flush() is expensive when as it may trigger an</em>
+<a class="jxr_linenumber" name="995" href="#995">995</a>             <em class="jxr_comment">// write(...) or writev(...) operation on the socket.</em>
+<a class="jxr_linenumber" name="996" href="#996">996</a>             <strong class="jxr_keyword">if</strong> (!writeDoneAndNoFlush || isParentReadInProgress()) {
+<a class="jxr_linenumber" name="997" href="#997">997</a>                 <em class="jxr_comment">// There is nothing to flush so this is a NOOP.</em>
+<a class="jxr_linenumber" name="998" href="#998">998</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="999" href="#999">999</a>             }
+<a class="jxr_linenumber" name="1000" href="#1000">1000</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1001" href="#1001">1001</a>                 flush0(parentContext());
+<a class="jxr_linenumber" name="1002" href="#1002">1002</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="1003" href="#1003">1003</a>                 writeDoneAndNoFlush = false;
+<a class="jxr_linenumber" name="1004" href="#1004">1004</a>             }
+<a class="jxr_linenumber" name="1005" href="#1005">1005</a>         }
+<a class="jxr_linenumber" name="1006" href="#1006">1006</a> 
+<a class="jxr_linenumber" name="1007" href="#1007">1007</a>         @Override
+<a class="jxr_linenumber" name="1008" href="#1008">1008</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> voidPromise() {
+<a class="jxr_linenumber" name="1009" href="#1009">1009</a>             <strong class="jxr_keyword">return</strong> unsafeVoidPromise;
+<a class="jxr_linenumber" name="1010" href="#1010">1010</a>         }
 <a class="jxr_linenumber" name="1011" href="#1011">1011</a> 
-<a class="jxr_linenumber" name="1012" href="#1012">1012</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="1013" href="#1013">1013</a> <em class="jxr_javadoccomment">     * {@link ChannelConfig} so that the high and low writebuffer watermarks can reflect the outbound flow control</em>
-<a class="jxr_linenumber" name="1014" href="#1014">1014</a> <em class="jxr_javadoccomment">     * window, without having to create a new {@link WriteBufferWaterMark} object whenever the flow control window</em>
-<a class="jxr_linenumber" name="1015" href="#1015">1015</a> <em class="jxr_javadoccomment">     * changes.</em>
-<a class="jxr_linenumber" name="1016" href="#1016">1016</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="1017" href="#1017">1017</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Http2StreamChannelConfig <strong class="jxr_keyword">extends</strong> <a href="../../../../../io/netty/channel/DefaultChannelConfig.html">DefaultChannelConfig</a> {
-<a class="jxr_linenumber" name="1018" href="#1018">1018</a>         Http2StreamChannelConfig(<a href="../../../../../io/netty/channel/Channel.html">Channel</a> channel) {
-<a class="jxr_linenumber" name="1019" href="#1019">1019</a>             <strong class="jxr_keyword">super</strong>(channel);
-<a class="jxr_linenumber" name="1020" href="#1020">1020</a>         }
-<a class="jxr_linenumber" name="1021" href="#1021">1021</a> 
-<a class="jxr_linenumber" name="1022" href="#1022">1022</a>         @Override
-<a class="jxr_linenumber" name="1023" href="#1023">1023</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/MessageSizeEstimator.html">MessageSizeEstimator</a> getMessageSizeEstimator() {
-<a class="jxr_linenumber" name="1024" href="#1024">1024</a>             <strong class="jxr_keyword">return</strong> FlowControlledFrameSizeEstimator.INSTANCE;
-<a class="jxr_linenumber" name="1025" href="#1025">1025</a>         }
-<a class="jxr_linenumber" name="1026" href="#1026">1026</a> 
-<a class="jxr_linenumber" name="1027" href="#1027">1027</a>         @Override
-<a class="jxr_linenumber" name="1028" href="#1028">1028</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> setMessageSizeEstimator(<a href="../../../../../io/netty/channel/MessageSizeEstimator.html">MessageSizeEstimator</a> estimator) {
-<a class="jxr_linenumber" name="1029" href="#1029">1029</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
-<a class="jxr_linenumber" name="1030" href="#1030">1030</a>         }
-<a class="jxr_linenumber" name="1031" href="#1031">1031</a> 
-<a class="jxr_linenumber" name="1032" href="#1032">1032</a>         @Override
-<a class="jxr_linenumber" name="1033" href="#1033">1033</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> setRecvByteBufAllocator(<a href="../../../../../io/netty/channel/RecvByteBufAllocator.html">RecvByteBufAllocator</a> allocator) {
-<a class="jxr_linenumber" name="1034" href="#1034">1034</a>             <strong class="jxr_keyword">if</strong> (!(allocator.newHandle() instanceof RecvByteBufAllocator.ExtendedHandle)) {
-<a class="jxr_linenumber" name="1035" href="#1035">1035</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"allocator.newHandle() must return an object of type: "</span> +
-<a class="jxr_linenumber" name="1036" href="#1036">1036</a>                         RecvByteBufAllocator.ExtendedHandle.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="1037" href="#1037">1037</a>             }
-<a class="jxr_linenumber" name="1038" href="#1038">1038</a>             <strong class="jxr_keyword">super</strong>.setRecvByteBufAllocator(allocator);
-<a class="jxr_linenumber" name="1039" href="#1039">1039</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="1040" href="#1040">1040</a>         }
-<a class="jxr_linenumber" name="1041" href="#1041">1041</a>     }
-<a class="jxr_linenumber" name="1042" href="#1042">1042</a> 
-<a class="jxr_linenumber" name="1043" href="#1043">1043</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> flush0(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="1044" href="#1044">1044</a>         ctx.flush();
-<a class="jxr_linenumber" name="1045" href="#1045">1045</a>     }
-<a class="jxr_linenumber" name="1046" href="#1046">1046</a> 
-<a class="jxr_linenumber" name="1047" href="#1047">1047</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> write0(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg) {
-<a class="jxr_linenumber" name="1048" href="#1048">1048</a>         <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise = ctx.newPromise();
-<a class="jxr_linenumber" name="1049" href="#1049">1049</a>         ctx.write(msg, promise);
-<a class="jxr_linenumber" name="1050" href="#1050">1050</a>         <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="1051" href="#1051">1051</a>     }
-<a class="jxr_linenumber" name="1052" href="#1052">1052</a> 
-<a class="jxr_linenumber" name="1053" href="#1053">1053</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isParentReadInProgress();
-<a class="jxr_linenumber" name="1054" href="#1054">1054</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> addChannelToReadCompletePendingQueue();
-<a class="jxr_linenumber" name="1055" href="#1055">1055</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> parentContext();
-<a class="jxr_linenumber" name="1056" href="#1056">1056</a> }
+<a class="jxr_linenumber" name="1012" href="#1012">1012</a>         @Override
+<a class="jxr_linenumber" name="1013" href="#1013">1013</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelOutboundBuffer.html">ChannelOutboundBuffer</a> outboundBuffer() {
+<a class="jxr_linenumber" name="1014" href="#1014">1014</a>             <em class="jxr_comment">// Always return null as we not use the ChannelOutboundBuffer and not even support it.</em>
+<a class="jxr_linenumber" name="1015" href="#1015">1015</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="1016" href="#1016">1016</a>         }
+<a class="jxr_linenumber" name="1017" href="#1017">1017</a>     }
+<a class="jxr_linenumber" name="1018" href="#1018">1018</a> 
+<a class="jxr_linenumber" name="1019" href="#1019">1019</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="1020" href="#1020">1020</a> <em class="jxr_javadoccomment">     * {@link ChannelConfig} so that the high and low writebuffer watermarks can reflect the outbound flow control</em>
+<a class="jxr_linenumber" name="1021" href="#1021">1021</a> <em class="jxr_javadoccomment">     * window, without having to create a new {@link WriteBufferWaterMark} object whenever the flow control window</em>
+<a class="jxr_linenumber" name="1022" href="#1022">1022</a> <em class="jxr_javadoccomment">     * changes.</em>
+<a class="jxr_linenumber" name="1023" href="#1023">1023</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="1024" href="#1024">1024</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Http2StreamChannelConfig <strong class="jxr_keyword">extends</strong> <a href="../../../../../io/netty/channel/DefaultChannelConfig.html">DefaultChannelConfig</a> {
+<a class="jxr_linenumber" name="1025" href="#1025">1025</a>         Http2StreamChannelConfig(<a href="../../../../../io/netty/channel/Channel.html">Channel</a> channel) {
+<a class="jxr_linenumber" name="1026" href="#1026">1026</a>             <strong class="jxr_keyword">super</strong>(channel);
+<a class="jxr_linenumber" name="1027" href="#1027">1027</a>         }
+<a class="jxr_linenumber" name="1028" href="#1028">1028</a> 
+<a class="jxr_linenumber" name="1029" href="#1029">1029</a>         @Override
+<a class="jxr_linenumber" name="1030" href="#1030">1030</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/MessageSizeEstimator.html">MessageSizeEstimator</a> getMessageSizeEstimator() {
+<a class="jxr_linenumber" name="1031" href="#1031">1031</a>             <strong class="jxr_keyword">return</strong> FlowControlledFrameSizeEstimator.INSTANCE;
+<a class="jxr_linenumber" name="1032" href="#1032">1032</a>         }
+<a class="jxr_linenumber" name="1033" href="#1033">1033</a> 
+<a class="jxr_linenumber" name="1034" href="#1034">1034</a>         @Override
+<a class="jxr_linenumber" name="1035" href="#1035">1035</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> setMessageSizeEstimator(<a href="../../../../../io/netty/channel/MessageSizeEstimator.html">MessageSizeEstimator</a> estimator) {
+<a class="jxr_linenumber" name="1036" href="#1036">1036</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
+<a class="jxr_linenumber" name="1037" href="#1037">1037</a>         }
+<a class="jxr_linenumber" name="1038" href="#1038">1038</a> 
+<a class="jxr_linenumber" name="1039" href="#1039">1039</a>         @Override
+<a class="jxr_linenumber" name="1040" href="#1040">1040</a>         <strong class="jxr_keyword">public</strong> <a href="../../../../../io/netty/channel/ChannelConfig.html">ChannelConfig</a> setRecvByteBufAllocator(<a href="../../../../../io/netty/channel/RecvByteBufAllocator.html">RecvByteBufAllocator</a> allocator) {
+<a class="jxr_linenumber" name="1041" href="#1041">1041</a>             <strong class="jxr_keyword">if</strong> (!(allocator.newHandle() instanceof RecvByteBufAllocator.ExtendedHandle)) {
+<a class="jxr_linenumber" name="1042" href="#1042">1042</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"allocator.newHandle() must return an object of type: "</span> +
+<a class="jxr_linenumber" name="1043" href="#1043">1043</a>                         RecvByteBufAllocator.ExtendedHandle.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="1044" href="#1044">1044</a>             }
+<a class="jxr_linenumber" name="1045" href="#1045">1045</a>             <strong class="jxr_keyword">super</strong>.setRecvByteBufAllocator(allocator);
+<a class="jxr_linenumber" name="1046" href="#1046">1046</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="1047" href="#1047">1047</a>         }
+<a class="jxr_linenumber" name="1048" href="#1048">1048</a>     }
+<a class="jxr_linenumber" name="1049" href="#1049">1049</a> 
+<a class="jxr_linenumber" name="1050" href="#1050">1050</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> flush0(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="1051" href="#1051">1051</a>         ctx.flush();
+<a class="jxr_linenumber" name="1052" href="#1052">1052</a>     }
+<a class="jxr_linenumber" name="1053" href="#1053">1053</a> 
+<a class="jxr_linenumber" name="1054" href="#1054">1054</a>     <strong class="jxr_keyword">protected</strong> <a href="../../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> write0(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object msg) {
+<a class="jxr_linenumber" name="1055" href="#1055">1055</a>         <a href="../../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise = ctx.newPromise();
+<a class="jxr_linenumber" name="1056" href="#1056">1056</a>         ctx.write(msg, promise);
+<a class="jxr_linenumber" name="1057" href="#1057">1057</a>         <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="1058" href="#1058">1058</a>     }
+<a class="jxr_linenumber" name="1059" href="#1059">1059</a> 
+<a class="jxr_linenumber" name="1060" href="#1060">1060</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isParentReadInProgress();
+<a class="jxr_linenumber" name="1061" href="#1061">1061</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> addChannelToReadCompletePendingQueue();
+<a class="jxr_linenumber" name="1062" href="#1062">1062</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> parentContext();
+<a class="jxr_linenumber" name="1063" href="#1063">1063</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
