@@ -38,41 +38,53 @@
 <a class="jxr_linenumber" name="28" href="#28">28</a>      <em class="jxr_comment">// This class exists to avoid loading other conscrypt related classes using features only available in JDK8+,</em>
 <a class="jxr_linenumber" name="29" href="#29">29</a>      <em class="jxr_comment">// because we need to maintain JDK6+ runtime compatibility.</em>
 <a class="jxr_linenumber" name="30" href="#30">30</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> Method IS_CONSCRYPT_SSLENGINE = loadIsConscryptEngine();
-<a class="jxr_linenumber" name="31" href="#31">31</a>  
-<a class="jxr_linenumber" name="32" href="#32">32</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Method loadIsConscryptEngine() {
-<a class="jxr_linenumber" name="33" href="#33">33</a>          <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="34" href="#34">34</a>              Class&lt;?&gt; conscryptClass = Class.forName(<span class="jxr_string">"org.conscrypt.Conscrypt"</span>, <strong class="jxr_keyword">true</strong>,
-<a class="jxr_linenumber" name="35" href="#35">35</a>                      ConscryptAlpnSslEngine.<strong class="jxr_keyword">class</strong>.getClassLoader());
-<a class="jxr_linenumber" name="36" href="#36">36</a>              <strong class="jxr_keyword">return</strong> conscryptClass.getMethod(<span class="jxr_string">"isConscrypt"</span>, SSLEngine.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="37" href="#37">37</a>          } <strong class="jxr_keyword">catch</strong> (Throwable ignore) {
-<a class="jxr_linenumber" name="38" href="#38">38</a>              <em class="jxr_comment">// Conscrypt was not loaded.</em>
-<a class="jxr_linenumber" name="39" href="#39">39</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="40" href="#40">40</a>          }
-<a class="jxr_linenumber" name="41" href="#41">41</a>      }
-<a class="jxr_linenumber" name="42" href="#42">42</a>  
-<a class="jxr_linenumber" name="43" href="#43">43</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="44" href="#44">44</a>  <em class="jxr_javadoccomment">     * Indicates whether or not conscrypt is available on the current system.</em>
-<a class="jxr_linenumber" name="45" href="#45">45</a>  <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="46" href="#46">46</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isAvailable() {
-<a class="jxr_linenumber" name="47" href="#47">47</a>          <strong class="jxr_keyword">return</strong> IS_CONSCRYPT_SSLENGINE != <strong class="jxr_keyword">null</strong> &amp;&amp; PlatformDependent.javaVersion() &gt;= 8;
-<a class="jxr_linenumber" name="48" href="#48">48</a>      }
-<a class="jxr_linenumber" name="49" href="#49">49</a>  
-<a class="jxr_linenumber" name="50" href="#50">50</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isEngineSupported(SSLEngine engine) {
-<a class="jxr_linenumber" name="51" href="#51">51</a>          <strong class="jxr_keyword">return</strong> isAvailable() &amp;&amp; isConscryptEngine(engine);
-<a class="jxr_linenumber" name="52" href="#52">52</a>      }
-<a class="jxr_linenumber" name="53" href="#53">53</a>  
-<a class="jxr_linenumber" name="54" href="#54">54</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isConscryptEngine(SSLEngine engine) {
-<a class="jxr_linenumber" name="55" href="#55">55</a>          <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="56" href="#56">56</a>              <strong class="jxr_keyword">return</strong> (Boolean) IS_CONSCRYPT_SSLENGINE.invoke(<strong class="jxr_keyword">null</strong>, engine);
-<a class="jxr_linenumber" name="57" href="#57">57</a>          } <strong class="jxr_keyword">catch</strong> (IllegalAccessException ignore) {
-<a class="jxr_linenumber" name="58" href="#58">58</a>              <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="59" href="#59">59</a>          } <strong class="jxr_keyword">catch</strong> (InvocationTargetException ex) {
-<a class="jxr_linenumber" name="60" href="#60">60</a>              <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(ex);
-<a class="jxr_linenumber" name="61" href="#61">61</a>          }
-<a class="jxr_linenumber" name="62" href="#62">62</a>      }
-<a class="jxr_linenumber" name="63" href="#63">63</a>  
-<a class="jxr_linenumber" name="64" href="#64">64</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/Conscrypt.html">Conscrypt</a>() { }
-<a class="jxr_linenumber" name="65" href="#65">65</a>  }
+<a class="jxr_linenumber" name="31" href="#31">31</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> CAN_INSTANCE_PROVIDER = canInstanceProvider();
+<a class="jxr_linenumber" name="32" href="#32">32</a>  
+<a class="jxr_linenumber" name="33" href="#33">33</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Method loadIsConscryptEngine() {
+<a class="jxr_linenumber" name="34" href="#34">34</a>          <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="35" href="#35">35</a>              Class&lt;?&gt; conscryptClass = Class.forName(<span class="jxr_string">"org.conscrypt.Conscrypt"</span>, <strong class="jxr_keyword">true</strong>,
+<a class="jxr_linenumber" name="36" href="#36">36</a>                      ConscryptAlpnSslEngine.<strong class="jxr_keyword">class</strong>.getClassLoader());
+<a class="jxr_linenumber" name="37" href="#37">37</a>              <strong class="jxr_keyword">return</strong> conscryptClass.getMethod(<span class="jxr_string">"isConscrypt"</span>, SSLEngine.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="38" href="#38">38</a>          } <strong class="jxr_keyword">catch</strong> (Throwable ignore) {
+<a class="jxr_linenumber" name="39" href="#39">39</a>              <em class="jxr_comment">// Conscrypt was not loaded.</em>
+<a class="jxr_linenumber" name="40" href="#40">40</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="41" href="#41">41</a>          }
+<a class="jxr_linenumber" name="42" href="#42">42</a>      }
+<a class="jxr_linenumber" name="43" href="#43">43</a>  
+<a class="jxr_linenumber" name="44" href="#44">44</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> canInstanceProvider() {
+<a class="jxr_linenumber" name="45" href="#45">45</a>          <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="46" href="#46">46</a>              Class&lt;?&gt; providerClass = Class.forName(<span class="jxr_string">"org.conscrypt.OpenSSLProvider"</span>, <strong class="jxr_keyword">true</strong>,
+<a class="jxr_linenumber" name="47" href="#47">47</a>                      ConscryptAlpnSslEngine.<strong class="jxr_keyword">class</strong>.getClassLoader());
+<a class="jxr_linenumber" name="48" href="#48">48</a>              providerClass.newInstance();
+<a class="jxr_linenumber" name="49" href="#49">49</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="50" href="#50">50</a>          } <strong class="jxr_keyword">catch</strong> (Throwable ignore) {
+<a class="jxr_linenumber" name="51" href="#51">51</a>              <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="52" href="#52">52</a>          }
+<a class="jxr_linenumber" name="53" href="#53">53</a>      }
+<a class="jxr_linenumber" name="54" href="#54">54</a>  
+<a class="jxr_linenumber" name="55" href="#55">55</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="56" href="#56">56</a>  <em class="jxr_javadoccomment">     * Indicates whether or not conscrypt is available on the current system.</em>
+<a class="jxr_linenumber" name="57" href="#57">57</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="58" href="#58">58</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isAvailable() {
+<a class="jxr_linenumber" name="59" href="#59">59</a>          <strong class="jxr_keyword">return</strong> CAN_INSTANCE_PROVIDER &amp;&amp; IS_CONSCRYPT_SSLENGINE != <strong class="jxr_keyword">null</strong> &amp;&amp; PlatformDependent.javaVersion() &gt;= 8;
+<a class="jxr_linenumber" name="60" href="#60">60</a>      }
+<a class="jxr_linenumber" name="61" href="#61">61</a>  
+<a class="jxr_linenumber" name="62" href="#62">62</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isEngineSupported(SSLEngine engine) {
+<a class="jxr_linenumber" name="63" href="#63">63</a>          <strong class="jxr_keyword">return</strong> isAvailable() &amp;&amp; isConscryptEngine(engine);
+<a class="jxr_linenumber" name="64" href="#64">64</a>      }
+<a class="jxr_linenumber" name="65" href="#65">65</a>  
+<a class="jxr_linenumber" name="66" href="#66">66</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isConscryptEngine(SSLEngine engine) {
+<a class="jxr_linenumber" name="67" href="#67">67</a>          <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="68" href="#68">68</a>              <strong class="jxr_keyword">return</strong> (Boolean) IS_CONSCRYPT_SSLENGINE.invoke(<strong class="jxr_keyword">null</strong>, engine);
+<a class="jxr_linenumber" name="69" href="#69">69</a>          } <strong class="jxr_keyword">catch</strong> (IllegalAccessException ignore) {
+<a class="jxr_linenumber" name="70" href="#70">70</a>              <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="71" href="#71">71</a>          } <strong class="jxr_keyword">catch</strong> (InvocationTargetException ex) {
+<a class="jxr_linenumber" name="72" href="#72">72</a>              <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(ex);
+<a class="jxr_linenumber" name="73" href="#73">73</a>          }
+<a class="jxr_linenumber" name="74" href="#74">74</a>      }
+<a class="jxr_linenumber" name="75" href="#75">75</a>  
+<a class="jxr_linenumber" name="76" href="#76">76</a>      <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/Conscrypt.html">Conscrypt</a>() { }
+<a class="jxr_linenumber" name="77" href="#77">77</a>  }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
