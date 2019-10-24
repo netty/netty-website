@@ -1,1 +1,1 @@
-/Library/Java/JavaVirtualMachines/applejdk-11.jdk/Contents/Home/bin/javadoc @options @packages
+/Library/Java/JavaVirtualMachines/applejdk-8.jdk/Contents/Home/jre/../bin/javadoc @options @packages
