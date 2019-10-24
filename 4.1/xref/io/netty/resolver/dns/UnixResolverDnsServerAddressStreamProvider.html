@@ -177,184 +177,188 @@
 <a class="jxr_linenumber" name="167" href="#167">167</a>                 String line;
 <a class="jxr_linenumber" name="168" href="#168">168</a>                 <strong class="jxr_keyword">while</strong> ((line = br.readLine()) != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="169" href="#169">169</a>                     line = line.trim();
-<a class="jxr_linenumber" name="170" href="#170">170</a>                     <strong class="jxr_keyword">char</strong> c;
-<a class="jxr_linenumber" name="171" href="#171">171</a>                     <strong class="jxr_keyword">if</strong> (line.isEmpty() || (c = line.charAt(0)) == '#' || c == ';') {
-<a class="jxr_linenumber" name="172" href="#172">172</a>                         <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="173" href="#173">173</a>                     }
-<a class="jxr_linenumber" name="174" href="#174">174</a>                     <strong class="jxr_keyword">if</strong> (line.startsWith(NAMESERVER_ROW_LABEL)) {
-<a class="jxr_linenumber" name="175" href="#175">175</a>                         <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, NAMESERVER_ROW_LABEL.length());
-<a class="jxr_linenumber" name="176" href="#176">176</a>                         <strong class="jxr_keyword">if</strong> (i &lt; 0) {
-<a class="jxr_linenumber" name="177" href="#177">177</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + NAMESERVER_ROW_LABEL +
-<a class="jxr_linenumber" name="178" href="#178">178</a>                                     <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">". value: "</span> + line);
-<a class="jxr_linenumber" name="179" href="#179">179</a>                         }
-<a class="jxr_linenumber" name="180" href="#180">180</a>                         String maybeIP = line.substring(i);
-<a class="jxr_linenumber" name="181" href="#181">181</a>                         <em class="jxr_comment">// There may be a port appended onto the IP address so we attempt to extract it.</em>
-<a class="jxr_linenumber" name="182" href="#182">182</a>                         <strong class="jxr_keyword">if</strong> (!NetUtil.isValidIpV4Address(maybeIP) &amp;&amp; !NetUtil.isValidIpV6Address(maybeIP)) {
-<a class="jxr_linenumber" name="183" href="#183">183</a>                             i = maybeIP.lastIndexOf('.');
-<a class="jxr_linenumber" name="184" href="#184">184</a>                             <strong class="jxr_keyword">if</strong> (i + 1 &gt;= maybeIP.length()) {
-<a class="jxr_linenumber" name="185" href="#185">185</a>                                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + NAMESERVER_ROW_LABEL +
-<a class="jxr_linenumber" name="186" href="#186">186</a>                                         <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">". invalid IP value: "</span> + line);
-<a class="jxr_linenumber" name="187" href="#187">187</a>                             }
-<a class="jxr_linenumber" name="188" href="#188">188</a>                             port = Integer.parseInt(maybeIP.substring(i + 1));
-<a class="jxr_linenumber" name="189" href="#189">189</a>                             maybeIP = maybeIP.substring(0, i);
-<a class="jxr_linenumber" name="190" href="#190">190</a>                         }
-<a class="jxr_linenumber" name="191" href="#191">191</a>                         addresses.add(SocketUtils.socketAddress(maybeIP, port));
-<a class="jxr_linenumber" name="192" href="#192">192</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(DOMAIN_ROW_LABEL)) {
-<a class="jxr_linenumber" name="193" href="#193">193</a>                         <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, DOMAIN_ROW_LABEL.length());
-<a class="jxr_linenumber" name="194" href="#194">194</a>                         <strong class="jxr_keyword">if</strong> (i &lt; 0) {
-<a class="jxr_linenumber" name="195" href="#195">195</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + DOMAIN_ROW_LABEL +
-<a class="jxr_linenumber" name="196" href="#196">196</a>                                     <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">" value: "</span> + line);
-<a class="jxr_linenumber" name="197" href="#197">197</a>                         }
-<a class="jxr_linenumber" name="198" href="#198">198</a>                         domainName = line.substring(i);
-<a class="jxr_linenumber" name="199" href="#199">199</a>                         <strong class="jxr_keyword">if</strong> (!addresses.isEmpty()) {
-<a class="jxr_linenumber" name="200" href="#200">200</a>                             putIfAbsent(domainToNameServerStreamMap, domainName, addresses);
-<a class="jxr_linenumber" name="201" href="#201">201</a>                         }
-<a class="jxr_linenumber" name="202" href="#202">202</a>                         addresses = <strong class="jxr_keyword">new</strong> ArrayList&lt;InetSocketAddress&gt;(2);
-<a class="jxr_linenumber" name="203" href="#203">203</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(PORT_ROW_LABEL)) {
-<a class="jxr_linenumber" name="204" href="#204">204</a>                         <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, PORT_ROW_LABEL.length());
-<a class="jxr_linenumber" name="205" href="#205">205</a>                         <strong class="jxr_keyword">if</strong> (i &lt; 0) {
-<a class="jxr_linenumber" name="206" href="#206">206</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + PORT_ROW_LABEL +
-<a class="jxr_linenumber" name="207" href="#207">207</a>                                     <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">" value: "</span> + line);
-<a class="jxr_linenumber" name="208" href="#208">208</a>                         }
-<a class="jxr_linenumber" name="209" href="#209">209</a>                         port = Integer.parseInt(line.substring(i));
-<a class="jxr_linenumber" name="210" href="#210">210</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(SORTLIST_ROW_LABEL)) {
-<a class="jxr_linenumber" name="211" href="#211">211</a>                         logger.info(<span class="jxr_string">"row type {} not supported. ignoring line: {}"</span>, SORTLIST_ROW_LABEL, line);
-<a class="jxr_linenumber" name="212" href="#212">212</a>                     }
-<a class="jxr_linenumber" name="213" href="#213">213</a>                 }
-<a class="jxr_linenumber" name="214" href="#214">214</a>                 <strong class="jxr_keyword">if</strong> (!addresses.isEmpty()) {
-<a class="jxr_linenumber" name="215" href="#215">215</a>                     putIfAbsent(domainToNameServerStreamMap, domainName, addresses);
-<a class="jxr_linenumber" name="216" href="#216">216</a>                 }
-<a class="jxr_linenumber" name="217" href="#217">217</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="218" href="#218">218</a>                 <strong class="jxr_keyword">if</strong> (br == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="219" href="#219">219</a>                     fr.close();
-<a class="jxr_linenumber" name="220" href="#220">220</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="221" href="#221">221</a>                     br.close();
-<a class="jxr_linenumber" name="222" href="#222">222</a>                 }
-<a class="jxr_linenumber" name="223" href="#223">223</a>             }
-<a class="jxr_linenumber" name="224" href="#224">224</a>         }
-<a class="jxr_linenumber" name="225" href="#225">225</a>         <strong class="jxr_keyword">return</strong> domainToNameServerStreamMap;
-<a class="jxr_linenumber" name="226" href="#226">226</a>     }
-<a class="jxr_linenumber" name="227" href="#227">227</a> 
-<a class="jxr_linenumber" name="228" href="#228">228</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> putIfAbsent(Map&lt;String, DnsServerAddresses&gt; domainToNameServerStreamMap,
-<a class="jxr_linenumber" name="229" href="#229">229</a>                                     String domainName,
-<a class="jxr_linenumber" name="230" href="#230">230</a>                                     List&lt;InetSocketAddress&gt; addresses) {
-<a class="jxr_linenumber" name="231" href="#231">231</a>         <em class="jxr_comment">// TODO(scott): sortlist is being ignored.</em>
-<a class="jxr_linenumber" name="232" href="#232">232</a>         putIfAbsent(domainToNameServerStreamMap, domainName, DnsServerAddresses.sequential(addresses));
-<a class="jxr_linenumber" name="233" href="#233">233</a>     }
-<a class="jxr_linenumber" name="234" href="#234">234</a> 
-<a class="jxr_linenumber" name="235" href="#235">235</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> putIfAbsent(Map&lt;String, DnsServerAddresses&gt; domainToNameServerStreamMap,
-<a class="jxr_linenumber" name="236" href="#236">236</a>                                     String domainName,
-<a class="jxr_linenumber" name="237" href="#237">237</a>                                     <a href="../../../../io/netty/resolver/dns/DnsServerAddresses.html">DnsServerAddresses</a> addresses) {
-<a class="jxr_linenumber" name="238" href="#238">238</a>         <a href="../../../../io/netty/resolver/dns/DnsServerAddresses.html">DnsServerAddresses</a> existingAddresses = domainToNameServerStreamMap.put(domainName, addresses);
-<a class="jxr_linenumber" name="239" href="#239">239</a>         <strong class="jxr_keyword">if</strong> (existingAddresses != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="240" href="#240">240</a>             domainToNameServerStreamMap.put(domainName, existingAddresses);
-<a class="jxr_linenumber" name="241" href="#241">241</a>             logger.debug(<span class="jxr_string">"Domain name {} already maps to addresses {} so new addresses {} will be discarded"</span>,
-<a class="jxr_linenumber" name="242" href="#242">242</a>                     domainName, existingAddresses, addresses);
-<a class="jxr_linenumber" name="243" href="#243">243</a>         }
-<a class="jxr_linenumber" name="244" href="#244">244</a>     }
-<a class="jxr_linenumber" name="245" href="#245">245</a> 
-<a class="jxr_linenumber" name="246" href="#246">246</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="247" href="#247">247</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
-<a class="jxr_linenumber" name="248" href="#248">248</a> <em class="jxr_javadoccomment">     * value corresponding to the first ndots in an options configuration.</em>
-<a class="jxr_linenumber" name="249" href="#249">249</a> <em class="jxr_javadoccomment">     * @return the value corresponding to the first ndots in an options configuration, or {@link #DEFAULT_NDOTS} if not</em>
-<a class="jxr_linenumber" name="250" href="#250">250</a> <em class="jxr_javadoccomment">     * found.</em>
-<a class="jxr_linenumber" name="251" href="#251">251</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
-<a class="jxr_linenumber" name="252" href="#252">252</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="253" href="#253">253</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> parseEtcResolverFirstNdots() <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="254" href="#254">254</a>         <strong class="jxr_keyword">return</strong> parseEtcResolverFirstNdots(<strong class="jxr_keyword">new</strong> File(ETC_RESOLV_CONF_FILE));
-<a class="jxr_linenumber" name="255" href="#255">255</a>     }
-<a class="jxr_linenumber" name="256" href="#256">256</a> 
-<a class="jxr_linenumber" name="257" href="#257">257</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="258" href="#258">258</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
-<a class="jxr_linenumber" name="259" href="#259">259</a> <em class="jxr_javadoccomment">     * value corresponding to the first ndots in an options configuration.</em>
-<a class="jxr_linenumber" name="260" href="#260">260</a> <em class="jxr_javadoccomment">     * @param etcResolvConf a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt;.</em>
-<a class="jxr_linenumber" name="261" href="#261">261</a> <em class="jxr_javadoccomment">     * @return the value corresponding to the first ndots in an options configuration, or {@link #DEFAULT_NDOTS} if not</em>
-<a class="jxr_linenumber" name="262" href="#262">262</a> <em class="jxr_javadoccomment">     * found.</em>
-<a class="jxr_linenumber" name="263" href="#263">263</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
-<a class="jxr_linenumber" name="264" href="#264">264</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="265" href="#265">265</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> parseEtcResolverFirstNdots(File etcResolvConf) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="266" href="#266">266</a>         FileReader fr = <strong class="jxr_keyword">new</strong> FileReader(etcResolvConf);
-<a class="jxr_linenumber" name="267" href="#267">267</a>         BufferedReader br = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="268" href="#268">268</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="269" href="#269">269</a>             br = <strong class="jxr_keyword">new</strong> BufferedReader(fr);
-<a class="jxr_linenumber" name="270" href="#270">270</a>             String line;
-<a class="jxr_linenumber" name="271" href="#271">271</a>             <strong class="jxr_keyword">while</strong> ((line = br.readLine()) != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="272" href="#272">272</a>                 <strong class="jxr_keyword">if</strong> (line.startsWith(OPTIONS_ROW_LABEL)) {
-<a class="jxr_linenumber" name="273" href="#273">273</a>                     <strong class="jxr_keyword">int</strong> i = line.indexOf(NDOTS_LABEL);
-<a class="jxr_linenumber" name="274" href="#274">274</a>                     <strong class="jxr_keyword">if</strong> (i &gt;= 0) {
-<a class="jxr_linenumber" name="275" href="#275">275</a>                         i += NDOTS_LABEL.length();
-<a class="jxr_linenumber" name="276" href="#276">276</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> j = line.indexOf(' ', i);
-<a class="jxr_linenumber" name="277" href="#277">277</a>                         <strong class="jxr_keyword">return</strong> Integer.parseInt(line.substring(i, j &lt; 0 ? line.length() : j));
-<a class="jxr_linenumber" name="278" href="#278">278</a>                     }
-<a class="jxr_linenumber" name="279" href="#279">279</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="280" href="#280">280</a>                 }
-<a class="jxr_linenumber" name="281" href="#281">281</a>             }
-<a class="jxr_linenumber" name="282" href="#282">282</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="283" href="#283">283</a>             <strong class="jxr_keyword">if</strong> (br == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="284" href="#284">284</a>                 fr.close();
-<a class="jxr_linenumber" name="285" href="#285">285</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="286" href="#286">286</a>                 br.close();
-<a class="jxr_linenumber" name="287" href="#287">287</a>             }
-<a class="jxr_linenumber" name="288" href="#288">288</a>         }
-<a class="jxr_linenumber" name="289" href="#289">289</a>         <strong class="jxr_keyword">return</strong> DEFAULT_NDOTS;
-<a class="jxr_linenumber" name="290" href="#290">290</a>     }
-<a class="jxr_linenumber" name="291" href="#291">291</a> 
-<a class="jxr_linenumber" name="292" href="#292">292</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="293" href="#293">293</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
-<a class="jxr_linenumber" name="294" href="#294">294</a> <em class="jxr_javadoccomment">     * list of search domains found in it or an empty list if not found.</em>
-<a class="jxr_linenumber" name="295" href="#295">295</a> <em class="jxr_javadoccomment">     * @return List of search domains.</em>
-<a class="jxr_linenumber" name="296" href="#296">296</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
-<a class="jxr_linenumber" name="297" href="#297">297</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="298" href="#298">298</a>     <strong class="jxr_keyword">static</strong> List&lt;String&gt; parseEtcResolverSearchDomains() <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="299" href="#299">299</a>         <strong class="jxr_keyword">return</strong> parseEtcResolverSearchDomains(<strong class="jxr_keyword">new</strong> File(ETC_RESOLV_CONF_FILE));
-<a class="jxr_linenumber" name="300" href="#300">300</a>     }
-<a class="jxr_linenumber" name="301" href="#301">301</a> 
-<a class="jxr_linenumber" name="302" href="#302">302</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="303" href="#303">303</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
-<a class="jxr_linenumber" name="304" href="#304">304</a> <em class="jxr_javadoccomment">     * list of search domains found in it or an empty list if not found.</em>
-<a class="jxr_linenumber" name="305" href="#305">305</a> <em class="jxr_javadoccomment">     * @param etcResolvConf a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt;.</em>
-<a class="jxr_linenumber" name="306" href="#306">306</a> <em class="jxr_javadoccomment">     * @return List of search domains.</em>
-<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
-<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="309" href="#309">309</a>     <strong class="jxr_keyword">static</strong> List&lt;String&gt; parseEtcResolverSearchDomains(File etcResolvConf) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="310" href="#310">310</a>         String localDomain = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="311" href="#311">311</a>         List&lt;String&gt; searchDomains = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;();
-<a class="jxr_linenumber" name="312" href="#312">312</a> 
-<a class="jxr_linenumber" name="313" href="#313">313</a>         FileReader fr = <strong class="jxr_keyword">new</strong> FileReader(etcResolvConf);
-<a class="jxr_linenumber" name="314" href="#314">314</a>         BufferedReader br = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="315" href="#315">315</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="316" href="#316">316</a>             br = <strong class="jxr_keyword">new</strong> BufferedReader(fr);
-<a class="jxr_linenumber" name="317" href="#317">317</a>             String line;
-<a class="jxr_linenumber" name="318" href="#318">318</a>             <strong class="jxr_keyword">while</strong> ((line = br.readLine()) != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="319" href="#319">319</a>                 <strong class="jxr_keyword">if</strong> (localDomain == <strong class="jxr_keyword">null</strong> &amp;&amp; line.startsWith(DOMAIN_ROW_LABEL)) {
-<a class="jxr_linenumber" name="320" href="#320">320</a>                     <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, DOMAIN_ROW_LABEL.length());
-<a class="jxr_linenumber" name="321" href="#321">321</a>                     <strong class="jxr_keyword">if</strong> (i &gt;= 0) {
-<a class="jxr_linenumber" name="322" href="#322">322</a>                         localDomain = line.substring(i);
-<a class="jxr_linenumber" name="323" href="#323">323</a>                     }
-<a class="jxr_linenumber" name="324" href="#324">324</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(SEARCH_ROW_LABEL)) {
-<a class="jxr_linenumber" name="325" href="#325">325</a>                     <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, SEARCH_ROW_LABEL.length());
-<a class="jxr_linenumber" name="326" href="#326">326</a>                     <strong class="jxr_keyword">if</strong> (i &gt;= 0) {
-<a class="jxr_linenumber" name="327" href="#327">327</a>                         <em class="jxr_comment">// May contain more then one entry, either seperated by whitespace or tab.</em>
-<a class="jxr_linenumber" name="328" href="#328">328</a>                         <em class="jxr_comment">// See https://linux.die.net/man/5/resolver</em>
-<a class="jxr_linenumber" name="329" href="#329">329</a>                         String[] domains = SEARCH_DOMAIN_PATTERN.split(line.substring(i));
-<a class="jxr_linenumber" name="330" href="#330">330</a>                         Collections.addAll(searchDomains, domains);
-<a class="jxr_linenumber" name="331" href="#331">331</a>                     }
-<a class="jxr_linenumber" name="332" href="#332">332</a>                 }
-<a class="jxr_linenumber" name="333" href="#333">333</a>             }
-<a class="jxr_linenumber" name="334" href="#334">334</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="335" href="#335">335</a>             <strong class="jxr_keyword">if</strong> (br == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="336" href="#336">336</a>                 fr.close();
-<a class="jxr_linenumber" name="337" href="#337">337</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="338" href="#338">338</a>                 br.close();
-<a class="jxr_linenumber" name="339" href="#339">339</a>             }
-<a class="jxr_linenumber" name="340" href="#340">340</a>         }
-<a class="jxr_linenumber" name="341" href="#341">341</a> 
-<a class="jxr_linenumber" name="342" href="#342">342</a>         <em class="jxr_comment">// return what was on the 'domain' line only if there were no 'search' lines</em>
-<a class="jxr_linenumber" name="343" href="#343">343</a>         <strong class="jxr_keyword">return</strong> localDomain != <strong class="jxr_keyword">null</strong> &amp;&amp; searchDomains.isEmpty()
-<a class="jxr_linenumber" name="344" href="#344">344</a>                 ? Collections.singletonList(localDomain)
-<a class="jxr_linenumber" name="345" href="#345">345</a>                 : searchDomains;
-<a class="jxr_linenumber" name="346" href="#346">346</a>     }
-<a class="jxr_linenumber" name="347" href="#347">347</a> }
+<a class="jxr_linenumber" name="170" href="#170">170</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="171" href="#171">171</a>                         <strong class="jxr_keyword">char</strong> c;
+<a class="jxr_linenumber" name="172" href="#172">172</a>                         <strong class="jxr_keyword">if</strong> (line.isEmpty() || (c = line.charAt(0)) == '#' || c == ';') {
+<a class="jxr_linenumber" name="173" href="#173">173</a>                             <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="174" href="#174">174</a>                         }
+<a class="jxr_linenumber" name="175" href="#175">175</a>                         <strong class="jxr_keyword">if</strong> (line.startsWith(NAMESERVER_ROW_LABEL)) {
+<a class="jxr_linenumber" name="176" href="#176">176</a>                             <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, NAMESERVER_ROW_LABEL.length());
+<a class="jxr_linenumber" name="177" href="#177">177</a>                             <strong class="jxr_keyword">if</strong> (i &lt; 0) {
+<a class="jxr_linenumber" name="178" href="#178">178</a>                                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + NAMESERVER_ROW_LABEL +
+<a class="jxr_linenumber" name="179" href="#179">179</a>                                         <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">". value: "</span> + line);
+<a class="jxr_linenumber" name="180" href="#180">180</a>                             }
+<a class="jxr_linenumber" name="181" href="#181">181</a>                             String maybeIP = line.substring(i);
+<a class="jxr_linenumber" name="182" href="#182">182</a>                             <em class="jxr_comment">// There may be a port appended onto the IP address so we attempt to extract it.</em>
+<a class="jxr_linenumber" name="183" href="#183">183</a>                             <strong class="jxr_keyword">if</strong> (!NetUtil.isValidIpV4Address(maybeIP) &amp;&amp; !NetUtil.isValidIpV6Address(maybeIP)) {
+<a class="jxr_linenumber" name="184" href="#184">184</a>                                 i = maybeIP.lastIndexOf('.');
+<a class="jxr_linenumber" name="185" href="#185">185</a>                                 <strong class="jxr_keyword">if</strong> (i + 1 &gt;= maybeIP.length()) {
+<a class="jxr_linenumber" name="186" href="#186">186</a>                                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + NAMESERVER_ROW_LABEL +
+<a class="jxr_linenumber" name="187" href="#187">187</a>                                             <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">". invalid IP value: "</span> + line);
+<a class="jxr_linenumber" name="188" href="#188">188</a>                                 }
+<a class="jxr_linenumber" name="189" href="#189">189</a>                                 port = Integer.parseInt(maybeIP.substring(i + 1));
+<a class="jxr_linenumber" name="190" href="#190">190</a>                                 maybeIP = maybeIP.substring(0, i);
+<a class="jxr_linenumber" name="191" href="#191">191</a>                             }
+<a class="jxr_linenumber" name="192" href="#192">192</a>                             addresses.add(SocketUtils.socketAddress(maybeIP, port));
+<a class="jxr_linenumber" name="193" href="#193">193</a>                         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(DOMAIN_ROW_LABEL)) {
+<a class="jxr_linenumber" name="194" href="#194">194</a>                             <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, DOMAIN_ROW_LABEL.length());
+<a class="jxr_linenumber" name="195" href="#195">195</a>                             <strong class="jxr_keyword">if</strong> (i &lt; 0) {
+<a class="jxr_linenumber" name="196" href="#196">196</a>                                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + DOMAIN_ROW_LABEL +
+<a class="jxr_linenumber" name="197" href="#197">197</a>                                         <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">" value: "</span> + line);
+<a class="jxr_linenumber" name="198" href="#198">198</a>                             }
+<a class="jxr_linenumber" name="199" href="#199">199</a>                             domainName = line.substring(i);
+<a class="jxr_linenumber" name="200" href="#200">200</a>                             <strong class="jxr_keyword">if</strong> (!addresses.isEmpty()) {
+<a class="jxr_linenumber" name="201" href="#201">201</a>                                 putIfAbsent(domainToNameServerStreamMap, domainName, addresses);
+<a class="jxr_linenumber" name="202" href="#202">202</a>                             }
+<a class="jxr_linenumber" name="203" href="#203">203</a>                             addresses = <strong class="jxr_keyword">new</strong> ArrayList&lt;InetSocketAddress&gt;(2);
+<a class="jxr_linenumber" name="204" href="#204">204</a>                         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(PORT_ROW_LABEL)) {
+<a class="jxr_linenumber" name="205" href="#205">205</a>                             <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, PORT_ROW_LABEL.length());
+<a class="jxr_linenumber" name="206" href="#206">206</a>                             <strong class="jxr_keyword">if</strong> (i &lt; 0) {
+<a class="jxr_linenumber" name="207" href="#207">207</a>                                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"error parsing label "</span> + PORT_ROW_LABEL +
+<a class="jxr_linenumber" name="208" href="#208">208</a>                                         <span class="jxr_string">" in file "</span> + etcResolverFile + <span class="jxr_string">" value: "</span> + line);
+<a class="jxr_linenumber" name="209" href="#209">209</a>                             }
+<a class="jxr_linenumber" name="210" href="#210">210</a>                             port = Integer.parseInt(line.substring(i));
+<a class="jxr_linenumber" name="211" href="#211">211</a>                         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(SORTLIST_ROW_LABEL)) {
+<a class="jxr_linenumber" name="212" href="#212">212</a>                             logger.info(<span class="jxr_string">"row type {} not supported. Ignoring line: {}"</span>, SORTLIST_ROW_LABEL, line);
+<a class="jxr_linenumber" name="213" href="#213">213</a>                         }
+<a class="jxr_linenumber" name="214" href="#214">214</a>                     } <strong class="jxr_keyword">catch</strong> (IllegalArgumentException e) {
+<a class="jxr_linenumber" name="215" href="#215">215</a>                         logger.warn(<span class="jxr_string">"Could not parse entry. Ignoring line: {}"</span>, line, e);
+<a class="jxr_linenumber" name="216" href="#216">216</a>                     }
+<a class="jxr_linenumber" name="217" href="#217">217</a>                 }
+<a class="jxr_linenumber" name="218" href="#218">218</a>                 <strong class="jxr_keyword">if</strong> (!addresses.isEmpty()) {
+<a class="jxr_linenumber" name="219" href="#219">219</a>                     putIfAbsent(domainToNameServerStreamMap, domainName, addresses);
+<a class="jxr_linenumber" name="220" href="#220">220</a>                 }
+<a class="jxr_linenumber" name="221" href="#221">221</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="222" href="#222">222</a>                 <strong class="jxr_keyword">if</strong> (br == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="223" href="#223">223</a>                     fr.close();
+<a class="jxr_linenumber" name="224" href="#224">224</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="225" href="#225">225</a>                     br.close();
+<a class="jxr_linenumber" name="226" href="#226">226</a>                 }
+<a class="jxr_linenumber" name="227" href="#227">227</a>             }
+<a class="jxr_linenumber" name="228" href="#228">228</a>         }
+<a class="jxr_linenumber" name="229" href="#229">229</a>         <strong class="jxr_keyword">return</strong> domainToNameServerStreamMap;
+<a class="jxr_linenumber" name="230" href="#230">230</a>     }
+<a class="jxr_linenumber" name="231" href="#231">231</a> 
+<a class="jxr_linenumber" name="232" href="#232">232</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> putIfAbsent(Map&lt;String, DnsServerAddresses&gt; domainToNameServerStreamMap,
+<a class="jxr_linenumber" name="233" href="#233">233</a>                                     String domainName,
+<a class="jxr_linenumber" name="234" href="#234">234</a>                                     List&lt;InetSocketAddress&gt; addresses) {
+<a class="jxr_linenumber" name="235" href="#235">235</a>         <em class="jxr_comment">// TODO(scott): sortlist is being ignored.</em>
+<a class="jxr_linenumber" name="236" href="#236">236</a>         putIfAbsent(domainToNameServerStreamMap, domainName, DnsServerAddresses.sequential(addresses));
+<a class="jxr_linenumber" name="237" href="#237">237</a>     }
+<a class="jxr_linenumber" name="238" href="#238">238</a> 
+<a class="jxr_linenumber" name="239" href="#239">239</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> putIfAbsent(Map&lt;String, DnsServerAddresses&gt; domainToNameServerStreamMap,
+<a class="jxr_linenumber" name="240" href="#240">240</a>                                     String domainName,
+<a class="jxr_linenumber" name="241" href="#241">241</a>                                     <a href="../../../../io/netty/resolver/dns/DnsServerAddresses.html">DnsServerAddresses</a> addresses) {
+<a class="jxr_linenumber" name="242" href="#242">242</a>         <a href="../../../../io/netty/resolver/dns/DnsServerAddresses.html">DnsServerAddresses</a> existingAddresses = domainToNameServerStreamMap.put(domainName, addresses);
+<a class="jxr_linenumber" name="243" href="#243">243</a>         <strong class="jxr_keyword">if</strong> (existingAddresses != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="244" href="#244">244</a>             domainToNameServerStreamMap.put(domainName, existingAddresses);
+<a class="jxr_linenumber" name="245" href="#245">245</a>             logger.debug(<span class="jxr_string">"Domain name {} already maps to addresses {} so new addresses {} will be discarded"</span>,
+<a class="jxr_linenumber" name="246" href="#246">246</a>                     domainName, existingAddresses, addresses);
+<a class="jxr_linenumber" name="247" href="#247">247</a>         }
+<a class="jxr_linenumber" name="248" href="#248">248</a>     }
+<a class="jxr_linenumber" name="249" href="#249">249</a> 
+<a class="jxr_linenumber" name="250" href="#250">250</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="251" href="#251">251</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
+<a class="jxr_linenumber" name="252" href="#252">252</a> <em class="jxr_javadoccomment">     * value corresponding to the first ndots in an options configuration.</em>
+<a class="jxr_linenumber" name="253" href="#253">253</a> <em class="jxr_javadoccomment">     * @return the value corresponding to the first ndots in an options configuration, or {@link #DEFAULT_NDOTS} if not</em>
+<a class="jxr_linenumber" name="254" href="#254">254</a> <em class="jxr_javadoccomment">     * found.</em>
+<a class="jxr_linenumber" name="255" href="#255">255</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
+<a class="jxr_linenumber" name="256" href="#256">256</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="257" href="#257">257</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> parseEtcResolverFirstNdots() <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="258" href="#258">258</a>         <strong class="jxr_keyword">return</strong> parseEtcResolverFirstNdots(<strong class="jxr_keyword">new</strong> File(ETC_RESOLV_CONF_FILE));
+<a class="jxr_linenumber" name="259" href="#259">259</a>     }
+<a class="jxr_linenumber" name="260" href="#260">260</a> 
+<a class="jxr_linenumber" name="261" href="#261">261</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="262" href="#262">262</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
+<a class="jxr_linenumber" name="263" href="#263">263</a> <em class="jxr_javadoccomment">     * value corresponding to the first ndots in an options configuration.</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a> <em class="jxr_javadoccomment">     * @param etcResolvConf a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt;.</em>
+<a class="jxr_linenumber" name="265" href="#265">265</a> <em class="jxr_javadoccomment">     * @return the value corresponding to the first ndots in an options configuration, or {@link #DEFAULT_NDOTS} if not</em>
+<a class="jxr_linenumber" name="266" href="#266">266</a> <em class="jxr_javadoccomment">     * found.</em>
+<a class="jxr_linenumber" name="267" href="#267">267</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
+<a class="jxr_linenumber" name="268" href="#268">268</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="269" href="#269">269</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> parseEtcResolverFirstNdots(File etcResolvConf) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="270" href="#270">270</a>         FileReader fr = <strong class="jxr_keyword">new</strong> FileReader(etcResolvConf);
+<a class="jxr_linenumber" name="271" href="#271">271</a>         BufferedReader br = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="272" href="#272">272</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="273" href="#273">273</a>             br = <strong class="jxr_keyword">new</strong> BufferedReader(fr);
+<a class="jxr_linenumber" name="274" href="#274">274</a>             String line;
+<a class="jxr_linenumber" name="275" href="#275">275</a>             <strong class="jxr_keyword">while</strong> ((line = br.readLine()) != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="276" href="#276">276</a>                 <strong class="jxr_keyword">if</strong> (line.startsWith(OPTIONS_ROW_LABEL)) {
+<a class="jxr_linenumber" name="277" href="#277">277</a>                     <strong class="jxr_keyword">int</strong> i = line.indexOf(NDOTS_LABEL);
+<a class="jxr_linenumber" name="278" href="#278">278</a>                     <strong class="jxr_keyword">if</strong> (i &gt;= 0) {
+<a class="jxr_linenumber" name="279" href="#279">279</a>                         i += NDOTS_LABEL.length();
+<a class="jxr_linenumber" name="280" href="#280">280</a>                         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> j = line.indexOf(' ', i);
+<a class="jxr_linenumber" name="281" href="#281">281</a>                         <strong class="jxr_keyword">return</strong> Integer.parseInt(line.substring(i, j &lt; 0 ? line.length() : j));
+<a class="jxr_linenumber" name="282" href="#282">282</a>                     }
+<a class="jxr_linenumber" name="283" href="#283">283</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="284" href="#284">284</a>                 }
+<a class="jxr_linenumber" name="285" href="#285">285</a>             }
+<a class="jxr_linenumber" name="286" href="#286">286</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="287" href="#287">287</a>             <strong class="jxr_keyword">if</strong> (br == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="288" href="#288">288</a>                 fr.close();
+<a class="jxr_linenumber" name="289" href="#289">289</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="290" href="#290">290</a>                 br.close();
+<a class="jxr_linenumber" name="291" href="#291">291</a>             }
+<a class="jxr_linenumber" name="292" href="#292">292</a>         }
+<a class="jxr_linenumber" name="293" href="#293">293</a>         <strong class="jxr_keyword">return</strong> DEFAULT_NDOTS;
+<a class="jxr_linenumber" name="294" href="#294">294</a>     }
+<a class="jxr_linenumber" name="295" href="#295">295</a> 
+<a class="jxr_linenumber" name="296" href="#296">296</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="297" href="#297">297</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
+<a class="jxr_linenumber" name="298" href="#298">298</a> <em class="jxr_javadoccomment">     * list of search domains found in it or an empty list if not found.</em>
+<a class="jxr_linenumber" name="299" href="#299">299</a> <em class="jxr_javadoccomment">     * @return List of search domains.</em>
+<a class="jxr_linenumber" name="300" href="#300">300</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
+<a class="jxr_linenumber" name="301" href="#301">301</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="302" href="#302">302</a>     <strong class="jxr_keyword">static</strong> List&lt;String&gt; parseEtcResolverSearchDomains() <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="303" href="#303">303</a>         <strong class="jxr_keyword">return</strong> parseEtcResolverSearchDomains(<strong class="jxr_keyword">new</strong> File(ETC_RESOLV_CONF_FILE));
+<a class="jxr_linenumber" name="304" href="#304">304</a>     }
+<a class="jxr_linenumber" name="305" href="#305">305</a> 
+<a class="jxr_linenumber" name="306" href="#306">306</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="307" href="#307">307</a> <em class="jxr_javadoccomment">     * Parse a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt; and return the</em>
+<a class="jxr_linenumber" name="308" href="#308">308</a> <em class="jxr_javadoccomment">     * list of search domains found in it or an empty list if not found.</em>
+<a class="jxr_linenumber" name="309" href="#309">309</a> <em class="jxr_javadoccomment">     * @param etcResolvConf a file of the format &lt;a href="https://linux.die.net/man/5/resolver"&gt;/etc/resolv.conf&lt;/a&gt;.</em>
+<a class="jxr_linenumber" name="310" href="#310">310</a> <em class="jxr_javadoccomment">     * @return List of search domains.</em>
+<a class="jxr_linenumber" name="311" href="#311">311</a> <em class="jxr_javadoccomment">     * @throws IOException If a failure occurs parsing the file.</em>
+<a class="jxr_linenumber" name="312" href="#312">312</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="313" href="#313">313</a>     <strong class="jxr_keyword">static</strong> List&lt;String&gt; parseEtcResolverSearchDomains(File etcResolvConf) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="314" href="#314">314</a>         String localDomain = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="315" href="#315">315</a>         List&lt;String&gt; searchDomains = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;();
+<a class="jxr_linenumber" name="316" href="#316">316</a> 
+<a class="jxr_linenumber" name="317" href="#317">317</a>         FileReader fr = <strong class="jxr_keyword">new</strong> FileReader(etcResolvConf);
+<a class="jxr_linenumber" name="318" href="#318">318</a>         BufferedReader br = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="319" href="#319">319</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="320" href="#320">320</a>             br = <strong class="jxr_keyword">new</strong> BufferedReader(fr);
+<a class="jxr_linenumber" name="321" href="#321">321</a>             String line;
+<a class="jxr_linenumber" name="322" href="#322">322</a>             <strong class="jxr_keyword">while</strong> ((line = br.readLine()) != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="323" href="#323">323</a>                 <strong class="jxr_keyword">if</strong> (localDomain == <strong class="jxr_keyword">null</strong> &amp;&amp; line.startsWith(DOMAIN_ROW_LABEL)) {
+<a class="jxr_linenumber" name="324" href="#324">324</a>                     <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, DOMAIN_ROW_LABEL.length());
+<a class="jxr_linenumber" name="325" href="#325">325</a>                     <strong class="jxr_keyword">if</strong> (i &gt;= 0) {
+<a class="jxr_linenumber" name="326" href="#326">326</a>                         localDomain = line.substring(i);
+<a class="jxr_linenumber" name="327" href="#327">327</a>                     }
+<a class="jxr_linenumber" name="328" href="#328">328</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (line.startsWith(SEARCH_ROW_LABEL)) {
+<a class="jxr_linenumber" name="329" href="#329">329</a>                     <strong class="jxr_keyword">int</strong> i = indexOfNonWhiteSpace(line, SEARCH_ROW_LABEL.length());
+<a class="jxr_linenumber" name="330" href="#330">330</a>                     <strong class="jxr_keyword">if</strong> (i &gt;= 0) {
+<a class="jxr_linenumber" name="331" href="#331">331</a>                         <em class="jxr_comment">// May contain more then one entry, either seperated by whitespace or tab.</em>
+<a class="jxr_linenumber" name="332" href="#332">332</a>                         <em class="jxr_comment">// See https://linux.die.net/man/5/resolver</em>
+<a class="jxr_linenumber" name="333" href="#333">333</a>                         String[] domains = SEARCH_DOMAIN_PATTERN.split(line.substring(i));
+<a class="jxr_linenumber" name="334" href="#334">334</a>                         Collections.addAll(searchDomains, domains);
+<a class="jxr_linenumber" name="335" href="#335">335</a>                     }
+<a class="jxr_linenumber" name="336" href="#336">336</a>                 }
+<a class="jxr_linenumber" name="337" href="#337">337</a>             }
+<a class="jxr_linenumber" name="338" href="#338">338</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="339" href="#339">339</a>             <strong class="jxr_keyword">if</strong> (br == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="340" href="#340">340</a>                 fr.close();
+<a class="jxr_linenumber" name="341" href="#341">341</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="342" href="#342">342</a>                 br.close();
+<a class="jxr_linenumber" name="343" href="#343">343</a>             }
+<a class="jxr_linenumber" name="344" href="#344">344</a>         }
+<a class="jxr_linenumber" name="345" href="#345">345</a> 
+<a class="jxr_linenumber" name="346" href="#346">346</a>         <em class="jxr_comment">// return what was on the 'domain' line only if there were no 'search' lines</em>
+<a class="jxr_linenumber" name="347" href="#347">347</a>         <strong class="jxr_keyword">return</strong> localDomain != <strong class="jxr_keyword">null</strong> &amp;&amp; searchDomains.isEmpty()
+<a class="jxr_linenumber" name="348" href="#348">348</a>                 ? Collections.singletonList(localDomain)
+<a class="jxr_linenumber" name="349" href="#349">349</a>                 : searchDomains;
+<a class="jxr_linenumber" name="350" href="#350">350</a>     }
+<a class="jxr_linenumber" name="351" href="#351">351</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
