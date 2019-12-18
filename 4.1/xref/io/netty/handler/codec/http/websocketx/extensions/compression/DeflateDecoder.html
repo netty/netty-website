@@ -146,34 +146,29 @@
 <a class="jxr_linenumber" name="136" href="#136">136</a>         <em class="jxr_comment">// Correctly handle empty frames</em>
 <a class="jxr_linenumber" name="137" href="#137">137</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/4348</em>
 <a class="jxr_linenumber" name="138" href="#138">138</a>         <strong class="jxr_keyword">if</strong> (!emptyDeflateBlock &amp;&amp; readable &amp;&amp; compositeDecompressedContent.numComponents() &lt;= 0) {
-<a class="jxr_linenumber" name="139" href="#139">139</a>             compositeDecompressedContent.release();
-<a class="jxr_linenumber" name="140" href="#140">140</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../../../../io/netty/handler/codec/CodecException.html">CodecException</a>(<span class="jxr_string">"cannot read uncompressed buffer"</span>);
-<a class="jxr_linenumber" name="141" href="#141">141</a>         }
-<a class="jxr_linenumber" name="142" href="#142">142</a> 
-<a class="jxr_linenumber" name="143" href="#143">143</a>         <strong class="jxr_keyword">if</strong> (msg.isFinalFragment() &amp;&amp; noContext) {
-<a class="jxr_linenumber" name="144" href="#144">144</a>             cleanup();
+<a class="jxr_linenumber" name="139" href="#139">139</a>             <em class="jxr_comment">// Sometimes after fragmentation the last frame</em>
+<a class="jxr_linenumber" name="140" href="#140">140</a>             <em class="jxr_comment">// May contain left-over data that doesn't affect decompression</em>
+<a class="jxr_linenumber" name="141" href="#141">141</a>             <strong class="jxr_keyword">if</strong> (!(msg instanceof ContinuationWebSocketFrame)) {
+<a class="jxr_linenumber" name="142" href="#142">142</a>                 compositeDecompressedContent.release();
+<a class="jxr_linenumber" name="143" href="#143">143</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../../../../../io/netty/handler/codec/CodecException.html">CodecException</a>(<span class="jxr_string">"cannot read uncompressed buffer"</span>);
+<a class="jxr_linenumber" name="144" href="#144">144</a>             }
 <a class="jxr_linenumber" name="145" href="#145">145</a>         }
 <a class="jxr_linenumber" name="146" href="#146">146</a> 
-<a class="jxr_linenumber" name="147" href="#147">147</a>         <strong class="jxr_keyword">return</strong> compositeDecompressedContent;
-<a class="jxr_linenumber" name="148" href="#148">148</a>     }
-<a class="jxr_linenumber" name="149" href="#149">149</a> 
-<a class="jxr_linenumber" name="150" href="#150">150</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cleanup() {
-<a class="jxr_linenumber" name="151" href="#151">151</a>         <strong class="jxr_keyword">if</strong> (decoder != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="152" href="#152">152</a>             <em class="jxr_comment">// Clean-up the previous encoder if not cleaned up correctly.</em>
-<a class="jxr_linenumber" name="153" href="#153">153</a>             <strong class="jxr_keyword">if</strong> (decoder.finish()) {
-<a class="jxr_linenumber" name="154" href="#154">154</a>                 <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="155" href="#155">155</a>                     <a href="../../../../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf = decoder.readOutbound();
-<a class="jxr_linenumber" name="156" href="#156">156</a>                     <strong class="jxr_keyword">if</strong> (buf == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="157" href="#157">157</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="158" href="#158">158</a>                     }
-<a class="jxr_linenumber" name="159" href="#159">159</a>                     <em class="jxr_comment">// Release the buffer</em>
-<a class="jxr_linenumber" name="160" href="#160">160</a>                     buf.release();
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 }
-<a class="jxr_linenumber" name="162" href="#162">162</a>             }
-<a class="jxr_linenumber" name="163" href="#163">163</a>             decoder = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="164" href="#164">164</a>         }
-<a class="jxr_linenumber" name="165" href="#165">165</a>     }
-<a class="jxr_linenumber" name="166" href="#166">166</a> }
+<a class="jxr_linenumber" name="147" href="#147">147</a>         <strong class="jxr_keyword">if</strong> (msg.isFinalFragment() &amp;&amp; noContext) {
+<a class="jxr_linenumber" name="148" href="#148">148</a>             cleanup();
+<a class="jxr_linenumber" name="149" href="#149">149</a>         }
+<a class="jxr_linenumber" name="150" href="#150">150</a> 
+<a class="jxr_linenumber" name="151" href="#151">151</a>         <strong class="jxr_keyword">return</strong> compositeDecompressedContent;
+<a class="jxr_linenumber" name="152" href="#152">152</a>     }
+<a class="jxr_linenumber" name="153" href="#153">153</a> 
+<a class="jxr_linenumber" name="154" href="#154">154</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cleanup() {
+<a class="jxr_linenumber" name="155" href="#155">155</a>         <strong class="jxr_keyword">if</strong> (decoder != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="156" href="#156">156</a>             <em class="jxr_comment">// Clean-up the previous encoder if not cleaned up correctly.</em>
+<a class="jxr_linenumber" name="157" href="#157">157</a>             decoder.finishAndReleaseAll();
+<a class="jxr_linenumber" name="158" href="#158">158</a>             decoder = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="159" href="#159">159</a>         }
+<a class="jxr_linenumber" name="160" href="#160">160</a>     }
+<a class="jxr_linenumber" name="161" href="#161">161</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

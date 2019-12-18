@@ -1,1 +1,1 @@
-/Library/Java/JavaVirtualMachines/applejdk-8.jdk/Contents/Home/jre/../bin/javadoc @options @packages
+/Users/norman/.jabba/jdk/adopt@1.8.222-10/Contents/Home/jre/../bin/javadoc @options @packages

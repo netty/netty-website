@@ -232,79 +232,82 @@
 <a class="jxr_linenumber" name="222" href="#222">222</a> 
 <a class="jxr_linenumber" name="223" href="#223">223</a>         @Override
 <a class="jxr_linenumber" name="224" href="#224">224</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isContentAlwaysEmpty(<a href="../../../../../io/netty/handler/codec/http/HttpMessage.html">HttpMessage</a> msg) {
-<a class="jxr_linenumber" name="225" href="#225">225</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> statusCode = ((HttpResponse) msg).status().code();
-<a class="jxr_linenumber" name="226" href="#226">226</a>             <strong class="jxr_keyword">if</strong> (statusCode == 100 || statusCode == 101) {
-<a class="jxr_linenumber" name="227" href="#227">227</a>                 <em class="jxr_comment">// 100-continue and 101 switching protocols response should be excluded from paired comparison.</em>
-<a class="jxr_linenumber" name="228" href="#228">228</a>                 <em class="jxr_comment">// Just delegate to super method which has all the needed handling.</em>
-<a class="jxr_linenumber" name="229" href="#229">229</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.isContentAlwaysEmpty(msg);
-<a class="jxr_linenumber" name="230" href="#230">230</a>             }
+<a class="jxr_linenumber" name="225" href="#225">225</a>             <em class="jxr_comment">// Get the method of the HTTP request that corresponds to the</em>
+<a class="jxr_linenumber" name="226" href="#226">226</a>             <em class="jxr_comment">// current response.</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a>             <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="228" href="#228">228</a>             <em class="jxr_comment">// Even if we do not use the method to compare we still need to poll it to ensure we keep</em>
+<a class="jxr_linenumber" name="229" href="#229">229</a>             <em class="jxr_comment">// request / response pairs in sync.</em>
+<a class="jxr_linenumber" name="230" href="#230">230</a>             <a href="../../../../../io/netty/handler/codec/http/HttpMethod.html">HttpMethod</a> method = queue.poll();
 <a class="jxr_linenumber" name="231" href="#231">231</a> 
-<a class="jxr_linenumber" name="232" href="#232">232</a>             <em class="jxr_comment">// Get the getMethod of the HTTP request that corresponds to the</em>
-<a class="jxr_linenumber" name="233" href="#233">233</a>             <em class="jxr_comment">// current response.</em>
-<a class="jxr_linenumber" name="234" href="#234">234</a>             <a href="../../../../../io/netty/handler/codec/http/HttpMethod.html">HttpMethod</a> method = queue.poll();
-<a class="jxr_linenumber" name="235" href="#235">235</a> 
-<a class="jxr_linenumber" name="236" href="#236">236</a>             <em class="jxr_comment">// If the remote peer did for example send multiple responses for one request (which is not allowed per</em>
-<a class="jxr_linenumber" name="237" href="#237">237</a>             <em class="jxr_comment">// spec but may still be possible) method will be null so guard against it.</em>
-<a class="jxr_linenumber" name="238" href="#238">238</a>             <strong class="jxr_keyword">if</strong> (method != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="239" href="#239">239</a>                 <strong class="jxr_keyword">char</strong> firstChar = method.name().charAt(0);
-<a class="jxr_linenumber" name="240" href="#240">240</a>                 <strong class="jxr_keyword">switch</strong> (firstChar) {
-<a class="jxr_linenumber" name="241" href="#241">241</a>                     <strong class="jxr_keyword">case</strong> 'H':
-<a class="jxr_linenumber" name="242" href="#242">242</a>                         <em class="jxr_comment">// According to 4.3, RFC2616:</em>
-<a class="jxr_linenumber" name="243" href="#243">243</a>                         <em class="jxr_comment">// All responses to the HEAD request method MUST NOT include a</em>
-<a class="jxr_linenumber" name="244" href="#244">244</a>                         <em class="jxr_comment">// message-body, even though the presence of entity-header fields</em>
-<a class="jxr_linenumber" name="245" href="#245">245</a>                         <em class="jxr_comment">// might lead one to believe they do.</em>
-<a class="jxr_linenumber" name="246" href="#246">246</a>                         <strong class="jxr_keyword">if</strong> (HttpMethod.HEAD.equals(method)) {
-<a class="jxr_linenumber" name="247" href="#247">247</a>                             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="248" href="#248">248</a> 
-<a class="jxr_linenumber" name="249" href="#249">249</a>                             <em class="jxr_comment">// The following code was inserted to work around the servers</em>
-<a class="jxr_linenumber" name="250" href="#250">250</a>                             <em class="jxr_comment">// that behave incorrectly.  It has been commented out</em>
-<a class="jxr_linenumber" name="251" href="#251">251</a>                             <em class="jxr_comment">// because it does not work with well behaving servers.</em>
-<a class="jxr_linenumber" name="252" href="#252">252</a>                             <em class="jxr_comment">// Please note, even if the 'Transfer-Encoding: chunked'</em>
-<a class="jxr_linenumber" name="253" href="#253">253</a>                             <em class="jxr_comment">// header exists in the HEAD response, the response should</em>
-<a class="jxr_linenumber" name="254" href="#254">254</a>                             <em class="jxr_comment">// have absolutely no content.</em>
-<a class="jxr_linenumber" name="255" href="#255">255</a>                             <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="256" href="#256">256</a>                             <em class="jxr_comment">//// Interesting edge case:</em>
-<a class="jxr_linenumber" name="257" href="#257">257</a>                             <em class="jxr_comment">//// Some poorly implemented servers will send a zero-byte</em>
-<a class="jxr_linenumber" name="258" href="#258">258</a>                             <em class="jxr_comment">//// chunk if Transfer-Encoding of the response is 'chunked'.</em>
-<a class="jxr_linenumber" name="259" href="#259">259</a>                             <em class="jxr_comment">////</em>
-<a class="jxr_linenumber" name="260" href="#260">260</a>                             <em class="jxr_comment">//// return !msg.isChunked();</em>
-<a class="jxr_linenumber" name="261" href="#261">261</a>                         }
-<a class="jxr_linenumber" name="262" href="#262">262</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="263" href="#263">263</a>                     <strong class="jxr_keyword">case</strong> 'C':
-<a class="jxr_linenumber" name="264" href="#264">264</a>                         <em class="jxr_comment">// Successful CONNECT request results in a response with empty body.</em>
-<a class="jxr_linenumber" name="265" href="#265">265</a>                         <strong class="jxr_keyword">if</strong> (statusCode == 200) {
-<a class="jxr_linenumber" name="266" href="#266">266</a>                             <strong class="jxr_keyword">if</strong> (HttpMethod.CONNECT.equals(method)) {
-<a class="jxr_linenumber" name="267" href="#267">267</a>                                 <em class="jxr_comment">// Proxy connection established - Parse HTTP only if configured by</em>
-<a class="jxr_linenumber" name="268" href="#268">268</a>                                 <em class="jxr_comment">// parseHttpAfterConnectRequest, else pass through.</em>
-<a class="jxr_linenumber" name="269" href="#269">269</a>                                 <strong class="jxr_keyword">if</strong> (!parseHttpAfterConnectRequest) {
-<a class="jxr_linenumber" name="270" href="#270">270</a>                                     done = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="271" href="#271">271</a>                                     queue.clear();
-<a class="jxr_linenumber" name="272" href="#272">272</a>                                 }
-<a class="jxr_linenumber" name="273" href="#273">273</a>                                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="274" href="#274">274</a>                             }
-<a class="jxr_linenumber" name="275" href="#275">275</a>                         }
-<a class="jxr_linenumber" name="276" href="#276">276</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="277" href="#277">277</a>                 }
-<a class="jxr_linenumber" name="278" href="#278">278</a>             }
-<a class="jxr_linenumber" name="279" href="#279">279</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.isContentAlwaysEmpty(msg);
-<a class="jxr_linenumber" name="280" href="#280">280</a>         }
-<a class="jxr_linenumber" name="281" href="#281">281</a> 
-<a class="jxr_linenumber" name="282" href="#282">282</a>         @Override
-<a class="jxr_linenumber" name="283" href="#283">283</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx)
-<a class="jxr_linenumber" name="284" href="#284">284</a>                 <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="285" href="#285">285</a>             <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
-<a class="jxr_linenumber" name="286" href="#286">286</a> 
-<a class="jxr_linenumber" name="287" href="#287">287</a>             <strong class="jxr_keyword">if</strong> (failOnMissingResponse) {
-<a class="jxr_linenumber" name="288" href="#288">288</a>                 <strong class="jxr_keyword">long</strong> missingResponses = requestResponseCounter.get();
-<a class="jxr_linenumber" name="289" href="#289">289</a>                 <strong class="jxr_keyword">if</strong> (missingResponses &gt; 0) {
-<a class="jxr_linenumber" name="290" href="#290">290</a>                     ctx.fireExceptionCaught(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/PrematureChannelClosureException.html">PrematureChannelClosureException</a>(
-<a class="jxr_linenumber" name="291" href="#291">291</a>                             <span class="jxr_string">"channel gone inactive with "</span> + missingResponses +
-<a class="jxr_linenumber" name="292" href="#292">292</a>                             <span class="jxr_string">" missing response(s)"</span>));
-<a class="jxr_linenumber" name="293" href="#293">293</a>                 }
-<a class="jxr_linenumber" name="294" href="#294">294</a>             }
-<a class="jxr_linenumber" name="295" href="#295">295</a>         }
-<a class="jxr_linenumber" name="296" href="#296">296</a>     }
-<a class="jxr_linenumber" name="297" href="#297">297</a> }
+<a class="jxr_linenumber" name="232" href="#232">232</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> statusCode = ((HttpResponse) msg).status().code();
+<a class="jxr_linenumber" name="233" href="#233">233</a>             <strong class="jxr_keyword">if</strong> (statusCode &gt;= 100 &amp;&amp; statusCode &lt; 200) {
+<a class="jxr_linenumber" name="234" href="#234">234</a>                 <em class="jxr_comment">// An informational response should be excluded from paired comparison.</em>
+<a class="jxr_linenumber" name="235" href="#235">235</a>                 <em class="jxr_comment">// Just delegate to super method which has all the needed handling.</em>
+<a class="jxr_linenumber" name="236" href="#236">236</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.isContentAlwaysEmpty(msg);
+<a class="jxr_linenumber" name="237" href="#237">237</a>             }
+<a class="jxr_linenumber" name="238" href="#238">238</a> 
+<a class="jxr_linenumber" name="239" href="#239">239</a>             <em class="jxr_comment">// If the remote peer did for example send multiple responses for one request (which is not allowed per</em>
+<a class="jxr_linenumber" name="240" href="#240">240</a>             <em class="jxr_comment">// spec but may still be possible) method will be null so guard against it.</em>
+<a class="jxr_linenumber" name="241" href="#241">241</a>             <strong class="jxr_keyword">if</strong> (method != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="242" href="#242">242</a>                 <strong class="jxr_keyword">char</strong> firstChar = method.name().charAt(0);
+<a class="jxr_linenumber" name="243" href="#243">243</a>                 <strong class="jxr_keyword">switch</strong> (firstChar) {
+<a class="jxr_linenumber" name="244" href="#244">244</a>                     <strong class="jxr_keyword">case</strong> 'H':
+<a class="jxr_linenumber" name="245" href="#245">245</a>                         <em class="jxr_comment">// According to 4.3, RFC2616:</em>
+<a class="jxr_linenumber" name="246" href="#246">246</a>                         <em class="jxr_comment">// All responses to the HEAD request method MUST NOT include a</em>
+<a class="jxr_linenumber" name="247" href="#247">247</a>                         <em class="jxr_comment">// message-body, even though the presence of entity-header fields</em>
+<a class="jxr_linenumber" name="248" href="#248">248</a>                         <em class="jxr_comment">// might lead one to believe they do.</em>
+<a class="jxr_linenumber" name="249" href="#249">249</a>                         <strong class="jxr_keyword">if</strong> (HttpMethod.HEAD.equals(method)) {
+<a class="jxr_linenumber" name="250" href="#250">250</a>                             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="251" href="#251">251</a> 
+<a class="jxr_linenumber" name="252" href="#252">252</a>                             <em class="jxr_comment">// The following code was inserted to work around the servers</em>
+<a class="jxr_linenumber" name="253" href="#253">253</a>                             <em class="jxr_comment">// that behave incorrectly.  It has been commented out</em>
+<a class="jxr_linenumber" name="254" href="#254">254</a>                             <em class="jxr_comment">// because it does not work with well behaving servers.</em>
+<a class="jxr_linenumber" name="255" href="#255">255</a>                             <em class="jxr_comment">// Please note, even if the 'Transfer-Encoding: chunked'</em>
+<a class="jxr_linenumber" name="256" href="#256">256</a>                             <em class="jxr_comment">// header exists in the HEAD response, the response should</em>
+<a class="jxr_linenumber" name="257" href="#257">257</a>                             <em class="jxr_comment">// have absolutely no content.</em>
+<a class="jxr_linenumber" name="258" href="#258">258</a>                             <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="259" href="#259">259</a>                             <em class="jxr_comment">//// Interesting edge case:</em>
+<a class="jxr_linenumber" name="260" href="#260">260</a>                             <em class="jxr_comment">//// Some poorly implemented servers will send a zero-byte</em>
+<a class="jxr_linenumber" name="261" href="#261">261</a>                             <em class="jxr_comment">//// chunk if Transfer-Encoding of the response is 'chunked'.</em>
+<a class="jxr_linenumber" name="262" href="#262">262</a>                             <em class="jxr_comment">////</em>
+<a class="jxr_linenumber" name="263" href="#263">263</a>                             <em class="jxr_comment">//// return !msg.isChunked();</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a>                         }
+<a class="jxr_linenumber" name="265" href="#265">265</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="266" href="#266">266</a>                     <strong class="jxr_keyword">case</strong> 'C':
+<a class="jxr_linenumber" name="267" href="#267">267</a>                         <em class="jxr_comment">// Successful CONNECT request results in a response with empty body.</em>
+<a class="jxr_linenumber" name="268" href="#268">268</a>                         <strong class="jxr_keyword">if</strong> (statusCode == 200) {
+<a class="jxr_linenumber" name="269" href="#269">269</a>                             <strong class="jxr_keyword">if</strong> (HttpMethod.CONNECT.equals(method)) {
+<a class="jxr_linenumber" name="270" href="#270">270</a>                                 <em class="jxr_comment">// Proxy connection established - Parse HTTP only if configured by</em>
+<a class="jxr_linenumber" name="271" href="#271">271</a>                                 <em class="jxr_comment">// parseHttpAfterConnectRequest, else pass through.</em>
+<a class="jxr_linenumber" name="272" href="#272">272</a>                                 <strong class="jxr_keyword">if</strong> (!parseHttpAfterConnectRequest) {
+<a class="jxr_linenumber" name="273" href="#273">273</a>                                     done = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="274" href="#274">274</a>                                     queue.clear();
+<a class="jxr_linenumber" name="275" href="#275">275</a>                                 }
+<a class="jxr_linenumber" name="276" href="#276">276</a>                                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="277" href="#277">277</a>                             }
+<a class="jxr_linenumber" name="278" href="#278">278</a>                         }
+<a class="jxr_linenumber" name="279" href="#279">279</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="280" href="#280">280</a>                 }
+<a class="jxr_linenumber" name="281" href="#281">281</a>             }
+<a class="jxr_linenumber" name="282" href="#282">282</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.isContentAlwaysEmpty(msg);
+<a class="jxr_linenumber" name="283" href="#283">283</a>         }
+<a class="jxr_linenumber" name="284" href="#284">284</a> 
+<a class="jxr_linenumber" name="285" href="#285">285</a>         @Override
+<a class="jxr_linenumber" name="286" href="#286">286</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx)
+<a class="jxr_linenumber" name="287" href="#287">287</a>                 <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="288" href="#288">288</a>             <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
+<a class="jxr_linenumber" name="289" href="#289">289</a> 
+<a class="jxr_linenumber" name="290" href="#290">290</a>             <strong class="jxr_keyword">if</strong> (failOnMissingResponse) {
+<a class="jxr_linenumber" name="291" href="#291">291</a>                 <strong class="jxr_keyword">long</strong> missingResponses = requestResponseCounter.get();
+<a class="jxr_linenumber" name="292" href="#292">292</a>                 <strong class="jxr_keyword">if</strong> (missingResponses &gt; 0) {
+<a class="jxr_linenumber" name="293" href="#293">293</a>                     ctx.fireExceptionCaught(<strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/PrematureChannelClosureException.html">PrematureChannelClosureException</a>(
+<a class="jxr_linenumber" name="294" href="#294">294</a>                             <span class="jxr_string">"channel gone inactive with "</span> + missingResponses +
+<a class="jxr_linenumber" name="295" href="#295">295</a>                             <span class="jxr_string">" missing response(s)"</span>));
+<a class="jxr_linenumber" name="296" href="#296">296</a>                 }
+<a class="jxr_linenumber" name="297" href="#297">297</a>             }
+<a class="jxr_linenumber" name="298" href="#298">298</a>         }
+<a class="jxr_linenumber" name="299" href="#299">299</a>     }
+<a class="jxr_linenumber" name="300" href="#300">300</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

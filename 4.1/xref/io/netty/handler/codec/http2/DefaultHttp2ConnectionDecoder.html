@@ -595,157 +595,162 @@
 <a class="jxr_linenumber" name="585" href="#585">585</a>                             ctx.channel(), frameName, streamId);
 <a class="jxr_linenumber" name="586" href="#586">586</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="587" href="#587">587</a>                 }
-<a class="jxr_linenumber" name="588" href="#588">588</a>                 <em class="jxr_comment">// Its possible that this frame would result in stream ID out of order creation (PROTOCOL ERROR) and its</em>
-<a class="jxr_linenumber" name="589" href="#589">589</a>                 <em class="jxr_comment">// also possible that this frame is received on a CLOSED stream (STREAM_CLOSED after a RST_STREAM is</em>
-<a class="jxr_linenumber" name="590" href="#590">590</a>                 <em class="jxr_comment">// sent). We don't have enough information to know for sure, so we choose the lesser of the two errors.</em>
-<a class="jxr_linenumber" name="591" href="#591">591</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, STREAM_CLOSED, <span class="jxr_string">"Received %s frame for an unknown stream %d"</span>,
-<a class="jxr_linenumber" name="592" href="#592">592</a>                                   frameName, streamId);
-<a class="jxr_linenumber" name="593" href="#593">593</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (stream.isResetSent() || streamCreatedAfterGoAwaySent(streamId)) {
-<a class="jxr_linenumber" name="594" href="#594">594</a>                 <em class="jxr_comment">// If we have sent a reset stream it is assumed the stream will be closed after the write completes.</em>
-<a class="jxr_linenumber" name="595" href="#595">595</a>                 <em class="jxr_comment">// If we have not sent a reset, but the stream was created after a GoAway this is not supported by</em>
-<a class="jxr_linenumber" name="596" href="#596">596</a>                 <em class="jxr_comment">// DefaultHttp2Connection and if a custom Http2Connection is used it is assumed the lifetime is managed</em>
-<a class="jxr_linenumber" name="597" href="#597">597</a>                 <em class="jxr_comment">// elsewhere so we don't close the stream or otherwise modify the stream's state.</em>
-<a class="jxr_linenumber" name="598" href="#598">598</a> 
-<a class="jxr_linenumber" name="599" href="#599">599</a>                 <strong class="jxr_keyword">if</strong> (logger.isInfoEnabled()) {
-<a class="jxr_linenumber" name="600" href="#600">600</a>                     logger.info(<span class="jxr_string">"{} ignoring {} frame for stream {}"</span>, ctx.channel(), frameName,
-<a class="jxr_linenumber" name="601" href="#601">601</a>                             stream.isResetSent() ? <span class="jxr_string">"RST_STREAM sent."</span> :
-<a class="jxr_linenumber" name="602" href="#602">602</a>                                 (<span class="jxr_string">"Stream created after GOAWAY sent. Last known stream by peer "</span> +
-<a class="jxr_linenumber" name="603" href="#603">603</a>                                  connection.remote().lastStreamKnownByPeer()));
-<a class="jxr_linenumber" name="604" href="#604">604</a>                 }
-<a class="jxr_linenumber" name="605" href="#605">605</a> 
-<a class="jxr_linenumber" name="606" href="#606">606</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="607" href="#607">607</a>             }
-<a class="jxr_linenumber" name="608" href="#608">608</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="609" href="#609">609</a>         }
+<a class="jxr_linenumber" name="588" href="#588">588</a> 
+<a class="jxr_linenumber" name="589" href="#589">589</a>                 <em class="jxr_comment">// Make sure it's not an out-of-order frame, like a rogue DATA frame, for a stream that could</em>
+<a class="jxr_linenumber" name="590" href="#590">590</a>                 <em class="jxr_comment">// never have existed.</em>
+<a class="jxr_linenumber" name="591" href="#591">591</a>                 verifyStreamMayHaveExisted(streamId);
+<a class="jxr_linenumber" name="592" href="#592">592</a> 
+<a class="jxr_linenumber" name="593" href="#593">593</a>                 <em class="jxr_comment">// Its possible that this frame would result in stream ID out of order creation (PROTOCOL ERROR) and its</em>
+<a class="jxr_linenumber" name="594" href="#594">594</a>                 <em class="jxr_comment">// also possible that this frame is received on a CLOSED stream (STREAM_CLOSED after a RST_STREAM is</em>
+<a class="jxr_linenumber" name="595" href="#595">595</a>                 <em class="jxr_comment">// sent). We don't have enough information to know for sure, so we choose the lesser of the two errors.</em>
+<a class="jxr_linenumber" name="596" href="#596">596</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, STREAM_CLOSED, <span class="jxr_string">"Received %s frame for an unknown stream %d"</span>,
+<a class="jxr_linenumber" name="597" href="#597">597</a>                                   frameName, streamId);
+<a class="jxr_linenumber" name="598" href="#598">598</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (stream.isResetSent() || streamCreatedAfterGoAwaySent(streamId)) {
+<a class="jxr_linenumber" name="599" href="#599">599</a>                 <em class="jxr_comment">// If we have sent a reset stream it is assumed the stream will be closed after the write completes.</em>
+<a class="jxr_linenumber" name="600" href="#600">600</a>                 <em class="jxr_comment">// If we have not sent a reset, but the stream was created after a GoAway this is not supported by</em>
+<a class="jxr_linenumber" name="601" href="#601">601</a>                 <em class="jxr_comment">// DefaultHttp2Connection and if a custom Http2Connection is used it is assumed the lifetime is managed</em>
+<a class="jxr_linenumber" name="602" href="#602">602</a>                 <em class="jxr_comment">// elsewhere so we don't close the stream or otherwise modify the stream's state.</em>
+<a class="jxr_linenumber" name="603" href="#603">603</a> 
+<a class="jxr_linenumber" name="604" href="#604">604</a>                 <strong class="jxr_keyword">if</strong> (logger.isInfoEnabled()) {
+<a class="jxr_linenumber" name="605" href="#605">605</a>                     logger.info(<span class="jxr_string">"{} ignoring {} frame for stream {}"</span>, ctx.channel(), frameName,
+<a class="jxr_linenumber" name="606" href="#606">606</a>                             stream.isResetSent() ? <span class="jxr_string">"RST_STREAM sent."</span> :
+<a class="jxr_linenumber" name="607" href="#607">607</a>                                 (<span class="jxr_string">"Stream created after GOAWAY sent. Last known stream by peer "</span> +
+<a class="jxr_linenumber" name="608" href="#608">608</a>                                  connection.remote().lastStreamKnownByPeer()));
+<a class="jxr_linenumber" name="609" href="#609">609</a>                 }
 <a class="jxr_linenumber" name="610" href="#610">610</a> 
-<a class="jxr_linenumber" name="611" href="#611">611</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="612" href="#612">612</a> <em class="jxr_javadoccomment">         * Helper method for determining whether or not to ignore inbound frames. A stream is considered to be created</em>
-<a class="jxr_linenumber" name="613" href="#613">613</a> <em class="jxr_javadoccomment">         * after a {@code GOAWAY} is sent if the following conditions hold:</em>
-<a class="jxr_linenumber" name="614" href="#614">614</a> <em class="jxr_javadoccomment">         * &lt;p/&gt;</em>
-<a class="jxr_linenumber" name="615" href="#615">615</a> <em class="jxr_javadoccomment">         * &lt;ul&gt;</em>
-<a class="jxr_linenumber" name="616" href="#616">616</a> <em class="jxr_javadoccomment">         *     &lt;li&gt;A {@code GOAWAY} must have been sent by the local endpoint&lt;/li&gt;</em>
-<a class="jxr_linenumber" name="617" href="#617">617</a> <em class="jxr_javadoccomment">         *     &lt;li&gt;The {@code streamId} must identify a legitimate stream id for the remote endpoint to be creating&lt;/li&gt;</em>
-<a class="jxr_linenumber" name="618" href="#618">618</a> <em class="jxr_javadoccomment">         *     &lt;li&gt;{@code streamId} is greater than the Last Known Stream ID which was sent by the local endpoint</em>
-<a class="jxr_linenumber" name="619" href="#619">619</a> <em class="jxr_javadoccomment">         *     in the last {@code GOAWAY} frame&lt;/li&gt;</em>
-<a class="jxr_linenumber" name="620" href="#620">620</a> <em class="jxr_javadoccomment">         * &lt;/ul&gt;</em>
-<a class="jxr_linenumber" name="621" href="#621">621</a> <em class="jxr_javadoccomment">         * &lt;p/&gt;</em>
-<a class="jxr_linenumber" name="622" href="#622">622</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="623" href="#623">623</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> streamCreatedAfterGoAwaySent(<strong class="jxr_keyword">int</strong> streamId) {
-<a class="jxr_linenumber" name="624" href="#624">624</a>             Endpoint&lt;?&gt; remote = connection.remote();
-<a class="jxr_linenumber" name="625" href="#625">625</a>             <strong class="jxr_keyword">return</strong> connection.goAwaySent() &amp;&amp; remote.isValidStreamId(streamId) &amp;&amp;
-<a class="jxr_linenumber" name="626" href="#626">626</a>                     streamId &gt; remote.lastStreamKnownByPeer();
-<a class="jxr_linenumber" name="627" href="#627">627</a>         }
-<a class="jxr_linenumber" name="628" href="#628">628</a> 
-<a class="jxr_linenumber" name="629" href="#629">629</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyStreamMayHaveExisted(<strong class="jxr_keyword">int</strong> streamId) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="630" href="#630">630</a>             <strong class="jxr_keyword">if</strong> (!connection.streamMayHaveExisted(streamId)) {
-<a class="jxr_linenumber" name="631" href="#631">631</a>                 <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Stream %d does not exist"</span>, streamId);
-<a class="jxr_linenumber" name="632" href="#632">632</a>             }
-<a class="jxr_linenumber" name="633" href="#633">633</a>         }
-<a class="jxr_linenumber" name="634" href="#634">634</a>     }
-<a class="jxr_linenumber" name="635" href="#635">635</a> 
-<a class="jxr_linenumber" name="636" href="#636">636</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionDecoder.html">PrefaceFrameListener</a> <strong class="jxr_keyword">implements</strong> Http2FrameListener {
-<a class="jxr_linenumber" name="637" href="#637">637</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="638" href="#638">638</a> <em class="jxr_javadoccomment">         * Verifies that the HTTP/2 connection preface has been received from the remote endpoint.</em>
-<a class="jxr_linenumber" name="639" href="#639">639</a> <em class="jxr_javadoccomment">         * It is possible that the current call to</em>
-<a class="jxr_linenumber" name="640" href="#640">640</a> <em class="jxr_javadoccomment">         * {@link Http2FrameReader#readFrame(ChannelHandlerContext, ByteBuf, Http2FrameListener)} will have multiple</em>
-<a class="jxr_linenumber" name="641" href="#641">641</a> <em class="jxr_javadoccomment">         * frames to dispatch. So it may be OK for this class to get legitimate frames for the first readFrame.</em>
-<a class="jxr_linenumber" name="642" href="#642">642</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="643" href="#643">643</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyPrefaceReceived() <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="644" href="#644">644</a>             <strong class="jxr_keyword">if</strong> (!prefaceReceived()) {
-<a class="jxr_linenumber" name="645" href="#645">645</a>                 <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Received non-SETTINGS as first frame."</span>);
-<a class="jxr_linenumber" name="646" href="#646">646</a>             }
-<a class="jxr_linenumber" name="647" href="#647">647</a>         }
-<a class="jxr_linenumber" name="648" href="#648">648</a> 
-<a class="jxr_linenumber" name="649" href="#649">649</a>         @Override
-<a class="jxr_linenumber" name="650" href="#650">650</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> onDataRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream)
-<a class="jxr_linenumber" name="651" href="#651">651</a>                 <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="652" href="#652">652</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="653" href="#653">653</a>             <strong class="jxr_keyword">return</strong> internalFrameListener.onDataRead(ctx, streamId, data, padding, endOfStream);
-<a class="jxr_linenumber" name="654" href="#654">654</a>         }
-<a class="jxr_linenumber" name="655" href="#655">655</a> 
-<a class="jxr_linenumber" name="656" href="#656">656</a>         @Override
-<a class="jxr_linenumber" name="657" href="#657">657</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onHeadersRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, Http2Headers headers, <strong class="jxr_keyword">int</strong> padding,
-<a class="jxr_linenumber" name="658" href="#658">658</a>                 <strong class="jxr_keyword">boolean</strong> endOfStream) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="659" href="#659">659</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="660" href="#660">660</a>             internalFrameListener.onHeadersRead(ctx, streamId, headers, padding, endOfStream);
-<a class="jxr_linenumber" name="661" href="#661">661</a>         }
-<a class="jxr_linenumber" name="662" href="#662">662</a> 
-<a class="jxr_linenumber" name="663" href="#663">663</a>         @Override
-<a class="jxr_linenumber" name="664" href="#664">664</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onHeadersRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, Http2Headers headers, <strong class="jxr_keyword">int</strong> streamDependency,
-<a class="jxr_linenumber" name="665" href="#665">665</a>                 <strong class="jxr_keyword">short</strong> weight, <strong class="jxr_keyword">boolean</strong> exclusive, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="666" href="#666">666</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="667" href="#667">667</a>             internalFrameListener.onHeadersRead(ctx, streamId, headers, streamDependency, weight,
-<a class="jxr_linenumber" name="668" href="#668">668</a>                     exclusive, padding, endOfStream);
-<a class="jxr_linenumber" name="669" href="#669">669</a>         }
-<a class="jxr_linenumber" name="670" href="#670">670</a> 
-<a class="jxr_linenumber" name="671" href="#671">671</a>         @Override
-<a class="jxr_linenumber" name="672" href="#672">672</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPriorityRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> streamDependency, <strong class="jxr_keyword">short</strong> weight,
-<a class="jxr_linenumber" name="673" href="#673">673</a>                 <strong class="jxr_keyword">boolean</strong> exclusive) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="674" href="#674">674</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="675" href="#675">675</a>             internalFrameListener.onPriorityRead(ctx, streamId, streamDependency, weight, exclusive);
-<a class="jxr_linenumber" name="676" href="#676">676</a>         }
-<a class="jxr_linenumber" name="677" href="#677">677</a> 
-<a class="jxr_linenumber" name="678" href="#678">678</a>         @Override
-<a class="jxr_linenumber" name="679" href="#679">679</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onRstStreamRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="680" href="#680">680</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="681" href="#681">681</a>             internalFrameListener.onRstStreamRead(ctx, streamId, errorCode);
-<a class="jxr_linenumber" name="682" href="#682">682</a>         }
-<a class="jxr_linenumber" name="683" href="#683">683</a> 
-<a class="jxr_linenumber" name="684" href="#684">684</a>         @Override
-<a class="jxr_linenumber" name="685" href="#685">685</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onSettingsAckRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="686" href="#686">686</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="687" href="#687">687</a>             internalFrameListener.onSettingsAckRead(ctx);
-<a class="jxr_linenumber" name="688" href="#688">688</a>         }
-<a class="jxr_linenumber" name="689" href="#689">689</a> 
-<a class="jxr_linenumber" name="690" href="#690">690</a>         @Override
-<a class="jxr_linenumber" name="691" href="#691">691</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onSettingsRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Settings settings) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="692" href="#692">692</a>             <em class="jxr_comment">// The first settings should change the internalFrameListener to the "real" listener</em>
-<a class="jxr_linenumber" name="693" href="#693">693</a>             <em class="jxr_comment">// that expects the preface to be verified.</em>
-<a class="jxr_linenumber" name="694" href="#694">694</a>             <strong class="jxr_keyword">if</strong> (!prefaceReceived()) {
-<a class="jxr_linenumber" name="695" href="#695">695</a>                 internalFrameListener = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionDecoder.html">FrameReadListener</a>();
-<a class="jxr_linenumber" name="696" href="#696">696</a>             }
-<a class="jxr_linenumber" name="697" href="#697">697</a>             internalFrameListener.onSettingsRead(ctx, settings);
-<a class="jxr_linenumber" name="698" href="#698">698</a>         }
-<a class="jxr_linenumber" name="699" href="#699">699</a> 
-<a class="jxr_linenumber" name="700" href="#700">700</a>         @Override
-<a class="jxr_linenumber" name="701" href="#701">701</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPingRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> data) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="702" href="#702">702</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="703" href="#703">703</a>             internalFrameListener.onPingRead(ctx, data);
-<a class="jxr_linenumber" name="704" href="#704">704</a>         }
-<a class="jxr_linenumber" name="705" href="#705">705</a> 
-<a class="jxr_linenumber" name="706" href="#706">706</a>         @Override
-<a class="jxr_linenumber" name="707" href="#707">707</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPingAckRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> data) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="708" href="#708">708</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="709" href="#709">709</a>             internalFrameListener.onPingAckRead(ctx, data);
-<a class="jxr_linenumber" name="710" href="#710">710</a>         }
-<a class="jxr_linenumber" name="711" href="#711">711</a> 
-<a class="jxr_linenumber" name="712" href="#712">712</a>         @Override
-<a class="jxr_linenumber" name="713" href="#713">713</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPushPromiseRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> promisedStreamId,
-<a class="jxr_linenumber" name="714" href="#714">714</a>                 Http2Headers headers, <strong class="jxr_keyword">int</strong> padding) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="715" href="#715">715</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="716" href="#716">716</a>             internalFrameListener.onPushPromiseRead(ctx, streamId, promisedStreamId, headers, padding);
-<a class="jxr_linenumber" name="717" href="#717">717</a>         }
-<a class="jxr_linenumber" name="718" href="#718">718</a> 
-<a class="jxr_linenumber" name="719" href="#719">719</a>         @Override
-<a class="jxr_linenumber" name="720" href="#720">720</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onGoAwayRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> lastStreamId, <strong class="jxr_keyword">long</strong> errorCode, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData)
-<a class="jxr_linenumber" name="721" href="#721">721</a>                 <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="722" href="#722">722</a>             onGoAwayRead0(ctx, lastStreamId, errorCode, debugData);
-<a class="jxr_linenumber" name="723" href="#723">723</a>         }
-<a class="jxr_linenumber" name="724" href="#724">724</a> 
-<a class="jxr_linenumber" name="725" href="#725">725</a>         @Override
-<a class="jxr_linenumber" name="726" href="#726">726</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onWindowUpdateRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> windowSizeIncrement)
-<a class="jxr_linenumber" name="727" href="#727">727</a>                 <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="728" href="#728">728</a>             verifyPrefaceReceived();
-<a class="jxr_linenumber" name="729" href="#729">729</a>             internalFrameListener.onWindowUpdateRead(ctx, streamId, windowSizeIncrement);
-<a class="jxr_linenumber" name="730" href="#730">730</a>         }
-<a class="jxr_linenumber" name="731" href="#731">731</a> 
-<a class="jxr_linenumber" name="732" href="#732">732</a>         @Override
-<a class="jxr_linenumber" name="733" href="#733">733</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onUnknownFrame(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, byte frameType, <strong class="jxr_keyword">int</strong> streamId, Http2Flags flags,
-<a class="jxr_linenumber" name="734" href="#734">734</a>                 <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload) <strong class="jxr_keyword">throws</strong> Http2Exception {
-<a class="jxr_linenumber" name="735" href="#735">735</a>             onUnknownFrame0(ctx, frameType, streamId, flags, payload);
-<a class="jxr_linenumber" name="736" href="#736">736</a>         }
-<a class="jxr_linenumber" name="737" href="#737">737</a>     }
-<a class="jxr_linenumber" name="738" href="#738">738</a> }
+<a class="jxr_linenumber" name="611" href="#611">611</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="612" href="#612">612</a>             }
+<a class="jxr_linenumber" name="613" href="#613">613</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="614" href="#614">614</a>         }
+<a class="jxr_linenumber" name="615" href="#615">615</a> 
+<a class="jxr_linenumber" name="616" href="#616">616</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="617" href="#617">617</a> <em class="jxr_javadoccomment">         * Helper method for determining whether or not to ignore inbound frames. A stream is considered to be created</em>
+<a class="jxr_linenumber" name="618" href="#618">618</a> <em class="jxr_javadoccomment">         * after a {@code GOAWAY} is sent if the following conditions hold:</em>
+<a class="jxr_linenumber" name="619" href="#619">619</a> <em class="jxr_javadoccomment">         * &lt;p/&gt;</em>
+<a class="jxr_linenumber" name="620" href="#620">620</a> <em class="jxr_javadoccomment">         * &lt;ul&gt;</em>
+<a class="jxr_linenumber" name="621" href="#621">621</a> <em class="jxr_javadoccomment">         *     &lt;li&gt;A {@code GOAWAY} must have been sent by the local endpoint&lt;/li&gt;</em>
+<a class="jxr_linenumber" name="622" href="#622">622</a> <em class="jxr_javadoccomment">         *     &lt;li&gt;The {@code streamId} must identify a legitimate stream id for the remote endpoint to be creating&lt;/li&gt;</em>
+<a class="jxr_linenumber" name="623" href="#623">623</a> <em class="jxr_javadoccomment">         *     &lt;li&gt;{@code streamId} is greater than the Last Known Stream ID which was sent by the local endpoint</em>
+<a class="jxr_linenumber" name="624" href="#624">624</a> <em class="jxr_javadoccomment">         *     in the last {@code GOAWAY} frame&lt;/li&gt;</em>
+<a class="jxr_linenumber" name="625" href="#625">625</a> <em class="jxr_javadoccomment">         * &lt;/ul&gt;</em>
+<a class="jxr_linenumber" name="626" href="#626">626</a> <em class="jxr_javadoccomment">         * &lt;p/&gt;</em>
+<a class="jxr_linenumber" name="627" href="#627">627</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="628" href="#628">628</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> streamCreatedAfterGoAwaySent(<strong class="jxr_keyword">int</strong> streamId) {
+<a class="jxr_linenumber" name="629" href="#629">629</a>             Endpoint&lt;?&gt; remote = connection.remote();
+<a class="jxr_linenumber" name="630" href="#630">630</a>             <strong class="jxr_keyword">return</strong> connection.goAwaySent() &amp;&amp; remote.isValidStreamId(streamId) &amp;&amp;
+<a class="jxr_linenumber" name="631" href="#631">631</a>                     streamId &gt; remote.lastStreamKnownByPeer();
+<a class="jxr_linenumber" name="632" href="#632">632</a>         }
+<a class="jxr_linenumber" name="633" href="#633">633</a> 
+<a class="jxr_linenumber" name="634" href="#634">634</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyStreamMayHaveExisted(<strong class="jxr_keyword">int</strong> streamId) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="635" href="#635">635</a>             <strong class="jxr_keyword">if</strong> (!connection.streamMayHaveExisted(streamId)) {
+<a class="jxr_linenumber" name="636" href="#636">636</a>                 <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Stream %d does not exist"</span>, streamId);
+<a class="jxr_linenumber" name="637" href="#637">637</a>             }
+<a class="jxr_linenumber" name="638" href="#638">638</a>         }
+<a class="jxr_linenumber" name="639" href="#639">639</a>     }
+<a class="jxr_linenumber" name="640" href="#640">640</a> 
+<a class="jxr_linenumber" name="641" href="#641">641</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionDecoder.html">PrefaceFrameListener</a> <strong class="jxr_keyword">implements</strong> Http2FrameListener {
+<a class="jxr_linenumber" name="642" href="#642">642</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="643" href="#643">643</a> <em class="jxr_javadoccomment">         * Verifies that the HTTP/2 connection preface has been received from the remote endpoint.</em>
+<a class="jxr_linenumber" name="644" href="#644">644</a> <em class="jxr_javadoccomment">         * It is possible that the current call to</em>
+<a class="jxr_linenumber" name="645" href="#645">645</a> <em class="jxr_javadoccomment">         * {@link Http2FrameReader#readFrame(ChannelHandlerContext, ByteBuf, Http2FrameListener)} will have multiple</em>
+<a class="jxr_linenumber" name="646" href="#646">646</a> <em class="jxr_javadoccomment">         * frames to dispatch. So it may be OK for this class to get legitimate frames for the first readFrame.</em>
+<a class="jxr_linenumber" name="647" href="#647">647</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="648" href="#648">648</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> verifyPrefaceReceived() <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="649" href="#649">649</a>             <strong class="jxr_keyword">if</strong> (!prefaceReceived()) {
+<a class="jxr_linenumber" name="650" href="#650">650</a>                 <strong class="jxr_keyword">throw</strong> connectionError(PROTOCOL_ERROR, <span class="jxr_string">"Received non-SETTINGS as first frame."</span>);
+<a class="jxr_linenumber" name="651" href="#651">651</a>             }
+<a class="jxr_linenumber" name="652" href="#652">652</a>         }
+<a class="jxr_linenumber" name="653" href="#653">653</a> 
+<a class="jxr_linenumber" name="654" href="#654">654</a>         @Override
+<a class="jxr_linenumber" name="655" href="#655">655</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> onDataRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> data, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream)
+<a class="jxr_linenumber" name="656" href="#656">656</a>                 <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="657" href="#657">657</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="658" href="#658">658</a>             <strong class="jxr_keyword">return</strong> internalFrameListener.onDataRead(ctx, streamId, data, padding, endOfStream);
+<a class="jxr_linenumber" name="659" href="#659">659</a>         }
+<a class="jxr_linenumber" name="660" href="#660">660</a> 
+<a class="jxr_linenumber" name="661" href="#661">661</a>         @Override
+<a class="jxr_linenumber" name="662" href="#662">662</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onHeadersRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, Http2Headers headers, <strong class="jxr_keyword">int</strong> padding,
+<a class="jxr_linenumber" name="663" href="#663">663</a>                 <strong class="jxr_keyword">boolean</strong> endOfStream) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="664" href="#664">664</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="665" href="#665">665</a>             internalFrameListener.onHeadersRead(ctx, streamId, headers, padding, endOfStream);
+<a class="jxr_linenumber" name="666" href="#666">666</a>         }
+<a class="jxr_linenumber" name="667" href="#667">667</a> 
+<a class="jxr_linenumber" name="668" href="#668">668</a>         @Override
+<a class="jxr_linenumber" name="669" href="#669">669</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onHeadersRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, Http2Headers headers, <strong class="jxr_keyword">int</strong> streamDependency,
+<a class="jxr_linenumber" name="670" href="#670">670</a>                 <strong class="jxr_keyword">short</strong> weight, <strong class="jxr_keyword">boolean</strong> exclusive, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="671" href="#671">671</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="672" href="#672">672</a>             internalFrameListener.onHeadersRead(ctx, streamId, headers, streamDependency, weight,
+<a class="jxr_linenumber" name="673" href="#673">673</a>                     exclusive, padding, endOfStream);
+<a class="jxr_linenumber" name="674" href="#674">674</a>         }
+<a class="jxr_linenumber" name="675" href="#675">675</a> 
+<a class="jxr_linenumber" name="676" href="#676">676</a>         @Override
+<a class="jxr_linenumber" name="677" href="#677">677</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPriorityRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> streamDependency, <strong class="jxr_keyword">short</strong> weight,
+<a class="jxr_linenumber" name="678" href="#678">678</a>                 <strong class="jxr_keyword">boolean</strong> exclusive) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="679" href="#679">679</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="680" href="#680">680</a>             internalFrameListener.onPriorityRead(ctx, streamId, streamDependency, weight, exclusive);
+<a class="jxr_linenumber" name="681" href="#681">681</a>         }
+<a class="jxr_linenumber" name="682" href="#682">682</a> 
+<a class="jxr_linenumber" name="683" href="#683">683</a>         @Override
+<a class="jxr_linenumber" name="684" href="#684">684</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onRstStreamRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">long</strong> errorCode) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="685" href="#685">685</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="686" href="#686">686</a>             internalFrameListener.onRstStreamRead(ctx, streamId, errorCode);
+<a class="jxr_linenumber" name="687" href="#687">687</a>         }
+<a class="jxr_linenumber" name="688" href="#688">688</a> 
+<a class="jxr_linenumber" name="689" href="#689">689</a>         @Override
+<a class="jxr_linenumber" name="690" href="#690">690</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onSettingsAckRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="691" href="#691">691</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="692" href="#692">692</a>             internalFrameListener.onSettingsAckRead(ctx);
+<a class="jxr_linenumber" name="693" href="#693">693</a>         }
+<a class="jxr_linenumber" name="694" href="#694">694</a> 
+<a class="jxr_linenumber" name="695" href="#695">695</a>         @Override
+<a class="jxr_linenumber" name="696" href="#696">696</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onSettingsRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Http2Settings settings) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="697" href="#697">697</a>             <em class="jxr_comment">// The first settings should change the internalFrameListener to the "real" listener</em>
+<a class="jxr_linenumber" name="698" href="#698">698</a>             <em class="jxr_comment">// that expects the preface to be verified.</em>
+<a class="jxr_linenumber" name="699" href="#699">699</a>             <strong class="jxr_keyword">if</strong> (!prefaceReceived()) {
+<a class="jxr_linenumber" name="700" href="#700">700</a>                 internalFrameListener = <strong class="jxr_keyword">new</strong> <a href="../../../../../io/netty/handler/codec/http2/DefaultHttp2ConnectionDecoder.html">FrameReadListener</a>();
+<a class="jxr_linenumber" name="701" href="#701">701</a>             }
+<a class="jxr_linenumber" name="702" href="#702">702</a>             internalFrameListener.onSettingsRead(ctx, settings);
+<a class="jxr_linenumber" name="703" href="#703">703</a>         }
+<a class="jxr_linenumber" name="704" href="#704">704</a> 
+<a class="jxr_linenumber" name="705" href="#705">705</a>         @Override
+<a class="jxr_linenumber" name="706" href="#706">706</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPingRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> data) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="707" href="#707">707</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="708" href="#708">708</a>             internalFrameListener.onPingRead(ctx, data);
+<a class="jxr_linenumber" name="709" href="#709">709</a>         }
+<a class="jxr_linenumber" name="710" href="#710">710</a> 
+<a class="jxr_linenumber" name="711" href="#711">711</a>         @Override
+<a class="jxr_linenumber" name="712" href="#712">712</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPingAckRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> data) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="713" href="#713">713</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="714" href="#714">714</a>             internalFrameListener.onPingAckRead(ctx, data);
+<a class="jxr_linenumber" name="715" href="#715">715</a>         }
+<a class="jxr_linenumber" name="716" href="#716">716</a> 
+<a class="jxr_linenumber" name="717" href="#717">717</a>         @Override
+<a class="jxr_linenumber" name="718" href="#718">718</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onPushPromiseRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> promisedStreamId,
+<a class="jxr_linenumber" name="719" href="#719">719</a>                 Http2Headers headers, <strong class="jxr_keyword">int</strong> padding) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="720" href="#720">720</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="721" href="#721">721</a>             internalFrameListener.onPushPromiseRead(ctx, streamId, promisedStreamId, headers, padding);
+<a class="jxr_linenumber" name="722" href="#722">722</a>         }
+<a class="jxr_linenumber" name="723" href="#723">723</a> 
+<a class="jxr_linenumber" name="724" href="#724">724</a>         @Override
+<a class="jxr_linenumber" name="725" href="#725">725</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onGoAwayRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> lastStreamId, <strong class="jxr_keyword">long</strong> errorCode, <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> debugData)
+<a class="jxr_linenumber" name="726" href="#726">726</a>                 <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="727" href="#727">727</a>             onGoAwayRead0(ctx, lastStreamId, errorCode, debugData);
+<a class="jxr_linenumber" name="728" href="#728">728</a>         }
+<a class="jxr_linenumber" name="729" href="#729">729</a> 
+<a class="jxr_linenumber" name="730" href="#730">730</a>         @Override
+<a class="jxr_linenumber" name="731" href="#731">731</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onWindowUpdateRead(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> windowSizeIncrement)
+<a class="jxr_linenumber" name="732" href="#732">732</a>                 <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="733" href="#733">733</a>             verifyPrefaceReceived();
+<a class="jxr_linenumber" name="734" href="#734">734</a>             internalFrameListener.onWindowUpdateRead(ctx, streamId, windowSizeIncrement);
+<a class="jxr_linenumber" name="735" href="#735">735</a>         }
+<a class="jxr_linenumber" name="736" href="#736">736</a> 
+<a class="jxr_linenumber" name="737" href="#737">737</a>         @Override
+<a class="jxr_linenumber" name="738" href="#738">738</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> onUnknownFrame(<a href="../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, byte frameType, <strong class="jxr_keyword">int</strong> streamId, Http2Flags flags,
+<a class="jxr_linenumber" name="739" href="#739">739</a>                 <a href="../../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> payload) <strong class="jxr_keyword">throws</strong> Http2Exception {
+<a class="jxr_linenumber" name="740" href="#740">740</a>             onUnknownFrame0(ctx, frameType, streamId, flags, payload);
+<a class="jxr_linenumber" name="741" href="#741">741</a>         }
+<a class="jxr_linenumber" name="742" href="#742">742</a>     }
+<a class="jxr_linenumber" name="743" href="#743">743</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

@@ -921,63 +921,62 @@
 <a class="jxr_linenumber" name="911" href="#911">911</a>             <strong class="jxr_keyword">return</strong> ((OpenSslX509KeyManagerFactory) factory).newProvider();
 <a class="jxr_linenumber" name="912" href="#912">912</a>         }
 <a class="jxr_linenumber" name="913" href="#913">913</a> 
-<a class="jxr_linenumber" name="914" href="#914">914</a>         X509KeyManager keyManager = chooseX509KeyManager(factory.getKeyManagers());
-<a class="jxr_linenumber" name="915" href="#915">915</a>         <strong class="jxr_keyword">if</strong> (factory instanceof OpenSslCachingX509KeyManagerFactory) {
-<a class="jxr_linenumber" name="916" href="#916">916</a>             <em class="jxr_comment">// The user explicit used OpenSslCachingX509KeyManagerFactory which signals us that its fine to cache.</em>
-<a class="jxr_linenumber" name="917" href="#917">917</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslCachingKeyMaterialProvider.html">OpenSslCachingKeyMaterialProvider</a>(keyManager, password);
-<a class="jxr_linenumber" name="918" href="#918">918</a>         }
-<a class="jxr_linenumber" name="919" href="#919">919</a>         <em class="jxr_comment">// We can not be sure if the material may change at runtime so we will not cache it.</em>
-<a class="jxr_linenumber" name="920" href="#920">920</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslKeyMaterialProvider.html">OpenSslKeyMaterialProvider</a>(keyManager, password);
-<a class="jxr_linenumber" name="921" href="#921">921</a>     }
-<a class="jxr_linenumber" name="922" href="#922">922</a> 
-<a class="jxr_linenumber" name="923" href="#923">923</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslContext.html">PrivateKeyMethod</a> <strong class="jxr_keyword">implements</strong> <a href="../../../../io/netty/internal/tcnative/SSLPrivateKeyMethod.html">SSLPrivateKeyMethod</a> {
-<a class="jxr_linenumber" name="924" href="#924">924</a> 
-<a class="jxr_linenumber" name="925" href="#925">925</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/ssl/OpenSslEngineMap.html">OpenSslEngineMap</a> engineMap;
-<a class="jxr_linenumber" name="926" href="#926">926</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/ssl/OpenSslPrivateKeyMethod.html">OpenSslPrivateKeyMethod</a> keyMethod;
-<a class="jxr_linenumber" name="927" href="#927">927</a>         <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslContext.html">PrivateKeyMethod</a>(<a href="../../../../io/netty/handler/ssl/OpenSslEngineMap.html">OpenSslEngineMap</a> engineMap, <a href="../../../../io/netty/handler/ssl/OpenSslPrivateKeyMethod.html">OpenSslPrivateKeyMethod</a> keyMethod) {
-<a class="jxr_linenumber" name="928" href="#928">928</a>             <strong class="jxr_keyword">this</strong>.engineMap = engineMap;
-<a class="jxr_linenumber" name="929" href="#929">929</a>             <strong class="jxr_keyword">this</strong>.keyMethod = keyMethod;
-<a class="jxr_linenumber" name="930" href="#930">930</a>         }
-<a class="jxr_linenumber" name="931" href="#931">931</a> 
-<a class="jxr_linenumber" name="932" href="#932">932</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> retrieveEngine(<strong class="jxr_keyword">long</strong> ssl) <strong class="jxr_keyword">throws</strong> SSLException {
-<a class="jxr_linenumber" name="933" href="#933">933</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> engine = engineMap.get(ssl);
-<a class="jxr_linenumber" name="934" href="#934">934</a>             <strong class="jxr_keyword">if</strong> (engine == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="935" href="#935">935</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLException(<span class="jxr_string">"Could not find a "</span> +
-<a class="jxr_linenumber" name="936" href="#936">936</a>                         StringUtil.simpleClassName(ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">class</strong>) + <span class="jxr_string">" for sslPointer "</span> + ssl);
-<a class="jxr_linenumber" name="937" href="#937">937</a>             }
-<a class="jxr_linenumber" name="938" href="#938">938</a>             <strong class="jxr_keyword">return</strong> engine;
-<a class="jxr_linenumber" name="939" href="#939">939</a>         }
-<a class="jxr_linenumber" name="940" href="#940">940</a> 
-<a class="jxr_linenumber" name="941" href="#941">941</a>         @Override
-<a class="jxr_linenumber" name="942" href="#942">942</a>         <strong class="jxr_keyword">public</strong> byte[] sign(<strong class="jxr_keyword">long</strong> ssl, <strong class="jxr_keyword">int</strong> signatureAlgorithm, byte[] digest) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="943" href="#943">943</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> engine = retrieveEngine(ssl);
-<a class="jxr_linenumber" name="944" href="#944">944</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="945" href="#945">945</a>                 <strong class="jxr_keyword">return</strong> verifyResult(keyMethod.sign(engine, signatureAlgorithm, digest));
-<a class="jxr_linenumber" name="946" href="#946">946</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="947" href="#947">947</a>                 engine.initHandshakeException(e);
-<a class="jxr_linenumber" name="948" href="#948">948</a>                 <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="949" href="#949">949</a>             }
-<a class="jxr_linenumber" name="950" href="#950">950</a>         }
-<a class="jxr_linenumber" name="951" href="#951">951</a> 
-<a class="jxr_linenumber" name="952" href="#952">952</a>         @Override
-<a class="jxr_linenumber" name="953" href="#953">953</a>         <strong class="jxr_keyword">public</strong> byte[] decrypt(<strong class="jxr_keyword">long</strong> ssl, byte[] input) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="954" href="#954">954</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> engine = retrieveEngine(ssl);
-<a class="jxr_linenumber" name="955" href="#955">955</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="956" href="#956">956</a>                 <strong class="jxr_keyword">return</strong> verifyResult(keyMethod.decrypt(engine, input));
-<a class="jxr_linenumber" name="957" href="#957">957</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="958" href="#958">958</a>                 engine.initHandshakeException(e);
-<a class="jxr_linenumber" name="959" href="#959">959</a>                 <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="960" href="#960">960</a>             }
-<a class="jxr_linenumber" name="961" href="#961">961</a>         }
-<a class="jxr_linenumber" name="962" href="#962">962</a> 
-<a class="jxr_linenumber" name="963" href="#963">963</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte[] verifyResult(byte[] result) <strong class="jxr_keyword">throws</strong> SignatureException {
-<a class="jxr_linenumber" name="964" href="#964">964</a>             <strong class="jxr_keyword">if</strong> (result == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="965" href="#965">965</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SignatureException();
-<a class="jxr_linenumber" name="966" href="#966">966</a>             }
-<a class="jxr_linenumber" name="967" href="#967">967</a>             <strong class="jxr_keyword">return</strong> result;
-<a class="jxr_linenumber" name="968" href="#968">968</a>         }
-<a class="jxr_linenumber" name="969" href="#969">969</a>     }
-<a class="jxr_linenumber" name="970" href="#970">970</a> }
+<a class="jxr_linenumber" name="914" href="#914">914</a>         <strong class="jxr_keyword">if</strong> (factory instanceof OpenSslCachingX509KeyManagerFactory) {
+<a class="jxr_linenumber" name="915" href="#915">915</a>             <em class="jxr_comment">// The user explicit used OpenSslCachingX509KeyManagerFactory which signals us that its fine to cache.</em>
+<a class="jxr_linenumber" name="916" href="#916">916</a>             <strong class="jxr_keyword">return</strong> ((OpenSslCachingX509KeyManagerFactory) factory).newProvider(password);
+<a class="jxr_linenumber" name="917" href="#917">917</a>         }
+<a class="jxr_linenumber" name="918" href="#918">918</a>         <em class="jxr_comment">// We can not be sure if the material may change at runtime so we will not cache it.</em>
+<a class="jxr_linenumber" name="919" href="#919">919</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/OpenSslKeyMaterialProvider.html">OpenSslKeyMaterialProvider</a>(chooseX509KeyManager(factory.getKeyManagers()), password);
+<a class="jxr_linenumber" name="920" href="#920">920</a>     }
+<a class="jxr_linenumber" name="921" href="#921">921</a> 
+<a class="jxr_linenumber" name="922" href="#922">922</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslContext.html">PrivateKeyMethod</a> <strong class="jxr_keyword">implements</strong> <a href="../../../../io/netty/internal/tcnative/SSLPrivateKeyMethod.html">SSLPrivateKeyMethod</a> {
+<a class="jxr_linenumber" name="923" href="#923">923</a> 
+<a class="jxr_linenumber" name="924" href="#924">924</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/ssl/OpenSslEngineMap.html">OpenSslEngineMap</a> engineMap;
+<a class="jxr_linenumber" name="925" href="#925">925</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/handler/ssl/OpenSslPrivateKeyMethod.html">OpenSslPrivateKeyMethod</a> keyMethod;
+<a class="jxr_linenumber" name="926" href="#926">926</a>         <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslContext.html">PrivateKeyMethod</a>(<a href="../../../../io/netty/handler/ssl/OpenSslEngineMap.html">OpenSslEngineMap</a> engineMap, <a href="../../../../io/netty/handler/ssl/OpenSslPrivateKeyMethod.html">OpenSslPrivateKeyMethod</a> keyMethod) {
+<a class="jxr_linenumber" name="927" href="#927">927</a>             <strong class="jxr_keyword">this</strong>.engineMap = engineMap;
+<a class="jxr_linenumber" name="928" href="#928">928</a>             <strong class="jxr_keyword">this</strong>.keyMethod = keyMethod;
+<a class="jxr_linenumber" name="929" href="#929">929</a>         }
+<a class="jxr_linenumber" name="930" href="#930">930</a> 
+<a class="jxr_linenumber" name="931" href="#931">931</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> retrieveEngine(<strong class="jxr_keyword">long</strong> ssl) <strong class="jxr_keyword">throws</strong> SSLException {
+<a class="jxr_linenumber" name="932" href="#932">932</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> engine = engineMap.get(ssl);
+<a class="jxr_linenumber" name="933" href="#933">933</a>             <strong class="jxr_keyword">if</strong> (engine == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="934" href="#934">934</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLException(<span class="jxr_string">"Could not find a "</span> +
+<a class="jxr_linenumber" name="935" href="#935">935</a>                         StringUtil.simpleClassName(ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">class</strong>) + <span class="jxr_string">" for sslPointer "</span> + ssl);
+<a class="jxr_linenumber" name="936" href="#936">936</a>             }
+<a class="jxr_linenumber" name="937" href="#937">937</a>             <strong class="jxr_keyword">return</strong> engine;
+<a class="jxr_linenumber" name="938" href="#938">938</a>         }
+<a class="jxr_linenumber" name="939" href="#939">939</a> 
+<a class="jxr_linenumber" name="940" href="#940">940</a>         @Override
+<a class="jxr_linenumber" name="941" href="#941">941</a>         <strong class="jxr_keyword">public</strong> byte[] sign(<strong class="jxr_keyword">long</strong> ssl, <strong class="jxr_keyword">int</strong> signatureAlgorithm, byte[] digest) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="942" href="#942">942</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> engine = retrieveEngine(ssl);
+<a class="jxr_linenumber" name="943" href="#943">943</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="944" href="#944">944</a>                 <strong class="jxr_keyword">return</strong> verifyResult(keyMethod.sign(engine, signatureAlgorithm, digest));
+<a class="jxr_linenumber" name="945" href="#945">945</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="946" href="#946">946</a>                 engine.initHandshakeException(e);
+<a class="jxr_linenumber" name="947" href="#947">947</a>                 <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="948" href="#948">948</a>             }
+<a class="jxr_linenumber" name="949" href="#949">949</a>         }
+<a class="jxr_linenumber" name="950" href="#950">950</a> 
+<a class="jxr_linenumber" name="951" href="#951">951</a>         @Override
+<a class="jxr_linenumber" name="952" href="#952">952</a>         <strong class="jxr_keyword">public</strong> byte[] decrypt(<strong class="jxr_keyword">long</strong> ssl, byte[] input) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="953" href="#953">953</a>             <a href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslEngine.html">ReferenceCountedOpenSslEngine</a> engine = retrieveEngine(ssl);
+<a class="jxr_linenumber" name="954" href="#954">954</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="955" href="#955">955</a>                 <strong class="jxr_keyword">return</strong> verifyResult(keyMethod.decrypt(engine, input));
+<a class="jxr_linenumber" name="956" href="#956">956</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="957" href="#957">957</a>                 engine.initHandshakeException(e);
+<a class="jxr_linenumber" name="958" href="#958">958</a>                 <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="959" href="#959">959</a>             }
+<a class="jxr_linenumber" name="960" href="#960">960</a>         }
+<a class="jxr_linenumber" name="961" href="#961">961</a> 
+<a class="jxr_linenumber" name="962" href="#962">962</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte[] verifyResult(byte[] result) <strong class="jxr_keyword">throws</strong> SignatureException {
+<a class="jxr_linenumber" name="963" href="#963">963</a>             <strong class="jxr_keyword">if</strong> (result == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="964" href="#964">964</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SignatureException();
+<a class="jxr_linenumber" name="965" href="#965">965</a>             }
+<a class="jxr_linenumber" name="966" href="#966">966</a>             <strong class="jxr_keyword">return</strong> result;
+<a class="jxr_linenumber" name="967" href="#967">967</a>         }
+<a class="jxr_linenumber" name="968" href="#968">968</a>     }
+<a class="jxr_linenumber" name="969" href="#969">969</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

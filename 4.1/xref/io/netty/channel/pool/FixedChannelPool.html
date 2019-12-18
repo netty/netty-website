@@ -465,63 +465,64 @@
 <a class="jxr_linenumber" name="455" href="#455">455</a> <em class="jxr_javadoccomment">     *</em>
 <a class="jxr_linenumber" name="456" href="#456">456</a> <em class="jxr_javadoccomment">     * @return Future which represents completion of the close task</em>
 <a class="jxr_linenumber" name="457" href="#457">457</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="458" href="#458">458</a>     <strong class="jxr_keyword">public</strong> Future&lt;Void&gt; closeAsync() {
-<a class="jxr_linenumber" name="459" href="#459">459</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
-<a class="jxr_linenumber" name="460" href="#460">460</a>             <strong class="jxr_keyword">return</strong> close0();
-<a class="jxr_linenumber" name="461" href="#461">461</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="462" href="#462">462</a>             <strong class="jxr_keyword">final</strong> Promise&lt;Void&gt; closeComplete = executor.newPromise();
-<a class="jxr_linenumber" name="463" href="#463">463</a>             executor.execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="464" href="#464">464</a>                 @Override
-<a class="jxr_linenumber" name="465" href="#465">465</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="466" href="#466">466</a>                     close0().addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Void&gt;() {
-<a class="jxr_linenumber" name="467" href="#467">467</a>                         @Override
-<a class="jxr_linenumber" name="468" href="#468">468</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Void&gt; f) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="469" href="#469">469</a>                             <strong class="jxr_keyword">if</strong> (f.isSuccess()) {
-<a class="jxr_linenumber" name="470" href="#470">470</a>                                 closeComplete.setSuccess(<strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="471" href="#471">471</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="472" href="#472">472</a>                                 closeComplete.setFailure(f.cause());
-<a class="jxr_linenumber" name="473" href="#473">473</a>                             }
-<a class="jxr_linenumber" name="474" href="#474">474</a>                         }
-<a class="jxr_linenumber" name="475" href="#475">475</a>                     });
-<a class="jxr_linenumber" name="476" href="#476">476</a>                 }
-<a class="jxr_linenumber" name="477" href="#477">477</a>             });
-<a class="jxr_linenumber" name="478" href="#478">478</a>             <strong class="jxr_keyword">return</strong> closeComplete;
-<a class="jxr_linenumber" name="479" href="#479">479</a>         }
-<a class="jxr_linenumber" name="480" href="#480">480</a>     }
-<a class="jxr_linenumber" name="481" href="#481">481</a> 
-<a class="jxr_linenumber" name="482" href="#482">482</a>     <strong class="jxr_keyword">private</strong> Future&lt;Void&gt; close0() {
-<a class="jxr_linenumber" name="483" href="#483">483</a>         assert executor.inEventLoop();
-<a class="jxr_linenumber" name="484" href="#484">484</a> 
-<a class="jxr_linenumber" name="485" href="#485">485</a>         <strong class="jxr_keyword">if</strong> (!closed) {
-<a class="jxr_linenumber" name="486" href="#486">486</a>             closed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="487" href="#487">487</a>             <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="488" href="#488">488</a>                 <a href="../../../../io/netty/channel/pool/FixedChannelPool.html">AcquireTask</a> task = pendingAcquireQueue.poll();
-<a class="jxr_linenumber" name="489" href="#489">489</a>                 <strong class="jxr_keyword">if</strong> (task == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="490" href="#490">490</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="491" href="#491">491</a>                 }
-<a class="jxr_linenumber" name="492" href="#492">492</a>                 ScheduledFuture&lt;?&gt; f = task.timeoutFuture;
-<a class="jxr_linenumber" name="493" href="#493">493</a>                 <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="494" href="#494">494</a>                     f.cancel(false);
-<a class="jxr_linenumber" name="495" href="#495">495</a>                 }
-<a class="jxr_linenumber" name="496" href="#496">496</a>                 task.promise.setFailure(<strong class="jxr_keyword">new</strong> ClosedChannelException());
-<a class="jxr_linenumber" name="497" href="#497">497</a>             }
-<a class="jxr_linenumber" name="498" href="#498">498</a>             acquiredChannelCount.set(0);
-<a class="jxr_linenumber" name="499" href="#499">499</a>             pendingAcquireCount = 0;
-<a class="jxr_linenumber" name="500" href="#500">500</a> 
-<a class="jxr_linenumber" name="501" href="#501">501</a>             <em class="jxr_comment">// Ensure we dispatch this on another Thread as close0 will be called from the EventExecutor and we need</em>
-<a class="jxr_linenumber" name="502" href="#502">502</a>             <em class="jxr_comment">// to ensure we will not block in a EventExecutor.</em>
-<a class="jxr_linenumber" name="503" href="#503">503</a>             <strong class="jxr_keyword">return</strong> GlobalEventExecutor.INSTANCE.submit(<strong class="jxr_keyword">new</strong> Callable&lt;Void&gt;() {
-<a class="jxr_linenumber" name="504" href="#504">504</a>                 @Override
-<a class="jxr_linenumber" name="505" href="#505">505</a>                 <strong class="jxr_keyword">public</strong> Void call() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="506" href="#506">506</a>                     FixedChannelPool.<strong class="jxr_keyword">super</strong>.close();
-<a class="jxr_linenumber" name="507" href="#507">507</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="508" href="#508">508</a>                 }
-<a class="jxr_linenumber" name="509" href="#509">509</a>             });
-<a class="jxr_linenumber" name="510" href="#510">510</a>         }
-<a class="jxr_linenumber" name="511" href="#511">511</a> 
-<a class="jxr_linenumber" name="512" href="#512">512</a>         <strong class="jxr_keyword">return</strong> GlobalEventExecutor.INSTANCE.newSucceededFuture(<strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="513" href="#513">513</a>     }
-<a class="jxr_linenumber" name="514" href="#514">514</a> }
+<a class="jxr_linenumber" name="458" href="#458">458</a>     @Override
+<a class="jxr_linenumber" name="459" href="#459">459</a>     <strong class="jxr_keyword">public</strong> Future&lt;Void&gt; closeAsync() {
+<a class="jxr_linenumber" name="460" href="#460">460</a>         <strong class="jxr_keyword">if</strong> (executor.inEventLoop()) {
+<a class="jxr_linenumber" name="461" href="#461">461</a>             <strong class="jxr_keyword">return</strong> close0();
+<a class="jxr_linenumber" name="462" href="#462">462</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="463" href="#463">463</a>             <strong class="jxr_keyword">final</strong> Promise&lt;Void&gt; closeComplete = executor.newPromise();
+<a class="jxr_linenumber" name="464" href="#464">464</a>             executor.execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="465" href="#465">465</a>                 @Override
+<a class="jxr_linenumber" name="466" href="#466">466</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="467" href="#467">467</a>                     close0().addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Void&gt;() {
+<a class="jxr_linenumber" name="468" href="#468">468</a>                         @Override
+<a class="jxr_linenumber" name="469" href="#469">469</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Void&gt; f) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="470" href="#470">470</a>                             <strong class="jxr_keyword">if</strong> (f.isSuccess()) {
+<a class="jxr_linenumber" name="471" href="#471">471</a>                                 closeComplete.setSuccess(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="472" href="#472">472</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="473" href="#473">473</a>                                 closeComplete.setFailure(f.cause());
+<a class="jxr_linenumber" name="474" href="#474">474</a>                             }
+<a class="jxr_linenumber" name="475" href="#475">475</a>                         }
+<a class="jxr_linenumber" name="476" href="#476">476</a>                     });
+<a class="jxr_linenumber" name="477" href="#477">477</a>                 }
+<a class="jxr_linenumber" name="478" href="#478">478</a>             });
+<a class="jxr_linenumber" name="479" href="#479">479</a>             <strong class="jxr_keyword">return</strong> closeComplete;
+<a class="jxr_linenumber" name="480" href="#480">480</a>         }
+<a class="jxr_linenumber" name="481" href="#481">481</a>     }
+<a class="jxr_linenumber" name="482" href="#482">482</a> 
+<a class="jxr_linenumber" name="483" href="#483">483</a>     <strong class="jxr_keyword">private</strong> Future&lt;Void&gt; close0() {
+<a class="jxr_linenumber" name="484" href="#484">484</a>         assert executor.inEventLoop();
+<a class="jxr_linenumber" name="485" href="#485">485</a> 
+<a class="jxr_linenumber" name="486" href="#486">486</a>         <strong class="jxr_keyword">if</strong> (!closed) {
+<a class="jxr_linenumber" name="487" href="#487">487</a>             closed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="488" href="#488">488</a>             <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="489" href="#489">489</a>                 <a href="../../../../io/netty/channel/pool/FixedChannelPool.html">AcquireTask</a> task = pendingAcquireQueue.poll();
+<a class="jxr_linenumber" name="490" href="#490">490</a>                 <strong class="jxr_keyword">if</strong> (task == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="491" href="#491">491</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="492" href="#492">492</a>                 }
+<a class="jxr_linenumber" name="493" href="#493">493</a>                 ScheduledFuture&lt;?&gt; f = task.timeoutFuture;
+<a class="jxr_linenumber" name="494" href="#494">494</a>                 <strong class="jxr_keyword">if</strong> (f != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="495" href="#495">495</a>                     f.cancel(false);
+<a class="jxr_linenumber" name="496" href="#496">496</a>                 }
+<a class="jxr_linenumber" name="497" href="#497">497</a>                 task.promise.setFailure(<strong class="jxr_keyword">new</strong> ClosedChannelException());
+<a class="jxr_linenumber" name="498" href="#498">498</a>             }
+<a class="jxr_linenumber" name="499" href="#499">499</a>             acquiredChannelCount.set(0);
+<a class="jxr_linenumber" name="500" href="#500">500</a>             pendingAcquireCount = 0;
+<a class="jxr_linenumber" name="501" href="#501">501</a> 
+<a class="jxr_linenumber" name="502" href="#502">502</a>             <em class="jxr_comment">// Ensure we dispatch this on another Thread as close0 will be called from the EventExecutor and we need</em>
+<a class="jxr_linenumber" name="503" href="#503">503</a>             <em class="jxr_comment">// to ensure we will not block in a EventExecutor.</em>
+<a class="jxr_linenumber" name="504" href="#504">504</a>             <strong class="jxr_keyword">return</strong> GlobalEventExecutor.INSTANCE.submit(<strong class="jxr_keyword">new</strong> Callable&lt;Void&gt;() {
+<a class="jxr_linenumber" name="505" href="#505">505</a>                 @Override
+<a class="jxr_linenumber" name="506" href="#506">506</a>                 <strong class="jxr_keyword">public</strong> Void call() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="507" href="#507">507</a>                     FixedChannelPool.<strong class="jxr_keyword">super</strong>.close();
+<a class="jxr_linenumber" name="508" href="#508">508</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="509" href="#509">509</a>                 }
+<a class="jxr_linenumber" name="510" href="#510">510</a>             });
+<a class="jxr_linenumber" name="511" href="#511">511</a>         }
+<a class="jxr_linenumber" name="512" href="#512">512</a> 
+<a class="jxr_linenumber" name="513" href="#513">513</a>         <strong class="jxr_keyword">return</strong> GlobalEventExecutor.INSTANCE.newSucceededFuture(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="514" href="#514">514</a>     }
+<a class="jxr_linenumber" name="515" href="#515">515</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
