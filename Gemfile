@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'awestruct', '~> 0.6.0.alpha3'
+gem 'awestruct', '~> 0.6.0.alpha4'
 gem 'haml', '~> 5.1.2'
 gem 'rdiscount', '~> 2.1.8'
 gem 'htmlcompressor', '~> 0.3.0'
