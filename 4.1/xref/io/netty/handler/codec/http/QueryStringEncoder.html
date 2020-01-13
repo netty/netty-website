@@ -165,80 +165,99 @@
 <a class="jxr_linenumber" name="155" href="#155">155</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> encodeUtf8Component(CharSequence s) {
 <a class="jxr_linenumber" name="156" href="#156">156</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0, len = s.length(); i &lt; len; i++) {
 <a class="jxr_linenumber" name="157" href="#157">157</a>             <strong class="jxr_keyword">char</strong> c = s.charAt(i);
-<a class="jxr_linenumber" name="158" href="#158">158</a>             <strong class="jxr_keyword">if</strong> (c &lt; 0x80) {
-<a class="jxr_linenumber" name="159" href="#159">159</a>                 <strong class="jxr_keyword">if</strong> (dontNeedEncoding(c)) {
-<a class="jxr_linenumber" name="160" href="#160">160</a>                     uriBuilder.append(c);
-<a class="jxr_linenumber" name="161" href="#161">161</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="162" href="#162">162</a>                     appendEncoded(c);
-<a class="jxr_linenumber" name="163" href="#163">163</a>                 }
-<a class="jxr_linenumber" name="164" href="#164">164</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (c &lt; 0x800) {
-<a class="jxr_linenumber" name="165" href="#165">165</a>                 appendEncoded(0xc0 | (c &gt;&gt; 6));
-<a class="jxr_linenumber" name="166" href="#166">166</a>                 appendEncoded(0x80 | (c &amp; 0x3f));
-<a class="jxr_linenumber" name="167" href="#167">167</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (StringUtil.isSurrogate(c)) {
-<a class="jxr_linenumber" name="168" href="#168">168</a>                 <strong class="jxr_keyword">if</strong> (!Character.isHighSurrogate(c)) {
-<a class="jxr_linenumber" name="169" href="#169">169</a>                     appendEncoded(WRITE_UTF_UNKNOWN);
-<a class="jxr_linenumber" name="170" href="#170">170</a>                     <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="171" href="#171">171</a>                 }
-<a class="jxr_linenumber" name="172" href="#172">172</a>                 <em class="jxr_comment">// Surrogate Pair consumes 2 characters.</em>
-<a class="jxr_linenumber" name="173" href="#173">173</a>                 <strong class="jxr_keyword">if</strong> (++i == s.length()) {
-<a class="jxr_linenumber" name="174" href="#174">174</a>                     appendEncoded(WRITE_UTF_UNKNOWN);
-<a class="jxr_linenumber" name="175" href="#175">175</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="176" href="#176">176</a>                 }
-<a class="jxr_linenumber" name="177" href="#177">177</a>                 <em class="jxr_comment">// Extra method to allow inlining the rest of writeUtf8 which is the most likely code path.</em>
-<a class="jxr_linenumber" name="178" href="#178">178</a>                 writeUtf8Surrogate(c, s.charAt(i));
-<a class="jxr_linenumber" name="179" href="#179">179</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="180" href="#180">180</a>                 appendEncoded(0xe0 | (c &gt;&gt; 12));
-<a class="jxr_linenumber" name="181" href="#181">181</a>                 appendEncoded(0x80 | ((c &gt;&gt; 6) &amp; 0x3f));
-<a class="jxr_linenumber" name="182" href="#182">182</a>                 appendEncoded(0x80 | (c &amp; 0x3f));
-<a class="jxr_linenumber" name="183" href="#183">183</a>             }
-<a class="jxr_linenumber" name="184" href="#184">184</a>         }
-<a class="jxr_linenumber" name="185" href="#185">185</a>     }
-<a class="jxr_linenumber" name="186" href="#186">186</a> 
-<a class="jxr_linenumber" name="187" href="#187">187</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeUtf8Surrogate(<strong class="jxr_keyword">char</strong> c, <strong class="jxr_keyword">char</strong> c2) {
-<a class="jxr_linenumber" name="188" href="#188">188</a>         <strong class="jxr_keyword">if</strong> (!Character.isLowSurrogate(c2)) {
-<a class="jxr_linenumber" name="189" href="#189">189</a>             appendEncoded(WRITE_UTF_UNKNOWN);
-<a class="jxr_linenumber" name="190" href="#190">190</a>             appendEncoded(Character.isHighSurrogate(c2) ? WRITE_UTF_UNKNOWN : c2);
-<a class="jxr_linenumber" name="191" href="#191">191</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="192" href="#192">192</a>         }
-<a class="jxr_linenumber" name="193" href="#193">193</a>         <strong class="jxr_keyword">int</strong> codePoint = Character.toCodePoint(c, c2);
-<a class="jxr_linenumber" name="194" href="#194">194</a>         <em class="jxr_comment">// See http://www.unicode.org/versions/Unicode7.0.0/ch03.pdf#G2630.</em>
-<a class="jxr_linenumber" name="195" href="#195">195</a>         appendEncoded(0xf0 | (codePoint &gt;&gt; 18));
-<a class="jxr_linenumber" name="196" href="#196">196</a>         appendEncoded(0x80 | ((codePoint &gt;&gt; 12) &amp; 0x3f));
-<a class="jxr_linenumber" name="197" href="#197">197</a>         appendEncoded(0x80 | ((codePoint &gt;&gt; 6) &amp; 0x3f));
-<a class="jxr_linenumber" name="198" href="#198">198</a>         appendEncoded(0x80 | (codePoint &amp; 0x3f));
-<a class="jxr_linenumber" name="199" href="#199">199</a>     }
-<a class="jxr_linenumber" name="200" href="#200">200</a> 
-<a class="jxr_linenumber" name="201" href="#201">201</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> appendEncoded(<strong class="jxr_keyword">int</strong> b) {
-<a class="jxr_linenumber" name="202" href="#202">202</a>         uriBuilder.append('%').append(forDigit(b &gt;&gt; 4)).append(forDigit(b));
-<a class="jxr_linenumber" name="203" href="#203">203</a>     }
-<a class="jxr_linenumber" name="204" href="#204">204</a> 
-<a class="jxr_linenumber" name="205" href="#205">205</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="206" href="#206">206</a> <em class="jxr_javadoccomment">     * Convert the given digit to a upper hexadecimal char.</em>
-<a class="jxr_linenumber" name="207" href="#207">207</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="208" href="#208">208</a> <em class="jxr_javadoccomment">     * @param digit the number to convert to a character.</em>
-<a class="jxr_linenumber" name="209" href="#209">209</a> <em class="jxr_javadoccomment">     * @return the {@code char} representation of the specified digit</em>
-<a class="jxr_linenumber" name="210" href="#210">210</a> <em class="jxr_javadoccomment">     * in hexadecimal.</em>
-<a class="jxr_linenumber" name="211" href="#211">211</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="212" href="#212">212</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">char</strong> forDigit(<strong class="jxr_keyword">int</strong> digit) {
-<a class="jxr_linenumber" name="213" href="#213">213</a>         <strong class="jxr_keyword">return</strong> CHAR_MAP[digit &amp; 0xF];
-<a class="jxr_linenumber" name="214" href="#214">214</a>     }
-<a class="jxr_linenumber" name="215" href="#215">215</a> 
-<a class="jxr_linenumber" name="216" href="#216">216</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="217" href="#217">217</a> <em class="jxr_javadoccomment">     * Determines whether the given character is a unreserved character.</em>
-<a class="jxr_linenumber" name="218" href="#218">218</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="219" href="#219">219</a> <em class="jxr_javadoccomment">     * unreserved characters do not need to be encoded, and include uppercase and lowercase</em>
-<a class="jxr_linenumber" name="220" href="#220">220</a> <em class="jxr_javadoccomment">     * letters, decimal digits, hyphen, period, underscore, and tilde.</em>
-<a class="jxr_linenumber" name="221" href="#221">221</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="222" href="#222">222</a> <em class="jxr_javadoccomment">     * unreserved  = ALPHA / DIGIT / "-" / "_" / "." / "*"</em>
-<a class="jxr_linenumber" name="223" href="#223">223</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="224" href="#224">224</a> <em class="jxr_javadoccomment">     * @param ch the char to be judged whether it need to be encode</em>
-<a class="jxr_linenumber" name="225" href="#225">225</a> <em class="jxr_javadoccomment">     * @return true or false</em>
-<a class="jxr_linenumber" name="226" href="#226">226</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="227" href="#227">227</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> dontNeedEncoding(<strong class="jxr_keyword">char</strong> ch) {
-<a class="jxr_linenumber" name="228" href="#228">228</a>         <strong class="jxr_keyword">return</strong> ch &gt;= 'a' &amp;&amp; ch &lt;= 'z' || ch &gt;= 'A' &amp;&amp; ch &lt;= 'Z' || ch &gt;= '0' &amp;&amp; ch &lt;= '9'
-<a class="jxr_linenumber" name="229" href="#229">229</a>                 || ch == '-' || ch == '_' || ch == '.' || ch == '*';
-<a class="jxr_linenumber" name="230" href="#230">230</a>     }
-<a class="jxr_linenumber" name="231" href="#231">231</a> }
+<a class="jxr_linenumber" name="158" href="#158">158</a>             <strong class="jxr_keyword">if</strong> (!dontNeedEncoding(c)) {
+<a class="jxr_linenumber" name="159" href="#159">159</a>                 encodeUtf8Component(s, i, len);
+<a class="jxr_linenumber" name="160" href="#160">160</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="161" href="#161">161</a>             }
+<a class="jxr_linenumber" name="162" href="#162">162</a>         }
+<a class="jxr_linenumber" name="163" href="#163">163</a>         uriBuilder.append(s);
+<a class="jxr_linenumber" name="164" href="#164">164</a>     }
+<a class="jxr_linenumber" name="165" href="#165">165</a> 
+<a class="jxr_linenumber" name="166" href="#166">166</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> encodeUtf8Component(CharSequence s, <strong class="jxr_keyword">int</strong> encodingStart, <strong class="jxr_keyword">int</strong> len) {
+<a class="jxr_linenumber" name="167" href="#167">167</a>         <strong class="jxr_keyword">if</strong> (encodingStart &gt; 0) {
+<a class="jxr_linenumber" name="168" href="#168">168</a>             <em class="jxr_comment">// Append non-encoded characters directly first.</em>
+<a class="jxr_linenumber" name="169" href="#169">169</a>             uriBuilder.append(s, 0, encodingStart);
+<a class="jxr_linenumber" name="170" href="#170">170</a>         }
+<a class="jxr_linenumber" name="171" href="#171">171</a>         encodeUtf8ComponentSlow(s, encodingStart, len);
+<a class="jxr_linenumber" name="172" href="#172">172</a>     }
+<a class="jxr_linenumber" name="173" href="#173">173</a> 
+<a class="jxr_linenumber" name="174" href="#174">174</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> encodeUtf8ComponentSlow(CharSequence s, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> len) {
+<a class="jxr_linenumber" name="175" href="#175">175</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = start; i &lt; len; i++) {
+<a class="jxr_linenumber" name="176" href="#176">176</a>             <strong class="jxr_keyword">char</strong> c = s.charAt(i);
+<a class="jxr_linenumber" name="177" href="#177">177</a>             <strong class="jxr_keyword">if</strong> (c &lt; 0x80) {
+<a class="jxr_linenumber" name="178" href="#178">178</a>                 <strong class="jxr_keyword">if</strong> (dontNeedEncoding(c)) {
+<a class="jxr_linenumber" name="179" href="#179">179</a>                     uriBuilder.append(c);
+<a class="jxr_linenumber" name="180" href="#180">180</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="181" href="#181">181</a>                     appendEncoded(c);
+<a class="jxr_linenumber" name="182" href="#182">182</a>                 }
+<a class="jxr_linenumber" name="183" href="#183">183</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (c &lt; 0x800) {
+<a class="jxr_linenumber" name="184" href="#184">184</a>                 appendEncoded(0xc0 | (c &gt;&gt; 6));
+<a class="jxr_linenumber" name="185" href="#185">185</a>                 appendEncoded(0x80 | (c &amp; 0x3f));
+<a class="jxr_linenumber" name="186" href="#186">186</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (StringUtil.isSurrogate(c)) {
+<a class="jxr_linenumber" name="187" href="#187">187</a>                 <strong class="jxr_keyword">if</strong> (!Character.isHighSurrogate(c)) {
+<a class="jxr_linenumber" name="188" href="#188">188</a>                     appendEncoded(WRITE_UTF_UNKNOWN);
+<a class="jxr_linenumber" name="189" href="#189">189</a>                     <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="190" href="#190">190</a>                 }
+<a class="jxr_linenumber" name="191" href="#191">191</a>                 <em class="jxr_comment">// Surrogate Pair consumes 2 characters.</em>
+<a class="jxr_linenumber" name="192" href="#192">192</a>                 <strong class="jxr_keyword">if</strong> (++i == s.length()) {
+<a class="jxr_linenumber" name="193" href="#193">193</a>                     appendEncoded(WRITE_UTF_UNKNOWN);
+<a class="jxr_linenumber" name="194" href="#194">194</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="195" href="#195">195</a>                 }
+<a class="jxr_linenumber" name="196" href="#196">196</a>                 <em class="jxr_comment">// Extra method to allow inlining the rest of writeUtf8 which is the most likely code path.</em>
+<a class="jxr_linenumber" name="197" href="#197">197</a>                 writeUtf8Surrogate(c, s.charAt(i));
+<a class="jxr_linenumber" name="198" href="#198">198</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="199" href="#199">199</a>                 appendEncoded(0xe0 | (c &gt;&gt; 12));
+<a class="jxr_linenumber" name="200" href="#200">200</a>                 appendEncoded(0x80 | ((c &gt;&gt; 6) &amp; 0x3f));
+<a class="jxr_linenumber" name="201" href="#201">201</a>                 appendEncoded(0x80 | (c &amp; 0x3f));
+<a class="jxr_linenumber" name="202" href="#202">202</a>             }
+<a class="jxr_linenumber" name="203" href="#203">203</a>         }
+<a class="jxr_linenumber" name="204" href="#204">204</a>     }
+<a class="jxr_linenumber" name="205" href="#205">205</a> 
+<a class="jxr_linenumber" name="206" href="#206">206</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> writeUtf8Surrogate(<strong class="jxr_keyword">char</strong> c, <strong class="jxr_keyword">char</strong> c2) {
+<a class="jxr_linenumber" name="207" href="#207">207</a>         <strong class="jxr_keyword">if</strong> (!Character.isLowSurrogate(c2)) {
+<a class="jxr_linenumber" name="208" href="#208">208</a>             appendEncoded(WRITE_UTF_UNKNOWN);
+<a class="jxr_linenumber" name="209" href="#209">209</a>             appendEncoded(Character.isHighSurrogate(c2) ? WRITE_UTF_UNKNOWN : c2);
+<a class="jxr_linenumber" name="210" href="#210">210</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="211" href="#211">211</a>         }
+<a class="jxr_linenumber" name="212" href="#212">212</a>         <strong class="jxr_keyword">int</strong> codePoint = Character.toCodePoint(c, c2);
+<a class="jxr_linenumber" name="213" href="#213">213</a>         <em class="jxr_comment">// See http://www.unicode.org/versions/Unicode7.0.0/ch03.pdf#G2630.</em>
+<a class="jxr_linenumber" name="214" href="#214">214</a>         appendEncoded(0xf0 | (codePoint &gt;&gt; 18));
+<a class="jxr_linenumber" name="215" href="#215">215</a>         appendEncoded(0x80 | ((codePoint &gt;&gt; 12) &amp; 0x3f));
+<a class="jxr_linenumber" name="216" href="#216">216</a>         appendEncoded(0x80 | ((codePoint &gt;&gt; 6) &amp; 0x3f));
+<a class="jxr_linenumber" name="217" href="#217">217</a>         appendEncoded(0x80 | (codePoint &amp; 0x3f));
+<a class="jxr_linenumber" name="218" href="#218">218</a>     }
+<a class="jxr_linenumber" name="219" href="#219">219</a> 
+<a class="jxr_linenumber" name="220" href="#220">220</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> appendEncoded(<strong class="jxr_keyword">int</strong> b) {
+<a class="jxr_linenumber" name="221" href="#221">221</a>         uriBuilder.append('%').append(forDigit(b &gt;&gt; 4)).append(forDigit(b));
+<a class="jxr_linenumber" name="222" href="#222">222</a>     }
+<a class="jxr_linenumber" name="223" href="#223">223</a> 
+<a class="jxr_linenumber" name="224" href="#224">224</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="225" href="#225">225</a> <em class="jxr_javadoccomment">     * Convert the given digit to a upper hexadecimal char.</em>
+<a class="jxr_linenumber" name="226" href="#226">226</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="227" href="#227">227</a> <em class="jxr_javadoccomment">     * @param digit the number to convert to a character.</em>
+<a class="jxr_linenumber" name="228" href="#228">228</a> <em class="jxr_javadoccomment">     * @return the {@code char} representation of the specified digit</em>
+<a class="jxr_linenumber" name="229" href="#229">229</a> <em class="jxr_javadoccomment">     * in hexadecimal.</em>
+<a class="jxr_linenumber" name="230" href="#230">230</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="231" href="#231">231</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">char</strong> forDigit(<strong class="jxr_keyword">int</strong> digit) {
+<a class="jxr_linenumber" name="232" href="#232">232</a>         <strong class="jxr_keyword">return</strong> CHAR_MAP[digit &amp; 0xF];
+<a class="jxr_linenumber" name="233" href="#233">233</a>     }
+<a class="jxr_linenumber" name="234" href="#234">234</a> 
+<a class="jxr_linenumber" name="235" href="#235">235</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="236" href="#236">236</a> <em class="jxr_javadoccomment">     * Determines whether the given character is a unreserved character.</em>
+<a class="jxr_linenumber" name="237" href="#237">237</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="238" href="#238">238</a> <em class="jxr_javadoccomment">     * unreserved characters do not need to be encoded, and include uppercase and lowercase</em>
+<a class="jxr_linenumber" name="239" href="#239">239</a> <em class="jxr_javadoccomment">     * letters, decimal digits, hyphen, period, underscore, and tilde.</em>
+<a class="jxr_linenumber" name="240" href="#240">240</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="241" href="#241">241</a> <em class="jxr_javadoccomment">     * unreserved  = ALPHA / DIGIT / "-" / "_" / "." / "*"</em>
+<a class="jxr_linenumber" name="242" href="#242">242</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="243" href="#243">243</a> <em class="jxr_javadoccomment">     * @param ch the char to be judged whether it need to be encode</em>
+<a class="jxr_linenumber" name="244" href="#244">244</a> <em class="jxr_javadoccomment">     * @return true or false</em>
+<a class="jxr_linenumber" name="245" href="#245">245</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="246" href="#246">246</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> dontNeedEncoding(<strong class="jxr_keyword">char</strong> ch) {
+<a class="jxr_linenumber" name="247" href="#247">247</a>         <strong class="jxr_keyword">return</strong> ch &gt;= 'a' &amp;&amp; ch &lt;= 'z' || ch &gt;= 'A' &amp;&amp; ch &lt;= 'Z' || ch &gt;= '0' &amp;&amp; ch &lt;= '9'
+<a class="jxr_linenumber" name="248" href="#248">248</a>                 || ch == '-' || ch == '_' || ch == '.' || ch == '*';
+<a class="jxr_linenumber" name="249" href="#249">249</a>     }
+<a class="jxr_linenumber" name="250" href="#250">250</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

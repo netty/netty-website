@@ -108,78 +108,79 @@
 <a class="jxr_linenumber" name="98" href="#98">98</a>  <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="99" href="#99">99</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> configureSsl(<a href="../../../../../../io/netty/channel/socket/SocketChannel.html">SocketChannel</a> ch) {
 <a class="jxr_linenumber" name="100" href="#100">100</a>         <a href="../../../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> pipeline = ch.pipeline();
-<a class="jxr_linenumber" name="101" href="#101">101</a>         pipeline.addLast(sslCtx.newHandler(ch.alloc()));
-<a class="jxr_linenumber" name="102" href="#102">102</a>         <em class="jxr_comment">// We must wait for the handshake to finish and the protocol to be negotiated before configuring</em>
-<a class="jxr_linenumber" name="103" href="#103">103</a>         <em class="jxr_comment">// the HTTP/2 components of the pipeline.</em>
-<a class="jxr_linenumber" name="104" href="#104">104</a>         pipeline.addLast(<strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/ssl/ApplicationProtocolNegotiationHandler.html">ApplicationProtocolNegotiationHandler</a>(<span class="jxr_string">""</span>) {
-<a class="jxr_linenumber" name="105" href="#105">105</a>             @Override
-<a class="jxr_linenumber" name="106" href="#106">106</a>             <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> configurePipeline(<a href="../../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, String protocol) {
-<a class="jxr_linenumber" name="107" href="#107">107</a>                 <strong class="jxr_keyword">if</strong> (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
-<a class="jxr_linenumber" name="108" href="#108">108</a>                     <a href="../../../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> p = ctx.pipeline();
-<a class="jxr_linenumber" name="109" href="#109">109</a>                     p.addLast(connectionHandler);
-<a class="jxr_linenumber" name="110" href="#110">110</a>                     configureEndOfPipeline(p);
-<a class="jxr_linenumber" name="111" href="#111">111</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="112" href="#112">112</a>                 }
-<a class="jxr_linenumber" name="113" href="#113">113</a>                 ctx.close();
-<a class="jxr_linenumber" name="114" href="#114">114</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"unknown protocol: "</span> + protocol);
-<a class="jxr_linenumber" name="115" href="#115">115</a>             }
-<a class="jxr_linenumber" name="116" href="#116">116</a>         });
-<a class="jxr_linenumber" name="117" href="#117">117</a>     }
-<a class="jxr_linenumber" name="118" href="#118">118</a> 
-<a class="jxr_linenumber" name="119" href="#119">119</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="120" href="#120">120</a> <em class="jxr_javadoccomment">     * Configure the pipeline for a cleartext upgrade from HTTP to HTTP/2.</em>
-<a class="jxr_linenumber" name="121" href="#121">121</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="122" href="#122">122</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> configureClearText(<a href="../../../../../../io/netty/channel/socket/SocketChannel.html">SocketChannel</a> ch) {
-<a class="jxr_linenumber" name="123" href="#123">123</a>         <a href="../../../../../../io/netty/handler/codec/http/HttpClientCodec.html">HttpClientCodec</a> sourceCodec = <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/HttpClientCodec.html">HttpClientCodec</a>();
-<a class="jxr_linenumber" name="124" href="#124">124</a>         Http2ClientUpgradeCodec upgradeCodec = <strong class="jxr_keyword">new</strong> Http2ClientUpgradeCodec(connectionHandler);
-<a class="jxr_linenumber" name="125" href="#125">125</a>         <a href="../../../../../../io/netty/handler/codec/http/HttpClientUpgradeHandler.html">HttpClientUpgradeHandler</a> upgradeHandler = <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/HttpClientUpgradeHandler.html">HttpClientUpgradeHandler</a>(sourceCodec, upgradeCodec, 65536);
-<a class="jxr_linenumber" name="126" href="#126">126</a> 
-<a class="jxr_linenumber" name="127" href="#127">127</a>         ch.pipeline().addLast(sourceCodec,
-<a class="jxr_linenumber" name="128" href="#128">128</a>                               upgradeHandler,
-<a class="jxr_linenumber" name="129" href="#129">129</a>                               <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UpgradeRequestHandler</a>(),
-<a class="jxr_linenumber" name="130" href="#130">130</a>                               <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UserEventLogger</a>());
-<a class="jxr_linenumber" name="131" href="#131">131</a>     }
-<a class="jxr_linenumber" name="132" href="#132">132</a> 
-<a class="jxr_linenumber" name="133" href="#133">133</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="134" href="#134">134</a> <em class="jxr_javadoccomment">     * A handler that triggers the cleartext upgrade to HTTP/2 by sending an initial HTTP request.</em>
-<a class="jxr_linenumber" name="135" href="#135">135</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="136" href="#136">136</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UpgradeRequestHandler</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../../io/netty/channel/ChannelInboundHandlerAdapter.html">ChannelInboundHandlerAdapter</a> {
-<a class="jxr_linenumber" name="137" href="#137">137</a> 
-<a class="jxr_linenumber" name="138" href="#138">138</a>         @Override
-<a class="jxr_linenumber" name="139" href="#139">139</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a href="../../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="140" href="#140">140</a>             <a href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html">DefaultFullHttpRequest</a> upgradeRequest =
-<a class="jxr_linenumber" name="141" href="#141">141</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html">DefaultFullHttpRequest</a>(HttpVersion.HTTP_1_1, HttpMethod.GET, <span class="jxr_string">"/"</span>, Unpooled.EMPTY_BUFFER);
-<a class="jxr_linenumber" name="142" href="#142">142</a> 
-<a class="jxr_linenumber" name="143" href="#143">143</a>             <em class="jxr_comment">// Set HOST header as the remote peer may require it.</em>
-<a class="jxr_linenumber" name="144" href="#144">144</a>             InetSocketAddress remote = (InetSocketAddress) ctx.channel().remoteAddress();
-<a class="jxr_linenumber" name="145" href="#145">145</a>             String hostString = remote.getHostString();
-<a class="jxr_linenumber" name="146" href="#146">146</a>             <strong class="jxr_keyword">if</strong> (hostString == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="147" href="#147">147</a>                 hostString = remote.getAddress().getHostAddress();
-<a class="jxr_linenumber" name="148" href="#148">148</a>             }
-<a class="jxr_linenumber" name="149" href="#149">149</a>             upgradeRequest.headers().set(HttpHeaderNames.HOST, hostString + ':' + remote.getPort());
-<a class="jxr_linenumber" name="150" href="#150">150</a> 
-<a class="jxr_linenumber" name="151" href="#151">151</a>             ctx.writeAndFlush(upgradeRequest);
-<a class="jxr_linenumber" name="152" href="#152">152</a> 
-<a class="jxr_linenumber" name="153" href="#153">153</a>             ctx.fireChannelActive();
-<a class="jxr_linenumber" name="154" href="#154">154</a> 
-<a class="jxr_linenumber" name="155" href="#155">155</a>             <em class="jxr_comment">// Done with this handler, remove it from the pipeline.</em>
-<a class="jxr_linenumber" name="156" href="#156">156</a>             ctx.pipeline().remove(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="157" href="#157">157</a> 
-<a class="jxr_linenumber" name="158" href="#158">158</a>             configureEndOfPipeline(ctx.pipeline());
-<a class="jxr_linenumber" name="159" href="#159">159</a>         }
-<a class="jxr_linenumber" name="160" href="#160">160</a>     }
-<a class="jxr_linenumber" name="161" href="#161">161</a> 
-<a class="jxr_linenumber" name="162" href="#162">162</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="163" href="#163">163</a> <em class="jxr_javadoccomment">     * Class that logs any User Events triggered on this channel.</em>
-<a class="jxr_linenumber" name="164" href="#164">164</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="165" href="#165">165</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UserEventLogger</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../../io/netty/channel/ChannelInboundHandlerAdapter.html">ChannelInboundHandlerAdapter</a> {
-<a class="jxr_linenumber" name="166" href="#166">166</a>         @Override
-<a class="jxr_linenumber" name="167" href="#167">167</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="168" href="#168">168</a>             System.out.println(<span class="jxr_string">"User Event Triggered: "</span> + evt);
-<a class="jxr_linenumber" name="169" href="#169">169</a>             ctx.fireUserEventTriggered(evt);
-<a class="jxr_linenumber" name="170" href="#170">170</a>         }
-<a class="jxr_linenumber" name="171" href="#171">171</a>     }
-<a class="jxr_linenumber" name="172" href="#172">172</a> }
+<a class="jxr_linenumber" name="101" href="#101">101</a>         <em class="jxr_comment">// Specify Host in SSLContext New Handler to add TLS SNI Extension</em>
+<a class="jxr_linenumber" name="102" href="#102">102</a>         pipeline.addLast(sslCtx.newHandler(ch.alloc(), Http2Client.HOST, Http2Client.PORT));
+<a class="jxr_linenumber" name="103" href="#103">103</a>         <em class="jxr_comment">// We must wait for the handshake to finish and the protocol to be negotiated before configuring</em>
+<a class="jxr_linenumber" name="104" href="#104">104</a>         <em class="jxr_comment">// the HTTP/2 components of the pipeline.</em>
+<a class="jxr_linenumber" name="105" href="#105">105</a>         pipeline.addLast(<strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/ssl/ApplicationProtocolNegotiationHandler.html">ApplicationProtocolNegotiationHandler</a>(<span class="jxr_string">""</span>) {
+<a class="jxr_linenumber" name="106" href="#106">106</a>             @Override
+<a class="jxr_linenumber" name="107" href="#107">107</a>             <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> configurePipeline(<a href="../../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, String protocol) {
+<a class="jxr_linenumber" name="108" href="#108">108</a>                 <strong class="jxr_keyword">if</strong> (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
+<a class="jxr_linenumber" name="109" href="#109">109</a>                     <a href="../../../../../../io/netty/channel/ChannelPipeline.html">ChannelPipeline</a> p = ctx.pipeline();
+<a class="jxr_linenumber" name="110" href="#110">110</a>                     p.addLast(connectionHandler);
+<a class="jxr_linenumber" name="111" href="#111">111</a>                     configureEndOfPipeline(p);
+<a class="jxr_linenumber" name="112" href="#112">112</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="113" href="#113">113</a>                 }
+<a class="jxr_linenumber" name="114" href="#114">114</a>                 ctx.close();
+<a class="jxr_linenumber" name="115" href="#115">115</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"unknown protocol: "</span> + protocol);
+<a class="jxr_linenumber" name="116" href="#116">116</a>             }
+<a class="jxr_linenumber" name="117" href="#117">117</a>         });
+<a class="jxr_linenumber" name="118" href="#118">118</a>     }
+<a class="jxr_linenumber" name="119" href="#119">119</a> 
+<a class="jxr_linenumber" name="120" href="#120">120</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="121" href="#121">121</a> <em class="jxr_javadoccomment">     * Configure the pipeline for a cleartext upgrade from HTTP to HTTP/2.</em>
+<a class="jxr_linenumber" name="122" href="#122">122</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="123" href="#123">123</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> configureClearText(<a href="../../../../../../io/netty/channel/socket/SocketChannel.html">SocketChannel</a> ch) {
+<a class="jxr_linenumber" name="124" href="#124">124</a>         <a href="../../../../../../io/netty/handler/codec/http/HttpClientCodec.html">HttpClientCodec</a> sourceCodec = <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/HttpClientCodec.html">HttpClientCodec</a>();
+<a class="jxr_linenumber" name="125" href="#125">125</a>         Http2ClientUpgradeCodec upgradeCodec = <strong class="jxr_keyword">new</strong> Http2ClientUpgradeCodec(connectionHandler);
+<a class="jxr_linenumber" name="126" href="#126">126</a>         <a href="../../../../../../io/netty/handler/codec/http/HttpClientUpgradeHandler.html">HttpClientUpgradeHandler</a> upgradeHandler = <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/HttpClientUpgradeHandler.html">HttpClientUpgradeHandler</a>(sourceCodec, upgradeCodec, 65536);
+<a class="jxr_linenumber" name="127" href="#127">127</a> 
+<a class="jxr_linenumber" name="128" href="#128">128</a>         ch.pipeline().addLast(sourceCodec,
+<a class="jxr_linenumber" name="129" href="#129">129</a>                               upgradeHandler,
+<a class="jxr_linenumber" name="130" href="#130">130</a>                               <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UpgradeRequestHandler</a>(),
+<a class="jxr_linenumber" name="131" href="#131">131</a>                               <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UserEventLogger</a>());
+<a class="jxr_linenumber" name="132" href="#132">132</a>     }
+<a class="jxr_linenumber" name="133" href="#133">133</a> 
+<a class="jxr_linenumber" name="134" href="#134">134</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="135" href="#135">135</a> <em class="jxr_javadoccomment">     * A handler that triggers the cleartext upgrade to HTTP/2 by sending an initial HTTP request.</em>
+<a class="jxr_linenumber" name="136" href="#136">136</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="137" href="#137">137</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UpgradeRequestHandler</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../../io/netty/channel/ChannelInboundHandlerAdapter.html">ChannelInboundHandlerAdapter</a> {
+<a class="jxr_linenumber" name="138" href="#138">138</a> 
+<a class="jxr_linenumber" name="139" href="#139">139</a>         @Override
+<a class="jxr_linenumber" name="140" href="#140">140</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a href="../../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="141" href="#141">141</a>             <a href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html">DefaultFullHttpRequest</a> upgradeRequest =
+<a class="jxr_linenumber" name="142" href="#142">142</a>                     <strong class="jxr_keyword">new</strong> <a href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html">DefaultFullHttpRequest</a>(HttpVersion.HTTP_1_1, HttpMethod.GET, <span class="jxr_string">"/"</span>, Unpooled.EMPTY_BUFFER);
+<a class="jxr_linenumber" name="143" href="#143">143</a> 
+<a class="jxr_linenumber" name="144" href="#144">144</a>             <em class="jxr_comment">// Set HOST header as the remote peer may require it.</em>
+<a class="jxr_linenumber" name="145" href="#145">145</a>             InetSocketAddress remote = (InetSocketAddress) ctx.channel().remoteAddress();
+<a class="jxr_linenumber" name="146" href="#146">146</a>             String hostString = remote.getHostString();
+<a class="jxr_linenumber" name="147" href="#147">147</a>             <strong class="jxr_keyword">if</strong> (hostString == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="148" href="#148">148</a>                 hostString = remote.getAddress().getHostAddress();
+<a class="jxr_linenumber" name="149" href="#149">149</a>             }
+<a class="jxr_linenumber" name="150" href="#150">150</a>             upgradeRequest.headers().set(HttpHeaderNames.HOST, hostString + ':' + remote.getPort());
+<a class="jxr_linenumber" name="151" href="#151">151</a> 
+<a class="jxr_linenumber" name="152" href="#152">152</a>             ctx.writeAndFlush(upgradeRequest);
+<a class="jxr_linenumber" name="153" href="#153">153</a> 
+<a class="jxr_linenumber" name="154" href="#154">154</a>             ctx.fireChannelActive();
+<a class="jxr_linenumber" name="155" href="#155">155</a> 
+<a class="jxr_linenumber" name="156" href="#156">156</a>             <em class="jxr_comment">// Done with this handler, remove it from the pipeline.</em>
+<a class="jxr_linenumber" name="157" href="#157">157</a>             ctx.pipeline().remove(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="158" href="#158">158</a> 
+<a class="jxr_linenumber" name="159" href="#159">159</a>             configureEndOfPipeline(ctx.pipeline());
+<a class="jxr_linenumber" name="160" href="#160">160</a>         }
+<a class="jxr_linenumber" name="161" href="#161">161</a>     }
+<a class="jxr_linenumber" name="162" href="#162">162</a> 
+<a class="jxr_linenumber" name="163" href="#163">163</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="164" href="#164">164</a> <em class="jxr_javadoccomment">     * Class that logs any User Events triggered on this channel.</em>
+<a class="jxr_linenumber" name="165" href="#165">165</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="166" href="#166">166</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../../../io/netty/example/http2/helloworld/client/Http2ClientInitializer.html">UserEventLogger</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../../../io/netty/channel/ChannelInboundHandlerAdapter.html">ChannelInboundHandlerAdapter</a> {
+<a class="jxr_linenumber" name="167" href="#167">167</a>         @Override
+<a class="jxr_linenumber" name="168" href="#168">168</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a href="../../../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="169" href="#169">169</a>             System.out.println(<span class="jxr_string">"User Event Triggered: "</span> + evt);
+<a class="jxr_linenumber" name="170" href="#170">170</a>             ctx.fireUserEventTriggered(evt);
+<a class="jxr_linenumber" name="171" href="#171">171</a>         }
+<a class="jxr_linenumber" name="172" href="#172">172</a>     }
+<a class="jxr_linenumber" name="173" href="#173">173</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
