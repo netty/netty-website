@@ -5,7 +5,7 @@ gem 'haml', '~> 5.1.2'
 gem 'rdiscount', '~> 2.1.8'
 gem 'htmlcompressor', '~> 0.3.0'
 gem 'uglifier', '~> 2.7.2'
-gem 'therubyracer', '~> 0.12.2'
+gem 'mini_racer', '~> 0.2.9'
 gem 'coffee-rails', '~> 4.1.1'
 
 gem 'eventmachine', '~> 1.2.7'
