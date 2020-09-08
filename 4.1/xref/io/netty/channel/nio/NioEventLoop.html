@@ -748,84 +748,86 @@
 <a class="jxr_linenumber" name="738" href="#738">738</a>                     invokeChannelUnregistered(task, k, <strong class="jxr_keyword">null</strong>);
 <a class="jxr_linenumber" name="739" href="#739">739</a>                 }
 <a class="jxr_linenumber" name="740" href="#740">740</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="741" href="#741">741</a>             }
-<a class="jxr_linenumber" name="742" href="#742">742</a>         }
-<a class="jxr_linenumber" name="743" href="#743">743</a>     }
-<a class="jxr_linenumber" name="744" href="#744">744</a> 
-<a class="jxr_linenumber" name="745" href="#745">745</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeAll() {
-<a class="jxr_linenumber" name="746" href="#746">746</a>         selectAgain();
-<a class="jxr_linenumber" name="747" href="#747">747</a>         Set&lt;SelectionKey&gt; keys = selector.keys();
-<a class="jxr_linenumber" name="748" href="#748">748</a>         Collection&lt;AbstractNioChannel&gt; channels = <strong class="jxr_keyword">new</strong> ArrayList&lt;AbstractNioChannel&gt;(keys.size());
-<a class="jxr_linenumber" name="749" href="#749">749</a>         <strong class="jxr_keyword">for</strong> (SelectionKey k: keys) {
-<a class="jxr_linenumber" name="750" href="#750">750</a>             Object a = k.attachment();
-<a class="jxr_linenumber" name="751" href="#751">751</a>             <strong class="jxr_keyword">if</strong> (a instanceof AbstractNioChannel) {
-<a class="jxr_linenumber" name="752" href="#752">752</a>                 channels.add((AbstractNioChannel) a);
-<a class="jxr_linenumber" name="753" href="#753">753</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="754" href="#754">754</a>                 k.cancel();
-<a class="jxr_linenumber" name="755" href="#755">755</a>                 @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="756" href="#756">756</a>                 NioTask&lt;SelectableChannel&gt; task = (NioTask&lt;SelectableChannel&gt;) a;
-<a class="jxr_linenumber" name="757" href="#757">757</a>                 invokeChannelUnregistered(task, k, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="758" href="#758">758</a>             }
-<a class="jxr_linenumber" name="759" href="#759">759</a>         }
-<a class="jxr_linenumber" name="760" href="#760">760</a> 
-<a class="jxr_linenumber" name="761" href="#761">761</a>         <strong class="jxr_keyword">for</strong> (AbstractNioChannel ch: channels) {
-<a class="jxr_linenumber" name="762" href="#762">762</a>             ch.unsafe().close(ch.unsafe().voidPromise());
-<a class="jxr_linenumber" name="763" href="#763">763</a>         }
-<a class="jxr_linenumber" name="764" href="#764">764</a>     }
-<a class="jxr_linenumber" name="765" href="#765">765</a> 
-<a class="jxr_linenumber" name="766" href="#766">766</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> invokeChannelUnregistered(NioTask&lt;SelectableChannel&gt; task, SelectionKey k, Throwable cause) {
-<a class="jxr_linenumber" name="767" href="#767">767</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="768" href="#768">768</a>             task.channelUnregistered(k.channel(), cause);
-<a class="jxr_linenumber" name="769" href="#769">769</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="770" href="#770">770</a>             logger.warn(<span class="jxr_string">"Unexpected exception while running NioTask.channelUnregistered()"</span>, e);
-<a class="jxr_linenumber" name="771" href="#771">771</a>         }
-<a class="jxr_linenumber" name="772" href="#772">772</a>     }
-<a class="jxr_linenumber" name="773" href="#773">773</a> 
-<a class="jxr_linenumber" name="774" href="#774">774</a>     @Override
-<a class="jxr_linenumber" name="775" href="#775">775</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> wakeup(<strong class="jxr_keyword">boolean</strong> inEventLoop) {
-<a class="jxr_linenumber" name="776" href="#776">776</a>         <strong class="jxr_keyword">if</strong> (!inEventLoop &amp;&amp; nextWakeupNanos.getAndSet(AWAKE) != AWAKE) {
-<a class="jxr_linenumber" name="777" href="#777">777</a>             selector.wakeup();
-<a class="jxr_linenumber" name="778" href="#778">778</a>         }
-<a class="jxr_linenumber" name="779" href="#779">779</a>     }
-<a class="jxr_linenumber" name="780" href="#780">780</a> 
-<a class="jxr_linenumber" name="781" href="#781">781</a>     @Override
-<a class="jxr_linenumber" name="782" href="#782">782</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> beforeScheduledTaskSubmitted(<strong class="jxr_keyword">long</strong> deadlineNanos) {
-<a class="jxr_linenumber" name="783" href="#783">783</a>         <em class="jxr_comment">// Note this is also correct for the nextWakeupNanos == -1 (AWAKE) case</em>
-<a class="jxr_linenumber" name="784" href="#784">784</a>         <strong class="jxr_keyword">return</strong> deadlineNanos &lt; nextWakeupNanos.get();
-<a class="jxr_linenumber" name="785" href="#785">785</a>     }
-<a class="jxr_linenumber" name="786" href="#786">786</a> 
-<a class="jxr_linenumber" name="787" href="#787">787</a>     @Override
-<a class="jxr_linenumber" name="788" href="#788">788</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> afterScheduledTaskSubmitted(<strong class="jxr_keyword">long</strong> deadlineNanos) {
-<a class="jxr_linenumber" name="789" href="#789">789</a>         <em class="jxr_comment">// Note this is also correct for the nextWakeupNanos == -1 (AWAKE) case</em>
-<a class="jxr_linenumber" name="790" href="#790">790</a>         <strong class="jxr_keyword">return</strong> deadlineNanos &lt; nextWakeupNanos.get();
-<a class="jxr_linenumber" name="791" href="#791">791</a>     }
-<a class="jxr_linenumber" name="792" href="#792">792</a> 
-<a class="jxr_linenumber" name="793" href="#793">793</a>     Selector unwrappedSelector() {
-<a class="jxr_linenumber" name="794" href="#794">794</a>         <strong class="jxr_keyword">return</strong> unwrappedSelector;
-<a class="jxr_linenumber" name="795" href="#795">795</a>     }
-<a class="jxr_linenumber" name="796" href="#796">796</a> 
-<a class="jxr_linenumber" name="797" href="#797">797</a>     <strong class="jxr_keyword">int</strong> selectNow() <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="798" href="#798">798</a>         <strong class="jxr_keyword">return</strong> selector.selectNow();
-<a class="jxr_linenumber" name="799" href="#799">799</a>     }
-<a class="jxr_linenumber" name="800" href="#800">800</a> 
-<a class="jxr_linenumber" name="801" href="#801">801</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> select(<strong class="jxr_keyword">long</strong> deadlineNanos) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="802" href="#802">802</a>         <strong class="jxr_keyword">if</strong> (deadlineNanos == NONE) {
-<a class="jxr_linenumber" name="803" href="#803">803</a>             <strong class="jxr_keyword">return</strong> selector.select();
-<a class="jxr_linenumber" name="804" href="#804">804</a>         }
-<a class="jxr_linenumber" name="805" href="#805">805</a>         <em class="jxr_comment">// Timeout will only be 0 if deadline is within 5 microsecs</em>
-<a class="jxr_linenumber" name="806" href="#806">806</a>         <strong class="jxr_keyword">long</strong> timeoutMillis = deadlineToDelayNanos(deadlineNanos + 995000L) / 1000000L;
-<a class="jxr_linenumber" name="807" href="#807">807</a>         <strong class="jxr_keyword">return</strong> timeoutMillis &lt;= 0 ? selector.selectNow() : selector.select(timeoutMillis);
-<a class="jxr_linenumber" name="808" href="#808">808</a>     }
-<a class="jxr_linenumber" name="809" href="#809">809</a> 
-<a class="jxr_linenumber" name="810" href="#810">810</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> selectAgain() {
-<a class="jxr_linenumber" name="811" href="#811">811</a>         needsToSelectAgain = false;
-<a class="jxr_linenumber" name="812" href="#812">812</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="813" href="#813">813</a>             selector.selectNow();
-<a class="jxr_linenumber" name="814" href="#814">814</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="815" href="#815">815</a>             logger.warn(<span class="jxr_string">"Failed to update SelectionKeys."</span>, t);
-<a class="jxr_linenumber" name="816" href="#816">816</a>         }
-<a class="jxr_linenumber" name="817" href="#817">817</a>     }
-<a class="jxr_linenumber" name="818" href="#818">818</a> }
+<a class="jxr_linenumber" name="741" href="#741">741</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="742" href="#742">742</a>                  <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="743" href="#743">743</a>             }
+<a class="jxr_linenumber" name="744" href="#744">744</a>         }
+<a class="jxr_linenumber" name="745" href="#745">745</a>     }
+<a class="jxr_linenumber" name="746" href="#746">746</a> 
+<a class="jxr_linenumber" name="747" href="#747">747</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeAll() {
+<a class="jxr_linenumber" name="748" href="#748">748</a>         selectAgain();
+<a class="jxr_linenumber" name="749" href="#749">749</a>         Set&lt;SelectionKey&gt; keys = selector.keys();
+<a class="jxr_linenumber" name="750" href="#750">750</a>         Collection&lt;AbstractNioChannel&gt; channels = <strong class="jxr_keyword">new</strong> ArrayList&lt;AbstractNioChannel&gt;(keys.size());
+<a class="jxr_linenumber" name="751" href="#751">751</a>         <strong class="jxr_keyword">for</strong> (SelectionKey k: keys) {
+<a class="jxr_linenumber" name="752" href="#752">752</a>             Object a = k.attachment();
+<a class="jxr_linenumber" name="753" href="#753">753</a>             <strong class="jxr_keyword">if</strong> (a instanceof AbstractNioChannel) {
+<a class="jxr_linenumber" name="754" href="#754">754</a>                 channels.add((AbstractNioChannel) a);
+<a class="jxr_linenumber" name="755" href="#755">755</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="756" href="#756">756</a>                 k.cancel();
+<a class="jxr_linenumber" name="757" href="#757">757</a>                 @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="758" href="#758">758</a>                 NioTask&lt;SelectableChannel&gt; task = (NioTask&lt;SelectableChannel&gt;) a;
+<a class="jxr_linenumber" name="759" href="#759">759</a>                 invokeChannelUnregistered(task, k, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="760" href="#760">760</a>             }
+<a class="jxr_linenumber" name="761" href="#761">761</a>         }
+<a class="jxr_linenumber" name="762" href="#762">762</a> 
+<a class="jxr_linenumber" name="763" href="#763">763</a>         <strong class="jxr_keyword">for</strong> (AbstractNioChannel ch: channels) {
+<a class="jxr_linenumber" name="764" href="#764">764</a>             ch.unsafe().close(ch.unsafe().voidPromise());
+<a class="jxr_linenumber" name="765" href="#765">765</a>         }
+<a class="jxr_linenumber" name="766" href="#766">766</a>     }
+<a class="jxr_linenumber" name="767" href="#767">767</a> 
+<a class="jxr_linenumber" name="768" href="#768">768</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> invokeChannelUnregistered(NioTask&lt;SelectableChannel&gt; task, SelectionKey k, Throwable cause) {
+<a class="jxr_linenumber" name="769" href="#769">769</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="770" href="#770">770</a>             task.channelUnregistered(k.channel(), cause);
+<a class="jxr_linenumber" name="771" href="#771">771</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="772" href="#772">772</a>             logger.warn(<span class="jxr_string">"Unexpected exception while running NioTask.channelUnregistered()"</span>, e);
+<a class="jxr_linenumber" name="773" href="#773">773</a>         }
+<a class="jxr_linenumber" name="774" href="#774">774</a>     }
+<a class="jxr_linenumber" name="775" href="#775">775</a> 
+<a class="jxr_linenumber" name="776" href="#776">776</a>     @Override
+<a class="jxr_linenumber" name="777" href="#777">777</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> wakeup(<strong class="jxr_keyword">boolean</strong> inEventLoop) {
+<a class="jxr_linenumber" name="778" href="#778">778</a>         <strong class="jxr_keyword">if</strong> (!inEventLoop &amp;&amp; nextWakeupNanos.getAndSet(AWAKE) != AWAKE) {
+<a class="jxr_linenumber" name="779" href="#779">779</a>             selector.wakeup();
+<a class="jxr_linenumber" name="780" href="#780">780</a>         }
+<a class="jxr_linenumber" name="781" href="#781">781</a>     }
+<a class="jxr_linenumber" name="782" href="#782">782</a> 
+<a class="jxr_linenumber" name="783" href="#783">783</a>     @Override
+<a class="jxr_linenumber" name="784" href="#784">784</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> beforeScheduledTaskSubmitted(<strong class="jxr_keyword">long</strong> deadlineNanos) {
+<a class="jxr_linenumber" name="785" href="#785">785</a>         <em class="jxr_comment">// Note this is also correct for the nextWakeupNanos == -1 (AWAKE) case</em>
+<a class="jxr_linenumber" name="786" href="#786">786</a>         <strong class="jxr_keyword">return</strong> deadlineNanos &lt; nextWakeupNanos.get();
+<a class="jxr_linenumber" name="787" href="#787">787</a>     }
+<a class="jxr_linenumber" name="788" href="#788">788</a> 
+<a class="jxr_linenumber" name="789" href="#789">789</a>     @Override
+<a class="jxr_linenumber" name="790" href="#790">790</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> afterScheduledTaskSubmitted(<strong class="jxr_keyword">long</strong> deadlineNanos) {
+<a class="jxr_linenumber" name="791" href="#791">791</a>         <em class="jxr_comment">// Note this is also correct for the nextWakeupNanos == -1 (AWAKE) case</em>
+<a class="jxr_linenumber" name="792" href="#792">792</a>         <strong class="jxr_keyword">return</strong> deadlineNanos &lt; nextWakeupNanos.get();
+<a class="jxr_linenumber" name="793" href="#793">793</a>     }
+<a class="jxr_linenumber" name="794" href="#794">794</a> 
+<a class="jxr_linenumber" name="795" href="#795">795</a>     Selector unwrappedSelector() {
+<a class="jxr_linenumber" name="796" href="#796">796</a>         <strong class="jxr_keyword">return</strong> unwrappedSelector;
+<a class="jxr_linenumber" name="797" href="#797">797</a>     }
+<a class="jxr_linenumber" name="798" href="#798">798</a> 
+<a class="jxr_linenumber" name="799" href="#799">799</a>     <strong class="jxr_keyword">int</strong> selectNow() <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="800" href="#800">800</a>         <strong class="jxr_keyword">return</strong> selector.selectNow();
+<a class="jxr_linenumber" name="801" href="#801">801</a>     }
+<a class="jxr_linenumber" name="802" href="#802">802</a> 
+<a class="jxr_linenumber" name="803" href="#803">803</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> select(<strong class="jxr_keyword">long</strong> deadlineNanos) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="804" href="#804">804</a>         <strong class="jxr_keyword">if</strong> (deadlineNanos == NONE) {
+<a class="jxr_linenumber" name="805" href="#805">805</a>             <strong class="jxr_keyword">return</strong> selector.select();
+<a class="jxr_linenumber" name="806" href="#806">806</a>         }
+<a class="jxr_linenumber" name="807" href="#807">807</a>         <em class="jxr_comment">// Timeout will only be 0 if deadline is within 5 microsecs</em>
+<a class="jxr_linenumber" name="808" href="#808">808</a>         <strong class="jxr_keyword">long</strong> timeoutMillis = deadlineToDelayNanos(deadlineNanos + 995000L) / 1000000L;
+<a class="jxr_linenumber" name="809" href="#809">809</a>         <strong class="jxr_keyword">return</strong> timeoutMillis &lt;= 0 ? selector.selectNow() : selector.select(timeoutMillis);
+<a class="jxr_linenumber" name="810" href="#810">810</a>     }
+<a class="jxr_linenumber" name="811" href="#811">811</a> 
+<a class="jxr_linenumber" name="812" href="#812">812</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> selectAgain() {
+<a class="jxr_linenumber" name="813" href="#813">813</a>         needsToSelectAgain = false;
+<a class="jxr_linenumber" name="814" href="#814">814</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="815" href="#815">815</a>             selector.selectNow();
+<a class="jxr_linenumber" name="816" href="#816">816</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="817" href="#817">817</a>             logger.warn(<span class="jxr_string">"Failed to update SelectionKeys."</span>, t);
+<a class="jxr_linenumber" name="818" href="#818">818</a>         }
+<a class="jxr_linenumber" name="819" href="#819">819</a>     }
+<a class="jxr_linenumber" name="820" href="#820">820</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
