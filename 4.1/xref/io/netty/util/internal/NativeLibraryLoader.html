@@ -15,7 +15,7 @@
 <a class="jxr_linenumber" name="5" href="#5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
 <a class="jxr_linenumber" name="6" href="#6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
 <a class="jxr_linenumber" name="7" href="#7">7</a>   <em class="jxr_comment"> *</em>
-<a class="jxr_linenumber" name="8" href="#8">8</a>   <em class="jxr_comment"> *   <a href="http://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">http://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="8" href="#8">8</a>   <em class="jxr_comment"> *   https://www.apache.org/licenses/LICENSE-2.0</em>
 <a class="jxr_linenumber" name="9" href="#9">9</a>   <em class="jxr_comment"> *</em>
 <a class="jxr_linenumber" name="10" href="#10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
 <a class="jxr_linenumber" name="11" href="#11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
@@ -360,180 +360,194 @@
 <a class="jxr_linenumber" name="350" href="#350">350</a>             }
 <a class="jxr_linenumber" name="351" href="#351">351</a>             NativeLibraryUtil.loadLibrary(name, absolute);  <em class="jxr_comment">// Fallback to local helper class.</em>
 <a class="jxr_linenumber" name="352" href="#352">352</a>             logger.debug(<span class="jxr_string">"Successfully loaded the library {}"</span>, name);
-<a class="jxr_linenumber" name="353" href="#353">353</a>         } <strong class="jxr_keyword">catch</strong> (UnsatisfiedLinkError ule) {
+<a class="jxr_linenumber" name="353" href="#353">353</a>         } <strong class="jxr_keyword">catch</strong> (NoSuchMethodError nsme) {
 <a class="jxr_linenumber" name="354" href="#354">354</a>             <strong class="jxr_keyword">if</strong> (suppressed != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="355" href="#355">355</a>                 ThrowableUtil.addSuppressed(ule, suppressed);
+<a class="jxr_linenumber" name="355" href="#355">355</a>                 ThrowableUtil.addSuppressed(nsme, suppressed);
 <a class="jxr_linenumber" name="356" href="#356">356</a>             }
-<a class="jxr_linenumber" name="357" href="#357">357</a>             <strong class="jxr_keyword">throw</strong> ule;
-<a class="jxr_linenumber" name="358" href="#358">358</a>         }
-<a class="jxr_linenumber" name="359" href="#359">359</a>     }
-<a class="jxr_linenumber" name="360" href="#360">360</a> 
-<a class="jxr_linenumber" name="361" href="#361">361</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> loadLibraryByHelper(<strong class="jxr_keyword">final</strong> Class&lt;?&gt; helper, <strong class="jxr_keyword">final</strong> String name, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> absolute)
-<a class="jxr_linenumber" name="362" href="#362">362</a>             <strong class="jxr_keyword">throws</strong> UnsatisfiedLinkError {
-<a class="jxr_linenumber" name="363" href="#363">363</a>         Object ret = AccessController.doPrivileged(<strong class="jxr_keyword">new</strong> PrivilegedAction&lt;Object&gt;() {
-<a class="jxr_linenumber" name="364" href="#364">364</a>             @Override
-<a class="jxr_linenumber" name="365" href="#365">365</a>             <strong class="jxr_keyword">public</strong> Object run() {
-<a class="jxr_linenumber" name="366" href="#366">366</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="367" href="#367">367</a>                     <em class="jxr_comment">// Invoke the helper to load the native library, if succeed, then the native</em>
-<a class="jxr_linenumber" name="368" href="#368">368</a>                     <em class="jxr_comment">// library belong to the specified ClassLoader.</em>
-<a class="jxr_linenumber" name="369" href="#369">369</a>                     Method method = helper.getMethod(<span class="jxr_string">"loadLibrary"</span>, String.<strong class="jxr_keyword">class</strong>, <strong class="jxr_keyword">boolean</strong>.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="370" href="#370">370</a>                     method.setAccessible(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="371" href="#371">371</a>                     <strong class="jxr_keyword">return</strong> method.invoke(<strong class="jxr_keyword">null</strong>, name, absolute);
-<a class="jxr_linenumber" name="372" href="#372">372</a>                 } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="373" href="#373">373</a>                     <strong class="jxr_keyword">return</strong> e;
-<a class="jxr_linenumber" name="374" href="#374">374</a>                 }
-<a class="jxr_linenumber" name="375" href="#375">375</a>             }
-<a class="jxr_linenumber" name="376" href="#376">376</a>         });
-<a class="jxr_linenumber" name="377" href="#377">377</a>         <strong class="jxr_keyword">if</strong> (ret instanceof Throwable) {
-<a class="jxr_linenumber" name="378" href="#378">378</a>             Throwable t = (Throwable) ret;
-<a class="jxr_linenumber" name="379" href="#379">379</a>             assert !(t instanceof UnsatisfiedLinkError) : t + <span class="jxr_string">" should be a wrapper throwable"</span>;
-<a class="jxr_linenumber" name="380" href="#380">380</a>             Throwable cause = t.getCause();
-<a class="jxr_linenumber" name="381" href="#381">381</a>             <strong class="jxr_keyword">if</strong> (cause instanceof UnsatisfiedLinkError) {
-<a class="jxr_linenumber" name="382" href="#382">382</a>                 <strong class="jxr_keyword">throw</strong> (UnsatisfiedLinkError) cause;
-<a class="jxr_linenumber" name="383" href="#383">383</a>             }
-<a class="jxr_linenumber" name="384" href="#384">384</a>             UnsatisfiedLinkError ule = <strong class="jxr_keyword">new</strong> UnsatisfiedLinkError(t.getMessage());
-<a class="jxr_linenumber" name="385" href="#385">385</a>             ule.initCause(t);
-<a class="jxr_linenumber" name="386" href="#386">386</a>             <strong class="jxr_keyword">throw</strong> ule;
-<a class="jxr_linenumber" name="387" href="#387">387</a>         }
-<a class="jxr_linenumber" name="388" href="#388">388</a>     }
-<a class="jxr_linenumber" name="389" href="#389">389</a> 
-<a class="jxr_linenumber" name="390" href="#390">390</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="391" href="#391">391</a> <em class="jxr_javadoccomment">     * Try to load the helper {@link Class} into specified {@link ClassLoader}.</em>
-<a class="jxr_linenumber" name="392" href="#392">392</a> <em class="jxr_javadoccomment">     * @param loader - The {@link ClassLoader} where to load the helper {@link Class}</em>
-<a class="jxr_linenumber" name="393" href="#393">393</a> <em class="jxr_javadoccomment">     * @param helper - The helper {@link Class}</em>
-<a class="jxr_linenumber" name="394" href="#394">394</a> <em class="jxr_javadoccomment">     * @return A new helper Class defined in the specified ClassLoader.</em>
-<a class="jxr_linenumber" name="395" href="#395">395</a> <em class="jxr_javadoccomment">     * @throws ClassNotFoundException Helper class not found or loading failed</em>
-<a class="jxr_linenumber" name="396" href="#396">396</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="397" href="#397">397</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Class&lt;?&gt; tryToLoadClass(<strong class="jxr_keyword">final</strong> ClassLoader loader, <strong class="jxr_keyword">final</strong> Class&lt;?&gt; helper)
-<a class="jxr_linenumber" name="398" href="#398">398</a>             <strong class="jxr_keyword">throws</strong> ClassNotFoundException {
-<a class="jxr_linenumber" name="399" href="#399">399</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="400" href="#400">400</a>             <strong class="jxr_keyword">return</strong> Class.forName(helper.getName(), false, loader);
-<a class="jxr_linenumber" name="401" href="#401">401</a>         } <strong class="jxr_keyword">catch</strong> (ClassNotFoundException e1) {
-<a class="jxr_linenumber" name="402" href="#402">402</a>             <strong class="jxr_keyword">if</strong> (loader == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="403" href="#403">403</a>                 <em class="jxr_comment">// cannot defineClass inside bootstrap class loader</em>
-<a class="jxr_linenumber" name="404" href="#404">404</a>                 <strong class="jxr_keyword">throw</strong> e1;
-<a class="jxr_linenumber" name="405" href="#405">405</a>             }
-<a class="jxr_linenumber" name="406" href="#406">406</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="407" href="#407">407</a>                 <em class="jxr_comment">// The helper class is NOT found in target ClassLoader, we have to define the helper class.</em>
-<a class="jxr_linenumber" name="408" href="#408">408</a>                 <strong class="jxr_keyword">final</strong> byte[] classBinary = classToByteArray(helper);
-<a class="jxr_linenumber" name="409" href="#409">409</a>                 <strong class="jxr_keyword">return</strong> AccessController.doPrivileged(<strong class="jxr_keyword">new</strong> PrivilegedAction&lt;Class&lt;?&gt;&gt;() {
-<a class="jxr_linenumber" name="410" href="#410">410</a>                     @Override
-<a class="jxr_linenumber" name="411" href="#411">411</a>                     <strong class="jxr_keyword">public</strong> Class&lt;?&gt; run() {
-<a class="jxr_linenumber" name="412" href="#412">412</a>                         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="413" href="#413">413</a>                             <em class="jxr_comment">// Define the helper class in the target ClassLoader,</em>
-<a class="jxr_linenumber" name="414" href="#414">414</a>                             <em class="jxr_comment">//  then we can call the helper to load the native library.</em>
-<a class="jxr_linenumber" name="415" href="#415">415</a>                             Method defineClass = ClassLoader.<strong class="jxr_keyword">class</strong>.getDeclaredMethod(<span class="jxr_string">"defineClass"</span>, String.<strong class="jxr_keyword">class</strong>,
-<a class="jxr_linenumber" name="416" href="#416">416</a>                                     byte[].<strong class="jxr_keyword">class</strong>, <strong class="jxr_keyword">int</strong>.<strong class="jxr_keyword">class</strong>, <strong class="jxr_keyword">int</strong>.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="417" href="#417">417</a>                             defineClass.setAccessible(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="418" href="#418">418</a>                             <strong class="jxr_keyword">return</strong> (Class&lt;?&gt;) defineClass.invoke(loader, helper.getName(), classBinary, 0,
-<a class="jxr_linenumber" name="419" href="#419">419</a>                                     classBinary.length);
-<a class="jxr_linenumber" name="420" href="#420">420</a>                         } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="421" href="#421">421</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"Define class failed!"</span>, e);
-<a class="jxr_linenumber" name="422" href="#422">422</a>                         }
-<a class="jxr_linenumber" name="423" href="#423">423</a>                     }
-<a class="jxr_linenumber" name="424" href="#424">424</a>                 });
-<a class="jxr_linenumber" name="425" href="#425">425</a>             } <strong class="jxr_keyword">catch</strong> (ClassNotFoundException e2) {
-<a class="jxr_linenumber" name="426" href="#426">426</a>                 ThrowableUtil.addSuppressed(e2, e1);
-<a class="jxr_linenumber" name="427" href="#427">427</a>                 <strong class="jxr_keyword">throw</strong> e2;
-<a class="jxr_linenumber" name="428" href="#428">428</a>             } <strong class="jxr_keyword">catch</strong> (RuntimeException e2) {
-<a class="jxr_linenumber" name="429" href="#429">429</a>                 ThrowableUtil.addSuppressed(e2, e1);
-<a class="jxr_linenumber" name="430" href="#430">430</a>                 <strong class="jxr_keyword">throw</strong> e2;
-<a class="jxr_linenumber" name="431" href="#431">431</a>             } <strong class="jxr_keyword">catch</strong> (Error e2) {
-<a class="jxr_linenumber" name="432" href="#432">432</a>                 ThrowableUtil.addSuppressed(e2, e1);
-<a class="jxr_linenumber" name="433" href="#433">433</a>                 <strong class="jxr_keyword">throw</strong> e2;
-<a class="jxr_linenumber" name="434" href="#434">434</a>             }
-<a class="jxr_linenumber" name="435" href="#435">435</a>         }
-<a class="jxr_linenumber" name="436" href="#436">436</a>     }
-<a class="jxr_linenumber" name="437" href="#437">437</a> 
-<a class="jxr_linenumber" name="438" href="#438">438</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="439" href="#439">439</a> <em class="jxr_javadoccomment">     * Load the helper {@link Class} as a byte array, to be redefined in specified {@link ClassLoader}.</em>
-<a class="jxr_linenumber" name="440" href="#440">440</a> <em class="jxr_javadoccomment">     * @param clazz - The helper {@link Class} provided by this bundle</em>
-<a class="jxr_linenumber" name="441" href="#441">441</a> <em class="jxr_javadoccomment">     * @return The binary content of helper {@link Class}.</em>
-<a class="jxr_linenumber" name="442" href="#442">442</a> <em class="jxr_javadoccomment">     * @throws ClassNotFoundException Helper class not found or loading failed</em>
-<a class="jxr_linenumber" name="443" href="#443">443</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="444" href="#444">444</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte[] classToByteArray(Class&lt;?&gt; clazz) <strong class="jxr_keyword">throws</strong> ClassNotFoundException {
-<a class="jxr_linenumber" name="445" href="#445">445</a>         String fileName = clazz.getName();
-<a class="jxr_linenumber" name="446" href="#446">446</a>         <strong class="jxr_keyword">int</strong> lastDot = fileName.lastIndexOf('.');
-<a class="jxr_linenumber" name="447" href="#447">447</a>         <strong class="jxr_keyword">if</strong> (lastDot &gt; 0) {
-<a class="jxr_linenumber" name="448" href="#448">448</a>             fileName = fileName.substring(lastDot + 1);
+<a class="jxr_linenumber" name="357" href="#357">357</a>             rethrowWithMoreDetailsIfPossible(name, nsme);
+<a class="jxr_linenumber" name="358" href="#358">358</a>         } <strong class="jxr_keyword">catch</strong> (UnsatisfiedLinkError ule) {
+<a class="jxr_linenumber" name="359" href="#359">359</a>             <strong class="jxr_keyword">if</strong> (suppressed != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="360" href="#360">360</a>                 ThrowableUtil.addSuppressed(ule, suppressed);
+<a class="jxr_linenumber" name="361" href="#361">361</a>             }
+<a class="jxr_linenumber" name="362" href="#362">362</a>             <strong class="jxr_keyword">throw</strong> ule;
+<a class="jxr_linenumber" name="363" href="#363">363</a>         }
+<a class="jxr_linenumber" name="364" href="#364">364</a>     }
+<a class="jxr_linenumber" name="365" href="#365">365</a> 
+<a class="jxr_linenumber" name="366" href="#366">366</a>     @SuppressJava6Requirement(reason = <span class="jxr_string">"Guarded by version check"</span>)
+<a class="jxr_linenumber" name="367" href="#367">367</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> rethrowWithMoreDetailsIfPossible(String name, NoSuchMethodError error) {
+<a class="jxr_linenumber" name="368" href="#368">368</a>         <strong class="jxr_keyword">if</strong> (PlatformDependent.javaVersion() &gt;= 7) {
+<a class="jxr_linenumber" name="369" href="#369">369</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> LinkageError(
+<a class="jxr_linenumber" name="370" href="#370">370</a>                     <span class="jxr_string">"Possible multiple incompatible native libraries on the classpath for '"</span> + name + <span class="jxr_string">"'?"</span>, error);
+<a class="jxr_linenumber" name="371" href="#371">371</a>         }
+<a class="jxr_linenumber" name="372" href="#372">372</a>         <strong class="jxr_keyword">throw</strong> error;
+<a class="jxr_linenumber" name="373" href="#373">373</a>     }
+<a class="jxr_linenumber" name="374" href="#374">374</a> 
+<a class="jxr_linenumber" name="375" href="#375">375</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> loadLibraryByHelper(<strong class="jxr_keyword">final</strong> Class&lt;?&gt; helper, <strong class="jxr_keyword">final</strong> String name, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> absolute)
+<a class="jxr_linenumber" name="376" href="#376">376</a>             <strong class="jxr_keyword">throws</strong> UnsatisfiedLinkError {
+<a class="jxr_linenumber" name="377" href="#377">377</a>         Object ret = AccessController.doPrivileged(<strong class="jxr_keyword">new</strong> PrivilegedAction&lt;Object&gt;() {
+<a class="jxr_linenumber" name="378" href="#378">378</a>             @Override
+<a class="jxr_linenumber" name="379" href="#379">379</a>             <strong class="jxr_keyword">public</strong> Object run() {
+<a class="jxr_linenumber" name="380" href="#380">380</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="381" href="#381">381</a>                     <em class="jxr_comment">// Invoke the helper to load the native library, if succeed, then the native</em>
+<a class="jxr_linenumber" name="382" href="#382">382</a>                     <em class="jxr_comment">// library belong to the specified ClassLoader.</em>
+<a class="jxr_linenumber" name="383" href="#383">383</a>                     Method method = helper.getMethod(<span class="jxr_string">"loadLibrary"</span>, String.<strong class="jxr_keyword">class</strong>, <strong class="jxr_keyword">boolean</strong>.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="384" href="#384">384</a>                     method.setAccessible(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="385" href="#385">385</a>                     <strong class="jxr_keyword">return</strong> method.invoke(<strong class="jxr_keyword">null</strong>, name, absolute);
+<a class="jxr_linenumber" name="386" href="#386">386</a>                 } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="387" href="#387">387</a>                     <strong class="jxr_keyword">return</strong> e;
+<a class="jxr_linenumber" name="388" href="#388">388</a>                 }
+<a class="jxr_linenumber" name="389" href="#389">389</a>             }
+<a class="jxr_linenumber" name="390" href="#390">390</a>         });
+<a class="jxr_linenumber" name="391" href="#391">391</a>         <strong class="jxr_keyword">if</strong> (ret instanceof Throwable) {
+<a class="jxr_linenumber" name="392" href="#392">392</a>             Throwable t = (Throwable) ret;
+<a class="jxr_linenumber" name="393" href="#393">393</a>             assert !(t instanceof UnsatisfiedLinkError) : t + <span class="jxr_string">" should be a wrapper throwable"</span>;
+<a class="jxr_linenumber" name="394" href="#394">394</a>             Throwable cause = t.getCause();
+<a class="jxr_linenumber" name="395" href="#395">395</a>             <strong class="jxr_keyword">if</strong> (cause instanceof UnsatisfiedLinkError) {
+<a class="jxr_linenumber" name="396" href="#396">396</a>                 <strong class="jxr_keyword">throw</strong> (UnsatisfiedLinkError) cause;
+<a class="jxr_linenumber" name="397" href="#397">397</a>             }
+<a class="jxr_linenumber" name="398" href="#398">398</a>             UnsatisfiedLinkError ule = <strong class="jxr_keyword">new</strong> UnsatisfiedLinkError(t.getMessage());
+<a class="jxr_linenumber" name="399" href="#399">399</a>             ule.initCause(t);
+<a class="jxr_linenumber" name="400" href="#400">400</a>             <strong class="jxr_keyword">throw</strong> ule;
+<a class="jxr_linenumber" name="401" href="#401">401</a>         }
+<a class="jxr_linenumber" name="402" href="#402">402</a>     }
+<a class="jxr_linenumber" name="403" href="#403">403</a> 
+<a class="jxr_linenumber" name="404" href="#404">404</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="405" href="#405">405</a> <em class="jxr_javadoccomment">     * Try to load the helper {@link Class} into specified {@link ClassLoader}.</em>
+<a class="jxr_linenumber" name="406" href="#406">406</a> <em class="jxr_javadoccomment">     * @param loader - The {@link ClassLoader} where to load the helper {@link Class}</em>
+<a class="jxr_linenumber" name="407" href="#407">407</a> <em class="jxr_javadoccomment">     * @param helper - The helper {@link Class}</em>
+<a class="jxr_linenumber" name="408" href="#408">408</a> <em class="jxr_javadoccomment">     * @return A new helper Class defined in the specified ClassLoader.</em>
+<a class="jxr_linenumber" name="409" href="#409">409</a> <em class="jxr_javadoccomment">     * @throws ClassNotFoundException Helper class not found or loading failed</em>
+<a class="jxr_linenumber" name="410" href="#410">410</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="411" href="#411">411</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Class&lt;?&gt; tryToLoadClass(<strong class="jxr_keyword">final</strong> ClassLoader loader, <strong class="jxr_keyword">final</strong> Class&lt;?&gt; helper)
+<a class="jxr_linenumber" name="412" href="#412">412</a>             <strong class="jxr_keyword">throws</strong> ClassNotFoundException {
+<a class="jxr_linenumber" name="413" href="#413">413</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="414" href="#414">414</a>             <strong class="jxr_keyword">return</strong> Class.forName(helper.getName(), false, loader);
+<a class="jxr_linenumber" name="415" href="#415">415</a>         } <strong class="jxr_keyword">catch</strong> (ClassNotFoundException e1) {
+<a class="jxr_linenumber" name="416" href="#416">416</a>             <strong class="jxr_keyword">if</strong> (loader == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="417" href="#417">417</a>                 <em class="jxr_comment">// cannot defineClass inside bootstrap class loader</em>
+<a class="jxr_linenumber" name="418" href="#418">418</a>                 <strong class="jxr_keyword">throw</strong> e1;
+<a class="jxr_linenumber" name="419" href="#419">419</a>             }
+<a class="jxr_linenumber" name="420" href="#420">420</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="421" href="#421">421</a>                 <em class="jxr_comment">// The helper class is NOT found in target ClassLoader, we have to define the helper class.</em>
+<a class="jxr_linenumber" name="422" href="#422">422</a>                 <strong class="jxr_keyword">final</strong> byte[] classBinary = classToByteArray(helper);
+<a class="jxr_linenumber" name="423" href="#423">423</a>                 <strong class="jxr_keyword">return</strong> AccessController.doPrivileged(<strong class="jxr_keyword">new</strong> PrivilegedAction&lt;Class&lt;?&gt;&gt;() {
+<a class="jxr_linenumber" name="424" href="#424">424</a>                     @Override
+<a class="jxr_linenumber" name="425" href="#425">425</a>                     <strong class="jxr_keyword">public</strong> Class&lt;?&gt; run() {
+<a class="jxr_linenumber" name="426" href="#426">426</a>                         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="427" href="#427">427</a>                             <em class="jxr_comment">// Define the helper class in the target ClassLoader,</em>
+<a class="jxr_linenumber" name="428" href="#428">428</a>                             <em class="jxr_comment">//  then we can call the helper to load the native library.</em>
+<a class="jxr_linenumber" name="429" href="#429">429</a>                             Method defineClass = ClassLoader.<strong class="jxr_keyword">class</strong>.getDeclaredMethod(<span class="jxr_string">"defineClass"</span>, String.<strong class="jxr_keyword">class</strong>,
+<a class="jxr_linenumber" name="430" href="#430">430</a>                                     byte[].<strong class="jxr_keyword">class</strong>, <strong class="jxr_keyword">int</strong>.<strong class="jxr_keyword">class</strong>, <strong class="jxr_keyword">int</strong>.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="431" href="#431">431</a>                             defineClass.setAccessible(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="432" href="#432">432</a>                             <strong class="jxr_keyword">return</strong> (Class&lt;?&gt;) defineClass.invoke(loader, helper.getName(), classBinary, 0,
+<a class="jxr_linenumber" name="433" href="#433">433</a>                                     classBinary.length);
+<a class="jxr_linenumber" name="434" href="#434">434</a>                         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="435" href="#435">435</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"Define class failed!"</span>, e);
+<a class="jxr_linenumber" name="436" href="#436">436</a>                         }
+<a class="jxr_linenumber" name="437" href="#437">437</a>                     }
+<a class="jxr_linenumber" name="438" href="#438">438</a>                 });
+<a class="jxr_linenumber" name="439" href="#439">439</a>             } <strong class="jxr_keyword">catch</strong> (ClassNotFoundException e2) {
+<a class="jxr_linenumber" name="440" href="#440">440</a>                 ThrowableUtil.addSuppressed(e2, e1);
+<a class="jxr_linenumber" name="441" href="#441">441</a>                 <strong class="jxr_keyword">throw</strong> e2;
+<a class="jxr_linenumber" name="442" href="#442">442</a>             } <strong class="jxr_keyword">catch</strong> (RuntimeException e2) {
+<a class="jxr_linenumber" name="443" href="#443">443</a>                 ThrowableUtil.addSuppressed(e2, e1);
+<a class="jxr_linenumber" name="444" href="#444">444</a>                 <strong class="jxr_keyword">throw</strong> e2;
+<a class="jxr_linenumber" name="445" href="#445">445</a>             } <strong class="jxr_keyword">catch</strong> (Error e2) {
+<a class="jxr_linenumber" name="446" href="#446">446</a>                 ThrowableUtil.addSuppressed(e2, e1);
+<a class="jxr_linenumber" name="447" href="#447">447</a>                 <strong class="jxr_keyword">throw</strong> e2;
+<a class="jxr_linenumber" name="448" href="#448">448</a>             }
 <a class="jxr_linenumber" name="449" href="#449">449</a>         }
-<a class="jxr_linenumber" name="450" href="#450">450</a>         URL classUrl = clazz.getResource(fileName + <span class="jxr_string">".class"</span>);
-<a class="jxr_linenumber" name="451" href="#451">451</a>         <strong class="jxr_keyword">if</strong> (classUrl == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="452" href="#452">452</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ClassNotFoundException(clazz.getName());
-<a class="jxr_linenumber" name="453" href="#453">453</a>         }
-<a class="jxr_linenumber" name="454" href="#454">454</a>         byte[] buf = <strong class="jxr_keyword">new</strong> byte[1024];
-<a class="jxr_linenumber" name="455" href="#455">455</a>         ByteArrayOutputStream out = <strong class="jxr_keyword">new</strong> ByteArrayOutputStream(4096);
-<a class="jxr_linenumber" name="456" href="#456">456</a>         InputStream in = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="457" href="#457">457</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="458" href="#458">458</a>             in = classUrl.openStream();
-<a class="jxr_linenumber" name="459" href="#459">459</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> r; (r = in.read(buf)) != -1;) {
-<a class="jxr_linenumber" name="460" href="#460">460</a>                 out.write(buf, 0, r);
-<a class="jxr_linenumber" name="461" href="#461">461</a>             }
-<a class="jxr_linenumber" name="462" href="#462">462</a>             <strong class="jxr_keyword">return</strong> out.toByteArray();
-<a class="jxr_linenumber" name="463" href="#463">463</a>         } <strong class="jxr_keyword">catch</strong> (IOException ex) {
-<a class="jxr_linenumber" name="464" href="#464">464</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ClassNotFoundException(clazz.getName(), ex);
-<a class="jxr_linenumber" name="465" href="#465">465</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="466" href="#466">466</a>             closeQuietly(in);
-<a class="jxr_linenumber" name="467" href="#467">467</a>             closeQuietly(out);
-<a class="jxr_linenumber" name="468" href="#468">468</a>         }
-<a class="jxr_linenumber" name="469" href="#469">469</a>     }
-<a class="jxr_linenumber" name="470" href="#470">470</a> 
-<a class="jxr_linenumber" name="471" href="#471">471</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> closeQuietly(Closeable c) {
-<a class="jxr_linenumber" name="472" href="#472">472</a>         <strong class="jxr_keyword">if</strong> (c != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="473" href="#473">473</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="474" href="#474">474</a>                 c.close();
-<a class="jxr_linenumber" name="475" href="#475">475</a>             } <strong class="jxr_keyword">catch</strong> (IOException ignore) {
-<a class="jxr_linenumber" name="476" href="#476">476</a>                 <em class="jxr_comment">// ignore</em>
-<a class="jxr_linenumber" name="477" href="#477">477</a>             }
-<a class="jxr_linenumber" name="478" href="#478">478</a>         }
-<a class="jxr_linenumber" name="479" href="#479">479</a>     }
-<a class="jxr_linenumber" name="480" href="#480">480</a> 
-<a class="jxr_linenumber" name="481" href="#481">481</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/util/internal/NativeLibraryLoader.html">NativeLibraryLoader</a>() {
-<a class="jxr_linenumber" name="482" href="#482">482</a>         <em class="jxr_comment">// Utility</em>
+<a class="jxr_linenumber" name="450" href="#450">450</a>     }
+<a class="jxr_linenumber" name="451" href="#451">451</a> 
+<a class="jxr_linenumber" name="452" href="#452">452</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="453" href="#453">453</a> <em class="jxr_javadoccomment">     * Load the helper {@link Class} as a byte array, to be redefined in specified {@link ClassLoader}.</em>
+<a class="jxr_linenumber" name="454" href="#454">454</a> <em class="jxr_javadoccomment">     * @param clazz - The helper {@link Class} provided by this bundle</em>
+<a class="jxr_linenumber" name="455" href="#455">455</a> <em class="jxr_javadoccomment">     * @return The binary content of helper {@link Class}.</em>
+<a class="jxr_linenumber" name="456" href="#456">456</a> <em class="jxr_javadoccomment">     * @throws ClassNotFoundException Helper class not found or loading failed</em>
+<a class="jxr_linenumber" name="457" href="#457">457</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="458" href="#458">458</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> byte[] classToByteArray(Class&lt;?&gt; clazz) <strong class="jxr_keyword">throws</strong> ClassNotFoundException {
+<a class="jxr_linenumber" name="459" href="#459">459</a>         String fileName = clazz.getName();
+<a class="jxr_linenumber" name="460" href="#460">460</a>         <strong class="jxr_keyword">int</strong> lastDot = fileName.lastIndexOf('.');
+<a class="jxr_linenumber" name="461" href="#461">461</a>         <strong class="jxr_keyword">if</strong> (lastDot &gt; 0) {
+<a class="jxr_linenumber" name="462" href="#462">462</a>             fileName = fileName.substring(lastDot + 1);
+<a class="jxr_linenumber" name="463" href="#463">463</a>         }
+<a class="jxr_linenumber" name="464" href="#464">464</a>         URL classUrl = clazz.getResource(fileName + <span class="jxr_string">".class"</span>);
+<a class="jxr_linenumber" name="465" href="#465">465</a>         <strong class="jxr_keyword">if</strong> (classUrl == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="466" href="#466">466</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ClassNotFoundException(clazz.getName());
+<a class="jxr_linenumber" name="467" href="#467">467</a>         }
+<a class="jxr_linenumber" name="468" href="#468">468</a>         byte[] buf = <strong class="jxr_keyword">new</strong> byte[1024];
+<a class="jxr_linenumber" name="469" href="#469">469</a>         ByteArrayOutputStream out = <strong class="jxr_keyword">new</strong> ByteArrayOutputStream(4096);
+<a class="jxr_linenumber" name="470" href="#470">470</a>         InputStream in = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="471" href="#471">471</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="472" href="#472">472</a>             in = classUrl.openStream();
+<a class="jxr_linenumber" name="473" href="#473">473</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> r; (r = in.read(buf)) != -1;) {
+<a class="jxr_linenumber" name="474" href="#474">474</a>                 out.write(buf, 0, r);
+<a class="jxr_linenumber" name="475" href="#475">475</a>             }
+<a class="jxr_linenumber" name="476" href="#476">476</a>             <strong class="jxr_keyword">return</strong> out.toByteArray();
+<a class="jxr_linenumber" name="477" href="#477">477</a>         } <strong class="jxr_keyword">catch</strong> (IOException ex) {
+<a class="jxr_linenumber" name="478" href="#478">478</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ClassNotFoundException(clazz.getName(), ex);
+<a class="jxr_linenumber" name="479" href="#479">479</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="480" href="#480">480</a>             closeQuietly(in);
+<a class="jxr_linenumber" name="481" href="#481">481</a>             closeQuietly(out);
+<a class="jxr_linenumber" name="482" href="#482">482</a>         }
 <a class="jxr_linenumber" name="483" href="#483">483</a>     }
 <a class="jxr_linenumber" name="484" href="#484">484</a> 
-<a class="jxr_linenumber" name="485" href="#485">485</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/internal/NativeLibraryLoader.html">NoexecVolumeDetector</a> {
-<a class="jxr_linenumber" name="486" href="#486">486</a> 
-<a class="jxr_linenumber" name="487" href="#487">487</a>         @SuppressJava6Requirement(reason = <span class="jxr_string">"Usage guarded by java version check"</span>)
-<a class="jxr_linenumber" name="488" href="#488">488</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> canExecuteExecutable(File file) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="489" href="#489">489</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.javaVersion() &lt; 7) {
-<a class="jxr_linenumber" name="490" href="#490">490</a>                 <em class="jxr_comment">// Pre-JDK7, the Java API did not directly support POSIX permissions; instead of implementing a custom</em>
-<a class="jxr_linenumber" name="491" href="#491">491</a>                 <em class="jxr_comment">// work-around, assume true, which disables the check.</em>
-<a class="jxr_linenumber" name="492" href="#492">492</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="493" href="#493">493</a>             }
+<a class="jxr_linenumber" name="485" href="#485">485</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> closeQuietly(Closeable c) {
+<a class="jxr_linenumber" name="486" href="#486">486</a>         <strong class="jxr_keyword">if</strong> (c != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="487" href="#487">487</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="488" href="#488">488</a>                 c.close();
+<a class="jxr_linenumber" name="489" href="#489">489</a>             } <strong class="jxr_keyword">catch</strong> (IOException ignore) {
+<a class="jxr_linenumber" name="490" href="#490">490</a>                 <em class="jxr_comment">// ignore</em>
+<a class="jxr_linenumber" name="491" href="#491">491</a>             }
+<a class="jxr_linenumber" name="492" href="#492">492</a>         }
+<a class="jxr_linenumber" name="493" href="#493">493</a>     }
 <a class="jxr_linenumber" name="494" href="#494">494</a> 
-<a class="jxr_linenumber" name="495" href="#495">495</a>             <em class="jxr_comment">// If we can already execute, there is nothing to do.</em>
-<a class="jxr_linenumber" name="496" href="#496">496</a>             <strong class="jxr_keyword">if</strong> (file.canExecute()) {
-<a class="jxr_linenumber" name="497" href="#497">497</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="498" href="#498">498</a>             }
-<a class="jxr_linenumber" name="499" href="#499">499</a> 
-<a class="jxr_linenumber" name="500" href="#500">500</a>             <em class="jxr_comment">// On volumes, with noexec set, even files with the executable POSIX permissions will fail to execute.</em>
-<a class="jxr_linenumber" name="501" href="#501">501</a>             <em class="jxr_comment">// The File#canExecute() method honors this behavior, probaby via parsing the noexec flag when initializing</em>
-<a class="jxr_linenumber" name="502" href="#502">502</a>             <em class="jxr_comment">// the UnixFileStore, though the flag is not exposed via a public API.  To find out if library is being</em>
-<a class="jxr_linenumber" name="503" href="#503">503</a>             <em class="jxr_comment">// loaded off a volume with noexec, confirm or add executalbe permissions, then check File#canExecute().</em>
-<a class="jxr_linenumber" name="504" href="#504">504</a> 
-<a class="jxr_linenumber" name="505" href="#505">505</a>             <em class="jxr_comment">// Note: We use FQCN to not break when netty is used in java6</em>
-<a class="jxr_linenumber" name="506" href="#506">506</a>             Set&lt;java.nio.file.attribute.PosixFilePermission&gt; existingFilePermissions =
-<a class="jxr_linenumber" name="507" href="#507">507</a>                     java.nio.file.Files.getPosixFilePermissions(file.toPath());
-<a class="jxr_linenumber" name="508" href="#508">508</a>             Set&lt;java.nio.file.attribute.PosixFilePermission&gt; executePermissions =
-<a class="jxr_linenumber" name="509" href="#509">509</a>                     EnumSet.of(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE,
-<a class="jxr_linenumber" name="510" href="#510">510</a>                             java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE,
-<a class="jxr_linenumber" name="511" href="#511">511</a>                             java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE);
-<a class="jxr_linenumber" name="512" href="#512">512</a>             <strong class="jxr_keyword">if</strong> (existingFilePermissions.containsAll(executePermissions)) {
-<a class="jxr_linenumber" name="513" href="#513">513</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="514" href="#514">514</a>             }
-<a class="jxr_linenumber" name="515" href="#515">515</a> 
-<a class="jxr_linenumber" name="516" href="#516">516</a>             Set&lt;java.nio.file.attribute.PosixFilePermission&gt; newPermissions = EnumSet.copyOf(existingFilePermissions);
-<a class="jxr_linenumber" name="517" href="#517">517</a>             newPermissions.addAll(executePermissions);
-<a class="jxr_linenumber" name="518" href="#518">518</a>             java.nio.file.Files.setPosixFilePermissions(file.toPath(), newPermissions);
-<a class="jxr_linenumber" name="519" href="#519">519</a>             <strong class="jxr_keyword">return</strong> file.canExecute();
-<a class="jxr_linenumber" name="520" href="#520">520</a>         }
-<a class="jxr_linenumber" name="521" href="#521">521</a> 
-<a class="jxr_linenumber" name="522" href="#522">522</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/util/internal/NativeLibraryLoader.html">NoexecVolumeDetector</a>() {
-<a class="jxr_linenumber" name="523" href="#523">523</a>             <em class="jxr_comment">// Utility</em>
-<a class="jxr_linenumber" name="524" href="#524">524</a>         }
-<a class="jxr_linenumber" name="525" href="#525">525</a>     }
-<a class="jxr_linenumber" name="526" href="#526">526</a> }
+<a class="jxr_linenumber" name="495" href="#495">495</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/util/internal/NativeLibraryLoader.html">NativeLibraryLoader</a>() {
+<a class="jxr_linenumber" name="496" href="#496">496</a>         <em class="jxr_comment">// Utility</em>
+<a class="jxr_linenumber" name="497" href="#497">497</a>     }
+<a class="jxr_linenumber" name="498" href="#498">498</a> 
+<a class="jxr_linenumber" name="499" href="#499">499</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/util/internal/NativeLibraryLoader.html">NoexecVolumeDetector</a> {
+<a class="jxr_linenumber" name="500" href="#500">500</a> 
+<a class="jxr_linenumber" name="501" href="#501">501</a>         @SuppressJava6Requirement(reason = <span class="jxr_string">"Usage guarded by java version check"</span>)
+<a class="jxr_linenumber" name="502" href="#502">502</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> canExecuteExecutable(File file) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="503" href="#503">503</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.javaVersion() &lt; 7) {
+<a class="jxr_linenumber" name="504" href="#504">504</a>                 <em class="jxr_comment">// Pre-JDK7, the Java API did not directly support POSIX permissions; instead of implementing a custom</em>
+<a class="jxr_linenumber" name="505" href="#505">505</a>                 <em class="jxr_comment">// work-around, assume true, which disables the check.</em>
+<a class="jxr_linenumber" name="506" href="#506">506</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="507" href="#507">507</a>             }
+<a class="jxr_linenumber" name="508" href="#508">508</a> 
+<a class="jxr_linenumber" name="509" href="#509">509</a>             <em class="jxr_comment">// If we can already execute, there is nothing to do.</em>
+<a class="jxr_linenumber" name="510" href="#510">510</a>             <strong class="jxr_keyword">if</strong> (file.canExecute()) {
+<a class="jxr_linenumber" name="511" href="#511">511</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="512" href="#512">512</a>             }
+<a class="jxr_linenumber" name="513" href="#513">513</a> 
+<a class="jxr_linenumber" name="514" href="#514">514</a>             <em class="jxr_comment">// On volumes, with noexec set, even files with the executable POSIX permissions will fail to execute.</em>
+<a class="jxr_linenumber" name="515" href="#515">515</a>             <em class="jxr_comment">// The File#canExecute() method honors this behavior, probaby via parsing the noexec flag when initializing</em>
+<a class="jxr_linenumber" name="516" href="#516">516</a>             <em class="jxr_comment">// the UnixFileStore, though the flag is not exposed via a public API.  To find out if library is being</em>
+<a class="jxr_linenumber" name="517" href="#517">517</a>             <em class="jxr_comment">// loaded off a volume with noexec, confirm or add executalbe permissions, then check File#canExecute().</em>
+<a class="jxr_linenumber" name="518" href="#518">518</a> 
+<a class="jxr_linenumber" name="519" href="#519">519</a>             <em class="jxr_comment">// Note: We use FQCN to not break when netty is used in java6</em>
+<a class="jxr_linenumber" name="520" href="#520">520</a>             Set&lt;java.nio.file.attribute.PosixFilePermission&gt; existingFilePermissions =
+<a class="jxr_linenumber" name="521" href="#521">521</a>                     java.nio.file.Files.getPosixFilePermissions(file.toPath());
+<a class="jxr_linenumber" name="522" href="#522">522</a>             Set&lt;java.nio.file.attribute.PosixFilePermission&gt; executePermissions =
+<a class="jxr_linenumber" name="523" href="#523">523</a>                     EnumSet.of(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE,
+<a class="jxr_linenumber" name="524" href="#524">524</a>                             java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE,
+<a class="jxr_linenumber" name="525" href="#525">525</a>                             java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE);
+<a class="jxr_linenumber" name="526" href="#526">526</a>             <strong class="jxr_keyword">if</strong> (existingFilePermissions.containsAll(executePermissions)) {
+<a class="jxr_linenumber" name="527" href="#527">527</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="528" href="#528">528</a>             }
+<a class="jxr_linenumber" name="529" href="#529">529</a> 
+<a class="jxr_linenumber" name="530" href="#530">530</a>             Set&lt;java.nio.file.attribute.PosixFilePermission&gt; newPermissions = EnumSet.copyOf(existingFilePermissions);
+<a class="jxr_linenumber" name="531" href="#531">531</a>             newPermissions.addAll(executePermissions);
+<a class="jxr_linenumber" name="532" href="#532">532</a>             java.nio.file.Files.setPosixFilePermissions(file.toPath(), newPermissions);
+<a class="jxr_linenumber" name="533" href="#533">533</a>             <strong class="jxr_keyword">return</strong> file.canExecute();
+<a class="jxr_linenumber" name="534" href="#534">534</a>         }
+<a class="jxr_linenumber" name="535" href="#535">535</a> 
+<a class="jxr_linenumber" name="536" href="#536">536</a>         <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/util/internal/NativeLibraryLoader.html">NoexecVolumeDetector</a>() {
+<a class="jxr_linenumber" name="537" href="#537">537</a>             <em class="jxr_comment">// Utility</em>
+<a class="jxr_linenumber" name="538" href="#538">538</a>         }
+<a class="jxr_linenumber" name="539" href="#539">539</a>     }
+<a class="jxr_linenumber" name="540" href="#540">540</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
