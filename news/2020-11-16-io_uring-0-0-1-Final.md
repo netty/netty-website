@@ -23,7 +23,7 @@ An example for maven would be:
     <groupId>io.netty.incubator</groupId>
     <artifactId>netty-incubator-transport-native-io_uring</artifactId>
     <version>0.0.1.Final</version>
-    <classifier>x86_64</classifier>
+    <classifier>linux-x86_64</classifier>
 </dependency>
 ```
 
