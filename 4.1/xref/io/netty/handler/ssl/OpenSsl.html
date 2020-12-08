@@ -565,60 +565,62 @@
 <a class="jxr_linenumber" name="555" href="#555">555</a> 
 <a class="jxr_linenumber" name="556" href="#556">556</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> memoryAddress(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buf) {
 <a class="jxr_linenumber" name="557" href="#557">557</a>         assert buf.isDirect();
-<a class="jxr_linenumber" name="558" href="#558">558</a>         <strong class="jxr_keyword">return</strong> buf.hasMemoryAddress() ? buf.memoryAddress() : Buffer.address(buf.nioBuffer());
-<a class="jxr_linenumber" name="559" href="#559">559</a>     }
-<a class="jxr_linenumber" name="560" href="#560">560</a> 
-<a class="jxr_linenumber" name="561" href="#561">561</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/OpenSsl.html">OpenSsl</a>() { }
+<a class="jxr_linenumber" name="558" href="#558">558</a>         <strong class="jxr_keyword">return</strong> buf.hasMemoryAddress() ? buf.memoryAddress() :
+<a class="jxr_linenumber" name="559" href="#559">559</a>                 <em class="jxr_comment">// Use internalNioBuffer to reduce object creation.</em>
+<a class="jxr_linenumber" name="560" href="#560">560</a>                 Buffer.address(buf.internalNioBuffer(0, buf.readableBytes()));
+<a class="jxr_linenumber" name="561" href="#561">561</a>     }
 <a class="jxr_linenumber" name="562" href="#562">562</a> 
-<a class="jxr_linenumber" name="563" href="#563">563</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> loadTcNative() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="564" href="#564">564</a>         String os = PlatformDependent.normalizedOs();
-<a class="jxr_linenumber" name="565" href="#565">565</a>         String arch = PlatformDependent.normalizedArch();
-<a class="jxr_linenumber" name="566" href="#566">566</a> 
-<a class="jxr_linenumber" name="567" href="#567">567</a>         Set&lt;String&gt; libNames = <strong class="jxr_keyword">new</strong> LinkedHashSet&lt;String&gt;(5);
-<a class="jxr_linenumber" name="568" href="#568">568</a>         String staticLibName = <span class="jxr_string">"netty_tcnative"</span>;
-<a class="jxr_linenumber" name="569" href="#569">569</a> 
-<a class="jxr_linenumber" name="570" href="#570">570</a>         <em class="jxr_comment">// First, try loading the platform-specific library. Platform-specific</em>
-<a class="jxr_linenumber" name="571" href="#571">571</a>         <em class="jxr_comment">// libraries will be available if using a tcnative uber jar.</em>
-<a class="jxr_linenumber" name="572" href="#572">572</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"linux"</span>.equalsIgnoreCase(os)) {
-<a class="jxr_linenumber" name="573" href="#573">573</a>             Set&lt;String&gt; classifiers = PlatformDependent.normalizedLinuxClassifiers();
-<a class="jxr_linenumber" name="574" href="#574">574</a>             <strong class="jxr_keyword">for</strong> (String classifier : classifiers) {
-<a class="jxr_linenumber" name="575" href="#575">575</a>                 libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch + <span class="jxr_string">"_"</span> + classifier);
-<a class="jxr_linenumber" name="576" href="#576">576</a>             }
-<a class="jxr_linenumber" name="577" href="#577">577</a>             <em class="jxr_comment">// generic arch-dependent library</em>
-<a class="jxr_linenumber" name="578" href="#578">578</a>             libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch);
-<a class="jxr_linenumber" name="579" href="#579">579</a> 
-<a class="jxr_linenumber" name="580" href="#580">580</a>             <em class="jxr_comment">// Fedora SSL lib so naming (libssl.so.10 vs libssl.so.1.0.0).</em>
-<a class="jxr_linenumber" name="581" href="#581">581</a>             <em class="jxr_comment">// note: should already be included from the classifiers but if not, we use this as an</em>
-<a class="jxr_linenumber" name="582" href="#582">582</a>             <em class="jxr_comment">//       additional fallback option here</em>
-<a class="jxr_linenumber" name="583" href="#583">583</a>             libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch + <span class="jxr_string">"_fedora"</span>);
-<a class="jxr_linenumber" name="584" href="#584">584</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="585" href="#585">585</a>             libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch);
-<a class="jxr_linenumber" name="586" href="#586">586</a>         }
-<a class="jxr_linenumber" name="587" href="#587">587</a>         libNames.add(staticLibName + <span class="jxr_string">"_"</span> + arch);
-<a class="jxr_linenumber" name="588" href="#588">588</a>         libNames.add(staticLibName);
-<a class="jxr_linenumber" name="589" href="#589">589</a> 
-<a class="jxr_linenumber" name="590" href="#590">590</a>         NativeLibraryLoader.loadFirstAvailable(PlatformDependent.getClassLoader(SSLContext.<strong class="jxr_keyword">class</strong>),
-<a class="jxr_linenumber" name="591" href="#591">591</a>             libNames.toArray(<strong class="jxr_keyword">new</strong> String[0]));
-<a class="jxr_linenumber" name="592" href="#592">592</a>     }
-<a class="jxr_linenumber" name="593" href="#593">593</a> 
-<a class="jxr_linenumber" name="594" href="#594">594</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> initializeTcNative(String engine) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="595" href="#595">595</a>         <strong class="jxr_keyword">return</strong> Library.initialize(<span class="jxr_string">"provided"</span>, engine);
-<a class="jxr_linenumber" name="596" href="#596">596</a>     }
-<a class="jxr_linenumber" name="597" href="#597">597</a> 
-<a class="jxr_linenumber" name="598" href="#598">598</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> releaseIfNeeded(<a href="../../../../io/netty/util/ReferenceCounted.html">ReferenceCounted</a> counted) {
-<a class="jxr_linenumber" name="599" href="#599">599</a>         <strong class="jxr_keyword">if</strong> (counted.refCnt() &gt; 0) {
-<a class="jxr_linenumber" name="600" href="#600">600</a>             ReferenceCountUtil.safeRelease(counted);
-<a class="jxr_linenumber" name="601" href="#601">601</a>         }
-<a class="jxr_linenumber" name="602" href="#602">602</a>     }
-<a class="jxr_linenumber" name="603" href="#603">603</a> 
-<a class="jxr_linenumber" name="604" href="#604">604</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isTlsv13Supported() {
-<a class="jxr_linenumber" name="605" href="#605">605</a>         <strong class="jxr_keyword">return</strong> TLSV13_SUPPORTED;
-<a class="jxr_linenumber" name="606" href="#606">606</a>     }
-<a class="jxr_linenumber" name="607" href="#607">607</a> 
-<a class="jxr_linenumber" name="608" href="#608">608</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isBoringSSL() {
-<a class="jxr_linenumber" name="609" href="#609">609</a>         <strong class="jxr_keyword">return</strong> IS_BORINGSSL;
-<a class="jxr_linenumber" name="610" href="#610">610</a>     }
-<a class="jxr_linenumber" name="611" href="#611">611</a> }
+<a class="jxr_linenumber" name="563" href="#563">563</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/handler/ssl/OpenSsl.html">OpenSsl</a>() { }
+<a class="jxr_linenumber" name="564" href="#564">564</a> 
+<a class="jxr_linenumber" name="565" href="#565">565</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> loadTcNative() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="566" href="#566">566</a>         String os = PlatformDependent.normalizedOs();
+<a class="jxr_linenumber" name="567" href="#567">567</a>         String arch = PlatformDependent.normalizedArch();
+<a class="jxr_linenumber" name="568" href="#568">568</a> 
+<a class="jxr_linenumber" name="569" href="#569">569</a>         Set&lt;String&gt; libNames = <strong class="jxr_keyword">new</strong> LinkedHashSet&lt;String&gt;(5);
+<a class="jxr_linenumber" name="570" href="#570">570</a>         String staticLibName = <span class="jxr_string">"netty_tcnative"</span>;
+<a class="jxr_linenumber" name="571" href="#571">571</a> 
+<a class="jxr_linenumber" name="572" href="#572">572</a>         <em class="jxr_comment">// First, try loading the platform-specific library. Platform-specific</em>
+<a class="jxr_linenumber" name="573" href="#573">573</a>         <em class="jxr_comment">// libraries will be available if using a tcnative uber jar.</em>
+<a class="jxr_linenumber" name="574" href="#574">574</a>         <strong class="jxr_keyword">if</strong> (<span class="jxr_string">"linux"</span>.equalsIgnoreCase(os)) {
+<a class="jxr_linenumber" name="575" href="#575">575</a>             Set&lt;String&gt; classifiers = PlatformDependent.normalizedLinuxClassifiers();
+<a class="jxr_linenumber" name="576" href="#576">576</a>             <strong class="jxr_keyword">for</strong> (String classifier : classifiers) {
+<a class="jxr_linenumber" name="577" href="#577">577</a>                 libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch + <span class="jxr_string">"_"</span> + classifier);
+<a class="jxr_linenumber" name="578" href="#578">578</a>             }
+<a class="jxr_linenumber" name="579" href="#579">579</a>             <em class="jxr_comment">// generic arch-dependent library</em>
+<a class="jxr_linenumber" name="580" href="#580">580</a>             libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch);
+<a class="jxr_linenumber" name="581" href="#581">581</a> 
+<a class="jxr_linenumber" name="582" href="#582">582</a>             <em class="jxr_comment">// Fedora SSL lib so naming (libssl.so.10 vs libssl.so.1.0.0).</em>
+<a class="jxr_linenumber" name="583" href="#583">583</a>             <em class="jxr_comment">// note: should already be included from the classifiers but if not, we use this as an</em>
+<a class="jxr_linenumber" name="584" href="#584">584</a>             <em class="jxr_comment">//       additional fallback option here</em>
+<a class="jxr_linenumber" name="585" href="#585">585</a>             libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch + <span class="jxr_string">"_fedora"</span>);
+<a class="jxr_linenumber" name="586" href="#586">586</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="587" href="#587">587</a>             libNames.add(staticLibName + <span class="jxr_string">"_"</span> + os + '_' + arch);
+<a class="jxr_linenumber" name="588" href="#588">588</a>         }
+<a class="jxr_linenumber" name="589" href="#589">589</a>         libNames.add(staticLibName + <span class="jxr_string">"_"</span> + arch);
+<a class="jxr_linenumber" name="590" href="#590">590</a>         libNames.add(staticLibName);
+<a class="jxr_linenumber" name="591" href="#591">591</a> 
+<a class="jxr_linenumber" name="592" href="#592">592</a>         NativeLibraryLoader.loadFirstAvailable(PlatformDependent.getClassLoader(SSLContext.<strong class="jxr_keyword">class</strong>),
+<a class="jxr_linenumber" name="593" href="#593">593</a>             libNames.toArray(<strong class="jxr_keyword">new</strong> String[0]));
+<a class="jxr_linenumber" name="594" href="#594">594</a>     }
+<a class="jxr_linenumber" name="595" href="#595">595</a> 
+<a class="jxr_linenumber" name="596" href="#596">596</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> initializeTcNative(String engine) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="597" href="#597">597</a>         <strong class="jxr_keyword">return</strong> Library.initialize(<span class="jxr_string">"provided"</span>, engine);
+<a class="jxr_linenumber" name="598" href="#598">598</a>     }
+<a class="jxr_linenumber" name="599" href="#599">599</a> 
+<a class="jxr_linenumber" name="600" href="#600">600</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> releaseIfNeeded(<a href="../../../../io/netty/util/ReferenceCounted.html">ReferenceCounted</a> counted) {
+<a class="jxr_linenumber" name="601" href="#601">601</a>         <strong class="jxr_keyword">if</strong> (counted.refCnt() &gt; 0) {
+<a class="jxr_linenumber" name="602" href="#602">602</a>             ReferenceCountUtil.safeRelease(counted);
+<a class="jxr_linenumber" name="603" href="#603">603</a>         }
+<a class="jxr_linenumber" name="604" href="#604">604</a>     }
+<a class="jxr_linenumber" name="605" href="#605">605</a> 
+<a class="jxr_linenumber" name="606" href="#606">606</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isTlsv13Supported() {
+<a class="jxr_linenumber" name="607" href="#607">607</a>         <strong class="jxr_keyword">return</strong> TLSV13_SUPPORTED;
+<a class="jxr_linenumber" name="608" href="#608">608</a>     }
+<a class="jxr_linenumber" name="609" href="#609">609</a> 
+<a class="jxr_linenumber" name="610" href="#610">610</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isBoringSSL() {
+<a class="jxr_linenumber" name="611" href="#611">611</a>         <strong class="jxr_keyword">return</strong> IS_BORINGSSL;
+<a class="jxr_linenumber" name="612" href="#612">612</a>     }
+<a class="jxr_linenumber" name="613" href="#613">613</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>

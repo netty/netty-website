@@ -412,160 +412,167 @@
 <a class="jxr_linenumber" name="402" href="#402">402</a>     <strong class="jxr_keyword">void</strong> channelInputClosed(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="403" href="#403">403</a>         <strong class="jxr_keyword">if</strong> (cumulation != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="404" href="#404">404</a>             callDecode(ctx, cumulation, out);
-<a class="jxr_linenumber" name="405" href="#405">405</a>             decodeLast(ctx, cumulation, out);
-<a class="jxr_linenumber" name="406" href="#406">406</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="407" href="#407">407</a>             decodeLast(ctx, Unpooled.EMPTY_BUFFER, out);
-<a class="jxr_linenumber" name="408" href="#408">408</a>         }
-<a class="jxr_linenumber" name="409" href="#409">409</a>     }
-<a class="jxr_linenumber" name="410" href="#410">410</a> 
-<a class="jxr_linenumber" name="411" href="#411">411</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="412" href="#412">412</a> <em class="jxr_javadoccomment">     * Called once data should be decoded from the given {@link ByteBuf}. This method will call</em>
-<a class="jxr_linenumber" name="413" href="#413">413</a> <em class="jxr_javadoccomment">     * {@link #decode(ChannelHandlerContext, ByteBuf, List)} as long as decoding should take place.</em>
-<a class="jxr_linenumber" name="414" href="#414">414</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="415" href="#415">415</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to</em>
-<a class="jxr_linenumber" name="416" href="#416">416</a> <em class="jxr_javadoccomment">     * @param in            the {@link ByteBuf} from which to read data</em>
-<a class="jxr_linenumber" name="417" href="#417">417</a> <em class="jxr_javadoccomment">     * @param out           the {@link List} to which decoded messages should be added</em>
-<a class="jxr_linenumber" name="418" href="#418">418</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="419" href="#419">419</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> callDecode(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) {
-<a class="jxr_linenumber" name="420" href="#420">420</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="421" href="#421">421</a>             <strong class="jxr_keyword">while</strong> (in.isReadable()) {
-<a class="jxr_linenumber" name="422" href="#422">422</a>                 <strong class="jxr_keyword">int</strong> outSize = out.size();
-<a class="jxr_linenumber" name="423" href="#423">423</a> 
-<a class="jxr_linenumber" name="424" href="#424">424</a>                 <strong class="jxr_keyword">if</strong> (outSize &gt; 0) {
-<a class="jxr_linenumber" name="425" href="#425">425</a>                     fireChannelRead(ctx, out, outSize);
-<a class="jxr_linenumber" name="426" href="#426">426</a>                     out.clear();
-<a class="jxr_linenumber" name="427" href="#427">427</a> 
-<a class="jxr_linenumber" name="428" href="#428">428</a>                     <em class="jxr_comment">// Check if this handler was removed before continuing with decoding.</em>
-<a class="jxr_linenumber" name="429" href="#429">429</a>                     <em class="jxr_comment">// If it was removed, it is not safe to continue to operate on the buffer.</em>
-<a class="jxr_linenumber" name="430" href="#430">430</a>                     <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="431" href="#431">431</a>                     <em class="jxr_comment">// See:</em>
-<a class="jxr_linenumber" name="432" href="#432">432</a>                     <em class="jxr_comment">// - https://github.com/netty/netty/issues/4635</em>
-<a class="jxr_linenumber" name="433" href="#433">433</a>                     <strong class="jxr_keyword">if</strong> (ctx.isRemoved()) {
-<a class="jxr_linenumber" name="434" href="#434">434</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="435" href="#435">435</a>                     }
-<a class="jxr_linenumber" name="436" href="#436">436</a>                     outSize = 0;
-<a class="jxr_linenumber" name="437" href="#437">437</a>                 }
-<a class="jxr_linenumber" name="438" href="#438">438</a> 
-<a class="jxr_linenumber" name="439" href="#439">439</a>                 <strong class="jxr_keyword">int</strong> oldInputLength = in.readableBytes();
-<a class="jxr_linenumber" name="440" href="#440">440</a>                 decodeRemovalReentryProtection(ctx, in, out);
-<a class="jxr_linenumber" name="441" href="#441">441</a> 
-<a class="jxr_linenumber" name="442" href="#442">442</a>                 <em class="jxr_comment">// Check if this handler was removed before continuing the loop.</em>
-<a class="jxr_linenumber" name="443" href="#443">443</a>                 <em class="jxr_comment">// If it was removed, it is not safe to continue to operate on the buffer.</em>
-<a class="jxr_linenumber" name="444" href="#444">444</a>                 <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="445" href="#445">445</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/1664</em>
-<a class="jxr_linenumber" name="446" href="#446">446</a>                 <strong class="jxr_keyword">if</strong> (ctx.isRemoved()) {
-<a class="jxr_linenumber" name="447" href="#447">447</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="448" href="#448">448</a>                 }
-<a class="jxr_linenumber" name="449" href="#449">449</a> 
-<a class="jxr_linenumber" name="450" href="#450">450</a>                 <strong class="jxr_keyword">if</strong> (outSize == out.size()) {
-<a class="jxr_linenumber" name="451" href="#451">451</a>                     <strong class="jxr_keyword">if</strong> (oldInputLength == in.readableBytes()) {
-<a class="jxr_linenumber" name="452" href="#452">452</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="453" href="#453">453</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="454" href="#454">454</a>                         <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="455" href="#455">455</a>                     }
-<a class="jxr_linenumber" name="456" href="#456">456</a>                 }
-<a class="jxr_linenumber" name="457" href="#457">457</a> 
-<a class="jxr_linenumber" name="458" href="#458">458</a>                 <strong class="jxr_keyword">if</strong> (oldInputLength == in.readableBytes()) {
-<a class="jxr_linenumber" name="459" href="#459">459</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/DecoderException.html">DecoderException</a>(
-<a class="jxr_linenumber" name="460" href="#460">460</a>                             StringUtil.simpleClassName(getClass()) +
-<a class="jxr_linenumber" name="461" href="#461">461</a>                                     <span class="jxr_string">".decode() did not read anything but decoded a message."</span>);
-<a class="jxr_linenumber" name="462" href="#462">462</a>                 }
-<a class="jxr_linenumber" name="463" href="#463">463</a> 
-<a class="jxr_linenumber" name="464" href="#464">464</a>                 <strong class="jxr_keyword">if</strong> (isSingleDecode()) {
-<a class="jxr_linenumber" name="465" href="#465">465</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="466" href="#466">466</a>                 }
-<a class="jxr_linenumber" name="467" href="#467">467</a>             }
-<a class="jxr_linenumber" name="468" href="#468">468</a>         } <strong class="jxr_keyword">catch</strong> (DecoderException e) {
-<a class="jxr_linenumber" name="469" href="#469">469</a>             <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="470" href="#470">470</a>         } <strong class="jxr_keyword">catch</strong> (Exception cause) {
-<a class="jxr_linenumber" name="471" href="#471">471</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/DecoderException.html">DecoderException</a>(cause);
-<a class="jxr_linenumber" name="472" href="#472">472</a>         }
-<a class="jxr_linenumber" name="473" href="#473">473</a>     }
-<a class="jxr_linenumber" name="474" href="#474">474</a> 
-<a class="jxr_linenumber" name="475" href="#475">475</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="476" href="#476">476</a> <em class="jxr_javadoccomment">     * Decode the from one {@link ByteBuf} to an other. This method will be called till either the input</em>
-<a class="jxr_linenumber" name="477" href="#477">477</a> <em class="jxr_javadoccomment">     * {@link ByteBuf} has nothing to read when return from this method or till nothing was read from the input</em>
-<a class="jxr_linenumber" name="478" href="#478">478</a> <em class="jxr_javadoccomment">     * {@link ByteBuf}.</em>
-<a class="jxr_linenumber" name="479" href="#479">479</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="480" href="#480">480</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to</em>
-<a class="jxr_linenumber" name="481" href="#481">481</a> <em class="jxr_javadoccomment">     * @param in            the {@link ByteBuf} from which to read data</em>
-<a class="jxr_linenumber" name="482" href="#482">482</a> <em class="jxr_javadoccomment">     * @param out           the {@link List} to which decoded messages should be added</em>
-<a class="jxr_linenumber" name="483" href="#483">483</a> <em class="jxr_javadoccomment">     * @throws Exception    is thrown if an error occurs</em>
-<a class="jxr_linenumber" name="484" href="#484">484</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="485" href="#485">485</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> decode(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="486" href="#486">486</a> 
-<a class="jxr_linenumber" name="487" href="#487">487</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="488" href="#488">488</a> <em class="jxr_javadoccomment">     * Decode the from one {@link ByteBuf} to an other. This method will be called till either the input</em>
-<a class="jxr_linenumber" name="489" href="#489">489</a> <em class="jxr_javadoccomment">     * {@link ByteBuf} has nothing to read when return from this method or till nothing was read from the input</em>
-<a class="jxr_linenumber" name="490" href="#490">490</a> <em class="jxr_javadoccomment">     * {@link ByteBuf}.</em>
-<a class="jxr_linenumber" name="491" href="#491">491</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="492" href="#492">492</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to</em>
-<a class="jxr_linenumber" name="493" href="#493">493</a> <em class="jxr_javadoccomment">     * @param in            the {@link ByteBuf} from which to read data</em>
-<a class="jxr_linenumber" name="494" href="#494">494</a> <em class="jxr_javadoccomment">     * @param out           the {@link List} to which decoded messages should be added</em>
-<a class="jxr_linenumber" name="495" href="#495">495</a> <em class="jxr_javadoccomment">     * @throws Exception    is thrown if an error occurs</em>
-<a class="jxr_linenumber" name="496" href="#496">496</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="497" href="#497">497</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> decodeRemovalReentryProtection(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out)
-<a class="jxr_linenumber" name="498" href="#498">498</a>             <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="499" href="#499">499</a>         decodeState = STATE_CALLING_CHILD_DECODE;
-<a class="jxr_linenumber" name="500" href="#500">500</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="501" href="#501">501</a>             decode(ctx, in, out);
-<a class="jxr_linenumber" name="502" href="#502">502</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="503" href="#503">503</a>             <strong class="jxr_keyword">boolean</strong> removePending = decodeState == STATE_HANDLER_REMOVED_PENDING;
-<a class="jxr_linenumber" name="504" href="#504">504</a>             decodeState = STATE_INIT;
-<a class="jxr_linenumber" name="505" href="#505">505</a>             <strong class="jxr_keyword">if</strong> (removePending) {
-<a class="jxr_linenumber" name="506" href="#506">506</a>                 fireChannelRead(ctx, out, out.size());
-<a class="jxr_linenumber" name="507" href="#507">507</a>                 out.clear();
-<a class="jxr_linenumber" name="508" href="#508">508</a>                 handlerRemoved(ctx);
-<a class="jxr_linenumber" name="509" href="#509">509</a>             }
-<a class="jxr_linenumber" name="510" href="#510">510</a>         }
-<a class="jxr_linenumber" name="511" href="#511">511</a>     }
-<a class="jxr_linenumber" name="512" href="#512">512</a> 
-<a class="jxr_linenumber" name="513" href="#513">513</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="514" href="#514">514</a> <em class="jxr_javadoccomment">     * Is called one last time when the {@link ChannelHandlerContext} goes in-active. Which means the</em>
-<a class="jxr_linenumber" name="515" href="#515">515</a> <em class="jxr_javadoccomment">     * {@link #channelInactive(ChannelHandlerContext)} was triggered.</em>
-<a class="jxr_linenumber" name="516" href="#516">516</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="517" href="#517">517</a> <em class="jxr_javadoccomment">     * By default this will just call {@link #decode(ChannelHandlerContext, ByteBuf, List)} but sub-classes may</em>
-<a class="jxr_linenumber" name="518" href="#518">518</a> <em class="jxr_javadoccomment">     * override this for some special cleanup operation.</em>
-<a class="jxr_linenumber" name="519" href="#519">519</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="520" href="#520">520</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> decodeLast(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="521" href="#521">521</a>         <strong class="jxr_keyword">if</strong> (in.isReadable()) {
-<a class="jxr_linenumber" name="522" href="#522">522</a>             <em class="jxr_comment">// Only call decode() if there is something left in the buffer to decode.</em>
-<a class="jxr_linenumber" name="523" href="#523">523</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/4386</em>
-<a class="jxr_linenumber" name="524" href="#524">524</a>             decodeRemovalReentryProtection(ctx, in, out);
-<a class="jxr_linenumber" name="525" href="#525">525</a>         }
-<a class="jxr_linenumber" name="526" href="#526">526</a>     }
-<a class="jxr_linenumber" name="527" href="#527">527</a> 
-<a class="jxr_linenumber" name="528" href="#528">528</a>     <strong class="jxr_keyword">static</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> expandCumulation(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> oldCumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in) {
-<a class="jxr_linenumber" name="529" href="#529">529</a>         <strong class="jxr_keyword">int</strong> oldBytes = oldCumulation.readableBytes();
-<a class="jxr_linenumber" name="530" href="#530">530</a>         <strong class="jxr_keyword">int</strong> newBytes = in.readableBytes();
-<a class="jxr_linenumber" name="531" href="#531">531</a>         <strong class="jxr_keyword">int</strong> totalBytes = oldBytes + newBytes;
-<a class="jxr_linenumber" name="532" href="#532">532</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> newCumulation = alloc.buffer(alloc.calculateNewCapacity(totalBytes, MAX_VALUE));
-<a class="jxr_linenumber" name="533" href="#533">533</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> toRelease = newCumulation;
-<a class="jxr_linenumber" name="534" href="#534">534</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="535" href="#535">535</a>             <em class="jxr_comment">// This avoids redundant checks and stack depth compared to calling writeBytes(...)</em>
-<a class="jxr_linenumber" name="536" href="#536">536</a>             newCumulation.setBytes(0, oldCumulation, oldCumulation.readerIndex(), oldBytes)
-<a class="jxr_linenumber" name="537" href="#537">537</a>                 .setBytes(oldBytes, in, in.readerIndex(), newBytes)
-<a class="jxr_linenumber" name="538" href="#538">538</a>                 .writerIndex(totalBytes);
-<a class="jxr_linenumber" name="539" href="#539">539</a>             in.readerIndex(in.writerIndex());
-<a class="jxr_linenumber" name="540" href="#540">540</a>             toRelease = oldCumulation;
-<a class="jxr_linenumber" name="541" href="#541">541</a>             <strong class="jxr_keyword">return</strong> newCumulation;
-<a class="jxr_linenumber" name="542" href="#542">542</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="543" href="#543">543</a>             toRelease.release();
-<a class="jxr_linenumber" name="544" href="#544">544</a>         }
-<a class="jxr_linenumber" name="545" href="#545">545</a>     }
-<a class="jxr_linenumber" name="546" href="#546">546</a> 
-<a class="jxr_linenumber" name="547" href="#547">547</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="548" href="#548">548</a> <em class="jxr_javadoccomment">     * Cumulate {@link ByteBuf}s.</em>
-<a class="jxr_linenumber" name="549" href="#549">549</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="550" href="#550">550</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">interface</strong> <a href="../../../../io/netty/handler/codec/ByteToMessageDecoder.html">Cumulator</a> {
-<a class="jxr_linenumber" name="551" href="#551">551</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="552" href="#552">552</a> <em class="jxr_javadoccomment">         * Cumulate the given {@link ByteBuf}s and return the {@link ByteBuf} that holds the cumulated bytes.</em>
-<a class="jxr_linenumber" name="553" href="#553">553</a> <em class="jxr_javadoccomment">         * The implementation is responsible to correctly handle the life-cycle of the given {@link ByteBuf}s and so</em>
-<a class="jxr_linenumber" name="554" href="#554">554</a> <em class="jxr_javadoccomment">         * call {@link ByteBuf#release()} if a {@link ByteBuf} is fully consumed.</em>
-<a class="jxr_linenumber" name="555" href="#555">555</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="556" href="#556">556</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulate(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in);
-<a class="jxr_linenumber" name="557" href="#557">557</a>     }
-<a class="jxr_linenumber" name="558" href="#558">558</a> }
+<a class="jxr_linenumber" name="405" href="#405">405</a>             <em class="jxr_comment">// If callDecode(...) removed the handle from the pipeline we should not call decodeLast(...) as this would</em>
+<a class="jxr_linenumber" name="406" href="#406">406</a>             <em class="jxr_comment">// be unexpected.</em>
+<a class="jxr_linenumber" name="407" href="#407">407</a>             <strong class="jxr_keyword">if</strong> (!ctx.isRemoved()) {
+<a class="jxr_linenumber" name="408" href="#408">408</a>                 <em class="jxr_comment">// Use Unpooled.EMPTY_BUFFER if cumulation become null after calling callDecode(...).</em>
+<a class="jxr_linenumber" name="409" href="#409">409</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/10802.</em>
+<a class="jxr_linenumber" name="410" href="#410">410</a>                 <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> buffer = cumulation == <strong class="jxr_keyword">null</strong> ? Unpooled.EMPTY_BUFFER : cumulation;
+<a class="jxr_linenumber" name="411" href="#411">411</a>                 decodeLast(ctx, buffer, out);
+<a class="jxr_linenumber" name="412" href="#412">412</a>             }
+<a class="jxr_linenumber" name="413" href="#413">413</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="414" href="#414">414</a>             decodeLast(ctx, Unpooled.EMPTY_BUFFER, out);
+<a class="jxr_linenumber" name="415" href="#415">415</a>         }
+<a class="jxr_linenumber" name="416" href="#416">416</a>     }
+<a class="jxr_linenumber" name="417" href="#417">417</a> 
+<a class="jxr_linenumber" name="418" href="#418">418</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="419" href="#419">419</a> <em class="jxr_javadoccomment">     * Called once data should be decoded from the given {@link ByteBuf}. This method will call</em>
+<a class="jxr_linenumber" name="420" href="#420">420</a> <em class="jxr_javadoccomment">     * {@link #decode(ChannelHandlerContext, ByteBuf, List)} as long as decoding should take place.</em>
+<a class="jxr_linenumber" name="421" href="#421">421</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="422" href="#422">422</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to</em>
+<a class="jxr_linenumber" name="423" href="#423">423</a> <em class="jxr_javadoccomment">     * @param in            the {@link ByteBuf} from which to read data</em>
+<a class="jxr_linenumber" name="424" href="#424">424</a> <em class="jxr_javadoccomment">     * @param out           the {@link List} to which decoded messages should be added</em>
+<a class="jxr_linenumber" name="425" href="#425">425</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="426" href="#426">426</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> callDecode(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) {
+<a class="jxr_linenumber" name="427" href="#427">427</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="428" href="#428">428</a>             <strong class="jxr_keyword">while</strong> (in.isReadable()) {
+<a class="jxr_linenumber" name="429" href="#429">429</a>                 <strong class="jxr_keyword">int</strong> outSize = out.size();
+<a class="jxr_linenumber" name="430" href="#430">430</a> 
+<a class="jxr_linenumber" name="431" href="#431">431</a>                 <strong class="jxr_keyword">if</strong> (outSize &gt; 0) {
+<a class="jxr_linenumber" name="432" href="#432">432</a>                     fireChannelRead(ctx, out, outSize);
+<a class="jxr_linenumber" name="433" href="#433">433</a>                     out.clear();
+<a class="jxr_linenumber" name="434" href="#434">434</a> 
+<a class="jxr_linenumber" name="435" href="#435">435</a>                     <em class="jxr_comment">// Check if this handler was removed before continuing with decoding.</em>
+<a class="jxr_linenumber" name="436" href="#436">436</a>                     <em class="jxr_comment">// If it was removed, it is not safe to continue to operate on the buffer.</em>
+<a class="jxr_linenumber" name="437" href="#437">437</a>                     <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="438" href="#438">438</a>                     <em class="jxr_comment">// See:</em>
+<a class="jxr_linenumber" name="439" href="#439">439</a>                     <em class="jxr_comment">// - https://github.com/netty/netty/issues/4635</em>
+<a class="jxr_linenumber" name="440" href="#440">440</a>                     <strong class="jxr_keyword">if</strong> (ctx.isRemoved()) {
+<a class="jxr_linenumber" name="441" href="#441">441</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="442" href="#442">442</a>                     }
+<a class="jxr_linenumber" name="443" href="#443">443</a>                     outSize = 0;
+<a class="jxr_linenumber" name="444" href="#444">444</a>                 }
+<a class="jxr_linenumber" name="445" href="#445">445</a> 
+<a class="jxr_linenumber" name="446" href="#446">446</a>                 <strong class="jxr_keyword">int</strong> oldInputLength = in.readableBytes();
+<a class="jxr_linenumber" name="447" href="#447">447</a>                 decodeRemovalReentryProtection(ctx, in, out);
+<a class="jxr_linenumber" name="448" href="#448">448</a> 
+<a class="jxr_linenumber" name="449" href="#449">449</a>                 <em class="jxr_comment">// Check if this handler was removed before continuing the loop.</em>
+<a class="jxr_linenumber" name="450" href="#450">450</a>                 <em class="jxr_comment">// If it was removed, it is not safe to continue to operate on the buffer.</em>
+<a class="jxr_linenumber" name="451" href="#451">451</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="452" href="#452">452</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/1664</em>
+<a class="jxr_linenumber" name="453" href="#453">453</a>                 <strong class="jxr_keyword">if</strong> (ctx.isRemoved()) {
+<a class="jxr_linenumber" name="454" href="#454">454</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="455" href="#455">455</a>                 }
+<a class="jxr_linenumber" name="456" href="#456">456</a> 
+<a class="jxr_linenumber" name="457" href="#457">457</a>                 <strong class="jxr_keyword">if</strong> (outSize == out.size()) {
+<a class="jxr_linenumber" name="458" href="#458">458</a>                     <strong class="jxr_keyword">if</strong> (oldInputLength == in.readableBytes()) {
+<a class="jxr_linenumber" name="459" href="#459">459</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="460" href="#460">460</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="461" href="#461">461</a>                         <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="462" href="#462">462</a>                     }
+<a class="jxr_linenumber" name="463" href="#463">463</a>                 }
+<a class="jxr_linenumber" name="464" href="#464">464</a> 
+<a class="jxr_linenumber" name="465" href="#465">465</a>                 <strong class="jxr_keyword">if</strong> (oldInputLength == in.readableBytes()) {
+<a class="jxr_linenumber" name="466" href="#466">466</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/DecoderException.html">DecoderException</a>(
+<a class="jxr_linenumber" name="467" href="#467">467</a>                             StringUtil.simpleClassName(getClass()) +
+<a class="jxr_linenumber" name="468" href="#468">468</a>                                     <span class="jxr_string">".decode() did not read anything but decoded a message."</span>);
+<a class="jxr_linenumber" name="469" href="#469">469</a>                 }
+<a class="jxr_linenumber" name="470" href="#470">470</a> 
+<a class="jxr_linenumber" name="471" href="#471">471</a>                 <strong class="jxr_keyword">if</strong> (isSingleDecode()) {
+<a class="jxr_linenumber" name="472" href="#472">472</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="473" href="#473">473</a>                 }
+<a class="jxr_linenumber" name="474" href="#474">474</a>             }
+<a class="jxr_linenumber" name="475" href="#475">475</a>         } <strong class="jxr_keyword">catch</strong> (DecoderException e) {
+<a class="jxr_linenumber" name="476" href="#476">476</a>             <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="477" href="#477">477</a>         } <strong class="jxr_keyword">catch</strong> (Exception cause) {
+<a class="jxr_linenumber" name="478" href="#478">478</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/codec/DecoderException.html">DecoderException</a>(cause);
+<a class="jxr_linenumber" name="479" href="#479">479</a>         }
+<a class="jxr_linenumber" name="480" href="#480">480</a>     }
+<a class="jxr_linenumber" name="481" href="#481">481</a> 
+<a class="jxr_linenumber" name="482" href="#482">482</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="483" href="#483">483</a> <em class="jxr_javadoccomment">     * Decode the from one {@link ByteBuf} to an other. This method will be called till either the input</em>
+<a class="jxr_linenumber" name="484" href="#484">484</a> <em class="jxr_javadoccomment">     * {@link ByteBuf} has nothing to read when return from this method or till nothing was read from the input</em>
+<a class="jxr_linenumber" name="485" href="#485">485</a> <em class="jxr_javadoccomment">     * {@link ByteBuf}.</em>
+<a class="jxr_linenumber" name="486" href="#486">486</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="487" href="#487">487</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to</em>
+<a class="jxr_linenumber" name="488" href="#488">488</a> <em class="jxr_javadoccomment">     * @param in            the {@link ByteBuf} from which to read data</em>
+<a class="jxr_linenumber" name="489" href="#489">489</a> <em class="jxr_javadoccomment">     * @param out           the {@link List} to which decoded messages should be added</em>
+<a class="jxr_linenumber" name="490" href="#490">490</a> <em class="jxr_javadoccomment">     * @throws Exception    is thrown if an error occurs</em>
+<a class="jxr_linenumber" name="491" href="#491">491</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="492" href="#492">492</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> decode(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="493" href="#493">493</a> 
+<a class="jxr_linenumber" name="494" href="#494">494</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="495" href="#495">495</a> <em class="jxr_javadoccomment">     * Decode the from one {@link ByteBuf} to an other. This method will be called till either the input</em>
+<a class="jxr_linenumber" name="496" href="#496">496</a> <em class="jxr_javadoccomment">     * {@link ByteBuf} has nothing to read when return from this method or till nothing was read from the input</em>
+<a class="jxr_linenumber" name="497" href="#497">497</a> <em class="jxr_javadoccomment">     * {@link ByteBuf}.</em>
+<a class="jxr_linenumber" name="498" href="#498">498</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="499" href="#499">499</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} which this {@link ByteToMessageDecoder} belongs to</em>
+<a class="jxr_linenumber" name="500" href="#500">500</a> <em class="jxr_javadoccomment">     * @param in            the {@link ByteBuf} from which to read data</em>
+<a class="jxr_linenumber" name="501" href="#501">501</a> <em class="jxr_javadoccomment">     * @param out           the {@link List} to which decoded messages should be added</em>
+<a class="jxr_linenumber" name="502" href="#502">502</a> <em class="jxr_javadoccomment">     * @throws Exception    is thrown if an error occurs</em>
+<a class="jxr_linenumber" name="503" href="#503">503</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="504" href="#504">504</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> decodeRemovalReentryProtection(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out)
+<a class="jxr_linenumber" name="505" href="#505">505</a>             <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="506" href="#506">506</a>         decodeState = STATE_CALLING_CHILD_DECODE;
+<a class="jxr_linenumber" name="507" href="#507">507</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="508" href="#508">508</a>             decode(ctx, in, out);
+<a class="jxr_linenumber" name="509" href="#509">509</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="510" href="#510">510</a>             <strong class="jxr_keyword">boolean</strong> removePending = decodeState == STATE_HANDLER_REMOVED_PENDING;
+<a class="jxr_linenumber" name="511" href="#511">511</a>             decodeState = STATE_INIT;
+<a class="jxr_linenumber" name="512" href="#512">512</a>             <strong class="jxr_keyword">if</strong> (removePending) {
+<a class="jxr_linenumber" name="513" href="#513">513</a>                 fireChannelRead(ctx, out, out.size());
+<a class="jxr_linenumber" name="514" href="#514">514</a>                 out.clear();
+<a class="jxr_linenumber" name="515" href="#515">515</a>                 handlerRemoved(ctx);
+<a class="jxr_linenumber" name="516" href="#516">516</a>             }
+<a class="jxr_linenumber" name="517" href="#517">517</a>         }
+<a class="jxr_linenumber" name="518" href="#518">518</a>     }
+<a class="jxr_linenumber" name="519" href="#519">519</a> 
+<a class="jxr_linenumber" name="520" href="#520">520</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="521" href="#521">521</a> <em class="jxr_javadoccomment">     * Is called one last time when the {@link ChannelHandlerContext} goes in-active. Which means the</em>
+<a class="jxr_linenumber" name="522" href="#522">522</a> <em class="jxr_javadoccomment">     * {@link #channelInactive(ChannelHandlerContext)} was triggered.</em>
+<a class="jxr_linenumber" name="523" href="#523">523</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="524" href="#524">524</a> <em class="jxr_javadoccomment">     * By default this will just call {@link #decode(ChannelHandlerContext, ByteBuf, List)} but sub-classes may</em>
+<a class="jxr_linenumber" name="525" href="#525">525</a> <em class="jxr_javadoccomment">     * override this for some special cleanup operation.</em>
+<a class="jxr_linenumber" name="526" href="#526">526</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="527" href="#527">527</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> decodeLast(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="528" href="#528">528</a>         <strong class="jxr_keyword">if</strong> (in.isReadable()) {
+<a class="jxr_linenumber" name="529" href="#529">529</a>             <em class="jxr_comment">// Only call decode() if there is something left in the buffer to decode.</em>
+<a class="jxr_linenumber" name="530" href="#530">530</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/4386</em>
+<a class="jxr_linenumber" name="531" href="#531">531</a>             decodeRemovalReentryProtection(ctx, in, out);
+<a class="jxr_linenumber" name="532" href="#532">532</a>         }
+<a class="jxr_linenumber" name="533" href="#533">533</a>     }
+<a class="jxr_linenumber" name="534" href="#534">534</a> 
+<a class="jxr_linenumber" name="535" href="#535">535</a>     <strong class="jxr_keyword">static</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> expandCumulation(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> oldCumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in) {
+<a class="jxr_linenumber" name="536" href="#536">536</a>         <strong class="jxr_keyword">int</strong> oldBytes = oldCumulation.readableBytes();
+<a class="jxr_linenumber" name="537" href="#537">537</a>         <strong class="jxr_keyword">int</strong> newBytes = in.readableBytes();
+<a class="jxr_linenumber" name="538" href="#538">538</a>         <strong class="jxr_keyword">int</strong> totalBytes = oldBytes + newBytes;
+<a class="jxr_linenumber" name="539" href="#539">539</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> newCumulation = alloc.buffer(alloc.calculateNewCapacity(totalBytes, MAX_VALUE));
+<a class="jxr_linenumber" name="540" href="#540">540</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> toRelease = newCumulation;
+<a class="jxr_linenumber" name="541" href="#541">541</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="542" href="#542">542</a>             <em class="jxr_comment">// This avoids redundant checks and stack depth compared to calling writeBytes(...)</em>
+<a class="jxr_linenumber" name="543" href="#543">543</a>             newCumulation.setBytes(0, oldCumulation, oldCumulation.readerIndex(), oldBytes)
+<a class="jxr_linenumber" name="544" href="#544">544</a>                 .setBytes(oldBytes, in, in.readerIndex(), newBytes)
+<a class="jxr_linenumber" name="545" href="#545">545</a>                 .writerIndex(totalBytes);
+<a class="jxr_linenumber" name="546" href="#546">546</a>             in.readerIndex(in.writerIndex());
+<a class="jxr_linenumber" name="547" href="#547">547</a>             toRelease = oldCumulation;
+<a class="jxr_linenumber" name="548" href="#548">548</a>             <strong class="jxr_keyword">return</strong> newCumulation;
+<a class="jxr_linenumber" name="549" href="#549">549</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="550" href="#550">550</a>             toRelease.release();
+<a class="jxr_linenumber" name="551" href="#551">551</a>         }
+<a class="jxr_linenumber" name="552" href="#552">552</a>     }
+<a class="jxr_linenumber" name="553" href="#553">553</a> 
+<a class="jxr_linenumber" name="554" href="#554">554</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="555" href="#555">555</a> <em class="jxr_javadoccomment">     * Cumulate {@link ByteBuf}s.</em>
+<a class="jxr_linenumber" name="556" href="#556">556</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="557" href="#557">557</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">interface</strong> <a href="../../../../io/netty/handler/codec/ByteToMessageDecoder.html">Cumulator</a> {
+<a class="jxr_linenumber" name="558" href="#558">558</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="559" href="#559">559</a> <em class="jxr_javadoccomment">         * Cumulate the given {@link ByteBuf}s and return the {@link ByteBuf} that holds the cumulated bytes.</em>
+<a class="jxr_linenumber" name="560" href="#560">560</a> <em class="jxr_javadoccomment">         * The implementation is responsible to correctly handle the life-cycle of the given {@link ByteBuf}s and so</em>
+<a class="jxr_linenumber" name="561" href="#561">561</a> <em class="jxr_javadoccomment">         * call {@link ByteBuf#release()} if a {@link ByteBuf} is fully consumed.</em>
+<a class="jxr_linenumber" name="562" href="#562">562</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="563" href="#563">563</a>         <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulate(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> in);
+<a class="jxr_linenumber" name="564" href="#564">564</a>     }
+<a class="jxr_linenumber" name="565" href="#565">565</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
