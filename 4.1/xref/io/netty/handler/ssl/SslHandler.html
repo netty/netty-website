@@ -1810,515 +1810,522 @@
 <a class="jxr_linenumber" name="1800" href="#1800">1800</a> <em class="jxr_javadoccomment">     * Notify all the handshake futures about the successfully handshake</em>
 <a class="jxr_linenumber" name="1801" href="#1801">1801</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="1802" href="#1802">1802</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeSuccess() {
-<a class="jxr_linenumber" name="1803" href="#1803">1803</a>         handshakePromise.trySuccess(ctx.channel());
-<a class="jxr_linenumber" name="1804" href="#1804">1804</a> 
-<a class="jxr_linenumber" name="1805" href="#1805">1805</a>         <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="1806" href="#1806">1806</a>             SSLSession session = engine.getSession();
-<a class="jxr_linenumber" name="1807" href="#1807">1807</a>             logger.debug(
-<a class="jxr_linenumber" name="1808" href="#1808">1808</a>               <span class="jxr_string">"{} HANDSHAKEN: protocol:{} cipher suite:{}"</span>,
-<a class="jxr_linenumber" name="1809" href="#1809">1809</a>               ctx.channel(),
-<a class="jxr_linenumber" name="1810" href="#1810">1810</a>               session.getProtocol(),
-<a class="jxr_linenumber" name="1811" href="#1811">1811</a>               session.getCipherSuite());
-<a class="jxr_linenumber" name="1812" href="#1812">1812</a>         }
-<a class="jxr_linenumber" name="1813" href="#1813">1813</a>         ctx.fireUserEventTriggered(SslHandshakeCompletionEvent.SUCCESS);
-<a class="jxr_linenumber" name="1814" href="#1814">1814</a> 
-<a class="jxr_linenumber" name="1815" href="#1815">1815</a>         <strong class="jxr_keyword">if</strong> (readDuringHandshake &amp;&amp; !ctx.channel().config().isAutoRead()) {
-<a class="jxr_linenumber" name="1816" href="#1816">1816</a>             readDuringHandshake = false;
-<a class="jxr_linenumber" name="1817" href="#1817">1817</a>             ctx.read();
-<a class="jxr_linenumber" name="1818" href="#1818">1818</a>         }
-<a class="jxr_linenumber" name="1819" href="#1819">1819</a>     }
-<a class="jxr_linenumber" name="1820" href="#1820">1820</a> 
-<a class="jxr_linenumber" name="1821" href="#1821">1821</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="1822" href="#1822">1822</a> <em class="jxr_javadoccomment">     * Notify all the handshake futures about the failure during the handshake.</em>
-<a class="jxr_linenumber" name="1823" href="#1823">1823</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="1824" href="#1824">1824</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeFailure(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
-<a class="jxr_linenumber" name="1825" href="#1825">1825</a>         setHandshakeFailure(ctx, cause, <strong class="jxr_keyword">true</strong>, <strong class="jxr_keyword">true</strong>, false);
+<a class="jxr_linenumber" name="1803" href="#1803">1803</a>         <strong class="jxr_keyword">boolean</strong> notified = handshakePromise.trySuccess(ctx.channel());
+<a class="jxr_linenumber" name="1804" href="#1804">1804</a>         SSLSession session = engine.getSession();
+<a class="jxr_linenumber" name="1805" href="#1805">1805</a> 
+<a class="jxr_linenumber" name="1806" href="#1806">1806</a>         <em class="jxr_comment">// There seems to be a bug in the SSLEngineImpl that is part of the OpenJDK that results in returning</em>
+<a class="jxr_linenumber" name="1807" href="#1807">1807</a>         <em class="jxr_comment">// HandshakeStatus.FINISHED multiple times which is not expected. This only happens in TLSv1.3 so lets</em>
+<a class="jxr_linenumber" name="1808" href="#1808">1808</a>         <em class="jxr_comment">// ensure we only notify once in this case.</em>
+<a class="jxr_linenumber" name="1809" href="#1809">1809</a>         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="1810" href="#1810">1810</a>         <em class="jxr_comment">// This is safe as TLSv1.3 does not support renegotiation and so we should never see two handshake events.</em>
+<a class="jxr_linenumber" name="1811" href="#1811">1811</a>         <strong class="jxr_keyword">if</strong> (notified || !SslUtils.PROTOCOL_TLS_V1_3.equals(session.getProtocol())) {
+<a class="jxr_linenumber" name="1812" href="#1812">1812</a>             <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="1813" href="#1813">1813</a>                 logger.debug(
+<a class="jxr_linenumber" name="1814" href="#1814">1814</a>                         <span class="jxr_string">"{} HANDSHAKEN: protocol:{} cipher suite:{}"</span>,
+<a class="jxr_linenumber" name="1815" href="#1815">1815</a>                         ctx.channel(),
+<a class="jxr_linenumber" name="1816" href="#1816">1816</a>                         session.getProtocol(),
+<a class="jxr_linenumber" name="1817" href="#1817">1817</a>                         session.getCipherSuite());
+<a class="jxr_linenumber" name="1818" href="#1818">1818</a>             }
+<a class="jxr_linenumber" name="1819" href="#1819">1819</a>             ctx.fireUserEventTriggered(SslHandshakeCompletionEvent.SUCCESS);
+<a class="jxr_linenumber" name="1820" href="#1820">1820</a>         }
+<a class="jxr_linenumber" name="1821" href="#1821">1821</a> 
+<a class="jxr_linenumber" name="1822" href="#1822">1822</a>         <strong class="jxr_keyword">if</strong> (readDuringHandshake &amp;&amp; !ctx.channel().config().isAutoRead()) {
+<a class="jxr_linenumber" name="1823" href="#1823">1823</a>             readDuringHandshake = false;
+<a class="jxr_linenumber" name="1824" href="#1824">1824</a>             ctx.read();
+<a class="jxr_linenumber" name="1825" href="#1825">1825</a>         }
 <a class="jxr_linenumber" name="1826" href="#1826">1826</a>     }
 <a class="jxr_linenumber" name="1827" href="#1827">1827</a> 
 <a class="jxr_linenumber" name="1828" href="#1828">1828</a>     <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="1829" href="#1829">1829</a> <em class="jxr_javadoccomment">     * Notify all the handshake futures about the failure during the handshake.</em>
 <a class="jxr_linenumber" name="1830" href="#1830">1830</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="1831" href="#1831">1831</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeFailure(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause, <strong class="jxr_keyword">boolean</strong> closeInbound,
-<a class="jxr_linenumber" name="1832" href="#1832">1832</a>                                      <strong class="jxr_keyword">boolean</strong> notify, <strong class="jxr_keyword">boolean</strong> alwaysFlushAndClose) {
-<a class="jxr_linenumber" name="1833" href="#1833">1833</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1834" href="#1834">1834</a>             <em class="jxr_comment">// Release all resources such as internal buffers that SSLEngine</em>
-<a class="jxr_linenumber" name="1835" href="#1835">1835</a>             <em class="jxr_comment">// is managing.</em>
-<a class="jxr_linenumber" name="1836" href="#1836">1836</a>             outboundClosed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1837" href="#1837">1837</a>             engine.closeOutbound();
-<a class="jxr_linenumber" name="1838" href="#1838">1838</a> 
-<a class="jxr_linenumber" name="1839" href="#1839">1839</a>             <strong class="jxr_keyword">if</strong> (closeInbound) {
-<a class="jxr_linenumber" name="1840" href="#1840">1840</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1841" href="#1841">1841</a>                     engine.closeInbound();
-<a class="jxr_linenumber" name="1842" href="#1842">1842</a>                 } <strong class="jxr_keyword">catch</strong> (SSLException e) {
-<a class="jxr_linenumber" name="1843" href="#1843">1843</a>                     <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="1844" href="#1844">1844</a>                         <em class="jxr_comment">// only log in debug mode as it most likely harmless and latest chrome still trigger</em>
-<a class="jxr_linenumber" name="1845" href="#1845">1845</a>                         <em class="jxr_comment">// this all the time.</em>
-<a class="jxr_linenumber" name="1846" href="#1846">1846</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="1847" href="#1847">1847</a>                         <em class="jxr_comment">// See https://github.com/netty/netty/issues/1340</em>
-<a class="jxr_linenumber" name="1848" href="#1848">1848</a>                         String msg = e.getMessage();
-<a class="jxr_linenumber" name="1849" href="#1849">1849</a>                         <strong class="jxr_keyword">if</strong> (msg == <strong class="jxr_keyword">null</strong> || !(msg.contains(<span class="jxr_string">"possible truncation attack"</span>) ||
-<a class="jxr_linenumber" name="1850" href="#1850">1850</a>                                 msg.contains(<span class="jxr_string">"closing inbound before receiving peer's close_notify"</span>))) {
-<a class="jxr_linenumber" name="1851" href="#1851">1851</a>                             logger.debug(<span class="jxr_string">"{} SSLEngine.closeInbound() raised an exception."</span>, ctx.channel(), e);
-<a class="jxr_linenumber" name="1852" href="#1852">1852</a>                         }
-<a class="jxr_linenumber" name="1853" href="#1853">1853</a>                     }
-<a class="jxr_linenumber" name="1854" href="#1854">1854</a>                 }
-<a class="jxr_linenumber" name="1855" href="#1855">1855</a>             }
-<a class="jxr_linenumber" name="1856" href="#1856">1856</a>             <strong class="jxr_keyword">if</strong> (handshakePromise.tryFailure(cause) || alwaysFlushAndClose) {
-<a class="jxr_linenumber" name="1857" href="#1857">1857</a>                 SslUtils.handleHandshakeFailure(ctx, cause, notify);
-<a class="jxr_linenumber" name="1858" href="#1858">1858</a>             }
-<a class="jxr_linenumber" name="1859" href="#1859">1859</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="1860" href="#1860">1860</a>             <em class="jxr_comment">// Ensure we remove and fail all pending writes in all cases and so release memory quickly.</em>
-<a class="jxr_linenumber" name="1861" href="#1861">1861</a>             releaseAndFailAll(ctx, cause);
-<a class="jxr_linenumber" name="1862" href="#1862">1862</a>         }
-<a class="jxr_linenumber" name="1863" href="#1863">1863</a>     }
-<a class="jxr_linenumber" name="1864" href="#1864">1864</a> 
-<a class="jxr_linenumber" name="1865" href="#1865">1865</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeFailureTransportFailure(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
-<a class="jxr_linenumber" name="1866" href="#1866">1866</a>         <em class="jxr_comment">// If TLS control frames fail to write we are in an unknown state and may become out of</em>
-<a class="jxr_linenumber" name="1867" href="#1867">1867</a>         <em class="jxr_comment">// sync with our peer. We give up and close the channel. This will also take care of</em>
-<a class="jxr_linenumber" name="1868" href="#1868">1868</a>         <em class="jxr_comment">// cleaning up any outstanding state (e.g. handshake promise, queued unencrypted data).</em>
-<a class="jxr_linenumber" name="1869" href="#1869">1869</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1870" href="#1870">1870</a>             SSLException transportFailure = <strong class="jxr_keyword">new</strong> SSLException(<span class="jxr_string">"failure when writing TLS control frames"</span>, cause);
-<a class="jxr_linenumber" name="1871" href="#1871">1871</a>             releaseAndFailAll(ctx, transportFailure);
-<a class="jxr_linenumber" name="1872" href="#1872">1872</a>             <strong class="jxr_keyword">if</strong> (handshakePromise.tryFailure(transportFailure)) {
-<a class="jxr_linenumber" name="1873" href="#1873">1873</a>                 ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslHandshakeCompletionEvent.html">SslHandshakeCompletionEvent</a>(transportFailure));
-<a class="jxr_linenumber" name="1874" href="#1874">1874</a>             }
-<a class="jxr_linenumber" name="1875" href="#1875">1875</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="1876" href="#1876">1876</a>             ctx.close();
-<a class="jxr_linenumber" name="1877" href="#1877">1877</a>         }
-<a class="jxr_linenumber" name="1878" href="#1878">1878</a>     }
-<a class="jxr_linenumber" name="1879" href="#1879">1879</a> 
-<a class="jxr_linenumber" name="1880" href="#1880">1880</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> releaseAndFailAll(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
-<a class="jxr_linenumber" name="1881" href="#1881">1881</a>         <strong class="jxr_keyword">if</strong> (pendingUnencryptedWrites != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1882" href="#1882">1882</a>             pendingUnencryptedWrites.releaseAndFailAll(ctx, cause);
-<a class="jxr_linenumber" name="1883" href="#1883">1883</a>         }
-<a class="jxr_linenumber" name="1884" href="#1884">1884</a>     }
-<a class="jxr_linenumber" name="1885" href="#1885">1885</a> 
-<a class="jxr_linenumber" name="1886" href="#1886">1886</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyClosePromise(Throwable cause) {
-<a class="jxr_linenumber" name="1887" href="#1887">1887</a>         <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1888" href="#1888">1888</a>             <strong class="jxr_keyword">if</strong> (sslClosePromise.trySuccess(ctx.channel())) {
-<a class="jxr_linenumber" name="1889" href="#1889">1889</a>                 ctx.fireUserEventTriggered(SslCloseCompletionEvent.SUCCESS);
-<a class="jxr_linenumber" name="1890" href="#1890">1890</a>             }
-<a class="jxr_linenumber" name="1891" href="#1891">1891</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1892" href="#1892">1892</a>             <strong class="jxr_keyword">if</strong> (sslClosePromise.tryFailure(cause)) {
-<a class="jxr_linenumber" name="1893" href="#1893">1893</a>                 ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslCloseCompletionEvent.html">SslCloseCompletionEvent</a>(cause));
-<a class="jxr_linenumber" name="1894" href="#1894">1894</a>             }
-<a class="jxr_linenumber" name="1895" href="#1895">1895</a>         }
-<a class="jxr_linenumber" name="1896" href="#1896">1896</a>     }
-<a class="jxr_linenumber" name="1897" href="#1897">1897</a> 
-<a class="jxr_linenumber" name="1898" href="#1898">1898</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeOutboundAndChannel(
-<a class="jxr_linenumber" name="1899" href="#1899">1899</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise, <strong class="jxr_keyword">boolean</strong> disconnect) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1900" href="#1900">1900</a>         outboundClosed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1901" href="#1901">1901</a>         engine.closeOutbound();
-<a class="jxr_linenumber" name="1902" href="#1902">1902</a> 
-<a class="jxr_linenumber" name="1903" href="#1903">1903</a>         <strong class="jxr_keyword">if</strong> (!ctx.channel().isActive()) {
-<a class="jxr_linenumber" name="1904" href="#1904">1904</a>             <strong class="jxr_keyword">if</strong> (disconnect) {
-<a class="jxr_linenumber" name="1905" href="#1905">1905</a>                 ctx.disconnect(promise);
-<a class="jxr_linenumber" name="1906" href="#1906">1906</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1907" href="#1907">1907</a>                 ctx.close(promise);
-<a class="jxr_linenumber" name="1908" href="#1908">1908</a>             }
-<a class="jxr_linenumber" name="1909" href="#1909">1909</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="1910" href="#1910">1910</a>         }
-<a class="jxr_linenumber" name="1911" href="#1911">1911</a> 
-<a class="jxr_linenumber" name="1912" href="#1912">1912</a>         <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> closeNotifyPromise = ctx.newPromise();
-<a class="jxr_linenumber" name="1913" href="#1913">1913</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="1914" href="#1914">1914</a>             flush(ctx, closeNotifyPromise);
-<a class="jxr_linenumber" name="1915" href="#1915">1915</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="1916" href="#1916">1916</a>             <strong class="jxr_keyword">if</strong> (!closeNotify) {
-<a class="jxr_linenumber" name="1917" href="#1917">1917</a>                 closeNotify = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1918" href="#1918">1918</a>                 <em class="jxr_comment">// It's important that we do not pass the original ChannelPromise to safeClose(...) as when flush(....)</em>
-<a class="jxr_linenumber" name="1919" href="#1919">1919</a>                 <em class="jxr_comment">// throws an Exception it will be propagated to the AbstractChannelHandlerContext which will try</em>
-<a class="jxr_linenumber" name="1920" href="#1920">1920</a>                 <em class="jxr_comment">// to fail the promise because of this. This will then fail as it was already completed by</em>
-<a class="jxr_linenumber" name="1921" href="#1921">1921</a>                 <em class="jxr_comment">// safeClose(...). We create a new ChannelPromise and try to notify the original ChannelPromise</em>
-<a class="jxr_linenumber" name="1922" href="#1922">1922</a>                 <em class="jxr_comment">// once it is complete. If we fail to do so we just ignore it as in this case it was failed already</em>
-<a class="jxr_linenumber" name="1923" href="#1923">1923</a>                 <em class="jxr_comment">// because of a propagated Exception.</em>
-<a class="jxr_linenumber" name="1924" href="#1924">1924</a>                 <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="1925" href="#1925">1925</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/5931</em>
-<a class="jxr_linenumber" name="1926" href="#1926">1926</a>                 safeClose(ctx, closeNotifyPromise, ctx.newPromise().addListener(
-<a class="jxr_linenumber" name="1927" href="#1927">1927</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelPromiseNotifier.html">ChannelPromiseNotifier</a>(false, promise)));
-<a class="jxr_linenumber" name="1928" href="#1928">1928</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1929" href="#1929">1929</a>                 <em class="jxr_comment">/// We already handling the close_notify so just attach the promise to the sslClosePromise.</em>
-<a class="jxr_linenumber" name="1930" href="#1930">1930</a>                 sslClosePromise.addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Channel&gt;() {
-<a class="jxr_linenumber" name="1931" href="#1931">1931</a>                     @Override
-<a class="jxr_linenumber" name="1932" href="#1932">1932</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Channel&gt; future) {
-<a class="jxr_linenumber" name="1933" href="#1933">1933</a>                         promise.setSuccess();
-<a class="jxr_linenumber" name="1934" href="#1934">1934</a>                     }
-<a class="jxr_linenumber" name="1935" href="#1935">1935</a>                 });
-<a class="jxr_linenumber" name="1936" href="#1936">1936</a>             }
-<a class="jxr_linenumber" name="1937" href="#1937">1937</a>         }
-<a class="jxr_linenumber" name="1938" href="#1938">1938</a>     }
-<a class="jxr_linenumber" name="1939" href="#1939">1939</a> 
-<a class="jxr_linenumber" name="1940" href="#1940">1940</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> flush(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1941" href="#1941">1941</a>         <strong class="jxr_keyword">if</strong> (pendingUnencryptedWrites != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1942" href="#1942">1942</a>             pendingUnencryptedWrites.add(Unpooled.EMPTY_BUFFER, promise);
-<a class="jxr_linenumber" name="1943" href="#1943">1943</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="1944" href="#1944">1944</a>             promise.setFailure(newPendingWritesNullException());
-<a class="jxr_linenumber" name="1945" href="#1945">1945</a>         }
-<a class="jxr_linenumber" name="1946" href="#1946">1946</a>         flush(ctx);
-<a class="jxr_linenumber" name="1947" href="#1947">1947</a>     }
-<a class="jxr_linenumber" name="1948" href="#1948">1948</a> 
-<a class="jxr_linenumber" name="1949" href="#1949">1949</a>     @Override
-<a class="jxr_linenumber" name="1950" href="#1950">1950</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="1951" href="#1951">1951</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="1952" href="#1952">1952</a> 
-<a class="jxr_linenumber" name="1953" href="#1953">1953</a>         pendingUnencryptedWrites = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandlerCoalescingBufferQueue</a>(ctx.channel(), 16);
-<a class="jxr_linenumber" name="1954" href="#1954">1954</a>         <strong class="jxr_keyword">if</strong> (ctx.channel().isActive()) {
-<a class="jxr_linenumber" name="1955" href="#1955">1955</a>             startHandshakeProcessing();
-<a class="jxr_linenumber" name="1956" href="#1956">1956</a>         }
-<a class="jxr_linenumber" name="1957" href="#1957">1957</a>     }
-<a class="jxr_linenumber" name="1958" href="#1958">1958</a> 
-<a class="jxr_linenumber" name="1959" href="#1959">1959</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> startHandshakeProcessing() {
-<a class="jxr_linenumber" name="1960" href="#1960">1960</a>         <strong class="jxr_keyword">if</strong> (!handshakeStarted) {
-<a class="jxr_linenumber" name="1961" href="#1961">1961</a>             handshakeStarted = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="1962" href="#1962">1962</a>             <strong class="jxr_keyword">if</strong> (engine.getUseClientMode()) {
-<a class="jxr_linenumber" name="1963" href="#1963">1963</a>                 <em class="jxr_comment">// Begin the initial handshake.</em>
-<a class="jxr_linenumber" name="1964" href="#1964">1964</a>                 <em class="jxr_comment">// channelActive() event has been fired already, which means this.channelActive() will</em>
-<a class="jxr_linenumber" name="1965" href="#1965">1965</a>                 <em class="jxr_comment">// not be invoked. We have to initialize here instead.</em>
-<a class="jxr_linenumber" name="1966" href="#1966">1966</a>                 handshake();
-<a class="jxr_linenumber" name="1967" href="#1967">1967</a>             }
-<a class="jxr_linenumber" name="1968" href="#1968">1968</a>             applyHandshakeTimeout();
-<a class="jxr_linenumber" name="1969" href="#1969">1969</a>         }
-<a class="jxr_linenumber" name="1970" href="#1970">1970</a>     }
-<a class="jxr_linenumber" name="1971" href="#1971">1971</a> 
-<a class="jxr_linenumber" name="1972" href="#1972">1972</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="1973" href="#1973">1973</a> <em class="jxr_javadoccomment">     * Performs TLS renegotiation.</em>
-<a class="jxr_linenumber" name="1974" href="#1974">1974</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="1975" href="#1975">1975</a>     <strong class="jxr_keyword">public</strong> Future&lt;Channel&gt; renegotiate() {
-<a class="jxr_linenumber" name="1976" href="#1976">1976</a>         <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx = <strong class="jxr_keyword">this</strong>.ctx;
-<a class="jxr_linenumber" name="1977" href="#1977">1977</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1978" href="#1978">1978</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException();
-<a class="jxr_linenumber" name="1979" href="#1979">1979</a>         }
-<a class="jxr_linenumber" name="1980" href="#1980">1980</a> 
-<a class="jxr_linenumber" name="1981" href="#1981">1981</a>         <strong class="jxr_keyword">return</strong> renegotiate(ctx.executor().&lt;Channel&gt;newPromise());
-<a class="jxr_linenumber" name="1982" href="#1982">1982</a>     }
-<a class="jxr_linenumber" name="1983" href="#1983">1983</a> 
-<a class="jxr_linenumber" name="1984" href="#1984">1984</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="1985" href="#1985">1985</a> <em class="jxr_javadoccomment">     * Performs TLS renegotiation.</em>
-<a class="jxr_linenumber" name="1986" href="#1986">1986</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="1987" href="#1987">1987</a>     <strong class="jxr_keyword">public</strong> Future&lt;Channel&gt; renegotiate(<strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; promise) {
-<a class="jxr_linenumber" name="1988" href="#1988">1988</a>         ObjectUtil.checkNotNull(promise, <span class="jxr_string">"promise"</span>);
-<a class="jxr_linenumber" name="1989" href="#1989">1989</a> 
-<a class="jxr_linenumber" name="1990" href="#1990">1990</a>         <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx = <strong class="jxr_keyword">this</strong>.ctx;
-<a class="jxr_linenumber" name="1991" href="#1991">1991</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="1992" href="#1992">1992</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException();
-<a class="jxr_linenumber" name="1993" href="#1993">1993</a>         }
-<a class="jxr_linenumber" name="1994" href="#1994">1994</a> 
-<a class="jxr_linenumber" name="1995" href="#1995">1995</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor = ctx.executor();
-<a class="jxr_linenumber" name="1996" href="#1996">1996</a>         <strong class="jxr_keyword">if</strong> (!executor.inEventLoop()) {
-<a class="jxr_linenumber" name="1997" href="#1997">1997</a>             executor.execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="1998" href="#1998">1998</a>                 @Override
-<a class="jxr_linenumber" name="1999" href="#1999">1999</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="2000" href="#2000">2000</a>                     renegotiateOnEventLoop(promise);
-<a class="jxr_linenumber" name="2001" href="#2001">2001</a>                 }
-<a class="jxr_linenumber" name="2002" href="#2002">2002</a>             });
-<a class="jxr_linenumber" name="2003" href="#2003">2003</a>             <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="2004" href="#2004">2004</a>         }
-<a class="jxr_linenumber" name="2005" href="#2005">2005</a> 
-<a class="jxr_linenumber" name="2006" href="#2006">2006</a>         renegotiateOnEventLoop(promise);
-<a class="jxr_linenumber" name="2007" href="#2007">2007</a>         <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="2008" href="#2008">2008</a>     }
-<a class="jxr_linenumber" name="2009" href="#2009">2009</a> 
-<a class="jxr_linenumber" name="2010" href="#2010">2010</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> renegotiateOnEventLoop(<strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; newHandshakePromise) {
-<a class="jxr_linenumber" name="2011" href="#2011">2011</a>         <strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; oldHandshakePromise = handshakePromise;
-<a class="jxr_linenumber" name="2012" href="#2012">2012</a>         <strong class="jxr_keyword">if</strong> (!oldHandshakePromise.isDone()) {
-<a class="jxr_linenumber" name="2013" href="#2013">2013</a>             <em class="jxr_comment">// There's no need to handshake because handshake is in progress already.</em>
-<a class="jxr_linenumber" name="2014" href="#2014">2014</a>             <em class="jxr_comment">// Merge the new promise into the old one.</em>
-<a class="jxr_linenumber" name="2015" href="#2015">2015</a>             oldHandshakePromise.addListener(<strong class="jxr_keyword">new</strong> PromiseNotifier&lt;Channel, Future&lt;Channel&gt;&gt;(newHandshakePromise));
-<a class="jxr_linenumber" name="2016" href="#2016">2016</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2017" href="#2017">2017</a>             handshakePromise = newHandshakePromise;
-<a class="jxr_linenumber" name="2018" href="#2018">2018</a>             handshake();
-<a class="jxr_linenumber" name="2019" href="#2019">2019</a>             applyHandshakeTimeout();
-<a class="jxr_linenumber" name="2020" href="#2020">2020</a>         }
-<a class="jxr_linenumber" name="2021" href="#2021">2021</a>     }
-<a class="jxr_linenumber" name="2022" href="#2022">2022</a> 
-<a class="jxr_linenumber" name="2023" href="#2023">2023</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="2024" href="#2024">2024</a> <em class="jxr_javadoccomment">     * Performs TLS (re)negotiation.</em>
-<a class="jxr_linenumber" name="2025" href="#2025">2025</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="2026" href="#2026">2026</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> handshake() {
-<a class="jxr_linenumber" name="2027" href="#2027">2027</a>         <strong class="jxr_keyword">if</strong> (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
-<a class="jxr_linenumber" name="2028" href="#2028">2028</a>             <em class="jxr_comment">// Not all SSLEngine implementations support calling beginHandshake multiple times while a handshake</em>
-<a class="jxr_linenumber" name="2029" href="#2029">2029</a>             <em class="jxr_comment">// is in progress. See https://github.com/netty/netty/issues/4718.</em>
-<a class="jxr_linenumber" name="2030" href="#2030">2030</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="2031" href="#2031">2031</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2032" href="#2032">2032</a>             <strong class="jxr_keyword">if</strong> (handshakePromise.isDone()) {
-<a class="jxr_linenumber" name="2033" href="#2033">2033</a>                 <em class="jxr_comment">// If the handshake is done already lets just return directly as there is no need to trigger it again.</em>
-<a class="jxr_linenumber" name="2034" href="#2034">2034</a>                 <em class="jxr_comment">// This can happen if the handshake(...) was triggered before we called channelActive(...) by a</em>
-<a class="jxr_linenumber" name="2035" href="#2035">2035</a>                 <em class="jxr_comment">// flush() that was triggered by a ChannelFutureListener that was added to the ChannelFuture returned</em>
-<a class="jxr_linenumber" name="2036" href="#2036">2036</a>                 <em class="jxr_comment">// from the connect(...) method. In this case we will see the flush() happen before we had a chance to</em>
-<a class="jxr_linenumber" name="2037" href="#2037">2037</a>                 <em class="jxr_comment">// call fireChannelActive() on the pipeline.</em>
-<a class="jxr_linenumber" name="2038" href="#2038">2038</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="2039" href="#2039">2039</a>             }
-<a class="jxr_linenumber" name="2040" href="#2040">2040</a>         }
-<a class="jxr_linenumber" name="2041" href="#2041">2041</a> 
-<a class="jxr_linenumber" name="2042" href="#2042">2042</a>         <em class="jxr_comment">// Begin handshake.</em>
-<a class="jxr_linenumber" name="2043" href="#2043">2043</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx = <strong class="jxr_keyword">this</strong>.ctx;
-<a class="jxr_linenumber" name="2044" href="#2044">2044</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="2045" href="#2045">2045</a>             engine.beginHandshake();
-<a class="jxr_linenumber" name="2046" href="#2046">2046</a>             wrapNonAppData(ctx, false);
-<a class="jxr_linenumber" name="2047" href="#2047">2047</a>         } <strong class="jxr_keyword">catch</strong> (Throwable e) {
-<a class="jxr_linenumber" name="2048" href="#2048">2048</a>             setHandshakeFailure(ctx, e);
-<a class="jxr_linenumber" name="2049" href="#2049">2049</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="2050" href="#2050">2050</a>             forceFlush(ctx);
-<a class="jxr_linenumber" name="2051" href="#2051">2051</a>         }
-<a class="jxr_linenumber" name="2052" href="#2052">2052</a>     }
-<a class="jxr_linenumber" name="2053" href="#2053">2053</a> 
-<a class="jxr_linenumber" name="2054" href="#2054">2054</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> applyHandshakeTimeout() {
-<a class="jxr_linenumber" name="2055" href="#2055">2055</a>         <strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; localHandshakePromise = <strong class="jxr_keyword">this</strong>.handshakePromise;
-<a class="jxr_linenumber" name="2056" href="#2056">2056</a> 
-<a class="jxr_linenumber" name="2057" href="#2057">2057</a>         <em class="jxr_comment">// Set timeout if necessary.</em>
-<a class="jxr_linenumber" name="2058" href="#2058">2058</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> handshakeTimeoutMillis = <strong class="jxr_keyword">this</strong>.handshakeTimeoutMillis;
-<a class="jxr_linenumber" name="2059" href="#2059">2059</a>         <strong class="jxr_keyword">if</strong> (handshakeTimeoutMillis &lt;= 0 || localHandshakePromise.isDone()) {
-<a class="jxr_linenumber" name="2060" href="#2060">2060</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="2061" href="#2061">2061</a>         }
-<a class="jxr_linenumber" name="2062" href="#2062">2062</a> 
-<a class="jxr_linenumber" name="2063" href="#2063">2063</a>         <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutFuture = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="2064" href="#2064">2064</a>             @Override
-<a class="jxr_linenumber" name="2065" href="#2065">2065</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="2066" href="#2066">2066</a>                 <strong class="jxr_keyword">if</strong> (localHandshakePromise.isDone()) {
-<a class="jxr_linenumber" name="2067" href="#2067">2067</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="2068" href="#2068">2068</a>                 }
-<a class="jxr_linenumber" name="2069" href="#2069">2069</a>                 SSLException exception =
-<a class="jxr_linenumber" name="2070" href="#2070">2070</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslHandshakeTimeoutException.html">SslHandshakeTimeoutException</a>(<span class="jxr_string">"handshake timed out after "</span> + handshakeTimeoutMillis + <span class="jxr_string">"ms"</span>);
-<a class="jxr_linenumber" name="2071" href="#2071">2071</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="2072" href="#2072">2072</a>                     <strong class="jxr_keyword">if</strong> (localHandshakePromise.tryFailure(exception)) {
-<a class="jxr_linenumber" name="2073" href="#2073">2073</a>                         SslUtils.handleHandshakeFailure(ctx, exception, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="2074" href="#2074">2074</a>                     }
-<a class="jxr_linenumber" name="2075" href="#2075">2075</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="2076" href="#2076">2076</a>                     releaseAndFailAll(ctx, exception);
-<a class="jxr_linenumber" name="2077" href="#2077">2077</a>                 }
-<a class="jxr_linenumber" name="2078" href="#2078">2078</a>             }
-<a class="jxr_linenumber" name="2079" href="#2079">2079</a>         }, handshakeTimeoutMillis, TimeUnit.MILLISECONDS);
-<a class="jxr_linenumber" name="2080" href="#2080">2080</a> 
-<a class="jxr_linenumber" name="2081" href="#2081">2081</a>         <em class="jxr_comment">// Cancel the handshake timeout when handshake is finished.</em>
-<a class="jxr_linenumber" name="2082" href="#2082">2082</a>         localHandshakePromise.addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Channel&gt;() {
-<a class="jxr_linenumber" name="2083" href="#2083">2083</a>             @Override
-<a class="jxr_linenumber" name="2084" href="#2084">2084</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Channel&gt; f) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="2085" href="#2085">2085</a>                 timeoutFuture.cancel(false);
-<a class="jxr_linenumber" name="2086" href="#2086">2086</a>             }
-<a class="jxr_linenumber" name="2087" href="#2087">2087</a>         });
-<a class="jxr_linenumber" name="2088" href="#2088">2088</a>     }
-<a class="jxr_linenumber" name="2089" href="#2089">2089</a> 
-<a class="jxr_linenumber" name="2090" href="#2090">2090</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> forceFlush(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="2091" href="#2091">2091</a>         needsFlush = false;
-<a class="jxr_linenumber" name="2092" href="#2092">2092</a>         ctx.flush();
-<a class="jxr_linenumber" name="2093" href="#2093">2093</a>     }
-<a class="jxr_linenumber" name="2094" href="#2094">2094</a> 
-<a class="jxr_linenumber" name="2095" href="#2095">2095</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="2096" href="#2096">2096</a> <em class="jxr_javadoccomment">     * Issues an initial TLS handshake once connected when used in client-mode</em>
-<a class="jxr_linenumber" name="2097" href="#2097">2097</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="2098" href="#2098">2098</a>     @Override
-<a class="jxr_linenumber" name="2099" href="#2099">2099</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="2100" href="#2100">2100</a>         <strong class="jxr_keyword">if</strong> (!startTls) {
-<a class="jxr_linenumber" name="2101" href="#2101">2101</a>             startHandshakeProcessing();
-<a class="jxr_linenumber" name="2102" href="#2102">2102</a>         }
-<a class="jxr_linenumber" name="2103" href="#2103">2103</a>         ctx.fireChannelActive();
-<a class="jxr_linenumber" name="2104" href="#2104">2104</a>     }
-<a class="jxr_linenumber" name="2105" href="#2105">2105</a> 
-<a class="jxr_linenumber" name="2106" href="#2106">2106</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> safeClose(
-<a class="jxr_linenumber" name="2107" href="#2107">2107</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> flushFuture,
-<a class="jxr_linenumber" name="2108" href="#2108">2108</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="2109" href="#2109">2109</a>         <strong class="jxr_keyword">if</strong> (!ctx.channel().isActive()) {
-<a class="jxr_linenumber" name="2110" href="#2110">2110</a>             ctx.close(promise);
-<a class="jxr_linenumber" name="2111" href="#2111">2111</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="2112" href="#2112">2112</a>         }
-<a class="jxr_linenumber" name="2113" href="#2113">2113</a> 
-<a class="jxr_linenumber" name="2114" href="#2114">2114</a>         <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutFuture;
-<a class="jxr_linenumber" name="2115" href="#2115">2115</a>         <strong class="jxr_keyword">if</strong> (!flushFuture.isDone()) {
-<a class="jxr_linenumber" name="2116" href="#2116">2116</a>             <strong class="jxr_keyword">long</strong> closeNotifyTimeout = closeNotifyFlushTimeoutMillis;
-<a class="jxr_linenumber" name="2117" href="#2117">2117</a>             <strong class="jxr_keyword">if</strong> (closeNotifyTimeout &gt; 0) {
-<a class="jxr_linenumber" name="2118" href="#2118">2118</a>                 <em class="jxr_comment">// Force-close the connection if close_notify is not fully sent in time.</em>
-<a class="jxr_linenumber" name="2119" href="#2119">2119</a>                 timeoutFuture = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="2120" href="#2120">2120</a>                     @Override
-<a class="jxr_linenumber" name="2121" href="#2121">2121</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="2122" href="#2122">2122</a>                         <em class="jxr_comment">// May be done in the meantime as cancel(...) is only best effort.</em>
-<a class="jxr_linenumber" name="2123" href="#2123">2123</a>                         <strong class="jxr_keyword">if</strong> (!flushFuture.isDone()) {
-<a class="jxr_linenumber" name="2124" href="#2124">2124</a>                             logger.warn(<span class="jxr_string">"{} Last write attempt timed out; force-closing the connection."</span>,
-<a class="jxr_linenumber" name="2125" href="#2125">2125</a>                                     ctx.channel());
-<a class="jxr_linenumber" name="2126" href="#2126">2126</a>                             addCloseListener(ctx.close(ctx.newPromise()), promise);
-<a class="jxr_linenumber" name="2127" href="#2127">2127</a>                         }
-<a class="jxr_linenumber" name="2128" href="#2128">2128</a>                     }
-<a class="jxr_linenumber" name="2129" href="#2129">2129</a>                 }, closeNotifyTimeout, TimeUnit.MILLISECONDS);
-<a class="jxr_linenumber" name="2130" href="#2130">2130</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2131" href="#2131">2131</a>                 timeoutFuture = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="2132" href="#2132">2132</a>             }
-<a class="jxr_linenumber" name="2133" href="#2133">2133</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2134" href="#2134">2134</a>             timeoutFuture = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="2135" href="#2135">2135</a>         }
-<a class="jxr_linenumber" name="2136" href="#2136">2136</a> 
-<a class="jxr_linenumber" name="2137" href="#2137">2137</a>         <em class="jxr_comment">// Close the connection if close_notify is sent in time.</em>
-<a class="jxr_linenumber" name="2138" href="#2138">2138</a>         flushFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="2139" href="#2139">2139</a>             @Override
-<a class="jxr_linenumber" name="2140" href="#2140">2140</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f)
-<a class="jxr_linenumber" name="2141" href="#2141">2141</a>                     <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="2142" href="#2142">2142</a>                 <strong class="jxr_keyword">if</strong> (timeoutFuture != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="2143" href="#2143">2143</a>                     timeoutFuture.cancel(false);
-<a class="jxr_linenumber" name="2144" href="#2144">2144</a>                 }
-<a class="jxr_linenumber" name="2145" href="#2145">2145</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> closeNotifyReadTimeout = closeNotifyReadTimeoutMillis;
-<a class="jxr_linenumber" name="2146" href="#2146">2146</a>                 <strong class="jxr_keyword">if</strong> (closeNotifyReadTimeout &lt;= 0) {
-<a class="jxr_linenumber" name="2147" href="#2147">2147</a>                     <em class="jxr_comment">// Trigger the close in all cases to make sure the promise is notified</em>
-<a class="jxr_linenumber" name="2148" href="#2148">2148</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/2358</em>
-<a class="jxr_linenumber" name="2149" href="#2149">2149</a>                     addCloseListener(ctx.close(ctx.newPromise()), promise);
-<a class="jxr_linenumber" name="2150" href="#2150">2150</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2151" href="#2151">2151</a>                     <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; closeNotifyReadTimeoutFuture;
-<a class="jxr_linenumber" name="2152" href="#2152">2152</a> 
-<a class="jxr_linenumber" name="2153" href="#2153">2153</a>                     <strong class="jxr_keyword">if</strong> (!sslClosePromise.isDone()) {
-<a class="jxr_linenumber" name="2154" href="#2154">2154</a>                         closeNotifyReadTimeoutFuture = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="2155" href="#2155">2155</a>                             @Override
-<a class="jxr_linenumber" name="2156" href="#2156">2156</a>                             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="2157" href="#2157">2157</a>                                 <strong class="jxr_keyword">if</strong> (!sslClosePromise.isDone()) {
-<a class="jxr_linenumber" name="2158" href="#2158">2158</a>                                     logger.debug(
-<a class="jxr_linenumber" name="2159" href="#2159">2159</a>                                             <span class="jxr_string">"{} did not receive close_notify in {}ms; force-closing the connection."</span>,
-<a class="jxr_linenumber" name="2160" href="#2160">2160</a>                                             ctx.channel(), closeNotifyReadTimeout);
-<a class="jxr_linenumber" name="2161" href="#2161">2161</a> 
-<a class="jxr_linenumber" name="2162" href="#2162">2162</a>                                     <em class="jxr_comment">// Do the close now...</em>
-<a class="jxr_linenumber" name="2163" href="#2163">2163</a>                                     addCloseListener(ctx.close(ctx.newPromise()), promise);
-<a class="jxr_linenumber" name="2164" href="#2164">2164</a>                                 }
-<a class="jxr_linenumber" name="2165" href="#2165">2165</a>                             }
-<a class="jxr_linenumber" name="2166" href="#2166">2166</a>                         }, closeNotifyReadTimeout, TimeUnit.MILLISECONDS);
-<a class="jxr_linenumber" name="2167" href="#2167">2167</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2168" href="#2168">2168</a>                         closeNotifyReadTimeoutFuture = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="2169" href="#2169">2169</a>                     }
-<a class="jxr_linenumber" name="2170" href="#2170">2170</a> 
-<a class="jxr_linenumber" name="2171" href="#2171">2171</a>                     <em class="jxr_comment">// Do the close once the we received the close_notify.</em>
-<a class="jxr_linenumber" name="2172" href="#2172">2172</a>                     sslClosePromise.addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Channel&gt;() {
-<a class="jxr_linenumber" name="2173" href="#2173">2173</a>                         @Override
-<a class="jxr_linenumber" name="2174" href="#2174">2174</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Channel&gt; future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="2175" href="#2175">2175</a>                             <strong class="jxr_keyword">if</strong> (closeNotifyReadTimeoutFuture != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="2176" href="#2176">2176</a>                                 closeNotifyReadTimeoutFuture.cancel(false);
-<a class="jxr_linenumber" name="2177" href="#2177">2177</a>                             }
-<a class="jxr_linenumber" name="2178" href="#2178">2178</a>                             addCloseListener(ctx.close(ctx.newPromise()), promise);
-<a class="jxr_linenumber" name="2179" href="#2179">2179</a>                         }
-<a class="jxr_linenumber" name="2180" href="#2180">2180</a>                     });
-<a class="jxr_linenumber" name="2181" href="#2181">2181</a>                 }
-<a class="jxr_linenumber" name="2182" href="#2182">2182</a>             }
-<a class="jxr_linenumber" name="2183" href="#2183">2183</a>         });
-<a class="jxr_linenumber" name="2184" href="#2184">2184</a>     }
-<a class="jxr_linenumber" name="2185" href="#2185">2185</a> 
-<a class="jxr_linenumber" name="2186" href="#2186">2186</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> addCloseListener(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="2187" href="#2187">2187</a>         <em class="jxr_comment">// We notify the promise in the ChannelPromiseNotifier as there is a "race" where the close(...) call</em>
-<a class="jxr_linenumber" name="2188" href="#2188">2188</a>         <em class="jxr_comment">// by the timeoutFuture and the close call in the flushFuture listener will be called. Because of</em>
-<a class="jxr_linenumber" name="2189" href="#2189">2189</a>         <em class="jxr_comment">// this we need to use trySuccess() and tryFailure(...) as otherwise we can cause an</em>
-<a class="jxr_linenumber" name="2190" href="#2190">2190</a>         <em class="jxr_comment">// IllegalStateException.</em>
-<a class="jxr_linenumber" name="2191" href="#2191">2191</a>         <em class="jxr_comment">// Also we not want to log if the notification happens as this is expected in some cases.</em>
-<a class="jxr_linenumber" name="2192" href="#2192">2192</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/5598</em>
-<a class="jxr_linenumber" name="2193" href="#2193">2193</a>         future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelPromiseNotifier.html">ChannelPromiseNotifier</a>(false, promise));
-<a class="jxr_linenumber" name="2194" href="#2194">2194</a>     }
-<a class="jxr_linenumber" name="2195" href="#2195">2195</a> 
-<a class="jxr_linenumber" name="2196" href="#2196">2196</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="2197" href="#2197">2197</a> <em class="jxr_javadoccomment">     * Always prefer a direct buffer when it's pooled, so that we reduce the number of memory copies</em>
-<a class="jxr_linenumber" name="2198" href="#2198">2198</a> <em class="jxr_javadoccomment">     * in {@link OpenSslEngine}.</em>
-<a class="jxr_linenumber" name="2199" href="#2199">2199</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="2200" href="#2200">2200</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> allocate(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> capacity) {
-<a class="jxr_linenumber" name="2201" href="#2201">2201</a>         <a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc = ctx.alloc();
-<a class="jxr_linenumber" name="2202" href="#2202">2202</a>         <strong class="jxr_keyword">if</strong> (engineType.wantsDirectBuffer) {
-<a class="jxr_linenumber" name="2203" href="#2203">2203</a>             <strong class="jxr_keyword">return</strong> alloc.directBuffer(capacity);
-<a class="jxr_linenumber" name="2204" href="#2204">2204</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2205" href="#2205">2205</a>             <strong class="jxr_keyword">return</strong> alloc.buffer(capacity);
-<a class="jxr_linenumber" name="2206" href="#2206">2206</a>         }
-<a class="jxr_linenumber" name="2207" href="#2207">2207</a>     }
-<a class="jxr_linenumber" name="2208" href="#2208">2208</a> 
-<a class="jxr_linenumber" name="2209" href="#2209">2209</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="2210" href="#2210">2210</a> <em class="jxr_javadoccomment">     * Allocates an outbound network buffer for {@link SSLEngine#wrap(ByteBuffer, ByteBuffer)} which can encrypt</em>
-<a class="jxr_linenumber" name="2211" href="#2211">2211</a> <em class="jxr_javadoccomment">     * the specified amount of pending bytes.</em>
-<a class="jxr_linenumber" name="2212" href="#2212">2212</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="2213" href="#2213">2213</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> allocateOutNetBuf(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> pendingBytes, <strong class="jxr_keyword">int</strong> numComponents) {
-<a class="jxr_linenumber" name="2214" href="#2214">2214</a>         <strong class="jxr_keyword">return</strong> engineType.allocateWrapBuffer(<strong class="jxr_keyword">this</strong>, ctx.alloc(), pendingBytes, numComponents);
-<a class="jxr_linenumber" name="2215" href="#2215">2215</a>     }
-<a class="jxr_linenumber" name="2216" href="#2216">2216</a> 
-<a class="jxr_linenumber" name="2217" href="#2217">2217</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="2218" href="#2218">2218</a> <em class="jxr_javadoccomment">     * Each call to SSL_write will introduce about ~100 bytes of overhead. This coalescing queue attempts to increase</em>
-<a class="jxr_linenumber" name="2219" href="#2219">2219</a> <em class="jxr_javadoccomment">     * goodput by aggregating the plaintext in chunks of {@link #wrapDataSize}. If many small chunks are written</em>
-<a class="jxr_linenumber" name="2220" href="#2220">2220</a> <em class="jxr_javadoccomment">     * this can increase goodput, decrease the amount of calls to SSL_write, and decrease overall encryption operations.</em>
-<a class="jxr_linenumber" name="2221" href="#2221">2221</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="2222" href="#2222">2222</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandlerCoalescingBufferQueue</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/AbstractCoalescingBufferQueue.html">AbstractCoalescingBufferQueue</a> {
+<a class="jxr_linenumber" name="1831" href="#1831">1831</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeFailure(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="1832" href="#1832">1832</a>         setHandshakeFailure(ctx, cause, <strong class="jxr_keyword">true</strong>, <strong class="jxr_keyword">true</strong>, false);
+<a class="jxr_linenumber" name="1833" href="#1833">1833</a>     }
+<a class="jxr_linenumber" name="1834" href="#1834">1834</a> 
+<a class="jxr_linenumber" name="1835" href="#1835">1835</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="1836" href="#1836">1836</a> <em class="jxr_javadoccomment">     * Notify all the handshake futures about the failure during the handshake.</em>
+<a class="jxr_linenumber" name="1837" href="#1837">1837</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="1838" href="#1838">1838</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeFailure(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause, <strong class="jxr_keyword">boolean</strong> closeInbound,
+<a class="jxr_linenumber" name="1839" href="#1839">1839</a>                                      <strong class="jxr_keyword">boolean</strong> notify, <strong class="jxr_keyword">boolean</strong> alwaysFlushAndClose) {
+<a class="jxr_linenumber" name="1840" href="#1840">1840</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1841" href="#1841">1841</a>             <em class="jxr_comment">// Release all resources such as internal buffers that SSLEngine</em>
+<a class="jxr_linenumber" name="1842" href="#1842">1842</a>             <em class="jxr_comment">// is managing.</em>
+<a class="jxr_linenumber" name="1843" href="#1843">1843</a>             outboundClosed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1844" href="#1844">1844</a>             engine.closeOutbound();
+<a class="jxr_linenumber" name="1845" href="#1845">1845</a> 
+<a class="jxr_linenumber" name="1846" href="#1846">1846</a>             <strong class="jxr_keyword">if</strong> (closeInbound) {
+<a class="jxr_linenumber" name="1847" href="#1847">1847</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1848" href="#1848">1848</a>                     engine.closeInbound();
+<a class="jxr_linenumber" name="1849" href="#1849">1849</a>                 } <strong class="jxr_keyword">catch</strong> (SSLException e) {
+<a class="jxr_linenumber" name="1850" href="#1850">1850</a>                     <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="1851" href="#1851">1851</a>                         <em class="jxr_comment">// only log in debug mode as it most likely harmless and latest chrome still trigger</em>
+<a class="jxr_linenumber" name="1852" href="#1852">1852</a>                         <em class="jxr_comment">// this all the time.</em>
+<a class="jxr_linenumber" name="1853" href="#1853">1853</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="1854" href="#1854">1854</a>                         <em class="jxr_comment">// See https://github.com/netty/netty/issues/1340</em>
+<a class="jxr_linenumber" name="1855" href="#1855">1855</a>                         String msg = e.getMessage();
+<a class="jxr_linenumber" name="1856" href="#1856">1856</a>                         <strong class="jxr_keyword">if</strong> (msg == <strong class="jxr_keyword">null</strong> || !(msg.contains(<span class="jxr_string">"possible truncation attack"</span>) ||
+<a class="jxr_linenumber" name="1857" href="#1857">1857</a>                                 msg.contains(<span class="jxr_string">"closing inbound before receiving peer's close_notify"</span>))) {
+<a class="jxr_linenumber" name="1858" href="#1858">1858</a>                             logger.debug(<span class="jxr_string">"{} SSLEngine.closeInbound() raised an exception."</span>, ctx.channel(), e);
+<a class="jxr_linenumber" name="1859" href="#1859">1859</a>                         }
+<a class="jxr_linenumber" name="1860" href="#1860">1860</a>                     }
+<a class="jxr_linenumber" name="1861" href="#1861">1861</a>                 }
+<a class="jxr_linenumber" name="1862" href="#1862">1862</a>             }
+<a class="jxr_linenumber" name="1863" href="#1863">1863</a>             <strong class="jxr_keyword">if</strong> (handshakePromise.tryFailure(cause) || alwaysFlushAndClose) {
+<a class="jxr_linenumber" name="1864" href="#1864">1864</a>                 SslUtils.handleHandshakeFailure(ctx, cause, notify);
+<a class="jxr_linenumber" name="1865" href="#1865">1865</a>             }
+<a class="jxr_linenumber" name="1866" href="#1866">1866</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="1867" href="#1867">1867</a>             <em class="jxr_comment">// Ensure we remove and fail all pending writes in all cases and so release memory quickly.</em>
+<a class="jxr_linenumber" name="1868" href="#1868">1868</a>             releaseAndFailAll(ctx, cause);
+<a class="jxr_linenumber" name="1869" href="#1869">1869</a>         }
+<a class="jxr_linenumber" name="1870" href="#1870">1870</a>     }
+<a class="jxr_linenumber" name="1871" href="#1871">1871</a> 
+<a class="jxr_linenumber" name="1872" href="#1872">1872</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setHandshakeFailureTransportFailure(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="1873" href="#1873">1873</a>         <em class="jxr_comment">// If TLS control frames fail to write we are in an unknown state and may become out of</em>
+<a class="jxr_linenumber" name="1874" href="#1874">1874</a>         <em class="jxr_comment">// sync with our peer. We give up and close the channel. This will also take care of</em>
+<a class="jxr_linenumber" name="1875" href="#1875">1875</a>         <em class="jxr_comment">// cleaning up any outstanding state (e.g. handshake promise, queued unencrypted data).</em>
+<a class="jxr_linenumber" name="1876" href="#1876">1876</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1877" href="#1877">1877</a>             SSLException transportFailure = <strong class="jxr_keyword">new</strong> SSLException(<span class="jxr_string">"failure when writing TLS control frames"</span>, cause);
+<a class="jxr_linenumber" name="1878" href="#1878">1878</a>             releaseAndFailAll(ctx, transportFailure);
+<a class="jxr_linenumber" name="1879" href="#1879">1879</a>             <strong class="jxr_keyword">if</strong> (handshakePromise.tryFailure(transportFailure)) {
+<a class="jxr_linenumber" name="1880" href="#1880">1880</a>                 ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslHandshakeCompletionEvent.html">SslHandshakeCompletionEvent</a>(transportFailure));
+<a class="jxr_linenumber" name="1881" href="#1881">1881</a>             }
+<a class="jxr_linenumber" name="1882" href="#1882">1882</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="1883" href="#1883">1883</a>             ctx.close();
+<a class="jxr_linenumber" name="1884" href="#1884">1884</a>         }
+<a class="jxr_linenumber" name="1885" href="#1885">1885</a>     }
+<a class="jxr_linenumber" name="1886" href="#1886">1886</a> 
+<a class="jxr_linenumber" name="1887" href="#1887">1887</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> releaseAndFailAll(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="1888" href="#1888">1888</a>         <strong class="jxr_keyword">if</strong> (pendingUnencryptedWrites != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1889" href="#1889">1889</a>             pendingUnencryptedWrites.releaseAndFailAll(ctx, cause);
+<a class="jxr_linenumber" name="1890" href="#1890">1890</a>         }
+<a class="jxr_linenumber" name="1891" href="#1891">1891</a>     }
+<a class="jxr_linenumber" name="1892" href="#1892">1892</a> 
+<a class="jxr_linenumber" name="1893" href="#1893">1893</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyClosePromise(Throwable cause) {
+<a class="jxr_linenumber" name="1894" href="#1894">1894</a>         <strong class="jxr_keyword">if</strong> (cause == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1895" href="#1895">1895</a>             <strong class="jxr_keyword">if</strong> (sslClosePromise.trySuccess(ctx.channel())) {
+<a class="jxr_linenumber" name="1896" href="#1896">1896</a>                 ctx.fireUserEventTriggered(SslCloseCompletionEvent.SUCCESS);
+<a class="jxr_linenumber" name="1897" href="#1897">1897</a>             }
+<a class="jxr_linenumber" name="1898" href="#1898">1898</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1899" href="#1899">1899</a>             <strong class="jxr_keyword">if</strong> (sslClosePromise.tryFailure(cause)) {
+<a class="jxr_linenumber" name="1900" href="#1900">1900</a>                 ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslCloseCompletionEvent.html">SslCloseCompletionEvent</a>(cause));
+<a class="jxr_linenumber" name="1901" href="#1901">1901</a>             }
+<a class="jxr_linenumber" name="1902" href="#1902">1902</a>         }
+<a class="jxr_linenumber" name="1903" href="#1903">1903</a>     }
+<a class="jxr_linenumber" name="1904" href="#1904">1904</a> 
+<a class="jxr_linenumber" name="1905" href="#1905">1905</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> closeOutboundAndChannel(
+<a class="jxr_linenumber" name="1906" href="#1906">1906</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise, <strong class="jxr_keyword">boolean</strong> disconnect) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1907" href="#1907">1907</a>         outboundClosed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1908" href="#1908">1908</a>         engine.closeOutbound();
+<a class="jxr_linenumber" name="1909" href="#1909">1909</a> 
+<a class="jxr_linenumber" name="1910" href="#1910">1910</a>         <strong class="jxr_keyword">if</strong> (!ctx.channel().isActive()) {
+<a class="jxr_linenumber" name="1911" href="#1911">1911</a>             <strong class="jxr_keyword">if</strong> (disconnect) {
+<a class="jxr_linenumber" name="1912" href="#1912">1912</a>                 ctx.disconnect(promise);
+<a class="jxr_linenumber" name="1913" href="#1913">1913</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1914" href="#1914">1914</a>                 ctx.close(promise);
+<a class="jxr_linenumber" name="1915" href="#1915">1915</a>             }
+<a class="jxr_linenumber" name="1916" href="#1916">1916</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="1917" href="#1917">1917</a>         }
+<a class="jxr_linenumber" name="1918" href="#1918">1918</a> 
+<a class="jxr_linenumber" name="1919" href="#1919">1919</a>         <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> closeNotifyPromise = ctx.newPromise();
+<a class="jxr_linenumber" name="1920" href="#1920">1920</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="1921" href="#1921">1921</a>             flush(ctx, closeNotifyPromise);
+<a class="jxr_linenumber" name="1922" href="#1922">1922</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="1923" href="#1923">1923</a>             <strong class="jxr_keyword">if</strong> (!closeNotify) {
+<a class="jxr_linenumber" name="1924" href="#1924">1924</a>                 closeNotify = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1925" href="#1925">1925</a>                 <em class="jxr_comment">// It's important that we do not pass the original ChannelPromise to safeClose(...) as when flush(....)</em>
+<a class="jxr_linenumber" name="1926" href="#1926">1926</a>                 <em class="jxr_comment">// throws an Exception it will be propagated to the AbstractChannelHandlerContext which will try</em>
+<a class="jxr_linenumber" name="1927" href="#1927">1927</a>                 <em class="jxr_comment">// to fail the promise because of this. This will then fail as it was already completed by</em>
+<a class="jxr_linenumber" name="1928" href="#1928">1928</a>                 <em class="jxr_comment">// safeClose(...). We create a new ChannelPromise and try to notify the original ChannelPromise</em>
+<a class="jxr_linenumber" name="1929" href="#1929">1929</a>                 <em class="jxr_comment">// once it is complete. If we fail to do so we just ignore it as in this case it was failed already</em>
+<a class="jxr_linenumber" name="1930" href="#1930">1930</a>                 <em class="jxr_comment">// because of a propagated Exception.</em>
+<a class="jxr_linenumber" name="1931" href="#1931">1931</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="1932" href="#1932">1932</a>                 <em class="jxr_comment">// See https://github.com/netty/netty/issues/5931</em>
+<a class="jxr_linenumber" name="1933" href="#1933">1933</a>                 safeClose(ctx, closeNotifyPromise, ctx.newPromise().addListener(
+<a class="jxr_linenumber" name="1934" href="#1934">1934</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelPromiseNotifier.html">ChannelPromiseNotifier</a>(false, promise)));
+<a class="jxr_linenumber" name="1935" href="#1935">1935</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1936" href="#1936">1936</a>                 <em class="jxr_comment">/// We already handling the close_notify so just attach the promise to the sslClosePromise.</em>
+<a class="jxr_linenumber" name="1937" href="#1937">1937</a>                 sslClosePromise.addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Channel&gt;() {
+<a class="jxr_linenumber" name="1938" href="#1938">1938</a>                     @Override
+<a class="jxr_linenumber" name="1939" href="#1939">1939</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Channel&gt; future) {
+<a class="jxr_linenumber" name="1940" href="#1940">1940</a>                         promise.setSuccess();
+<a class="jxr_linenumber" name="1941" href="#1941">1941</a>                     }
+<a class="jxr_linenumber" name="1942" href="#1942">1942</a>                 });
+<a class="jxr_linenumber" name="1943" href="#1943">1943</a>             }
+<a class="jxr_linenumber" name="1944" href="#1944">1944</a>         }
+<a class="jxr_linenumber" name="1945" href="#1945">1945</a>     }
+<a class="jxr_linenumber" name="1946" href="#1946">1946</a> 
+<a class="jxr_linenumber" name="1947" href="#1947">1947</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> flush(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1948" href="#1948">1948</a>         <strong class="jxr_keyword">if</strong> (pendingUnencryptedWrites != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1949" href="#1949">1949</a>             pendingUnencryptedWrites.add(Unpooled.EMPTY_BUFFER, promise);
+<a class="jxr_linenumber" name="1950" href="#1950">1950</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="1951" href="#1951">1951</a>             promise.setFailure(newPendingWritesNullException());
+<a class="jxr_linenumber" name="1952" href="#1952">1952</a>         }
+<a class="jxr_linenumber" name="1953" href="#1953">1953</a>         flush(ctx);
+<a class="jxr_linenumber" name="1954" href="#1954">1954</a>     }
+<a class="jxr_linenumber" name="1955" href="#1955">1955</a> 
+<a class="jxr_linenumber" name="1956" href="#1956">1956</a>     @Override
+<a class="jxr_linenumber" name="1957" href="#1957">1957</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="1958" href="#1958">1958</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="1959" href="#1959">1959</a> 
+<a class="jxr_linenumber" name="1960" href="#1960">1960</a>         pendingUnencryptedWrites = <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandlerCoalescingBufferQueue</a>(ctx.channel(), 16);
+<a class="jxr_linenumber" name="1961" href="#1961">1961</a>         <strong class="jxr_keyword">if</strong> (ctx.channel().isActive()) {
+<a class="jxr_linenumber" name="1962" href="#1962">1962</a>             startHandshakeProcessing();
+<a class="jxr_linenumber" name="1963" href="#1963">1963</a>         }
+<a class="jxr_linenumber" name="1964" href="#1964">1964</a>     }
+<a class="jxr_linenumber" name="1965" href="#1965">1965</a> 
+<a class="jxr_linenumber" name="1966" href="#1966">1966</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> startHandshakeProcessing() {
+<a class="jxr_linenumber" name="1967" href="#1967">1967</a>         <strong class="jxr_keyword">if</strong> (!handshakeStarted) {
+<a class="jxr_linenumber" name="1968" href="#1968">1968</a>             handshakeStarted = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="1969" href="#1969">1969</a>             <strong class="jxr_keyword">if</strong> (engine.getUseClientMode()) {
+<a class="jxr_linenumber" name="1970" href="#1970">1970</a>                 <em class="jxr_comment">// Begin the initial handshake.</em>
+<a class="jxr_linenumber" name="1971" href="#1971">1971</a>                 <em class="jxr_comment">// channelActive() event has been fired already, which means this.channelActive() will</em>
+<a class="jxr_linenumber" name="1972" href="#1972">1972</a>                 <em class="jxr_comment">// not be invoked. We have to initialize here instead.</em>
+<a class="jxr_linenumber" name="1973" href="#1973">1973</a>                 handshake();
+<a class="jxr_linenumber" name="1974" href="#1974">1974</a>             }
+<a class="jxr_linenumber" name="1975" href="#1975">1975</a>             applyHandshakeTimeout();
+<a class="jxr_linenumber" name="1976" href="#1976">1976</a>         }
+<a class="jxr_linenumber" name="1977" href="#1977">1977</a>     }
+<a class="jxr_linenumber" name="1978" href="#1978">1978</a> 
+<a class="jxr_linenumber" name="1979" href="#1979">1979</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="1980" href="#1980">1980</a> <em class="jxr_javadoccomment">     * Performs TLS renegotiation.</em>
+<a class="jxr_linenumber" name="1981" href="#1981">1981</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="1982" href="#1982">1982</a>     <strong class="jxr_keyword">public</strong> Future&lt;Channel&gt; renegotiate() {
+<a class="jxr_linenumber" name="1983" href="#1983">1983</a>         <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx = <strong class="jxr_keyword">this</strong>.ctx;
+<a class="jxr_linenumber" name="1984" href="#1984">1984</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1985" href="#1985">1985</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException();
+<a class="jxr_linenumber" name="1986" href="#1986">1986</a>         }
+<a class="jxr_linenumber" name="1987" href="#1987">1987</a> 
+<a class="jxr_linenumber" name="1988" href="#1988">1988</a>         <strong class="jxr_keyword">return</strong> renegotiate(ctx.executor().&lt;Channel&gt;newPromise());
+<a class="jxr_linenumber" name="1989" href="#1989">1989</a>     }
+<a class="jxr_linenumber" name="1990" href="#1990">1990</a> 
+<a class="jxr_linenumber" name="1991" href="#1991">1991</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="1992" href="#1992">1992</a> <em class="jxr_javadoccomment">     * Performs TLS renegotiation.</em>
+<a class="jxr_linenumber" name="1993" href="#1993">1993</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="1994" href="#1994">1994</a>     <strong class="jxr_keyword">public</strong> Future&lt;Channel&gt; renegotiate(<strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; promise) {
+<a class="jxr_linenumber" name="1995" href="#1995">1995</a>         ObjectUtil.checkNotNull(promise, <span class="jxr_string">"promise"</span>);
+<a class="jxr_linenumber" name="1996" href="#1996">1996</a> 
+<a class="jxr_linenumber" name="1997" href="#1997">1997</a>         <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx = <strong class="jxr_keyword">this</strong>.ctx;
+<a class="jxr_linenumber" name="1998" href="#1998">1998</a>         <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="1999" href="#1999">1999</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException();
+<a class="jxr_linenumber" name="2000" href="#2000">2000</a>         }
+<a class="jxr_linenumber" name="2001" href="#2001">2001</a> 
+<a class="jxr_linenumber" name="2002" href="#2002">2002</a>         <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor = ctx.executor();
+<a class="jxr_linenumber" name="2003" href="#2003">2003</a>         <strong class="jxr_keyword">if</strong> (!executor.inEventLoop()) {
+<a class="jxr_linenumber" name="2004" href="#2004">2004</a>             executor.execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="2005" href="#2005">2005</a>                 @Override
+<a class="jxr_linenumber" name="2006" href="#2006">2006</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="2007" href="#2007">2007</a>                     renegotiateOnEventLoop(promise);
+<a class="jxr_linenumber" name="2008" href="#2008">2008</a>                 }
+<a class="jxr_linenumber" name="2009" href="#2009">2009</a>             });
+<a class="jxr_linenumber" name="2010" href="#2010">2010</a>             <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="2011" href="#2011">2011</a>         }
+<a class="jxr_linenumber" name="2012" href="#2012">2012</a> 
+<a class="jxr_linenumber" name="2013" href="#2013">2013</a>         renegotiateOnEventLoop(promise);
+<a class="jxr_linenumber" name="2014" href="#2014">2014</a>         <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="2015" href="#2015">2015</a>     }
+<a class="jxr_linenumber" name="2016" href="#2016">2016</a> 
+<a class="jxr_linenumber" name="2017" href="#2017">2017</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> renegotiateOnEventLoop(<strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; newHandshakePromise) {
+<a class="jxr_linenumber" name="2018" href="#2018">2018</a>         <strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; oldHandshakePromise = handshakePromise;
+<a class="jxr_linenumber" name="2019" href="#2019">2019</a>         <strong class="jxr_keyword">if</strong> (!oldHandshakePromise.isDone()) {
+<a class="jxr_linenumber" name="2020" href="#2020">2020</a>             <em class="jxr_comment">// There's no need to handshake because handshake is in progress already.</em>
+<a class="jxr_linenumber" name="2021" href="#2021">2021</a>             <em class="jxr_comment">// Merge the new promise into the old one.</em>
+<a class="jxr_linenumber" name="2022" href="#2022">2022</a>             oldHandshakePromise.addListener(<strong class="jxr_keyword">new</strong> PromiseNotifier&lt;Channel, Future&lt;Channel&gt;&gt;(newHandshakePromise));
+<a class="jxr_linenumber" name="2023" href="#2023">2023</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2024" href="#2024">2024</a>             handshakePromise = newHandshakePromise;
+<a class="jxr_linenumber" name="2025" href="#2025">2025</a>             handshake();
+<a class="jxr_linenumber" name="2026" href="#2026">2026</a>             applyHandshakeTimeout();
+<a class="jxr_linenumber" name="2027" href="#2027">2027</a>         }
+<a class="jxr_linenumber" name="2028" href="#2028">2028</a>     }
+<a class="jxr_linenumber" name="2029" href="#2029">2029</a> 
+<a class="jxr_linenumber" name="2030" href="#2030">2030</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="2031" href="#2031">2031</a> <em class="jxr_javadoccomment">     * Performs TLS (re)negotiation.</em>
+<a class="jxr_linenumber" name="2032" href="#2032">2032</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="2033" href="#2033">2033</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> handshake() {
+<a class="jxr_linenumber" name="2034" href="#2034">2034</a>         <strong class="jxr_keyword">if</strong> (engine.getHandshakeStatus() != HandshakeStatus.NOT_HANDSHAKING) {
+<a class="jxr_linenumber" name="2035" href="#2035">2035</a>             <em class="jxr_comment">// Not all SSLEngine implementations support calling beginHandshake multiple times while a handshake</em>
+<a class="jxr_linenumber" name="2036" href="#2036">2036</a>             <em class="jxr_comment">// is in progress. See https://github.com/netty/netty/issues/4718.</em>
+<a class="jxr_linenumber" name="2037" href="#2037">2037</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="2038" href="#2038">2038</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2039" href="#2039">2039</a>             <strong class="jxr_keyword">if</strong> (handshakePromise.isDone()) {
+<a class="jxr_linenumber" name="2040" href="#2040">2040</a>                 <em class="jxr_comment">// If the handshake is done already lets just return directly as there is no need to trigger it again.</em>
+<a class="jxr_linenumber" name="2041" href="#2041">2041</a>                 <em class="jxr_comment">// This can happen if the handshake(...) was triggered before we called channelActive(...) by a</em>
+<a class="jxr_linenumber" name="2042" href="#2042">2042</a>                 <em class="jxr_comment">// flush() that was triggered by a ChannelFutureListener that was added to the ChannelFuture returned</em>
+<a class="jxr_linenumber" name="2043" href="#2043">2043</a>                 <em class="jxr_comment">// from the connect(...) method. In this case we will see the flush() happen before we had a chance to</em>
+<a class="jxr_linenumber" name="2044" href="#2044">2044</a>                 <em class="jxr_comment">// call fireChannelActive() on the pipeline.</em>
+<a class="jxr_linenumber" name="2045" href="#2045">2045</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="2046" href="#2046">2046</a>             }
+<a class="jxr_linenumber" name="2047" href="#2047">2047</a>         }
+<a class="jxr_linenumber" name="2048" href="#2048">2048</a> 
+<a class="jxr_linenumber" name="2049" href="#2049">2049</a>         <em class="jxr_comment">// Begin handshake.</em>
+<a class="jxr_linenumber" name="2050" href="#2050">2050</a>         <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx = <strong class="jxr_keyword">this</strong>.ctx;
+<a class="jxr_linenumber" name="2051" href="#2051">2051</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="2052" href="#2052">2052</a>             engine.beginHandshake();
+<a class="jxr_linenumber" name="2053" href="#2053">2053</a>             wrapNonAppData(ctx, false);
+<a class="jxr_linenumber" name="2054" href="#2054">2054</a>         } <strong class="jxr_keyword">catch</strong> (Throwable e) {
+<a class="jxr_linenumber" name="2055" href="#2055">2055</a>             setHandshakeFailure(ctx, e);
+<a class="jxr_linenumber" name="2056" href="#2056">2056</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="2057" href="#2057">2057</a>             forceFlush(ctx);
+<a class="jxr_linenumber" name="2058" href="#2058">2058</a>         }
+<a class="jxr_linenumber" name="2059" href="#2059">2059</a>     }
+<a class="jxr_linenumber" name="2060" href="#2060">2060</a> 
+<a class="jxr_linenumber" name="2061" href="#2061">2061</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> applyHandshakeTimeout() {
+<a class="jxr_linenumber" name="2062" href="#2062">2062</a>         <strong class="jxr_keyword">final</strong> Promise&lt;Channel&gt; localHandshakePromise = <strong class="jxr_keyword">this</strong>.handshakePromise;
+<a class="jxr_linenumber" name="2063" href="#2063">2063</a> 
+<a class="jxr_linenumber" name="2064" href="#2064">2064</a>         <em class="jxr_comment">// Set timeout if necessary.</em>
+<a class="jxr_linenumber" name="2065" href="#2065">2065</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> handshakeTimeoutMillis = <strong class="jxr_keyword">this</strong>.handshakeTimeoutMillis;
+<a class="jxr_linenumber" name="2066" href="#2066">2066</a>         <strong class="jxr_keyword">if</strong> (handshakeTimeoutMillis &lt;= 0 || localHandshakePromise.isDone()) {
+<a class="jxr_linenumber" name="2067" href="#2067">2067</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="2068" href="#2068">2068</a>         }
+<a class="jxr_linenumber" name="2069" href="#2069">2069</a> 
+<a class="jxr_linenumber" name="2070" href="#2070">2070</a>         <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutFuture = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="2071" href="#2071">2071</a>             @Override
+<a class="jxr_linenumber" name="2072" href="#2072">2072</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="2073" href="#2073">2073</a>                 <strong class="jxr_keyword">if</strong> (localHandshakePromise.isDone()) {
+<a class="jxr_linenumber" name="2074" href="#2074">2074</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="2075" href="#2075">2075</a>                 }
+<a class="jxr_linenumber" name="2076" href="#2076">2076</a>                 SSLException exception =
+<a class="jxr_linenumber" name="2077" href="#2077">2077</a>                         <strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/handler/ssl/SslHandshakeTimeoutException.html">SslHandshakeTimeoutException</a>(<span class="jxr_string">"handshake timed out after "</span> + handshakeTimeoutMillis + <span class="jxr_string">"ms"</span>);
+<a class="jxr_linenumber" name="2078" href="#2078">2078</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="2079" href="#2079">2079</a>                     <strong class="jxr_keyword">if</strong> (localHandshakePromise.tryFailure(exception)) {
+<a class="jxr_linenumber" name="2080" href="#2080">2080</a>                         SslUtils.handleHandshakeFailure(ctx, exception, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="2081" href="#2081">2081</a>                     }
+<a class="jxr_linenumber" name="2082" href="#2082">2082</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="2083" href="#2083">2083</a>                     releaseAndFailAll(ctx, exception);
+<a class="jxr_linenumber" name="2084" href="#2084">2084</a>                 }
+<a class="jxr_linenumber" name="2085" href="#2085">2085</a>             }
+<a class="jxr_linenumber" name="2086" href="#2086">2086</a>         }, handshakeTimeoutMillis, TimeUnit.MILLISECONDS);
+<a class="jxr_linenumber" name="2087" href="#2087">2087</a> 
+<a class="jxr_linenumber" name="2088" href="#2088">2088</a>         <em class="jxr_comment">// Cancel the handshake timeout when handshake is finished.</em>
+<a class="jxr_linenumber" name="2089" href="#2089">2089</a>         localHandshakePromise.addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Channel&gt;() {
+<a class="jxr_linenumber" name="2090" href="#2090">2090</a>             @Override
+<a class="jxr_linenumber" name="2091" href="#2091">2091</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Channel&gt; f) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="2092" href="#2092">2092</a>                 timeoutFuture.cancel(false);
+<a class="jxr_linenumber" name="2093" href="#2093">2093</a>             }
+<a class="jxr_linenumber" name="2094" href="#2094">2094</a>         });
+<a class="jxr_linenumber" name="2095" href="#2095">2095</a>     }
+<a class="jxr_linenumber" name="2096" href="#2096">2096</a> 
+<a class="jxr_linenumber" name="2097" href="#2097">2097</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> forceFlush(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="2098" href="#2098">2098</a>         needsFlush = false;
+<a class="jxr_linenumber" name="2099" href="#2099">2099</a>         ctx.flush();
+<a class="jxr_linenumber" name="2100" href="#2100">2100</a>     }
+<a class="jxr_linenumber" name="2101" href="#2101">2101</a> 
+<a class="jxr_linenumber" name="2102" href="#2102">2102</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="2103" href="#2103">2103</a> <em class="jxr_javadoccomment">     * Issues an initial TLS handshake once connected when used in client-mode</em>
+<a class="jxr_linenumber" name="2104" href="#2104">2104</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="2105" href="#2105">2105</a>     @Override
+<a class="jxr_linenumber" name="2106" href="#2106">2106</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="2107" href="#2107">2107</a>         <strong class="jxr_keyword">if</strong> (!startTls) {
+<a class="jxr_linenumber" name="2108" href="#2108">2108</a>             startHandshakeProcessing();
+<a class="jxr_linenumber" name="2109" href="#2109">2109</a>         }
+<a class="jxr_linenumber" name="2110" href="#2110">2110</a>         ctx.fireChannelActive();
+<a class="jxr_linenumber" name="2111" href="#2111">2111</a>     }
+<a class="jxr_linenumber" name="2112" href="#2112">2112</a> 
+<a class="jxr_linenumber" name="2113" href="#2113">2113</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> safeClose(
+<a class="jxr_linenumber" name="2114" href="#2114">2114</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> flushFuture,
+<a class="jxr_linenumber" name="2115" href="#2115">2115</a>             <strong class="jxr_keyword">final</strong> <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="2116" href="#2116">2116</a>         <strong class="jxr_keyword">if</strong> (!ctx.channel().isActive()) {
+<a class="jxr_linenumber" name="2117" href="#2117">2117</a>             ctx.close(promise);
+<a class="jxr_linenumber" name="2118" href="#2118">2118</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="2119" href="#2119">2119</a>         }
+<a class="jxr_linenumber" name="2120" href="#2120">2120</a> 
+<a class="jxr_linenumber" name="2121" href="#2121">2121</a>         <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; timeoutFuture;
+<a class="jxr_linenumber" name="2122" href="#2122">2122</a>         <strong class="jxr_keyword">if</strong> (!flushFuture.isDone()) {
+<a class="jxr_linenumber" name="2123" href="#2123">2123</a>             <strong class="jxr_keyword">long</strong> closeNotifyTimeout = closeNotifyFlushTimeoutMillis;
+<a class="jxr_linenumber" name="2124" href="#2124">2124</a>             <strong class="jxr_keyword">if</strong> (closeNotifyTimeout &gt; 0) {
+<a class="jxr_linenumber" name="2125" href="#2125">2125</a>                 <em class="jxr_comment">// Force-close the connection if close_notify is not fully sent in time.</em>
+<a class="jxr_linenumber" name="2126" href="#2126">2126</a>                 timeoutFuture = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="2127" href="#2127">2127</a>                     @Override
+<a class="jxr_linenumber" name="2128" href="#2128">2128</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="2129" href="#2129">2129</a>                         <em class="jxr_comment">// May be done in the meantime as cancel(...) is only best effort.</em>
+<a class="jxr_linenumber" name="2130" href="#2130">2130</a>                         <strong class="jxr_keyword">if</strong> (!flushFuture.isDone()) {
+<a class="jxr_linenumber" name="2131" href="#2131">2131</a>                             logger.warn(<span class="jxr_string">"{} Last write attempt timed out; force-closing the connection."</span>,
+<a class="jxr_linenumber" name="2132" href="#2132">2132</a>                                     ctx.channel());
+<a class="jxr_linenumber" name="2133" href="#2133">2133</a>                             addCloseListener(ctx.close(ctx.newPromise()), promise);
+<a class="jxr_linenumber" name="2134" href="#2134">2134</a>                         }
+<a class="jxr_linenumber" name="2135" href="#2135">2135</a>                     }
+<a class="jxr_linenumber" name="2136" href="#2136">2136</a>                 }, closeNotifyTimeout, TimeUnit.MILLISECONDS);
+<a class="jxr_linenumber" name="2137" href="#2137">2137</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2138" href="#2138">2138</a>                 timeoutFuture = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="2139" href="#2139">2139</a>             }
+<a class="jxr_linenumber" name="2140" href="#2140">2140</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2141" href="#2141">2141</a>             timeoutFuture = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="2142" href="#2142">2142</a>         }
+<a class="jxr_linenumber" name="2143" href="#2143">2143</a> 
+<a class="jxr_linenumber" name="2144" href="#2144">2144</a>         <em class="jxr_comment">// Close the connection if close_notify is sent in time.</em>
+<a class="jxr_linenumber" name="2145" href="#2145">2145</a>         flushFuture.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelFutureListener.html">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="2146" href="#2146">2146</a>             @Override
+<a class="jxr_linenumber" name="2147" href="#2147">2147</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> f)
+<a class="jxr_linenumber" name="2148" href="#2148">2148</a>                     <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="2149" href="#2149">2149</a>                 <strong class="jxr_keyword">if</strong> (timeoutFuture != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="2150" href="#2150">2150</a>                     timeoutFuture.cancel(false);
+<a class="jxr_linenumber" name="2151" href="#2151">2151</a>                 }
+<a class="jxr_linenumber" name="2152" href="#2152">2152</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> closeNotifyReadTimeout = closeNotifyReadTimeoutMillis;
+<a class="jxr_linenumber" name="2153" href="#2153">2153</a>                 <strong class="jxr_keyword">if</strong> (closeNotifyReadTimeout &lt;= 0) {
+<a class="jxr_linenumber" name="2154" href="#2154">2154</a>                     <em class="jxr_comment">// Trigger the close in all cases to make sure the promise is notified</em>
+<a class="jxr_linenumber" name="2155" href="#2155">2155</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/2358</em>
+<a class="jxr_linenumber" name="2156" href="#2156">2156</a>                     addCloseListener(ctx.close(ctx.newPromise()), promise);
+<a class="jxr_linenumber" name="2157" href="#2157">2157</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2158" href="#2158">2158</a>                     <strong class="jxr_keyword">final</strong> ScheduledFuture&lt;?&gt; closeNotifyReadTimeoutFuture;
+<a class="jxr_linenumber" name="2159" href="#2159">2159</a> 
+<a class="jxr_linenumber" name="2160" href="#2160">2160</a>                     <strong class="jxr_keyword">if</strong> (!sslClosePromise.isDone()) {
+<a class="jxr_linenumber" name="2161" href="#2161">2161</a>                         closeNotifyReadTimeoutFuture = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="2162" href="#2162">2162</a>                             @Override
+<a class="jxr_linenumber" name="2163" href="#2163">2163</a>                             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="2164" href="#2164">2164</a>                                 <strong class="jxr_keyword">if</strong> (!sslClosePromise.isDone()) {
+<a class="jxr_linenumber" name="2165" href="#2165">2165</a>                                     logger.debug(
+<a class="jxr_linenumber" name="2166" href="#2166">2166</a>                                             <span class="jxr_string">"{} did not receive close_notify in {}ms; force-closing the connection."</span>,
+<a class="jxr_linenumber" name="2167" href="#2167">2167</a>                                             ctx.channel(), closeNotifyReadTimeout);
+<a class="jxr_linenumber" name="2168" href="#2168">2168</a> 
+<a class="jxr_linenumber" name="2169" href="#2169">2169</a>                                     <em class="jxr_comment">// Do the close now...</em>
+<a class="jxr_linenumber" name="2170" href="#2170">2170</a>                                     addCloseListener(ctx.close(ctx.newPromise()), promise);
+<a class="jxr_linenumber" name="2171" href="#2171">2171</a>                                 }
+<a class="jxr_linenumber" name="2172" href="#2172">2172</a>                             }
+<a class="jxr_linenumber" name="2173" href="#2173">2173</a>                         }, closeNotifyReadTimeout, TimeUnit.MILLISECONDS);
+<a class="jxr_linenumber" name="2174" href="#2174">2174</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2175" href="#2175">2175</a>                         closeNotifyReadTimeoutFuture = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="2176" href="#2176">2176</a>                     }
+<a class="jxr_linenumber" name="2177" href="#2177">2177</a> 
+<a class="jxr_linenumber" name="2178" href="#2178">2178</a>                     <em class="jxr_comment">// Do the close once the we received the close_notify.</em>
+<a class="jxr_linenumber" name="2179" href="#2179">2179</a>                     sslClosePromise.addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;Channel&gt;() {
+<a class="jxr_linenumber" name="2180" href="#2180">2180</a>                         @Override
+<a class="jxr_linenumber" name="2181" href="#2181">2181</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;Channel&gt; future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="2182" href="#2182">2182</a>                             <strong class="jxr_keyword">if</strong> (closeNotifyReadTimeoutFuture != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="2183" href="#2183">2183</a>                                 closeNotifyReadTimeoutFuture.cancel(false);
+<a class="jxr_linenumber" name="2184" href="#2184">2184</a>                             }
+<a class="jxr_linenumber" name="2185" href="#2185">2185</a>                             addCloseListener(ctx.close(ctx.newPromise()), promise);
+<a class="jxr_linenumber" name="2186" href="#2186">2186</a>                         }
+<a class="jxr_linenumber" name="2187" href="#2187">2187</a>                     });
+<a class="jxr_linenumber" name="2188" href="#2188">2188</a>                 }
+<a class="jxr_linenumber" name="2189" href="#2189">2189</a>             }
+<a class="jxr_linenumber" name="2190" href="#2190">2190</a>         });
+<a class="jxr_linenumber" name="2191" href="#2191">2191</a>     }
+<a class="jxr_linenumber" name="2192" href="#2192">2192</a> 
+<a class="jxr_linenumber" name="2193" href="#2193">2193</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> addCloseListener(<a href="../../../../io/netty/channel/ChannelFuture.html">ChannelFuture</a> future, <a href="../../../../io/netty/channel/ChannelPromise.html">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="2194" href="#2194">2194</a>         <em class="jxr_comment">// We notify the promise in the ChannelPromiseNotifier as there is a "race" where the close(...) call</em>
+<a class="jxr_linenumber" name="2195" href="#2195">2195</a>         <em class="jxr_comment">// by the timeoutFuture and the close call in the flushFuture listener will be called. Because of</em>
+<a class="jxr_linenumber" name="2196" href="#2196">2196</a>         <em class="jxr_comment">// this we need to use trySuccess() and tryFailure(...) as otherwise we can cause an</em>
+<a class="jxr_linenumber" name="2197" href="#2197">2197</a>         <em class="jxr_comment">// IllegalStateException.</em>
+<a class="jxr_linenumber" name="2198" href="#2198">2198</a>         <em class="jxr_comment">// Also we not want to log if the notification happens as this is expected in some cases.</em>
+<a class="jxr_linenumber" name="2199" href="#2199">2199</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/5598</em>
+<a class="jxr_linenumber" name="2200" href="#2200">2200</a>         future.addListener(<strong class="jxr_keyword">new</strong> <a href="../../../../io/netty/channel/ChannelPromiseNotifier.html">ChannelPromiseNotifier</a>(false, promise));
+<a class="jxr_linenumber" name="2201" href="#2201">2201</a>     }
+<a class="jxr_linenumber" name="2202" href="#2202">2202</a> 
+<a class="jxr_linenumber" name="2203" href="#2203">2203</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="2204" href="#2204">2204</a> <em class="jxr_javadoccomment">     * Always prefer a direct buffer when it's pooled, so that we reduce the number of memory copies</em>
+<a class="jxr_linenumber" name="2205" href="#2205">2205</a> <em class="jxr_javadoccomment">     * in {@link OpenSslEngine}.</em>
+<a class="jxr_linenumber" name="2206" href="#2206">2206</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="2207" href="#2207">2207</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> allocate(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> capacity) {
+<a class="jxr_linenumber" name="2208" href="#2208">2208</a>         <a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc = ctx.alloc();
+<a class="jxr_linenumber" name="2209" href="#2209">2209</a>         <strong class="jxr_keyword">if</strong> (engineType.wantsDirectBuffer) {
+<a class="jxr_linenumber" name="2210" href="#2210">2210</a>             <strong class="jxr_keyword">return</strong> alloc.directBuffer(capacity);
+<a class="jxr_linenumber" name="2211" href="#2211">2211</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2212" href="#2212">2212</a>             <strong class="jxr_keyword">return</strong> alloc.buffer(capacity);
+<a class="jxr_linenumber" name="2213" href="#2213">2213</a>         }
+<a class="jxr_linenumber" name="2214" href="#2214">2214</a>     }
+<a class="jxr_linenumber" name="2215" href="#2215">2215</a> 
+<a class="jxr_linenumber" name="2216" href="#2216">2216</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="2217" href="#2217">2217</a> <em class="jxr_javadoccomment">     * Allocates an outbound network buffer for {@link SSLEngine#wrap(ByteBuffer, ByteBuffer)} which can encrypt</em>
+<a class="jxr_linenumber" name="2218" href="#2218">2218</a> <em class="jxr_javadoccomment">     * the specified amount of pending bytes.</em>
+<a class="jxr_linenumber" name="2219" href="#2219">2219</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="2220" href="#2220">2220</a>     <strong class="jxr_keyword">private</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> allocateOutNetBuf(<a href="../../../../io/netty/channel/ChannelHandlerContext.html">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">int</strong> pendingBytes, <strong class="jxr_keyword">int</strong> numComponents) {
+<a class="jxr_linenumber" name="2221" href="#2221">2221</a>         <strong class="jxr_keyword">return</strong> engineType.allocateWrapBuffer(<strong class="jxr_keyword">this</strong>, ctx.alloc(), pendingBytes, numComponents);
+<a class="jxr_linenumber" name="2222" href="#2222">2222</a>     }
 <a class="jxr_linenumber" name="2223" href="#2223">2223</a> 
-<a class="jxr_linenumber" name="2224" href="#2224">2224</a>         <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandlerCoalescingBufferQueue</a>(<a href="../../../../io/netty/channel/Channel.html">Channel</a> channel, <strong class="jxr_keyword">int</strong> initSize) {
-<a class="jxr_linenumber" name="2225" href="#2225">2225</a>             <strong class="jxr_keyword">super</strong>(channel, initSize);
-<a class="jxr_linenumber" name="2226" href="#2226">2226</a>         }
-<a class="jxr_linenumber" name="2227" href="#2227">2227</a> 
-<a class="jxr_linenumber" name="2228" href="#2228">2228</a>         @Override
-<a class="jxr_linenumber" name="2229" href="#2229">2229</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> compose(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> next) {
-<a class="jxr_linenumber" name="2230" href="#2230">2230</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> wrapDataSize = SslHandler.<strong class="jxr_keyword">this</strong>.wrapDataSize;
-<a class="jxr_linenumber" name="2231" href="#2231">2231</a>             <strong class="jxr_keyword">if</strong> (cumulation instanceof CompositeByteBuf) {
-<a class="jxr_linenumber" name="2232" href="#2232">2232</a>                 <a href="../../../../io/netty/buffer/CompositeByteBuf.html">CompositeByteBuf</a> composite = (CompositeByteBuf) cumulation;
-<a class="jxr_linenumber" name="2233" href="#2233">2233</a>                 <strong class="jxr_keyword">int</strong> numComponents = composite.numComponents();
-<a class="jxr_linenumber" name="2234" href="#2234">2234</a>                 <strong class="jxr_keyword">if</strong> (numComponents == 0 ||
-<a class="jxr_linenumber" name="2235" href="#2235">2235</a>                         !attemptCopyToCumulation(composite.internalComponent(numComponents - 1), next, wrapDataSize)) {
-<a class="jxr_linenumber" name="2236" href="#2236">2236</a>                     composite.addComponent(<strong class="jxr_keyword">true</strong>, next);
-<a class="jxr_linenumber" name="2237" href="#2237">2237</a>                 }
-<a class="jxr_linenumber" name="2238" href="#2238">2238</a>                 <strong class="jxr_keyword">return</strong> composite;
-<a class="jxr_linenumber" name="2239" href="#2239">2239</a>             }
-<a class="jxr_linenumber" name="2240" href="#2240">2240</a>             <strong class="jxr_keyword">return</strong> attemptCopyToCumulation(cumulation, next, wrapDataSize) ? cumulation :
-<a class="jxr_linenumber" name="2241" href="#2241">2241</a>                     copyAndCompose(alloc, cumulation, next);
-<a class="jxr_linenumber" name="2242" href="#2242">2242</a>         }
-<a class="jxr_linenumber" name="2243" href="#2243">2243</a> 
-<a class="jxr_linenumber" name="2244" href="#2244">2244</a>         @Override
-<a class="jxr_linenumber" name="2245" href="#2245">2245</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> composeFirst(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> allocator, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> first) {
-<a class="jxr_linenumber" name="2246" href="#2246">2246</a>             <strong class="jxr_keyword">if</strong> (first instanceof CompositeByteBuf) {
-<a class="jxr_linenumber" name="2247" href="#2247">2247</a>                 <a href="../../../../io/netty/buffer/CompositeByteBuf.html">CompositeByteBuf</a> composite = (CompositeByteBuf) first;
-<a class="jxr_linenumber" name="2248" href="#2248">2248</a>                 <strong class="jxr_keyword">if</strong> (engineType.wantsDirectBuffer) {
-<a class="jxr_linenumber" name="2249" href="#2249">2249</a>                     first = allocator.directBuffer(composite.readableBytes());
-<a class="jxr_linenumber" name="2250" href="#2250">2250</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="2251" href="#2251">2251</a>                     first = allocator.heapBuffer(composite.readableBytes());
-<a class="jxr_linenumber" name="2252" href="#2252">2252</a>                 }
-<a class="jxr_linenumber" name="2253" href="#2253">2253</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="2254" href="#2254">2254</a>                     first.writeBytes(composite);
-<a class="jxr_linenumber" name="2255" href="#2255">2255</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="2256" href="#2256">2256</a>                     first.release();
-<a class="jxr_linenumber" name="2257" href="#2257">2257</a>                     PlatformDependent.throwException(cause);
-<a class="jxr_linenumber" name="2258" href="#2258">2258</a>                 }
-<a class="jxr_linenumber" name="2259" href="#2259">2259</a>                 composite.release();
-<a class="jxr_linenumber" name="2260" href="#2260">2260</a>             }
-<a class="jxr_linenumber" name="2261" href="#2261">2261</a>             <strong class="jxr_keyword">return</strong> first;
-<a class="jxr_linenumber" name="2262" href="#2262">2262</a>         }
-<a class="jxr_linenumber" name="2263" href="#2263">2263</a> 
-<a class="jxr_linenumber" name="2264" href="#2264">2264</a>         @Override
-<a class="jxr_linenumber" name="2265" href="#2265">2265</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> removeEmptyValue() {
-<a class="jxr_linenumber" name="2266" href="#2266">2266</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="2267" href="#2267">2267</a>         }
-<a class="jxr_linenumber" name="2268" href="#2268">2268</a>     }
-<a class="jxr_linenumber" name="2269" href="#2269">2269</a> 
-<a class="jxr_linenumber" name="2270" href="#2270">2270</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> attemptCopyToCumulation(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> next, <strong class="jxr_keyword">int</strong> wrapDataSize) {
-<a class="jxr_linenumber" name="2271" href="#2271">2271</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> inReadableBytes = next.readableBytes();
-<a class="jxr_linenumber" name="2272" href="#2272">2272</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> cumulationCapacity = cumulation.capacity();
-<a class="jxr_linenumber" name="2273" href="#2273">2273</a>         <strong class="jxr_keyword">if</strong> (wrapDataSize - cumulation.readableBytes() &gt;= inReadableBytes &amp;&amp;
-<a class="jxr_linenumber" name="2274" href="#2274">2274</a>                 <em class="jxr_comment">// Avoid using the same buffer if next's data would make cumulation exceed the wrapDataSize.</em>
-<a class="jxr_linenumber" name="2275" href="#2275">2275</a>                 <em class="jxr_comment">// Only copy if there is enough space available and the capacity is large enough, and attempt to</em>
-<a class="jxr_linenumber" name="2276" href="#2276">2276</a>                 <em class="jxr_comment">// resize if the capacity is small.</em>
-<a class="jxr_linenumber" name="2277" href="#2277">2277</a>                 (cumulation.isWritable(inReadableBytes) &amp;&amp; cumulationCapacity &gt;= wrapDataSize ||
-<a class="jxr_linenumber" name="2278" href="#2278">2278</a>                         cumulationCapacity &lt; wrapDataSize &amp;&amp;
-<a class="jxr_linenumber" name="2279" href="#2279">2279</a>                                 ensureWritableSuccess(cumulation.ensureWritable(inReadableBytes, false)))) {
-<a class="jxr_linenumber" name="2280" href="#2280">2280</a>             cumulation.writeBytes(next);
-<a class="jxr_linenumber" name="2281" href="#2281">2281</a>             next.release();
-<a class="jxr_linenumber" name="2282" href="#2282">2282</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="2283" href="#2283">2283</a>         }
-<a class="jxr_linenumber" name="2284" href="#2284">2284</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="2285" href="#2285">2285</a>     }
-<a class="jxr_linenumber" name="2286" href="#2286">2286</a> 
-<a class="jxr_linenumber" name="2287" href="#2287">2287</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/SslHandler.html">LazyChannelPromise</a> <strong class="jxr_keyword">extends</strong> DefaultPromise&lt;Channel&gt; {
-<a class="jxr_linenumber" name="2288" href="#2288">2288</a> 
-<a class="jxr_linenumber" name="2289" href="#2289">2289</a>         @Override
-<a class="jxr_linenumber" name="2290" href="#2290">2290</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor() {
-<a class="jxr_linenumber" name="2291" href="#2291">2291</a>             <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="2292" href="#2292">2292</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException();
-<a class="jxr_linenumber" name="2293" href="#2293">2293</a>             }
-<a class="jxr_linenumber" name="2294" href="#2294">2294</a>             <strong class="jxr_keyword">return</strong> ctx.executor();
-<a class="jxr_linenumber" name="2295" href="#2295">2295</a>         }
-<a class="jxr_linenumber" name="2296" href="#2296">2296</a> 
-<a class="jxr_linenumber" name="2297" href="#2297">2297</a>         @Override
-<a class="jxr_linenumber" name="2298" href="#2298">2298</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> checkDeadLock() {
-<a class="jxr_linenumber" name="2299" href="#2299">2299</a>             <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="2300" href="#2300">2300</a>                 <em class="jxr_comment">// If ctx is null the handlerAdded(...) callback was not called, in this case the checkDeadLock()</em>
-<a class="jxr_linenumber" name="2301" href="#2301">2301</a>                 <em class="jxr_comment">// method was called from another Thread then the one that is used by ctx.executor(). We need to</em>
-<a class="jxr_linenumber" name="2302" href="#2302">2302</a>                 <em class="jxr_comment">// guard against this as a user can see a race if handshakeFuture().sync() is called but the</em>
-<a class="jxr_linenumber" name="2303" href="#2303">2303</a>                 <em class="jxr_comment">// handlerAdded(..) method was not yet as it is called from the EventExecutor of the</em>
-<a class="jxr_linenumber" name="2304" href="#2304">2304</a>                 <em class="jxr_comment">// ChannelHandlerContext. If we not guard against this super.checkDeadLock() would cause an</em>
-<a class="jxr_linenumber" name="2305" href="#2305">2305</a>                 <em class="jxr_comment">// IllegalStateException when trying to call executor().</em>
-<a class="jxr_linenumber" name="2306" href="#2306">2306</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="2307" href="#2307">2307</a>             }
-<a class="jxr_linenumber" name="2308" href="#2308">2308</a>             <strong class="jxr_keyword">super</strong>.checkDeadLock();
-<a class="jxr_linenumber" name="2309" href="#2309">2309</a>         }
-<a class="jxr_linenumber" name="2310" href="#2310">2310</a>     }
-<a class="jxr_linenumber" name="2311" href="#2311">2311</a> }
+<a class="jxr_linenumber" name="2224" href="#2224">2224</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="2225" href="#2225">2225</a> <em class="jxr_javadoccomment">     * Each call to SSL_write will introduce about ~100 bytes of overhead. This coalescing queue attempts to increase</em>
+<a class="jxr_linenumber" name="2226" href="#2226">2226</a> <em class="jxr_javadoccomment">     * goodput by aggregating the plaintext in chunks of {@link #wrapDataSize}. If many small chunks are written</em>
+<a class="jxr_linenumber" name="2227" href="#2227">2227</a> <em class="jxr_javadoccomment">     * this can increase goodput, decrease the amount of calls to SSL_write, and decrease overall encryption operations.</em>
+<a class="jxr_linenumber" name="2228" href="#2228">2228</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="2229" href="#2229">2229</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandlerCoalescingBufferQueue</a> <strong class="jxr_keyword">extends</strong> <a href="../../../../io/netty/channel/AbstractCoalescingBufferQueue.html">AbstractCoalescingBufferQueue</a> {
+<a class="jxr_linenumber" name="2230" href="#2230">2230</a> 
+<a class="jxr_linenumber" name="2231" href="#2231">2231</a>         <a href="../../../../io/netty/handler/ssl/SslHandler.html">SslHandlerCoalescingBufferQueue</a>(<a href="../../../../io/netty/channel/Channel.html">Channel</a> channel, <strong class="jxr_keyword">int</strong> initSize) {
+<a class="jxr_linenumber" name="2232" href="#2232">2232</a>             <strong class="jxr_keyword">super</strong>(channel, initSize);
+<a class="jxr_linenumber" name="2233" href="#2233">2233</a>         }
+<a class="jxr_linenumber" name="2234" href="#2234">2234</a> 
+<a class="jxr_linenumber" name="2235" href="#2235">2235</a>         @Override
+<a class="jxr_linenumber" name="2236" href="#2236">2236</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> compose(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> alloc, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> next) {
+<a class="jxr_linenumber" name="2237" href="#2237">2237</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> wrapDataSize = SslHandler.<strong class="jxr_keyword">this</strong>.wrapDataSize;
+<a class="jxr_linenumber" name="2238" href="#2238">2238</a>             <strong class="jxr_keyword">if</strong> (cumulation instanceof CompositeByteBuf) {
+<a class="jxr_linenumber" name="2239" href="#2239">2239</a>                 <a href="../../../../io/netty/buffer/CompositeByteBuf.html">CompositeByteBuf</a> composite = (CompositeByteBuf) cumulation;
+<a class="jxr_linenumber" name="2240" href="#2240">2240</a>                 <strong class="jxr_keyword">int</strong> numComponents = composite.numComponents();
+<a class="jxr_linenumber" name="2241" href="#2241">2241</a>                 <strong class="jxr_keyword">if</strong> (numComponents == 0 ||
+<a class="jxr_linenumber" name="2242" href="#2242">2242</a>                         !attemptCopyToCumulation(composite.internalComponent(numComponents - 1), next, wrapDataSize)) {
+<a class="jxr_linenumber" name="2243" href="#2243">2243</a>                     composite.addComponent(<strong class="jxr_keyword">true</strong>, next);
+<a class="jxr_linenumber" name="2244" href="#2244">2244</a>                 }
+<a class="jxr_linenumber" name="2245" href="#2245">2245</a>                 <strong class="jxr_keyword">return</strong> composite;
+<a class="jxr_linenumber" name="2246" href="#2246">2246</a>             }
+<a class="jxr_linenumber" name="2247" href="#2247">2247</a>             <strong class="jxr_keyword">return</strong> attemptCopyToCumulation(cumulation, next, wrapDataSize) ? cumulation :
+<a class="jxr_linenumber" name="2248" href="#2248">2248</a>                     copyAndCompose(alloc, cumulation, next);
+<a class="jxr_linenumber" name="2249" href="#2249">2249</a>         }
+<a class="jxr_linenumber" name="2250" href="#2250">2250</a> 
+<a class="jxr_linenumber" name="2251" href="#2251">2251</a>         @Override
+<a class="jxr_linenumber" name="2252" href="#2252">2252</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> composeFirst(<a href="../../../../io/netty/buffer/ByteBufAllocator.html">ByteBufAllocator</a> allocator, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> first) {
+<a class="jxr_linenumber" name="2253" href="#2253">2253</a>             <strong class="jxr_keyword">if</strong> (first instanceof CompositeByteBuf) {
+<a class="jxr_linenumber" name="2254" href="#2254">2254</a>                 <a href="../../../../io/netty/buffer/CompositeByteBuf.html">CompositeByteBuf</a> composite = (CompositeByteBuf) first;
+<a class="jxr_linenumber" name="2255" href="#2255">2255</a>                 <strong class="jxr_keyword">if</strong> (engineType.wantsDirectBuffer) {
+<a class="jxr_linenumber" name="2256" href="#2256">2256</a>                     first = allocator.directBuffer(composite.readableBytes());
+<a class="jxr_linenumber" name="2257" href="#2257">2257</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="2258" href="#2258">2258</a>                     first = allocator.heapBuffer(composite.readableBytes());
+<a class="jxr_linenumber" name="2259" href="#2259">2259</a>                 }
+<a class="jxr_linenumber" name="2260" href="#2260">2260</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="2261" href="#2261">2261</a>                     first.writeBytes(composite);
+<a class="jxr_linenumber" name="2262" href="#2262">2262</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="2263" href="#2263">2263</a>                     first.release();
+<a class="jxr_linenumber" name="2264" href="#2264">2264</a>                     PlatformDependent.throwException(cause);
+<a class="jxr_linenumber" name="2265" href="#2265">2265</a>                 }
+<a class="jxr_linenumber" name="2266" href="#2266">2266</a>                 composite.release();
+<a class="jxr_linenumber" name="2267" href="#2267">2267</a>             }
+<a class="jxr_linenumber" name="2268" href="#2268">2268</a>             <strong class="jxr_keyword">return</strong> first;
+<a class="jxr_linenumber" name="2269" href="#2269">2269</a>         }
+<a class="jxr_linenumber" name="2270" href="#2270">2270</a> 
+<a class="jxr_linenumber" name="2271" href="#2271">2271</a>         @Override
+<a class="jxr_linenumber" name="2272" href="#2272">2272</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> removeEmptyValue() {
+<a class="jxr_linenumber" name="2273" href="#2273">2273</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="2274" href="#2274">2274</a>         }
+<a class="jxr_linenumber" name="2275" href="#2275">2275</a>     }
+<a class="jxr_linenumber" name="2276" href="#2276">2276</a> 
+<a class="jxr_linenumber" name="2277" href="#2277">2277</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> attemptCopyToCumulation(<a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> cumulation, <a href="../../../../io/netty/buffer/ByteBuf.html">ByteBuf</a> next, <strong class="jxr_keyword">int</strong> wrapDataSize) {
+<a class="jxr_linenumber" name="2278" href="#2278">2278</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> inReadableBytes = next.readableBytes();
+<a class="jxr_linenumber" name="2279" href="#2279">2279</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> cumulationCapacity = cumulation.capacity();
+<a class="jxr_linenumber" name="2280" href="#2280">2280</a>         <strong class="jxr_keyword">if</strong> (wrapDataSize - cumulation.readableBytes() &gt;= inReadableBytes &amp;&amp;
+<a class="jxr_linenumber" name="2281" href="#2281">2281</a>                 <em class="jxr_comment">// Avoid using the same buffer if next's data would make cumulation exceed the wrapDataSize.</em>
+<a class="jxr_linenumber" name="2282" href="#2282">2282</a>                 <em class="jxr_comment">// Only copy if there is enough space available and the capacity is large enough, and attempt to</em>
+<a class="jxr_linenumber" name="2283" href="#2283">2283</a>                 <em class="jxr_comment">// resize if the capacity is small.</em>
+<a class="jxr_linenumber" name="2284" href="#2284">2284</a>                 (cumulation.isWritable(inReadableBytes) &amp;&amp; cumulationCapacity &gt;= wrapDataSize ||
+<a class="jxr_linenumber" name="2285" href="#2285">2285</a>                         cumulationCapacity &lt; wrapDataSize &amp;&amp;
+<a class="jxr_linenumber" name="2286" href="#2286">2286</a>                                 ensureWritableSuccess(cumulation.ensureWritable(inReadableBytes, false)))) {
+<a class="jxr_linenumber" name="2287" href="#2287">2287</a>             cumulation.writeBytes(next);
+<a class="jxr_linenumber" name="2288" href="#2288">2288</a>             next.release();
+<a class="jxr_linenumber" name="2289" href="#2289">2289</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="2290" href="#2290">2290</a>         }
+<a class="jxr_linenumber" name="2291" href="#2291">2291</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="2292" href="#2292">2292</a>     }
+<a class="jxr_linenumber" name="2293" href="#2293">2293</a> 
+<a class="jxr_linenumber" name="2294" href="#2294">2294</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a href="../../../../io/netty/handler/ssl/SslHandler.html">LazyChannelPromise</a> <strong class="jxr_keyword">extends</strong> DefaultPromise&lt;Channel&gt; {
+<a class="jxr_linenumber" name="2295" href="#2295">2295</a> 
+<a class="jxr_linenumber" name="2296" href="#2296">2296</a>         @Override
+<a class="jxr_linenumber" name="2297" href="#2297">2297</a>         <strong class="jxr_keyword">protected</strong> <a href="../../../../io/netty/util/concurrent/EventExecutor.html">EventExecutor</a> executor() {
+<a class="jxr_linenumber" name="2298" href="#2298">2298</a>             <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="2299" href="#2299">2299</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException();
+<a class="jxr_linenumber" name="2300" href="#2300">2300</a>             }
+<a class="jxr_linenumber" name="2301" href="#2301">2301</a>             <strong class="jxr_keyword">return</strong> ctx.executor();
+<a class="jxr_linenumber" name="2302" href="#2302">2302</a>         }
+<a class="jxr_linenumber" name="2303" href="#2303">2303</a> 
+<a class="jxr_linenumber" name="2304" href="#2304">2304</a>         @Override
+<a class="jxr_linenumber" name="2305" href="#2305">2305</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> checkDeadLock() {
+<a class="jxr_linenumber" name="2306" href="#2306">2306</a>             <strong class="jxr_keyword">if</strong> (ctx == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="2307" href="#2307">2307</a>                 <em class="jxr_comment">// If ctx is null the handlerAdded(...) callback was not called, in this case the checkDeadLock()</em>
+<a class="jxr_linenumber" name="2308" href="#2308">2308</a>                 <em class="jxr_comment">// method was called from another Thread then the one that is used by ctx.executor(). We need to</em>
+<a class="jxr_linenumber" name="2309" href="#2309">2309</a>                 <em class="jxr_comment">// guard against this as a user can see a race if handshakeFuture().sync() is called but the</em>
+<a class="jxr_linenumber" name="2310" href="#2310">2310</a>                 <em class="jxr_comment">// handlerAdded(..) method was not yet as it is called from the EventExecutor of the</em>
+<a class="jxr_linenumber" name="2311" href="#2311">2311</a>                 <em class="jxr_comment">// ChannelHandlerContext. If we not guard against this super.checkDeadLock() would cause an</em>
+<a class="jxr_linenumber" name="2312" href="#2312">2312</a>                 <em class="jxr_comment">// IllegalStateException when trying to call executor().</em>
+<a class="jxr_linenumber" name="2313" href="#2313">2313</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="2314" href="#2314">2314</a>             }
+<a class="jxr_linenumber" name="2315" href="#2315">2315</a>             <strong class="jxr_keyword">super</strong>.checkDeadLock();
+<a class="jxr_linenumber" name="2316" href="#2316">2316</a>         }
+<a class="jxr_linenumber" name="2317" href="#2317">2317</a>     }
+<a class="jxr_linenumber" name="2318" href="#2318">2318</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
