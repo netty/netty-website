@@ -270,29 +270,31 @@
 <a class="jxr_linenumber" name="260" href="#260">260</a>                     assert stopped;
 <a class="jxr_linenumber" name="261" href="#261">261</a> 
 <a class="jxr_linenumber" name="262" href="#262">262</a>                     <em class="jxr_comment">// Check if there are pending entries added by execute() or schedule*() while we do CAS above.</em>
-<a class="jxr_linenumber" name="263" href="#263">263</a>                     <strong class="jxr_keyword">if</strong> (taskQueue.isEmpty() &amp;&amp; (scheduledTaskQueue == <strong class="jxr_keyword">null</strong> || scheduledTaskQueue.size() == 1)) {
-<a class="jxr_linenumber" name="264" href="#264">264</a>                         <em class="jxr_comment">// A) No new task was added and thus there's nothing to handle</em>
-<a class="jxr_linenumber" name="265" href="#265">265</a>                         <em class="jxr_comment">//    -&gt; safe to terminate because there's nothing left to do</em>
-<a class="jxr_linenumber" name="266" href="#266">266</a>                         <em class="jxr_comment">// B) A new thread started and handled all the new tasks.</em>
-<a class="jxr_linenumber" name="267" href="#267">267</a>                         <em class="jxr_comment">//    -&gt; safe to terminate the new thread will take care the rest</em>
-<a class="jxr_linenumber" name="268" href="#268">268</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="269" href="#269">269</a>                     }
-<a class="jxr_linenumber" name="270" href="#270">270</a> 
-<a class="jxr_linenumber" name="271" href="#271">271</a>                     <em class="jxr_comment">// There are pending tasks added again.</em>
-<a class="jxr_linenumber" name="272" href="#272">272</a>                     <strong class="jxr_keyword">if</strong> (!started.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
-<a class="jxr_linenumber" name="273" href="#273">273</a>                         <em class="jxr_comment">// startThread() started a new thread and set 'started' to true.</em>
-<a class="jxr_linenumber" name="274" href="#274">274</a>                         <em class="jxr_comment">// -&gt; terminate this thread so that the new thread reads from taskQueue exclusively.</em>
-<a class="jxr_linenumber" name="275" href="#275">275</a>                         <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="276" href="#276">276</a>                     }
-<a class="jxr_linenumber" name="277" href="#277">277</a> 
-<a class="jxr_linenumber" name="278" href="#278">278</a>                     <em class="jxr_comment">// New tasks were added, but this worker was faster to set 'started' to true.</em>
-<a class="jxr_linenumber" name="279" href="#279">279</a>                     <em class="jxr_comment">// i.e. a new worker thread was not started by startThread().</em>
-<a class="jxr_linenumber" name="280" href="#280">280</a>                     <em class="jxr_comment">// -&gt; keep this thread alive to handle the newly added entries.</em>
-<a class="jxr_linenumber" name="281" href="#281">281</a>                 }
-<a class="jxr_linenumber" name="282" href="#282">282</a>             }
-<a class="jxr_linenumber" name="283" href="#283">283</a>         }
-<a class="jxr_linenumber" name="284" href="#284">284</a>     }
-<a class="jxr_linenumber" name="285" href="#285">285</a> }
+<a class="jxr_linenumber" name="263" href="#263">263</a>                     <em class="jxr_comment">// Do not check scheduledTaskQueue because it is not thread-safe and can only be mutated from a</em>
+<a class="jxr_linenumber" name="264" href="#264">264</a>                     <em class="jxr_comment">// TaskRunner actively running tasks.</em>
+<a class="jxr_linenumber" name="265" href="#265">265</a>                     <strong class="jxr_keyword">if</strong> (taskQueue.isEmpty()) {
+<a class="jxr_linenumber" name="266" href="#266">266</a>                         <em class="jxr_comment">// A) No new task was added and thus there's nothing to handle</em>
+<a class="jxr_linenumber" name="267" href="#267">267</a>                         <em class="jxr_comment">//    -&gt; safe to terminate because there's nothing left to do</em>
+<a class="jxr_linenumber" name="268" href="#268">268</a>                         <em class="jxr_comment">// B) A new thread started and handled all the new tasks.</em>
+<a class="jxr_linenumber" name="269" href="#269">269</a>                         <em class="jxr_comment">//    -&gt; safe to terminate the new thread will take care the rest</em>
+<a class="jxr_linenumber" name="270" href="#270">270</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="271" href="#271">271</a>                     }
+<a class="jxr_linenumber" name="272" href="#272">272</a> 
+<a class="jxr_linenumber" name="273" href="#273">273</a>                     <em class="jxr_comment">// There are pending tasks added again.</em>
+<a class="jxr_linenumber" name="274" href="#274">274</a>                     <strong class="jxr_keyword">if</strong> (!started.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="275" href="#275">275</a>                         <em class="jxr_comment">// startThread() started a new thread and set 'started' to true.</em>
+<a class="jxr_linenumber" name="276" href="#276">276</a>                         <em class="jxr_comment">// -&gt; terminate this thread so that the new thread reads from taskQueue exclusively.</em>
+<a class="jxr_linenumber" name="277" href="#277">277</a>                         <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="278" href="#278">278</a>                     }
+<a class="jxr_linenumber" name="279" href="#279">279</a> 
+<a class="jxr_linenumber" name="280" href="#280">280</a>                     <em class="jxr_comment">// New tasks were added, but this worker was faster to set 'started' to true.</em>
+<a class="jxr_linenumber" name="281" href="#281">281</a>                     <em class="jxr_comment">// i.e. a new worker thread was not started by startThread().</em>
+<a class="jxr_linenumber" name="282" href="#282">282</a>                     <em class="jxr_comment">// -&gt; keep this thread alive to handle the newly added entries.</em>
+<a class="jxr_linenumber" name="283" href="#283">283</a>                 }
+<a class="jxr_linenumber" name="284" href="#284">284</a>             }
+<a class="jxr_linenumber" name="285" href="#285">285</a>         }
+<a class="jxr_linenumber" name="286" href="#286">286</a>     }
+<a class="jxr_linenumber" name="287" href="#287">287</a> }
 </pre>
 <hr/><div id="footer">This page was automatically generated by <a href="http://maven.apache.org/">Maven</a></div></body>
 </html>
