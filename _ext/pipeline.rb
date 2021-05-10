@@ -61,11 +61,7 @@ class ReleaseInfo
         simple_versions[r.simple_version] = r
       end
       if r.filename.nil?
-        if r.major_version > 3
-          r.filename = 'netty-' + r.version + '.tar.bz2'
-        else
-          r.filename = 'netty-' + r.version + '-dist.tar.bz2'
-        end
+          r.filename = 'netty-' + r.version + '.tar.gz'
       end
       if r.branch.nil?
         r.branch = r.simple_version
