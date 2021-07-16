@@ -167,64 +167,77 @@
 <a class="jxr_linenumber" name="L159" href="#L159">159</a>             inputPtr = 0;
 <a class="jxr_linenumber" name="L160" href="#L160">160</a>         }
 <a class="jxr_linenumber" name="L161" href="#L161">161</a> 
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxOutputLength = LZFEncoder.estimateMaxWorkspaceSize(length);
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>         out.ensureWritable(maxOutputLength);
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>         <strong class="jxr_keyword">final</strong> byte[] output = out.array();
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> outputPtr = out.arrayOffset() + out.writerIndex();
-<a class="jxr_linenumber" name="L166" href="#L166">166</a> 
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> outputLength;
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>         <strong class="jxr_keyword">if</strong> (length &gt;= compressThreshold) {
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>             <em class="jxr_comment">// compress.</em>
-<a class="jxr_linenumber" name="L170" href="#L170">170</a>             outputLength = encodeCompress(input, inputPtr, length, output, outputPtr);
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L172" href="#L172">172</a>             <em class="jxr_comment">// not compress.</em>
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>             outputLength = encodeNonCompress(input, inputPtr, length, output, outputPtr);
-<a class="jxr_linenumber" name="L174" href="#L174">174</a>         }
-<a class="jxr_linenumber" name="L175" href="#L175">175</a> 
-<a class="jxr_linenumber" name="L176" href="#L176">176</a>         out.writerIndex(out.writerIndex() + outputLength);
-<a class="jxr_linenumber" name="L177" href="#L177">177</a>         in.skipBytes(length);
-<a class="jxr_linenumber" name="L178" href="#L178">178</a> 
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>         <strong class="jxr_keyword">if</strong> (!in.hasArray()) {
-<a class="jxr_linenumber" name="L180" href="#L180">180</a>             recycler.releaseInputBuffer(input);
-<a class="jxr_linenumber" name="L181" href="#L181">181</a>         }
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>     }
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>         <em class="jxr_comment">// Estimate may apparently under-count by one in some cases.</em>
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxOutputLength = LZFEncoder.estimateMaxWorkspaceSize(length) + 1;
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>         out.ensureWritable(maxOutputLength);
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>         <strong class="jxr_keyword">final</strong> byte[] output;
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> outputPtr;
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>         <strong class="jxr_keyword">if</strong> (out.hasArray()) {
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>             output = out.array();
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>             outputPtr = out.arrayOffset() + out.writerIndex();
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>             output = <strong class="jxr_keyword">new</strong> byte[maxOutputLength];
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>             outputPtr = 0;
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>         }
+<a class="jxr_linenumber" name="L174" href="#L174">174</a> 
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> outputLength;
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>         <strong class="jxr_keyword">if</strong> (length &gt;= compressThreshold) {
+<a class="jxr_linenumber" name="L177" href="#L177">177</a>             <em class="jxr_comment">// compress.</em>
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>             outputLength = encodeCompress(input, inputPtr, length, output, outputPtr);
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>             <em class="jxr_comment">// not compress.</em>
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>             outputLength = encodeNonCompress(input, inputPtr, length, output, outputPtr);
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>         }
 <a class="jxr_linenumber" name="L183" href="#L183">183</a> 
-<a class="jxr_linenumber" name="L184" href="#L184">184</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> encodeCompress(byte[] input, <strong class="jxr_keyword">int</strong> inputPtr, <strong class="jxr_keyword">int</strong> length, byte[] output, <strong class="jxr_keyword">int</strong> outputPtr) {
-<a class="jxr_linenumber" name="L185" href="#L185">185</a>         <strong class="jxr_keyword">return</strong> LZFEncoder.appendEncoded(encoder,
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>                 input, inputPtr, length, output, outputPtr) - outputPtr;
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>     }
-<a class="jxr_linenumber" name="L188" href="#L188">188</a> 
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> lzfEncodeNonCompress(byte[] input, <strong class="jxr_keyword">int</strong> inputPtr, <strong class="jxr_keyword">int</strong> length, byte[] output, <strong class="jxr_keyword">int</strong> outputPtr) {
-<a class="jxr_linenumber" name="L190" href="#L190">190</a>         <strong class="jxr_keyword">int</strong> left = length;
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>         <strong class="jxr_keyword">int</strong> chunkLen = Math.min(LZFChunk.MAX_CHUNK_LEN, left);
-<a class="jxr_linenumber" name="L192" href="#L192">192</a>         outputPtr = LZFChunk.appendNonCompressed(input, inputPtr, chunkLen, output, outputPtr);
-<a class="jxr_linenumber" name="L193" href="#L193">193</a>         left -= chunkLen;
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>         <strong class="jxr_keyword">if</strong> (left &lt; 1) {
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>             <strong class="jxr_keyword">return</strong> outputPtr;
-<a class="jxr_linenumber" name="L196" href="#L196">196</a>         }
-<a class="jxr_linenumber" name="L197" href="#L197">197</a>         inputPtr += chunkLen;
-<a class="jxr_linenumber" name="L198" href="#L198">198</a>         <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>             chunkLen = Math.min(left, LZFChunk.MAX_CHUNK_LEN);
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>             outputPtr = LZFChunk.appendNonCompressed(input, inputPtr, chunkLen, output, outputPtr);
-<a class="jxr_linenumber" name="L201" href="#L201">201</a>             inputPtr += chunkLen;
-<a class="jxr_linenumber" name="L202" href="#L202">202</a>             left -= chunkLen;
-<a class="jxr_linenumber" name="L203" href="#L203">203</a>         } <strong class="jxr_keyword">while</strong> (left &gt; 0);
-<a class="jxr_linenumber" name="L204" href="#L204">204</a>         <strong class="jxr_keyword">return</strong> outputPtr;
-<a class="jxr_linenumber" name="L205" href="#L205">205</a>     }
-<a class="jxr_linenumber" name="L206" href="#L206">206</a> 
-<a class="jxr_linenumber" name="L207" href="#L207">207</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L208" href="#L208">208</a> <em class="jxr_javadoccomment">     * Use lzf uncompressed format to encode a piece of input.</em>
-<a class="jxr_linenumber" name="L209" href="#L209">209</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L210" href="#L210">210</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> encodeNonCompress(byte[] input, <strong class="jxr_keyword">int</strong> inputPtr, <strong class="jxr_keyword">int</strong> length, byte[] output, <strong class="jxr_keyword">int</strong> outputPtr) {
-<a class="jxr_linenumber" name="L211" href="#L211">211</a>         <strong class="jxr_keyword">return</strong> lzfEncodeNonCompress(input, inputPtr, length, output, outputPtr) - outputPtr;
-<a class="jxr_linenumber" name="L212" href="#L212">212</a>     }
-<a class="jxr_linenumber" name="L213" href="#L213">213</a> 
-<a class="jxr_linenumber" name="L214" href="#L214">214</a>     @Override
-<a class="jxr_linenumber" name="L215" href="#L215">215</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L216" href="#L216">216</a>         encoder.close();
-<a class="jxr_linenumber" name="L217" href="#L217">217</a>         <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>         <strong class="jxr_keyword">if</strong> (out.hasArray()) {
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>             out.writerIndex(out.writerIndex() + outputLength);
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>             out.writeBytes(output, 0, outputLength);
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>         }
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> 
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>         in.skipBytes(length);
+<a class="jxr_linenumber" name="L191" href="#L191">191</a> 
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>         <strong class="jxr_keyword">if</strong> (!in.hasArray()) {
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>             recycler.releaseInputBuffer(input);
+<a class="jxr_linenumber" name="L194" href="#L194">194</a>         }
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>     }
+<a class="jxr_linenumber" name="L196" href="#L196">196</a> 
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> encodeCompress(byte[] input, <strong class="jxr_keyword">int</strong> inputPtr, <strong class="jxr_keyword">int</strong> length, byte[] output, <strong class="jxr_keyword">int</strong> outputPtr) {
+<a class="jxr_linenumber" name="L198" href="#L198">198</a>         <strong class="jxr_keyword">return</strong> LZFEncoder.appendEncoded(encoder,
+<a class="jxr_linenumber" name="L199" href="#L199">199</a>                 input, inputPtr, length, output, outputPtr) - outputPtr;
+<a class="jxr_linenumber" name="L200" href="#L200">200</a>     }
+<a class="jxr_linenumber" name="L201" href="#L201">201</a> 
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> lzfEncodeNonCompress(byte[] input, <strong class="jxr_keyword">int</strong> inputPtr, <strong class="jxr_keyword">int</strong> length, byte[] output, <strong class="jxr_keyword">int</strong> outputPtr) {
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>         <strong class="jxr_keyword">int</strong> left = length;
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>         <strong class="jxr_keyword">int</strong> chunkLen = Math.min(LZFChunk.MAX_CHUNK_LEN, left);
+<a class="jxr_linenumber" name="L205" href="#L205">205</a>         outputPtr = LZFChunk.appendNonCompressed(input, inputPtr, chunkLen, output, outputPtr);
+<a class="jxr_linenumber" name="L206" href="#L206">206</a>         left -= chunkLen;
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>         <strong class="jxr_keyword">if</strong> (left &lt; 1) {
+<a class="jxr_linenumber" name="L208" href="#L208">208</a>             <strong class="jxr_keyword">return</strong> outputPtr;
+<a class="jxr_linenumber" name="L209" href="#L209">209</a>         }
+<a class="jxr_linenumber" name="L210" href="#L210">210</a>         inputPtr += chunkLen;
+<a class="jxr_linenumber" name="L211" href="#L211">211</a>         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L212" href="#L212">212</a>             chunkLen = Math.min(left, LZFChunk.MAX_CHUNK_LEN);
+<a class="jxr_linenumber" name="L213" href="#L213">213</a>             outputPtr = LZFChunk.appendNonCompressed(input, inputPtr, chunkLen, output, outputPtr);
+<a class="jxr_linenumber" name="L214" href="#L214">214</a>             inputPtr += chunkLen;
+<a class="jxr_linenumber" name="L215" href="#L215">215</a>             left -= chunkLen;
+<a class="jxr_linenumber" name="L216" href="#L216">216</a>         } <strong class="jxr_keyword">while</strong> (left &gt; 0);
+<a class="jxr_linenumber" name="L217" href="#L217">217</a>         <strong class="jxr_keyword">return</strong> outputPtr;
 <a class="jxr_linenumber" name="L218" href="#L218">218</a>     }
-<a class="jxr_linenumber" name="L219" href="#L219">219</a> }
+<a class="jxr_linenumber" name="L219" href="#L219">219</a> 
+<a class="jxr_linenumber" name="L220" href="#L220">220</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L221" href="#L221">221</a> <em class="jxr_javadoccomment">     * Use lzf uncompressed format to encode a piece of input.</em>
+<a class="jxr_linenumber" name="L222" href="#L222">222</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L223" href="#L223">223</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> encodeNonCompress(byte[] input, <strong class="jxr_keyword">int</strong> inputPtr, <strong class="jxr_keyword">int</strong> length, byte[] output, <strong class="jxr_keyword">int</strong> outputPtr) {
+<a class="jxr_linenumber" name="L224" href="#L224">224</a>         <strong class="jxr_keyword">return</strong> lzfEncodeNonCompress(input, inputPtr, length, output, outputPtr) - outputPtr;
+<a class="jxr_linenumber" name="L225" href="#L225">225</a>     }
+<a class="jxr_linenumber" name="L226" href="#L226">226</a> 
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>     @Override
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>         encoder.close();
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>         <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>     }
+<a class="jxr_linenumber" name="L232" href="#L232">232</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2021 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

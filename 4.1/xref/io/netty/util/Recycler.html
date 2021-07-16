@@ -407,349 +407,351 @@
 <a class="jxr_linenumber" name="L399" href="#L399">399</a>             <em class="jxr_comment">// While we also enforce the recycling ratio when we transfer objects from the WeakOrderQueue to the Stack</em>
 <a class="jxr_linenumber" name="L400" href="#L400">400</a>             <em class="jxr_comment">// we better should enforce it as well early. Missing to do so may let the WeakOrderQueue grow very fast</em>
 <a class="jxr_linenumber" name="L401" href="#L401">401</a>             <em class="jxr_comment">// without control</em>
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>             <strong class="jxr_keyword">if</strong> (handleRecycleCount &lt; interval) {
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>                 handleRecycleCount++;
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>                 <em class="jxr_comment">// Drop the item to prevent recycling to aggressive.</em>
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>             }
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>             handleRecycleCount = 0;
-<a class="jxr_linenumber" name="L408" href="#L408">408</a> 
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>             Link tail = <strong class="jxr_keyword">this</strong>.tail;
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>             <strong class="jxr_keyword">int</strong> writeIndex;
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>             <strong class="jxr_keyword">if</strong> ((writeIndex = tail.get()) == LINK_CAPACITY) {
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>                 Link link = head.newLink();
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>                 <strong class="jxr_keyword">if</strong> (link == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>                     <em class="jxr_comment">// Drop it.</em>
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>                 }
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>                 <em class="jxr_comment">// We allocate a Link so reserve the space</em>
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>                 <strong class="jxr_keyword">this</strong>.tail = tail = tail.next = link;
-<a class="jxr_linenumber" name="L419" href="#L419">419</a> 
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>                 writeIndex = tail.get();
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             }
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>             tail.elements[writeIndex] = handle;
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>             handle.stack = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <em class="jxr_comment">// we lazy set to ensure that setting stack to null appears before we unnull it in the owning thread;</em>
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>             <em class="jxr_comment">// this also means we guarantee visibility of an element in the queue if we see the index updated</em>
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>             tail.lazySet(writeIndex + 1);
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>         }
-<a class="jxr_linenumber" name="L428" href="#L428">428</a> 
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>         <strong class="jxr_keyword">boolean</strong> hasFinalData() {
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>             <strong class="jxr_keyword">return</strong> tail.readIndex != tail.get();
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>         }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>         <em class="jxr_comment">// transfer as many items as we can from this queue to the stack, returning true if any were transferred</em>
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>         @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <strong class="jxr_keyword">boolean</strong> transfer(Stack&lt;?&gt; dst) {
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>             Link head = <strong class="jxr_keyword">this</strong>.head.link;
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>             <strong class="jxr_keyword">if</strong> (head == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>             }
-<a class="jxr_linenumber" name="L440" href="#L440">440</a> 
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>             <strong class="jxr_keyword">if</strong> (head.readIndex == LINK_CAPACITY) {
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>                 <strong class="jxr_keyword">if</strong> (head.next == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                     <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>                 }
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 head = head.next;
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>                 <strong class="jxr_keyword">this</strong>.head.relink(head);
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>             }
-<a class="jxr_linenumber" name="L448" href="#L448">448</a> 
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> srcStart = head.readIndex;
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>             <strong class="jxr_keyword">int</strong> srcEnd = head.get();
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> srcSize = srcEnd - srcStart;
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <strong class="jxr_keyword">if</strong> (srcSize == 0) {
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>             }
-<a class="jxr_linenumber" name="L455" href="#L455">455</a> 
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> dstSize = dst.size;
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> expectedCapacity = dstSize + srcSize;
-<a class="jxr_linenumber" name="L458" href="#L458">458</a> 
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">if</strong> (expectedCapacity &gt; dst.elements.length) {
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> actualCapacity = dst.increaseCapacity(expectedCapacity);
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>                 srcEnd = min(srcStart + actualCapacity - dstSize, srcEnd);
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>             }
-<a class="jxr_linenumber" name="L463" href="#L463">463</a> 
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>             <strong class="jxr_keyword">if</strong> (srcStart != srcEnd) {
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>                 <strong class="jxr_keyword">final</strong> DefaultHandle[] srcElems = head.elements;
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 <strong class="jxr_keyword">final</strong> DefaultHandle[] dstElems = dst.elements;
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 <strong class="jxr_keyword">int</strong> newDstSize = dstSize;
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = srcStart; i &lt; srcEnd; i++) {
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>                     DefaultHandle&lt;?&gt; element = srcElems[i];
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>                     <strong class="jxr_keyword">if</strong> (element.recycleId == 0) {
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>                         element.recycleId = element.lastRecycledId;
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (element.recycleId != element.lastRecycledId) {
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>                         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"recycled already"</span>);
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>                     }
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>                     srcElems[i] = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L476" href="#L476">476</a> 
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>                     <strong class="jxr_keyword">if</strong> (dst.dropHandle(element)) {
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>                         <em class="jxr_comment">// Drop the object.</em>
-<a class="jxr_linenumber" name="L479" href="#L479">479</a>                         <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>                     }
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>                     element.stack = dst;
-<a class="jxr_linenumber" name="L482" href="#L482">482</a>                     dstElems[newDstSize ++] = element;
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>                 }
-<a class="jxr_linenumber" name="L484" href="#L484">484</a> 
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>                 <strong class="jxr_keyword">if</strong> (srcEnd == LINK_CAPACITY &amp;&amp; head.next != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>                     <em class="jxr_comment">// Add capacity back as the Link is GCed.</em>
-<a class="jxr_linenumber" name="L487" href="#L487">487</a>                     <strong class="jxr_keyword">this</strong>.head.relink(head.next);
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>                 }
-<a class="jxr_linenumber" name="L489" href="#L489">489</a> 
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>                 head.readIndex = srcEnd;
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>                 <strong class="jxr_keyword">if</strong> (dst.size == newDstSize) {
-<a class="jxr_linenumber" name="L492" href="#L492">492</a>                     <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L493" href="#L493">493</a>                 }
-<a class="jxr_linenumber" name="L494" href="#L494">494</a>                 dst.size = newDstSize;
-<a class="jxr_linenumber" name="L495" href="#L495">495</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L496" href="#L496">496</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L497" href="#L497">497</a>                 <em class="jxr_comment">// The destination stack is full already.</em>
-<a class="jxr_linenumber" name="L498" href="#L498">498</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L499" href="#L499">499</a>             }
-<a class="jxr_linenumber" name="L500" href="#L500">500</a>         }
-<a class="jxr_linenumber" name="L501" href="#L501">501</a>     }
-<a class="jxr_linenumber" name="L502" href="#L502">502</a> 
-<a class="jxr_linenumber" name="L503" href="#L503">503</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Stack&lt;T&gt; {
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>             <strong class="jxr_keyword">if</strong> (!handle.hasBeenRecycled) {
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>                 <strong class="jxr_keyword">if</strong> (handleRecycleCount &lt; interval) {
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>                     handleRecycleCount++;
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>                     <em class="jxr_comment">// Drop the item to prevent from recycling too aggressively.</em>
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>                 }
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>                 handleRecycleCount = 0;
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>             }
+<a class="jxr_linenumber" name="L410" href="#L410">410</a> 
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>             Link tail = <strong class="jxr_keyword">this</strong>.tail;
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>             <strong class="jxr_keyword">int</strong> writeIndex;
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>             <strong class="jxr_keyword">if</strong> ((writeIndex = tail.get()) == LINK_CAPACITY) {
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>                 Link link = head.newLink();
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>                 <strong class="jxr_keyword">if</strong> (link == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                     <em class="jxr_comment">// Drop it.</em>
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>                 }
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>                 <em class="jxr_comment">// We allocate a Link so reserve the space</em>
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>                 <strong class="jxr_keyword">this</strong>.tail = tail = tail.next = link;
+<a class="jxr_linenumber" name="L421" href="#L421">421</a> 
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>                 writeIndex = tail.get();
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>             }
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>             tail.elements[writeIndex] = handle;
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>             handle.stack = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>             <em class="jxr_comment">// we lazy set to ensure that setting stack to null appears before we unnull it in the owning thread;</em>
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>             <em class="jxr_comment">// this also means we guarantee visibility of an element in the queue if we see the index updated</em>
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>             tail.lazySet(writeIndex + 1);
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>         }
+<a class="jxr_linenumber" name="L430" href="#L430">430</a> 
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>         <strong class="jxr_keyword">boolean</strong> hasFinalData() {
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>             <strong class="jxr_keyword">return</strong> tail.readIndex != tail.get();
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>         }
+<a class="jxr_linenumber" name="L434" href="#L434">434</a> 
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <em class="jxr_comment">// transfer as many items as we can from this queue to the stack, returning true if any were transferred</em>
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>         <strong class="jxr_keyword">boolean</strong> transfer(Stack&lt;?&gt; dst) {
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>             Link head = <strong class="jxr_keyword">this</strong>.head.link;
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>             <strong class="jxr_keyword">if</strong> (head == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>             }
+<a class="jxr_linenumber" name="L442" href="#L442">442</a> 
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>             <strong class="jxr_keyword">if</strong> (head.readIndex == LINK_CAPACITY) {
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>                 <strong class="jxr_keyword">if</strong> (head.next == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>                     <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>                 }
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 head = head.next;
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>                 <strong class="jxr_keyword">this</strong>.head.relink(head);
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>             }
+<a class="jxr_linenumber" name="L450" href="#L450">450</a> 
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> srcStart = head.readIndex;
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <strong class="jxr_keyword">int</strong> srcEnd = head.get();
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> srcSize = srcEnd - srcStart;
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>             <strong class="jxr_keyword">if</strong> (srcSize == 0) {
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             }
+<a class="jxr_linenumber" name="L457" href="#L457">457</a> 
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> dstSize = dst.size;
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> expectedCapacity = dstSize + srcSize;
+<a class="jxr_linenumber" name="L460" href="#L460">460</a> 
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>             <strong class="jxr_keyword">if</strong> (expectedCapacity &gt; dst.elements.length) {
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> actualCapacity = dst.increaseCapacity(expectedCapacity);
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>                 srcEnd = min(srcStart + actualCapacity - dstSize, srcEnd);
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>             }
+<a class="jxr_linenumber" name="L465" href="#L465">465</a> 
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>             <strong class="jxr_keyword">if</strong> (srcStart != srcEnd) {
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 <strong class="jxr_keyword">final</strong> DefaultHandle[] srcElems = head.elements;
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>                 <strong class="jxr_keyword">final</strong> DefaultHandle[] dstElems = dst.elements;
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>                 <strong class="jxr_keyword">int</strong> newDstSize = dstSize;
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = srcStart; i &lt; srcEnd; i++) {
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>                     DefaultHandle&lt;?&gt; element = srcElems[i];
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>                     <strong class="jxr_keyword">if</strong> (element.recycleId == 0) {
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>                         element.recycleId = element.lastRecycledId;
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (element.recycleId != element.lastRecycledId) {
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>                         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"recycled already"</span>);
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>                     }
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>                     srcElems[i] = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L478" href="#L478">478</a> 
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>                     <strong class="jxr_keyword">if</strong> (dst.dropHandle(element)) {
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>                         <em class="jxr_comment">// Drop the object.</em>
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>                         <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>                     }
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>                     element.stack = dst;
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>                     dstElems[newDstSize ++] = element;
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>                 }
+<a class="jxr_linenumber" name="L486" href="#L486">486</a> 
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>                 <strong class="jxr_keyword">if</strong> (srcEnd == LINK_CAPACITY &amp;&amp; head.next != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L488" href="#L488">488</a>                     <em class="jxr_comment">// Add capacity back as the Link is GCed.</em>
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>                     <strong class="jxr_keyword">this</strong>.head.relink(head.next);
+<a class="jxr_linenumber" name="L490" href="#L490">490</a>                 }
+<a class="jxr_linenumber" name="L491" href="#L491">491</a> 
+<a class="jxr_linenumber" name="L492" href="#L492">492</a>                 head.readIndex = srcEnd;
+<a class="jxr_linenumber" name="L493" href="#L493">493</a>                 <strong class="jxr_keyword">if</strong> (dst.size == newDstSize) {
+<a class="jxr_linenumber" name="L494" href="#L494">494</a>                     <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L495" href="#L495">495</a>                 }
+<a class="jxr_linenumber" name="L496" href="#L496">496</a>                 dst.size = newDstSize;
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L498" href="#L498">498</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L499" href="#L499">499</a>                 <em class="jxr_comment">// The destination stack is full already.</em>
+<a class="jxr_linenumber" name="L500" href="#L500">500</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L501" href="#L501">501</a>             }
+<a class="jxr_linenumber" name="L502" href="#L502">502</a>         }
+<a class="jxr_linenumber" name="L503" href="#L503">503</a>     }
 <a class="jxr_linenumber" name="L504" href="#L504">504</a> 
-<a class="jxr_linenumber" name="L505" href="#L505">505</a>         <em class="jxr_comment">// we keep a queue of per-thread queues, which is appended to once only, each time a new thread other</em>
-<a class="jxr_linenumber" name="L506" href="#L506">506</a>         <em class="jxr_comment">// than the stack owner recycles: when we run out of items in our stack we iterate this collection</em>
-<a class="jxr_linenumber" name="L507" href="#L507">507</a>         <em class="jxr_comment">// to scavenge those that can be reused. this permits us to incur minimal thread synchronisation whilst</em>
-<a class="jxr_linenumber" name="L508" href="#L508">508</a>         <em class="jxr_comment">// still recycling all items.</em>
-<a class="jxr_linenumber" name="L509" href="#L509">509</a>         <strong class="jxr_keyword">final</strong> Recycler&lt;T&gt; parent;
-<a class="jxr_linenumber" name="L510" href="#L510">510</a> 
-<a class="jxr_linenumber" name="L511" href="#L511">511</a>         <em class="jxr_comment">// We store the Thread in a WeakReference as otherwise we may be the only ones that still hold a strong</em>
-<a class="jxr_linenumber" name="L512" href="#L512">512</a>         <em class="jxr_comment">// Reference to the Thread itself after it died because DefaultHandle will hold a reference to the Stack.</em>
-<a class="jxr_linenumber" name="L513" href="#L513">513</a>         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L514" href="#L514">514</a>         <em class="jxr_comment">// The biggest issue is if we do not use a WeakReference the Thread may not be able to be collected at all if</em>
-<a class="jxr_linenumber" name="L515" href="#L515">515</a>         <em class="jxr_comment">// the user will store a reference to the DefaultHandle somewhere and never clear this reference (or not clear</em>
-<a class="jxr_linenumber" name="L516" href="#L516">516</a>         <em class="jxr_comment">// it in a timely manner).</em>
-<a class="jxr_linenumber" name="L517" href="#L517">517</a>         <strong class="jxr_keyword">final</strong> WeakReference&lt;Thread&gt; threadRef;
-<a class="jxr_linenumber" name="L518" href="#L518">518</a>         <strong class="jxr_keyword">final</strong> AtomicInteger availableSharedCapacity;
-<a class="jxr_linenumber" name="L519" href="#L519">519</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxDelayedQueues;
-<a class="jxr_linenumber" name="L520" href="#L520">520</a> 
-<a class="jxr_linenumber" name="L521" href="#L521">521</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxCapacity;
-<a class="jxr_linenumber" name="L522" href="#L522">522</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> interval;
-<a class="jxr_linenumber" name="L523" href="#L523">523</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> delayedQueueInterval;
-<a class="jxr_linenumber" name="L524" href="#L524">524</a>         DefaultHandle&lt;?&gt;[] elements;
-<a class="jxr_linenumber" name="L525" href="#L525">525</a>         <strong class="jxr_keyword">int</strong> size;
-<a class="jxr_linenumber" name="L526" href="#L526">526</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> handleRecycleCount;
-<a class="jxr_linenumber" name="L527" href="#L527">527</a>         <strong class="jxr_keyword">private</strong> WeakOrderQueue cursor, prev;
-<a class="jxr_linenumber" name="L528" href="#L528">528</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> WeakOrderQueue head;
-<a class="jxr_linenumber" name="L529" href="#L529">529</a> 
-<a class="jxr_linenumber" name="L530" href="#L530">530</a>         Stack(Recycler&lt;T&gt; parent, Thread thread, <strong class="jxr_keyword">int</strong> maxCapacity, <strong class="jxr_keyword">int</strong> maxSharedCapacityFactor,
-<a class="jxr_linenumber" name="L531" href="#L531">531</a>               <strong class="jxr_keyword">int</strong> interval, <strong class="jxr_keyword">int</strong> maxDelayedQueues, <strong class="jxr_keyword">int</strong> delayedQueueInterval) {
-<a class="jxr_linenumber" name="L532" href="#L532">532</a>             <strong class="jxr_keyword">this</strong>.parent = parent;
-<a class="jxr_linenumber" name="L533" href="#L533">533</a>             threadRef = <strong class="jxr_keyword">new</strong> WeakReference&lt;Thread&gt;(thread);
-<a class="jxr_linenumber" name="L534" href="#L534">534</a>             <strong class="jxr_keyword">this</strong>.maxCapacity = maxCapacity;
-<a class="jxr_linenumber" name="L535" href="#L535">535</a>             availableSharedCapacity = <strong class="jxr_keyword">new</strong> AtomicInteger(max(maxCapacity / maxSharedCapacityFactor, LINK_CAPACITY));
-<a class="jxr_linenumber" name="L536" href="#L536">536</a>             elements = <strong class="jxr_keyword">new</strong> DefaultHandle[min(INITIAL_CAPACITY, maxCapacity)];
-<a class="jxr_linenumber" name="L537" href="#L537">537</a>             <strong class="jxr_keyword">this</strong>.interval = interval;
-<a class="jxr_linenumber" name="L538" href="#L538">538</a>             <strong class="jxr_keyword">this</strong>.delayedQueueInterval = delayedQueueInterval;
-<a class="jxr_linenumber" name="L539" href="#L539">539</a>             handleRecycleCount = interval; <em class="jxr_comment">// Start at interval so the first one will be recycled.</em>
-<a class="jxr_linenumber" name="L540" href="#L540">540</a>             <strong class="jxr_keyword">this</strong>.maxDelayedQueues = maxDelayedQueues;
-<a class="jxr_linenumber" name="L541" href="#L541">541</a>         }
-<a class="jxr_linenumber" name="L542" href="#L542">542</a> 
-<a class="jxr_linenumber" name="L543" href="#L543">543</a>         <em class="jxr_comment">// Marked as synchronized to ensure this is serialized.</em>
-<a class="jxr_linenumber" name="L544" href="#L544">544</a>         <strong class="jxr_keyword">synchronized</strong> <strong class="jxr_keyword">void</strong> setHead(WeakOrderQueue queue) {
-<a class="jxr_linenumber" name="L545" href="#L545">545</a>             queue.setNext(head);
-<a class="jxr_linenumber" name="L546" href="#L546">546</a>             head = queue;
-<a class="jxr_linenumber" name="L547" href="#L547">547</a>         }
-<a class="jxr_linenumber" name="L548" href="#L548">548</a> 
-<a class="jxr_linenumber" name="L549" href="#L549">549</a>         <strong class="jxr_keyword">int</strong> increaseCapacity(<strong class="jxr_keyword">int</strong> expectedCapacity) {
-<a class="jxr_linenumber" name="L550" href="#L550">550</a>             <strong class="jxr_keyword">int</strong> newCapacity = elements.length;
-<a class="jxr_linenumber" name="L551" href="#L551">551</a>             <strong class="jxr_keyword">int</strong> maxCapacity = <strong class="jxr_keyword">this</strong>.maxCapacity;
-<a class="jxr_linenumber" name="L552" href="#L552">552</a>             <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="L553" href="#L553">553</a>                 newCapacity &lt;&lt;= 1;
-<a class="jxr_linenumber" name="L554" href="#L554">554</a>             } <strong class="jxr_keyword">while</strong> (newCapacity &lt; expectedCapacity &amp;&amp; newCapacity &lt; maxCapacity);
-<a class="jxr_linenumber" name="L555" href="#L555">555</a> 
-<a class="jxr_linenumber" name="L556" href="#L556">556</a>             newCapacity = min(newCapacity, maxCapacity);
-<a class="jxr_linenumber" name="L557" href="#L557">557</a>             <strong class="jxr_keyword">if</strong> (newCapacity != elements.length) {
-<a class="jxr_linenumber" name="L558" href="#L558">558</a>                 elements = Arrays.copyOf(elements, newCapacity);
-<a class="jxr_linenumber" name="L559" href="#L559">559</a>             }
-<a class="jxr_linenumber" name="L560" href="#L560">560</a> 
-<a class="jxr_linenumber" name="L561" href="#L561">561</a>             <strong class="jxr_keyword">return</strong> newCapacity;
-<a class="jxr_linenumber" name="L562" href="#L562">562</a>         }
-<a class="jxr_linenumber" name="L563" href="#L563">563</a> 
-<a class="jxr_linenumber" name="L564" href="#L564">564</a>         @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
-<a class="jxr_linenumber" name="L565" href="#L565">565</a>         DefaultHandle&lt;T&gt; pop() {
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>             <strong class="jxr_keyword">int</strong> size = <strong class="jxr_keyword">this</strong>.size;
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>             <strong class="jxr_keyword">if</strong> (size == 0) {
-<a class="jxr_linenumber" name="L568" href="#L568">568</a>                 <strong class="jxr_keyword">if</strong> (!scavenge()) {
-<a class="jxr_linenumber" name="L569" href="#L569">569</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L570" href="#L570">570</a>                 }
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>                 size = <strong class="jxr_keyword">this</strong>.size;
-<a class="jxr_linenumber" name="L572" href="#L572">572</a>                 <strong class="jxr_keyword">if</strong> (size &lt;= 0) {
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>                     <em class="jxr_comment">// double check, avoid races</em>
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>                 }
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>             }
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>             size --;
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>             DefaultHandle ret = elements[size];
-<a class="jxr_linenumber" name="L579" href="#L579">579</a>             elements[size] = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L580" href="#L580">580</a>             <em class="jxr_comment">// As we already set the element[size] to null we also need to store the updated size before we do</em>
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>             <em class="jxr_comment">// any validation. Otherwise we may see a null value when later try to pop again without a new element</em>
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>             <em class="jxr_comment">// added before.</em>
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>             <strong class="jxr_keyword">this</strong>.size = size;
-<a class="jxr_linenumber" name="L584" href="#L584">584</a> 
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>             <strong class="jxr_keyword">if</strong> (ret.lastRecycledId != ret.recycleId) {
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"recycled multiple times"</span>);
-<a class="jxr_linenumber" name="L587" href="#L587">587</a>             }
-<a class="jxr_linenumber" name="L588" href="#L588">588</a>             ret.recycleId = 0;
-<a class="jxr_linenumber" name="L589" href="#L589">589</a>             ret.lastRecycledId = 0;
-<a class="jxr_linenumber" name="L590" href="#L590">590</a>             <strong class="jxr_keyword">return</strong> ret;
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>         }
-<a class="jxr_linenumber" name="L592" href="#L592">592</a> 
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scavenge() {
-<a class="jxr_linenumber" name="L594" href="#L594">594</a>             <em class="jxr_comment">// continue an existing scavenge, if any</em>
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>             <strong class="jxr_keyword">if</strong> (scavengeSome()) {
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L597" href="#L597">597</a>             }
-<a class="jxr_linenumber" name="L598" href="#L598">598</a> 
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>             <em class="jxr_comment">// reset our scavenge cursor</em>
-<a class="jxr_linenumber" name="L600" href="#L600">600</a>             prev = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>             cursor = head;
-<a class="jxr_linenumber" name="L602" href="#L602">602</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L603" href="#L603">603</a>         }
-<a class="jxr_linenumber" name="L604" href="#L604">604</a> 
-<a class="jxr_linenumber" name="L605" href="#L605">605</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scavengeSome() {
-<a class="jxr_linenumber" name="L606" href="#L606">606</a>             WeakOrderQueue prev;
-<a class="jxr_linenumber" name="L607" href="#L607">607</a>             WeakOrderQueue cursor = <strong class="jxr_keyword">this</strong>.cursor;
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>             <strong class="jxr_keyword">if</strong> (cursor == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>                 prev = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L610" href="#L610">610</a>                 cursor = head;
-<a class="jxr_linenumber" name="L611" href="#L611">611</a>                 <strong class="jxr_keyword">if</strong> (cursor == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>                     <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>                 }
-<a class="jxr_linenumber" name="L614" href="#L614">614</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>                 prev = <strong class="jxr_keyword">this</strong>.prev;
-<a class="jxr_linenumber" name="L616" href="#L616">616</a>             }
-<a class="jxr_linenumber" name="L617" href="#L617">617</a> 
-<a class="jxr_linenumber" name="L618" href="#L618">618</a>             <strong class="jxr_keyword">boolean</strong> success = false;
-<a class="jxr_linenumber" name="L619" href="#L619">619</a>             <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="L620" href="#L620">620</a>                 <strong class="jxr_keyword">if</strong> (cursor.transfer(<strong class="jxr_keyword">this</strong>)) {
-<a class="jxr_linenumber" name="L621" href="#L621">621</a>                     success = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L622" href="#L622">622</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L623" href="#L623">623</a>                 }
-<a class="jxr_linenumber" name="L624" href="#L624">624</a>                 WeakOrderQueue next = cursor.getNext();
-<a class="jxr_linenumber" name="L625" href="#L625">625</a>                 <strong class="jxr_keyword">if</strong> (cursor.get() == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L626" href="#L626">626</a>                     <em class="jxr_comment">// If the thread associated with the queue is gone, unlink it, after</em>
-<a class="jxr_linenumber" name="L627" href="#L627">627</a>                     <em class="jxr_comment">// performing a volatile read to confirm there is no data left to collect.</em>
-<a class="jxr_linenumber" name="L628" href="#L628">628</a>                     <em class="jxr_comment">// We never unlink the first queue, as we don't want to synchronize on updating the head.</em>
-<a class="jxr_linenumber" name="L629" href="#L629">629</a>                     <strong class="jxr_keyword">if</strong> (cursor.hasFinalData()) {
-<a class="jxr_linenumber" name="L630" href="#L630">630</a>                         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="L631" href="#L631">631</a>                             <strong class="jxr_keyword">if</strong> (cursor.transfer(<strong class="jxr_keyword">this</strong>)) {
-<a class="jxr_linenumber" name="L632" href="#L632">632</a>                                 success = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L633" href="#L633">633</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L634" href="#L634">634</a>                                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L635" href="#L635">635</a>                             }
-<a class="jxr_linenumber" name="L636" href="#L636">636</a>                         }
-<a class="jxr_linenumber" name="L637" href="#L637">637</a>                     }
-<a class="jxr_linenumber" name="L638" href="#L638">638</a> 
-<a class="jxr_linenumber" name="L639" href="#L639">639</a>                     <strong class="jxr_keyword">if</strong> (prev != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L640" href="#L640">640</a>                         <em class="jxr_comment">// Ensure we reclaim all space before dropping the WeakOrderQueue to be GC'ed.</em>
-<a class="jxr_linenumber" name="L641" href="#L641">641</a>                         cursor.reclaimAllSpaceAndUnlink();
-<a class="jxr_linenumber" name="L642" href="#L642">642</a>                         prev.setNext(next);
-<a class="jxr_linenumber" name="L643" href="#L643">643</a>                     }
-<a class="jxr_linenumber" name="L644" href="#L644">644</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L645" href="#L645">645</a>                     prev = cursor;
-<a class="jxr_linenumber" name="L646" href="#L646">646</a>                 }
-<a class="jxr_linenumber" name="L647" href="#L647">647</a> 
-<a class="jxr_linenumber" name="L648" href="#L648">648</a>                 cursor = next;
+<a class="jxr_linenumber" name="L505" href="#L505">505</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Stack&lt;T&gt; {
+<a class="jxr_linenumber" name="L506" href="#L506">506</a> 
+<a class="jxr_linenumber" name="L507" href="#L507">507</a>         <em class="jxr_comment">// we keep a queue of per-thread queues, which is appended to once only, each time a new thread other</em>
+<a class="jxr_linenumber" name="L508" href="#L508">508</a>         <em class="jxr_comment">// than the stack owner recycles: when we run out of items in our stack we iterate this collection</em>
+<a class="jxr_linenumber" name="L509" href="#L509">509</a>         <em class="jxr_comment">// to scavenge those that can be reused. this permits us to incur minimal thread synchronisation whilst</em>
+<a class="jxr_linenumber" name="L510" href="#L510">510</a>         <em class="jxr_comment">// still recycling all items.</em>
+<a class="jxr_linenumber" name="L511" href="#L511">511</a>         <strong class="jxr_keyword">final</strong> Recycler&lt;T&gt; parent;
+<a class="jxr_linenumber" name="L512" href="#L512">512</a> 
+<a class="jxr_linenumber" name="L513" href="#L513">513</a>         <em class="jxr_comment">// We store the Thread in a WeakReference as otherwise we may be the only ones that still hold a strong</em>
+<a class="jxr_linenumber" name="L514" href="#L514">514</a>         <em class="jxr_comment">// Reference to the Thread itself after it died because DefaultHandle will hold a reference to the Stack.</em>
+<a class="jxr_linenumber" name="L515" href="#L515">515</a>         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L516" href="#L516">516</a>         <em class="jxr_comment">// The biggest issue is if we do not use a WeakReference the Thread may not be able to be collected at all if</em>
+<a class="jxr_linenumber" name="L517" href="#L517">517</a>         <em class="jxr_comment">// the user will store a reference to the DefaultHandle somewhere and never clear this reference (or not clear</em>
+<a class="jxr_linenumber" name="L518" href="#L518">518</a>         <em class="jxr_comment">// it in a timely manner).</em>
+<a class="jxr_linenumber" name="L519" href="#L519">519</a>         <strong class="jxr_keyword">final</strong> WeakReference&lt;Thread&gt; threadRef;
+<a class="jxr_linenumber" name="L520" href="#L520">520</a>         <strong class="jxr_keyword">final</strong> AtomicInteger availableSharedCapacity;
+<a class="jxr_linenumber" name="L521" href="#L521">521</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxDelayedQueues;
+<a class="jxr_linenumber" name="L522" href="#L522">522</a> 
+<a class="jxr_linenumber" name="L523" href="#L523">523</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxCapacity;
+<a class="jxr_linenumber" name="L524" href="#L524">524</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> interval;
+<a class="jxr_linenumber" name="L525" href="#L525">525</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> delayedQueueInterval;
+<a class="jxr_linenumber" name="L526" href="#L526">526</a>         DefaultHandle&lt;?&gt;[] elements;
+<a class="jxr_linenumber" name="L527" href="#L527">527</a>         <strong class="jxr_keyword">int</strong> size;
+<a class="jxr_linenumber" name="L528" href="#L528">528</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> handleRecycleCount;
+<a class="jxr_linenumber" name="L529" href="#L529">529</a>         <strong class="jxr_keyword">private</strong> WeakOrderQueue cursor, prev;
+<a class="jxr_linenumber" name="L530" href="#L530">530</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> WeakOrderQueue head;
+<a class="jxr_linenumber" name="L531" href="#L531">531</a> 
+<a class="jxr_linenumber" name="L532" href="#L532">532</a>         Stack(Recycler&lt;T&gt; parent, Thread thread, <strong class="jxr_keyword">int</strong> maxCapacity, <strong class="jxr_keyword">int</strong> maxSharedCapacityFactor,
+<a class="jxr_linenumber" name="L533" href="#L533">533</a>               <strong class="jxr_keyword">int</strong> interval, <strong class="jxr_keyword">int</strong> maxDelayedQueues, <strong class="jxr_keyword">int</strong> delayedQueueInterval) {
+<a class="jxr_linenumber" name="L534" href="#L534">534</a>             <strong class="jxr_keyword">this</strong>.parent = parent;
+<a class="jxr_linenumber" name="L535" href="#L535">535</a>             threadRef = <strong class="jxr_keyword">new</strong> WeakReference&lt;Thread&gt;(thread);
+<a class="jxr_linenumber" name="L536" href="#L536">536</a>             <strong class="jxr_keyword">this</strong>.maxCapacity = maxCapacity;
+<a class="jxr_linenumber" name="L537" href="#L537">537</a>             availableSharedCapacity = <strong class="jxr_keyword">new</strong> AtomicInteger(max(maxCapacity / maxSharedCapacityFactor, LINK_CAPACITY));
+<a class="jxr_linenumber" name="L538" href="#L538">538</a>             elements = <strong class="jxr_keyword">new</strong> DefaultHandle[min(INITIAL_CAPACITY, maxCapacity)];
+<a class="jxr_linenumber" name="L539" href="#L539">539</a>             <strong class="jxr_keyword">this</strong>.interval = interval;
+<a class="jxr_linenumber" name="L540" href="#L540">540</a>             <strong class="jxr_keyword">this</strong>.delayedQueueInterval = delayedQueueInterval;
+<a class="jxr_linenumber" name="L541" href="#L541">541</a>             handleRecycleCount = interval; <em class="jxr_comment">// Start at interval so the first one will be recycled.</em>
+<a class="jxr_linenumber" name="L542" href="#L542">542</a>             <strong class="jxr_keyword">this</strong>.maxDelayedQueues = maxDelayedQueues;
+<a class="jxr_linenumber" name="L543" href="#L543">543</a>         }
+<a class="jxr_linenumber" name="L544" href="#L544">544</a> 
+<a class="jxr_linenumber" name="L545" href="#L545">545</a>         <em class="jxr_comment">// Marked as synchronized to ensure this is serialized.</em>
+<a class="jxr_linenumber" name="L546" href="#L546">546</a>         <strong class="jxr_keyword">synchronized</strong> <strong class="jxr_keyword">void</strong> setHead(WeakOrderQueue queue) {
+<a class="jxr_linenumber" name="L547" href="#L547">547</a>             queue.setNext(head);
+<a class="jxr_linenumber" name="L548" href="#L548">548</a>             head = queue;
+<a class="jxr_linenumber" name="L549" href="#L549">549</a>         }
+<a class="jxr_linenumber" name="L550" href="#L550">550</a> 
+<a class="jxr_linenumber" name="L551" href="#L551">551</a>         <strong class="jxr_keyword">int</strong> increaseCapacity(<strong class="jxr_keyword">int</strong> expectedCapacity) {
+<a class="jxr_linenumber" name="L552" href="#L552">552</a>             <strong class="jxr_keyword">int</strong> newCapacity = elements.length;
+<a class="jxr_linenumber" name="L553" href="#L553">553</a>             <strong class="jxr_keyword">int</strong> maxCapacity = <strong class="jxr_keyword">this</strong>.maxCapacity;
+<a class="jxr_linenumber" name="L554" href="#L554">554</a>             <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L555" href="#L555">555</a>                 newCapacity &lt;&lt;= 1;
+<a class="jxr_linenumber" name="L556" href="#L556">556</a>             } <strong class="jxr_keyword">while</strong> (newCapacity &lt; expectedCapacity &amp;&amp; newCapacity &lt; maxCapacity);
+<a class="jxr_linenumber" name="L557" href="#L557">557</a> 
+<a class="jxr_linenumber" name="L558" href="#L558">558</a>             newCapacity = min(newCapacity, maxCapacity);
+<a class="jxr_linenumber" name="L559" href="#L559">559</a>             <strong class="jxr_keyword">if</strong> (newCapacity != elements.length) {
+<a class="jxr_linenumber" name="L560" href="#L560">560</a>                 elements = Arrays.copyOf(elements, newCapacity);
+<a class="jxr_linenumber" name="L561" href="#L561">561</a>             }
+<a class="jxr_linenumber" name="L562" href="#L562">562</a> 
+<a class="jxr_linenumber" name="L563" href="#L563">563</a>             <strong class="jxr_keyword">return</strong> newCapacity;
+<a class="jxr_linenumber" name="L564" href="#L564">564</a>         }
+<a class="jxr_linenumber" name="L565" href="#L565">565</a> 
+<a class="jxr_linenumber" name="L566" href="#L566">566</a>         @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
+<a class="jxr_linenumber" name="L567" href="#L567">567</a>         DefaultHandle&lt;T&gt; pop() {
+<a class="jxr_linenumber" name="L568" href="#L568">568</a>             <strong class="jxr_keyword">int</strong> size = <strong class="jxr_keyword">this</strong>.size;
+<a class="jxr_linenumber" name="L569" href="#L569">569</a>             <strong class="jxr_keyword">if</strong> (size == 0) {
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>                 <strong class="jxr_keyword">if</strong> (!scavenge()) {
+<a class="jxr_linenumber" name="L571" href="#L571">571</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>                 }
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>                 size = <strong class="jxr_keyword">this</strong>.size;
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>                 <strong class="jxr_keyword">if</strong> (size &lt;= 0) {
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>                     <em class="jxr_comment">// double check, avoid races</em>
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>                 }
+<a class="jxr_linenumber" name="L578" href="#L578">578</a>             }
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>             size --;
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>             DefaultHandle ret = elements[size];
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>             elements[size] = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>             <em class="jxr_comment">// As we already set the element[size] to null we also need to store the updated size before we do</em>
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>             <em class="jxr_comment">// any validation. Otherwise we may see a null value when later try to pop again without a new element</em>
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>             <em class="jxr_comment">// added before.</em>
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>             <strong class="jxr_keyword">this</strong>.size = size;
+<a class="jxr_linenumber" name="L586" href="#L586">586</a> 
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>             <strong class="jxr_keyword">if</strong> (ret.lastRecycledId != ret.recycleId) {
+<a class="jxr_linenumber" name="L588" href="#L588">588</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"recycled multiple times"</span>);
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>             }
+<a class="jxr_linenumber" name="L590" href="#L590">590</a>             ret.recycleId = 0;
+<a class="jxr_linenumber" name="L591" href="#L591">591</a>             ret.lastRecycledId = 0;
+<a class="jxr_linenumber" name="L592" href="#L592">592</a>             <strong class="jxr_keyword">return</strong> ret;
+<a class="jxr_linenumber" name="L593" href="#L593">593</a>         }
+<a class="jxr_linenumber" name="L594" href="#L594">594</a> 
+<a class="jxr_linenumber" name="L595" href="#L595">595</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scavenge() {
+<a class="jxr_linenumber" name="L596" href="#L596">596</a>             <em class="jxr_comment">// continue an existing scavenge, if any</em>
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>             <strong class="jxr_keyword">if</strong> (scavengeSome()) {
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>             }
+<a class="jxr_linenumber" name="L600" href="#L600">600</a> 
+<a class="jxr_linenumber" name="L601" href="#L601">601</a>             <em class="jxr_comment">// reset our scavenge cursor</em>
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>             prev = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>             cursor = head;
+<a class="jxr_linenumber" name="L604" href="#L604">604</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>         }
+<a class="jxr_linenumber" name="L606" href="#L606">606</a> 
+<a class="jxr_linenumber" name="L607" href="#L607">607</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scavengeSome() {
+<a class="jxr_linenumber" name="L608" href="#L608">608</a>             WeakOrderQueue prev;
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>             WeakOrderQueue cursor = <strong class="jxr_keyword">this</strong>.cursor;
+<a class="jxr_linenumber" name="L610" href="#L610">610</a>             <strong class="jxr_keyword">if</strong> (cursor == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L611" href="#L611">611</a>                 prev = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>                 cursor = head;
+<a class="jxr_linenumber" name="L613" href="#L613">613</a>                 <strong class="jxr_keyword">if</strong> (cursor == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L614" href="#L614">614</a>                     <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L615" href="#L615">615</a>                 }
+<a class="jxr_linenumber" name="L616" href="#L616">616</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L617" href="#L617">617</a>                 prev = <strong class="jxr_keyword">this</strong>.prev;
+<a class="jxr_linenumber" name="L618" href="#L618">618</a>             }
+<a class="jxr_linenumber" name="L619" href="#L619">619</a> 
+<a class="jxr_linenumber" name="L620" href="#L620">620</a>             <strong class="jxr_keyword">boolean</strong> success = false;
+<a class="jxr_linenumber" name="L621" href="#L621">621</a>             <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L622" href="#L622">622</a>                 <strong class="jxr_keyword">if</strong> (cursor.transfer(<strong class="jxr_keyword">this</strong>)) {
+<a class="jxr_linenumber" name="L623" href="#L623">623</a>                     success = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L624" href="#L624">624</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L625" href="#L625">625</a>                 }
+<a class="jxr_linenumber" name="L626" href="#L626">626</a>                 WeakOrderQueue next = cursor.getNext();
+<a class="jxr_linenumber" name="L627" href="#L627">627</a>                 <strong class="jxr_keyword">if</strong> (cursor.get() == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L628" href="#L628">628</a>                     <em class="jxr_comment">// If the thread associated with the queue is gone, unlink it, after</em>
+<a class="jxr_linenumber" name="L629" href="#L629">629</a>                     <em class="jxr_comment">// performing a volatile read to confirm there is no data left to collect.</em>
+<a class="jxr_linenumber" name="L630" href="#L630">630</a>                     <em class="jxr_comment">// We never unlink the first queue, as we don't want to synchronize on updating the head.</em>
+<a class="jxr_linenumber" name="L631" href="#L631">631</a>                     <strong class="jxr_keyword">if</strong> (cursor.hasFinalData()) {
+<a class="jxr_linenumber" name="L632" href="#L632">632</a>                         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="L633" href="#L633">633</a>                             <strong class="jxr_keyword">if</strong> (cursor.transfer(<strong class="jxr_keyword">this</strong>)) {
+<a class="jxr_linenumber" name="L634" href="#L634">634</a>                                 success = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L635" href="#L635">635</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L636" href="#L636">636</a>                                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L637" href="#L637">637</a>                             }
+<a class="jxr_linenumber" name="L638" href="#L638">638</a>                         }
+<a class="jxr_linenumber" name="L639" href="#L639">639</a>                     }
+<a class="jxr_linenumber" name="L640" href="#L640">640</a> 
+<a class="jxr_linenumber" name="L641" href="#L641">641</a>                     <strong class="jxr_keyword">if</strong> (prev != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L642" href="#L642">642</a>                         <em class="jxr_comment">// Ensure we reclaim all space before dropping the WeakOrderQueue to be GC'ed.</em>
+<a class="jxr_linenumber" name="L643" href="#L643">643</a>                         cursor.reclaimAllSpaceAndUnlink();
+<a class="jxr_linenumber" name="L644" href="#L644">644</a>                         prev.setNext(next);
+<a class="jxr_linenumber" name="L645" href="#L645">645</a>                     }
+<a class="jxr_linenumber" name="L646" href="#L646">646</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L647" href="#L647">647</a>                     prev = cursor;
+<a class="jxr_linenumber" name="L648" href="#L648">648</a>                 }
 <a class="jxr_linenumber" name="L649" href="#L649">649</a> 
-<a class="jxr_linenumber" name="L650" href="#L650">650</a>             } <strong class="jxr_keyword">while</strong> (cursor != <strong class="jxr_keyword">null</strong> &amp;&amp; !success);
+<a class="jxr_linenumber" name="L650" href="#L650">650</a>                 cursor = next;
 <a class="jxr_linenumber" name="L651" href="#L651">651</a> 
-<a class="jxr_linenumber" name="L652" href="#L652">652</a>             <strong class="jxr_keyword">this</strong>.prev = prev;
-<a class="jxr_linenumber" name="L653" href="#L653">653</a>             <strong class="jxr_keyword">this</strong>.cursor = cursor;
-<a class="jxr_linenumber" name="L654" href="#L654">654</a>             <strong class="jxr_keyword">return</strong> success;
-<a class="jxr_linenumber" name="L655" href="#L655">655</a>         }
-<a class="jxr_linenumber" name="L656" href="#L656">656</a> 
-<a class="jxr_linenumber" name="L657" href="#L657">657</a>         <strong class="jxr_keyword">void</strong> push(DefaultHandle&lt;?&gt; item) {
-<a class="jxr_linenumber" name="L658" href="#L658">658</a>             Thread currentThread = Thread.currentThread();
-<a class="jxr_linenumber" name="L659" href="#L659">659</a>             <strong class="jxr_keyword">if</strong> (threadRef.get() == currentThread) {
-<a class="jxr_linenumber" name="L660" href="#L660">660</a>                 <em class="jxr_comment">// The current Thread is the thread that belongs to the Stack, we can try to push the object now.</em>
-<a class="jxr_linenumber" name="L661" href="#L661">661</a>                 pushNow(item);
-<a class="jxr_linenumber" name="L662" href="#L662">662</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L663" href="#L663">663</a>                 <em class="jxr_comment">// The current Thread is not the one that belongs to the Stack</em>
-<a class="jxr_linenumber" name="L664" href="#L664">664</a>                 <em class="jxr_comment">// (or the Thread that belonged to the Stack was collected already), we need to signal that the push</em>
-<a class="jxr_linenumber" name="L665" href="#L665">665</a>                 <em class="jxr_comment">// happens later.</em>
-<a class="jxr_linenumber" name="L666" href="#L666">666</a>                 pushLater(item, currentThread);
-<a class="jxr_linenumber" name="L667" href="#L667">667</a>             }
-<a class="jxr_linenumber" name="L668" href="#L668">668</a>         }
-<a class="jxr_linenumber" name="L669" href="#L669">669</a> 
-<a class="jxr_linenumber" name="L670" href="#L670">670</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> pushNow(DefaultHandle&lt;?&gt; item) {
-<a class="jxr_linenumber" name="L671" href="#L671">671</a>             <strong class="jxr_keyword">if</strong> (item.recycleId != 0 || !item.compareAndSetLastRecycledId(0, OWN_THREAD_ID)) {
-<a class="jxr_linenumber" name="L672" href="#L672">672</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"recycled already"</span>);
-<a class="jxr_linenumber" name="L673" href="#L673">673</a>             }
-<a class="jxr_linenumber" name="L674" href="#L674">674</a>             item.recycleId = OWN_THREAD_ID;
-<a class="jxr_linenumber" name="L675" href="#L675">675</a> 
-<a class="jxr_linenumber" name="L676" href="#L676">676</a>             <strong class="jxr_keyword">int</strong> size = <strong class="jxr_keyword">this</strong>.size;
-<a class="jxr_linenumber" name="L677" href="#L677">677</a>             <strong class="jxr_keyword">if</strong> (size &gt;= maxCapacity || dropHandle(item)) {
-<a class="jxr_linenumber" name="L678" href="#L678">678</a>                 <em class="jxr_comment">// Hit the maximum capacity or should drop - drop the possibly youngest object.</em>
-<a class="jxr_linenumber" name="L679" href="#L679">679</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L680" href="#L680">680</a>             }
-<a class="jxr_linenumber" name="L681" href="#L681">681</a>             <strong class="jxr_keyword">if</strong> (size == elements.length) {
-<a class="jxr_linenumber" name="L682" href="#L682">682</a>                 elements = Arrays.copyOf(elements, min(size &lt;&lt; 1, maxCapacity));
-<a class="jxr_linenumber" name="L683" href="#L683">683</a>             }
-<a class="jxr_linenumber" name="L684" href="#L684">684</a> 
-<a class="jxr_linenumber" name="L685" href="#L685">685</a>             elements[size] = item;
-<a class="jxr_linenumber" name="L686" href="#L686">686</a>             <strong class="jxr_keyword">this</strong>.size = size + 1;
-<a class="jxr_linenumber" name="L687" href="#L687">687</a>         }
-<a class="jxr_linenumber" name="L688" href="#L688">688</a> 
-<a class="jxr_linenumber" name="L689" href="#L689">689</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> pushLater(DefaultHandle&lt;?&gt; item, Thread thread) {
-<a class="jxr_linenumber" name="L690" href="#L690">690</a>             <strong class="jxr_keyword">if</strong> (maxDelayedQueues == 0) {
-<a class="jxr_linenumber" name="L691" href="#L691">691</a>                 <em class="jxr_comment">// We don't support recycling across threads and should just drop the item on the floor.</em>
-<a class="jxr_linenumber" name="L692" href="#L692">692</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L693" href="#L693">693</a>             }
-<a class="jxr_linenumber" name="L694" href="#L694">694</a> 
-<a class="jxr_linenumber" name="L695" href="#L695">695</a>             <em class="jxr_comment">// we don't want to have a ref to the queue as the value in our weak map</em>
-<a class="jxr_linenumber" name="L696" href="#L696">696</a>             <em class="jxr_comment">// so we null it out; to ensure there are no races with restoring it later</em>
-<a class="jxr_linenumber" name="L697" href="#L697">697</a>             <em class="jxr_comment">// we impose a memory ordering here (no-op on x86)</em>
-<a class="jxr_linenumber" name="L698" href="#L698">698</a>             Map&lt;Stack&lt;?&gt;, WeakOrderQueue&gt; delayedRecycled = DELAYED_RECYCLED.get();
-<a class="jxr_linenumber" name="L699" href="#L699">699</a>             WeakOrderQueue queue = delayedRecycled.get(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="L700" href="#L700">700</a>             <strong class="jxr_keyword">if</strong> (queue == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L701" href="#L701">701</a>                 <strong class="jxr_keyword">if</strong> (delayedRecycled.size() &gt;= maxDelayedQueues) {
-<a class="jxr_linenumber" name="L702" href="#L702">702</a>                     <em class="jxr_comment">// Add a dummy queue so we know we should drop the object</em>
-<a class="jxr_linenumber" name="L703" href="#L703">703</a>                     delayedRecycled.put(<strong class="jxr_keyword">this</strong>, WeakOrderQueue.DUMMY);
-<a class="jxr_linenumber" name="L704" href="#L704">704</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L705" href="#L705">705</a>                 }
-<a class="jxr_linenumber" name="L706" href="#L706">706</a>                 <em class="jxr_comment">// Check if we already reached the maximum number of delayed queues and if we can allocate at all.</em>
-<a class="jxr_linenumber" name="L707" href="#L707">707</a>                 <strong class="jxr_keyword">if</strong> ((queue = newWeakOrderQueue(thread)) == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L708" href="#L708">708</a>                     <em class="jxr_comment">// drop object</em>
-<a class="jxr_linenumber" name="L709" href="#L709">709</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L710" href="#L710">710</a>                 }
-<a class="jxr_linenumber" name="L711" href="#L711">711</a>                 delayedRecycled.put(<strong class="jxr_keyword">this</strong>, queue);
-<a class="jxr_linenumber" name="L712" href="#L712">712</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (queue == WeakOrderQueue.DUMMY) {
-<a class="jxr_linenumber" name="L713" href="#L713">713</a>                 <em class="jxr_comment">// drop object</em>
-<a class="jxr_linenumber" name="L714" href="#L714">714</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L715" href="#L715">715</a>             }
-<a class="jxr_linenumber" name="L716" href="#L716">716</a> 
-<a class="jxr_linenumber" name="L717" href="#L717">717</a>             queue.add(item);
-<a class="jxr_linenumber" name="L718" href="#L718">718</a>         }
-<a class="jxr_linenumber" name="L719" href="#L719">719</a> 
-<a class="jxr_linenumber" name="L720" href="#L720">720</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L721" href="#L721">721</a> <em class="jxr_javadoccomment">         * Allocate a new {@link WeakOrderQueue} or return {@code null} if not possible.</em>
-<a class="jxr_linenumber" name="L722" href="#L722">722</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L723" href="#L723">723</a>         <strong class="jxr_keyword">private</strong> WeakOrderQueue newWeakOrderQueue(Thread thread) {
-<a class="jxr_linenumber" name="L724" href="#L724">724</a>             <strong class="jxr_keyword">return</strong> WeakOrderQueue.newQueue(<strong class="jxr_keyword">this</strong>, thread);
-<a class="jxr_linenumber" name="L725" href="#L725">725</a>         }
-<a class="jxr_linenumber" name="L726" href="#L726">726</a> 
-<a class="jxr_linenumber" name="L727" href="#L727">727</a>         <strong class="jxr_keyword">boolean</strong> dropHandle(DefaultHandle&lt;?&gt; handle) {
-<a class="jxr_linenumber" name="L728" href="#L728">728</a>             <strong class="jxr_keyword">if</strong> (!handle.hasBeenRecycled) {
-<a class="jxr_linenumber" name="L729" href="#L729">729</a>                 <strong class="jxr_keyword">if</strong> (handleRecycleCount &lt; interval) {
-<a class="jxr_linenumber" name="L730" href="#L730">730</a>                     handleRecycleCount++;
-<a class="jxr_linenumber" name="L731" href="#L731">731</a>                     <em class="jxr_comment">// Drop the object.</em>
-<a class="jxr_linenumber" name="L732" href="#L732">732</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L733" href="#L733">733</a>                 }
-<a class="jxr_linenumber" name="L734" href="#L734">734</a>                 handleRecycleCount = 0;
-<a class="jxr_linenumber" name="L735" href="#L735">735</a>                 handle.hasBeenRecycled = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L736" href="#L736">736</a>             }
-<a class="jxr_linenumber" name="L737" href="#L737">737</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L738" href="#L738">738</a>         }
-<a class="jxr_linenumber" name="L739" href="#L739">739</a> 
-<a class="jxr_linenumber" name="L740" href="#L740">740</a>         DefaultHandle&lt;T&gt; newHandle() {
-<a class="jxr_linenumber" name="L741" href="#L741">741</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> DefaultHandle&lt;T&gt;(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="L742" href="#L742">742</a>         }
-<a class="jxr_linenumber" name="L743" href="#L743">743</a>     }
-<a class="jxr_linenumber" name="L744" href="#L744">744</a> }
+<a class="jxr_linenumber" name="L652" href="#L652">652</a>             } <strong class="jxr_keyword">while</strong> (cursor != <strong class="jxr_keyword">null</strong> &amp;&amp; !success);
+<a class="jxr_linenumber" name="L653" href="#L653">653</a> 
+<a class="jxr_linenumber" name="L654" href="#L654">654</a>             <strong class="jxr_keyword">this</strong>.prev = prev;
+<a class="jxr_linenumber" name="L655" href="#L655">655</a>             <strong class="jxr_keyword">this</strong>.cursor = cursor;
+<a class="jxr_linenumber" name="L656" href="#L656">656</a>             <strong class="jxr_keyword">return</strong> success;
+<a class="jxr_linenumber" name="L657" href="#L657">657</a>         }
+<a class="jxr_linenumber" name="L658" href="#L658">658</a> 
+<a class="jxr_linenumber" name="L659" href="#L659">659</a>         <strong class="jxr_keyword">void</strong> push(DefaultHandle&lt;?&gt; item) {
+<a class="jxr_linenumber" name="L660" href="#L660">660</a>             Thread currentThread = Thread.currentThread();
+<a class="jxr_linenumber" name="L661" href="#L661">661</a>             <strong class="jxr_keyword">if</strong> (threadRef.get() == currentThread) {
+<a class="jxr_linenumber" name="L662" href="#L662">662</a>                 <em class="jxr_comment">// The current Thread is the thread that belongs to the Stack, we can try to push the object now.</em>
+<a class="jxr_linenumber" name="L663" href="#L663">663</a>                 pushNow(item);
+<a class="jxr_linenumber" name="L664" href="#L664">664</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L665" href="#L665">665</a>                 <em class="jxr_comment">// The current Thread is not the one that belongs to the Stack</em>
+<a class="jxr_linenumber" name="L666" href="#L666">666</a>                 <em class="jxr_comment">// (or the Thread that belonged to the Stack was collected already), we need to signal that the push</em>
+<a class="jxr_linenumber" name="L667" href="#L667">667</a>                 <em class="jxr_comment">// happens later.</em>
+<a class="jxr_linenumber" name="L668" href="#L668">668</a>                 pushLater(item, currentThread);
+<a class="jxr_linenumber" name="L669" href="#L669">669</a>             }
+<a class="jxr_linenumber" name="L670" href="#L670">670</a>         }
+<a class="jxr_linenumber" name="L671" href="#L671">671</a> 
+<a class="jxr_linenumber" name="L672" href="#L672">672</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> pushNow(DefaultHandle&lt;?&gt; item) {
+<a class="jxr_linenumber" name="L673" href="#L673">673</a>             <strong class="jxr_keyword">if</strong> (item.recycleId != 0 || !item.compareAndSetLastRecycledId(0, OWN_THREAD_ID)) {
+<a class="jxr_linenumber" name="L674" href="#L674">674</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"recycled already"</span>);
+<a class="jxr_linenumber" name="L675" href="#L675">675</a>             }
+<a class="jxr_linenumber" name="L676" href="#L676">676</a>             item.recycleId = OWN_THREAD_ID;
+<a class="jxr_linenumber" name="L677" href="#L677">677</a> 
+<a class="jxr_linenumber" name="L678" href="#L678">678</a>             <strong class="jxr_keyword">int</strong> size = <strong class="jxr_keyword">this</strong>.size;
+<a class="jxr_linenumber" name="L679" href="#L679">679</a>             <strong class="jxr_keyword">if</strong> (size &gt;= maxCapacity || dropHandle(item)) {
+<a class="jxr_linenumber" name="L680" href="#L680">680</a>                 <em class="jxr_comment">// Hit the maximum capacity or should drop - drop the possibly youngest object.</em>
+<a class="jxr_linenumber" name="L681" href="#L681">681</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L682" href="#L682">682</a>             }
+<a class="jxr_linenumber" name="L683" href="#L683">683</a>             <strong class="jxr_keyword">if</strong> (size == elements.length) {
+<a class="jxr_linenumber" name="L684" href="#L684">684</a>                 elements = Arrays.copyOf(elements, min(size &lt;&lt; 1, maxCapacity));
+<a class="jxr_linenumber" name="L685" href="#L685">685</a>             }
+<a class="jxr_linenumber" name="L686" href="#L686">686</a> 
+<a class="jxr_linenumber" name="L687" href="#L687">687</a>             elements[size] = item;
+<a class="jxr_linenumber" name="L688" href="#L688">688</a>             <strong class="jxr_keyword">this</strong>.size = size + 1;
+<a class="jxr_linenumber" name="L689" href="#L689">689</a>         }
+<a class="jxr_linenumber" name="L690" href="#L690">690</a> 
+<a class="jxr_linenumber" name="L691" href="#L691">691</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> pushLater(DefaultHandle&lt;?&gt; item, Thread thread) {
+<a class="jxr_linenumber" name="L692" href="#L692">692</a>             <strong class="jxr_keyword">if</strong> (maxDelayedQueues == 0) {
+<a class="jxr_linenumber" name="L693" href="#L693">693</a>                 <em class="jxr_comment">// We don't support recycling across threads and should just drop the item on the floor.</em>
+<a class="jxr_linenumber" name="L694" href="#L694">694</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L695" href="#L695">695</a>             }
+<a class="jxr_linenumber" name="L696" href="#L696">696</a> 
+<a class="jxr_linenumber" name="L697" href="#L697">697</a>             <em class="jxr_comment">// we don't want to have a ref to the queue as the value in our weak map</em>
+<a class="jxr_linenumber" name="L698" href="#L698">698</a>             <em class="jxr_comment">// so we null it out; to ensure there are no races with restoring it later</em>
+<a class="jxr_linenumber" name="L699" href="#L699">699</a>             <em class="jxr_comment">// we impose a memory ordering here (no-op on x86)</em>
+<a class="jxr_linenumber" name="L700" href="#L700">700</a>             Map&lt;Stack&lt;?&gt;, WeakOrderQueue&gt; delayedRecycled = DELAYED_RECYCLED.get();
+<a class="jxr_linenumber" name="L701" href="#L701">701</a>             WeakOrderQueue queue = delayedRecycled.get(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L702" href="#L702">702</a>             <strong class="jxr_keyword">if</strong> (queue == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L703" href="#L703">703</a>                 <strong class="jxr_keyword">if</strong> (delayedRecycled.size() &gt;= maxDelayedQueues) {
+<a class="jxr_linenumber" name="L704" href="#L704">704</a>                     <em class="jxr_comment">// Add a dummy queue so we know we should drop the object</em>
+<a class="jxr_linenumber" name="L705" href="#L705">705</a>                     delayedRecycled.put(<strong class="jxr_keyword">this</strong>, WeakOrderQueue.DUMMY);
+<a class="jxr_linenumber" name="L706" href="#L706">706</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L707" href="#L707">707</a>                 }
+<a class="jxr_linenumber" name="L708" href="#L708">708</a>                 <em class="jxr_comment">// Check if we already reached the maximum number of delayed queues and if we can allocate at all.</em>
+<a class="jxr_linenumber" name="L709" href="#L709">709</a>                 <strong class="jxr_keyword">if</strong> ((queue = newWeakOrderQueue(thread)) == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L710" href="#L710">710</a>                     <em class="jxr_comment">// drop object</em>
+<a class="jxr_linenumber" name="L711" href="#L711">711</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L712" href="#L712">712</a>                 }
+<a class="jxr_linenumber" name="L713" href="#L713">713</a>                 delayedRecycled.put(<strong class="jxr_keyword">this</strong>, queue);
+<a class="jxr_linenumber" name="L714" href="#L714">714</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (queue == WeakOrderQueue.DUMMY) {
+<a class="jxr_linenumber" name="L715" href="#L715">715</a>                 <em class="jxr_comment">// drop object</em>
+<a class="jxr_linenumber" name="L716" href="#L716">716</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L717" href="#L717">717</a>             }
+<a class="jxr_linenumber" name="L718" href="#L718">718</a> 
+<a class="jxr_linenumber" name="L719" href="#L719">719</a>             queue.add(item);
+<a class="jxr_linenumber" name="L720" href="#L720">720</a>         }
+<a class="jxr_linenumber" name="L721" href="#L721">721</a> 
+<a class="jxr_linenumber" name="L722" href="#L722">722</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L723" href="#L723">723</a> <em class="jxr_javadoccomment">         * Allocate a new {@link WeakOrderQueue} or return {@code null} if not possible.</em>
+<a class="jxr_linenumber" name="L724" href="#L724">724</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L725" href="#L725">725</a>         <strong class="jxr_keyword">private</strong> WeakOrderQueue newWeakOrderQueue(Thread thread) {
+<a class="jxr_linenumber" name="L726" href="#L726">726</a>             <strong class="jxr_keyword">return</strong> WeakOrderQueue.newQueue(<strong class="jxr_keyword">this</strong>, thread);
+<a class="jxr_linenumber" name="L727" href="#L727">727</a>         }
+<a class="jxr_linenumber" name="L728" href="#L728">728</a> 
+<a class="jxr_linenumber" name="L729" href="#L729">729</a>         <strong class="jxr_keyword">boolean</strong> dropHandle(DefaultHandle&lt;?&gt; handle) {
+<a class="jxr_linenumber" name="L730" href="#L730">730</a>             <strong class="jxr_keyword">if</strong> (!handle.hasBeenRecycled) {
+<a class="jxr_linenumber" name="L731" href="#L731">731</a>                 <strong class="jxr_keyword">if</strong> (handleRecycleCount &lt; interval) {
+<a class="jxr_linenumber" name="L732" href="#L732">732</a>                     handleRecycleCount++;
+<a class="jxr_linenumber" name="L733" href="#L733">733</a>                     <em class="jxr_comment">// Drop the object.</em>
+<a class="jxr_linenumber" name="L734" href="#L734">734</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L735" href="#L735">735</a>                 }
+<a class="jxr_linenumber" name="L736" href="#L736">736</a>                 handleRecycleCount = 0;
+<a class="jxr_linenumber" name="L737" href="#L737">737</a>                 handle.hasBeenRecycled = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L738" href="#L738">738</a>             }
+<a class="jxr_linenumber" name="L739" href="#L739">739</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L740" href="#L740">740</a>         }
+<a class="jxr_linenumber" name="L741" href="#L741">741</a> 
+<a class="jxr_linenumber" name="L742" href="#L742">742</a>         DefaultHandle&lt;T&gt; newHandle() {
+<a class="jxr_linenumber" name="L743" href="#L743">743</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> DefaultHandle&lt;T&gt;(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L744" href="#L744">744</a>         }
+<a class="jxr_linenumber" name="L745" href="#L745">745</a>     }
+<a class="jxr_linenumber" name="L746" href="#L746">746</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2021 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
