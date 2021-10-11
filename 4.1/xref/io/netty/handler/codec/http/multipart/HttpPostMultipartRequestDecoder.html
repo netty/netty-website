@@ -1183,200 +1183,210 @@
 <a class="jxr_linenumber" name="L1175" href="#L1175">1175</a>             <em class="jxr_comment">// Possible last bytes contain partially delimiter</em>
 <a class="jxr_linenumber" name="L1176" href="#L1176">1176</a>             <em class="jxr_comment">// (delimiter is possibly partially there, at least 1 missing byte),</em>
 <a class="jxr_linenumber" name="L1177" href="#L1177">1177</a>             <em class="jxr_comment">// therefore searching last delimiter.length +1 (+1 for CRLF instead of LF)</em>
-<a class="jxr_linenumber" name="L1178" href="#L1178">1178</a>             <strong class="jxr_keyword">int</strong> lastPosition = undecodedChunk.readableBytes() - bdelimiter.length - 1;
-<a class="jxr_linenumber" name="L1179" href="#L1179">1179</a>             <strong class="jxr_keyword">if</strong> (lastPosition &lt; 0) {
-<a class="jxr_linenumber" name="L1180" href="#L1180">1180</a>                 <em class="jxr_comment">// Not enough bytes, but at most delimiter.length bytes available so can still try to find CRLF there</em>
-<a class="jxr_linenumber" name="L1181" href="#L1181">1181</a>                 lastPosition = 0;
-<a class="jxr_linenumber" name="L1182" href="#L1182">1182</a>             }
-<a class="jxr_linenumber" name="L1183" href="#L1183">1183</a>             posDelimiter = HttpPostBodyUtil.findLastLineBreak(undecodedChunk, startReaderIndex  + lastPosition);
-<a class="jxr_linenumber" name="L1184" href="#L1184">1184</a>             <strong class="jxr_keyword">if</strong> (posDelimiter &lt; 0) {
-<a class="jxr_linenumber" name="L1185" href="#L1185">1185</a>                 <em class="jxr_comment">// not found so this chunk can be fully added</em>
-<a class="jxr_linenumber" name="L1186" href="#L1186">1186</a>                 <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content = undecodedChunk.copy();
-<a class="jxr_linenumber" name="L1187" href="#L1187">1187</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L1188" href="#L1188">1188</a>                     httpData.addContent(content, false);
-<a class="jxr_linenumber" name="L1189" href="#L1189">1189</a>                 } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="L1190" href="#L1190">1190</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
-<a class="jxr_linenumber" name="L1191" href="#L1191">1191</a>                 }
-<a class="jxr_linenumber" name="L1192" href="#L1192">1192</a>                 undecodedChunk.readerIndex(startReaderIndex);
-<a class="jxr_linenumber" name="L1193" href="#L1193">1193</a>                 undecodedChunk.writerIndex(startReaderIndex);
-<a class="jxr_linenumber" name="L1194" href="#L1194">1194</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1195" href="#L1195">1195</a>             }
-<a class="jxr_linenumber" name="L1196" href="#L1196">1196</a>             <em class="jxr_comment">// posDelimiter is not from startReaderIndex but from startReaderIndex + lastPosition</em>
-<a class="jxr_linenumber" name="L1197" href="#L1197">1197</a>             posDelimiter += lastPosition;
-<a class="jxr_linenumber" name="L1198" href="#L1198">1198</a>             <strong class="jxr_keyword">if</strong> (posDelimiter == 0) {
-<a class="jxr_linenumber" name="L1199" href="#L1199">1199</a>                 <em class="jxr_comment">// Nothing to add</em>
-<a class="jxr_linenumber" name="L1200" href="#L1200">1200</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1201" href="#L1201">1201</a>             }
-<a class="jxr_linenumber" name="L1202" href="#L1202">1202</a>             <em class="jxr_comment">// Not fully but still some bytes to provide: httpData is not yet finished since delimiter not found</em>
-<a class="jxr_linenumber" name="L1203" href="#L1203">1203</a>             <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content = undecodedChunk.copy(startReaderIndex, posDelimiter);
-<a class="jxr_linenumber" name="L1204" href="#L1204">1204</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L1205" href="#L1205">1205</a>                 httpData.addContent(content, false);
-<a class="jxr_linenumber" name="L1206" href="#L1206">1206</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="L1207" href="#L1207">1207</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
-<a class="jxr_linenumber" name="L1208" href="#L1208">1208</a>             }
-<a class="jxr_linenumber" name="L1209" href="#L1209">1209</a>             rewriteCurrentBuffer(undecodedChunk, posDelimiter);
-<a class="jxr_linenumber" name="L1210" href="#L1210">1210</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1211" href="#L1211">1211</a>         }
-<a class="jxr_linenumber" name="L1212" href="#L1212">1212</a>         <em class="jxr_comment">// Delimiter found at posDelimiter, including LF or CRLF, so httpData has its last chunk</em>
-<a class="jxr_linenumber" name="L1213" href="#L1213">1213</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content = undecodedChunk.copy(startReaderIndex, posDelimiter);
-<a class="jxr_linenumber" name="L1214" href="#L1214">1214</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L1215" href="#L1215">1215</a>             httpData.addContent(content, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L1216" href="#L1216">1216</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="L1217" href="#L1217">1217</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
-<a class="jxr_linenumber" name="L1218" href="#L1218">1218</a>         }
-<a class="jxr_linenumber" name="L1219" href="#L1219">1219</a>         rewriteCurrentBuffer(undecodedChunk, posDelimiter);
-<a class="jxr_linenumber" name="L1220" href="#L1220">1220</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1221" href="#L1221">1221</a>     }
-<a class="jxr_linenumber" name="L1222" href="#L1222">1222</a> 
-<a class="jxr_linenumber" name="L1223" href="#L1223">1223</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L1224" href="#L1224">1224</a> <em class="jxr_javadoccomment">     * Clean the String from any unallowed character</em>
-<a class="jxr_linenumber" name="L1225" href="#L1225">1225</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L1226" href="#L1226">1226</a> <em class="jxr_javadoccomment">     * @return the cleaned String</em>
-<a class="jxr_linenumber" name="L1227" href="#L1227">1227</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L1228" href="#L1228">1228</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String cleanString(String field) {
-<a class="jxr_linenumber" name="L1229" href="#L1229">1229</a>         <strong class="jxr_keyword">int</strong> size = field.length();
-<a class="jxr_linenumber" name="L1230" href="#L1230">1230</a>         StringBuilder sb = <strong class="jxr_keyword">new</strong> StringBuilder(size);
-<a class="jxr_linenumber" name="L1231" href="#L1231">1231</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i++) {
-<a class="jxr_linenumber" name="L1232" href="#L1232">1232</a>             <strong class="jxr_keyword">char</strong> nextChar = field.charAt(i);
-<a class="jxr_linenumber" name="L1233" href="#L1233">1233</a>             <strong class="jxr_keyword">switch</strong> (nextChar) {
-<a class="jxr_linenumber" name="L1234" href="#L1234">1234</a>             <strong class="jxr_keyword">case</strong> HttpConstants.COLON:
-<a class="jxr_linenumber" name="L1235" href="#L1235">1235</a>             <strong class="jxr_keyword">case</strong> HttpConstants.COMMA:
-<a class="jxr_linenumber" name="L1236" href="#L1236">1236</a>             <strong class="jxr_keyword">case</strong> HttpConstants.EQUALS:
-<a class="jxr_linenumber" name="L1237" href="#L1237">1237</a>             <strong class="jxr_keyword">case</strong> HttpConstants.SEMICOLON:
-<a class="jxr_linenumber" name="L1238" href="#L1238">1238</a>             <strong class="jxr_keyword">case</strong> HttpConstants.HT:
-<a class="jxr_linenumber" name="L1239" href="#L1239">1239</a>                 sb.append(HttpConstants.SP_CHAR);
-<a class="jxr_linenumber" name="L1240" href="#L1240">1240</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1241" href="#L1241">1241</a>             <strong class="jxr_keyword">case</strong> HttpConstants.DOUBLE_QUOTE:
-<a class="jxr_linenumber" name="L1242" href="#L1242">1242</a>                 <em class="jxr_comment">// nothing added, just removes it</em>
-<a class="jxr_linenumber" name="L1243" href="#L1243">1243</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1244" href="#L1244">1244</a>             <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="L1245" href="#L1245">1245</a>                 sb.append(nextChar);
-<a class="jxr_linenumber" name="L1246" href="#L1246">1246</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1247" href="#L1247">1247</a>             }
-<a class="jxr_linenumber" name="L1248" href="#L1248">1248</a>         }
-<a class="jxr_linenumber" name="L1249" href="#L1249">1249</a>         <strong class="jxr_keyword">return</strong> sb.toString().trim();
-<a class="jxr_linenumber" name="L1250" href="#L1250">1250</a>     }
-<a class="jxr_linenumber" name="L1251" href="#L1251">1251</a> 
-<a class="jxr_linenumber" name="L1252" href="#L1252">1252</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L1253" href="#L1253">1253</a> <em class="jxr_javadoccomment">     * Skip one empty line</em>
-<a class="jxr_linenumber" name="L1254" href="#L1254">1254</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L1255" href="#L1255">1255</a> <em class="jxr_javadoccomment">     * @return True if one empty line was skipped</em>
-<a class="jxr_linenumber" name="L1256" href="#L1256">1256</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L1257" href="#L1257">1257</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> skipOneLine() {
-<a class="jxr_linenumber" name="L1258" href="#L1258">1258</a>         <strong class="jxr_keyword">if</strong> (!undecodedChunk.isReadable()) {
-<a class="jxr_linenumber" name="L1259" href="#L1259">1259</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1260" href="#L1260">1260</a>         }
-<a class="jxr_linenumber" name="L1261" href="#L1261">1261</a>         byte nextByte = undecodedChunk.readByte();
-<a class="jxr_linenumber" name="L1262" href="#L1262">1262</a>         <strong class="jxr_keyword">if</strong> (nextByte == HttpConstants.CR) {
-<a class="jxr_linenumber" name="L1263" href="#L1263">1263</a>             <strong class="jxr_keyword">if</strong> (!undecodedChunk.isReadable()) {
-<a class="jxr_linenumber" name="L1264" href="#L1264">1264</a>                 undecodedChunk.readerIndex(undecodedChunk.readerIndex() - 1);
-<a class="jxr_linenumber" name="L1265" href="#L1265">1265</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1266" href="#L1266">1266</a>             }
-<a class="jxr_linenumber" name="L1267" href="#L1267">1267</a>             nextByte = undecodedChunk.readByte();
-<a class="jxr_linenumber" name="L1268" href="#L1268">1268</a>             <strong class="jxr_keyword">if</strong> (nextByte == HttpConstants.LF) {
-<a class="jxr_linenumber" name="L1269" href="#L1269">1269</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1270" href="#L1270">1270</a>             }
-<a class="jxr_linenumber" name="L1271" href="#L1271">1271</a>             undecodedChunk.readerIndex(undecodedChunk.readerIndex() - 2);
-<a class="jxr_linenumber" name="L1272" href="#L1272">1272</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1273" href="#L1273">1273</a>         }
-<a class="jxr_linenumber" name="L1274" href="#L1274">1274</a>         <strong class="jxr_keyword">if</strong> (nextByte == HttpConstants.LF) {
-<a class="jxr_linenumber" name="L1275" href="#L1275">1275</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1276" href="#L1276">1276</a>         }
-<a class="jxr_linenumber" name="L1277" href="#L1277">1277</a>         undecodedChunk.readerIndex(undecodedChunk.readerIndex() - 1);
-<a class="jxr_linenumber" name="L1278" href="#L1278">1278</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1279" href="#L1279">1279</a>     }
-<a class="jxr_linenumber" name="L1280" href="#L1280">1280</a> 
-<a class="jxr_linenumber" name="L1281" href="#L1281">1281</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L1282" href="#L1282">1282</a> <em class="jxr_javadoccomment">     * Split one header in Multipart</em>
-<a class="jxr_linenumber" name="L1283" href="#L1283">1283</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L1284" href="#L1284">1284</a> <em class="jxr_javadoccomment">     * @return an array of String where rank 0 is the name of the header,</em>
-<a class="jxr_linenumber" name="L1285" href="#L1285">1285</a> <em class="jxr_javadoccomment">     *         follows by several values that were separated by ';' or ','</em>
-<a class="jxr_linenumber" name="L1286" href="#L1286">1286</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L1287" href="#L1287">1287</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String[] splitMultipartHeader(String sb) {
-<a class="jxr_linenumber" name="L1288" href="#L1288">1288</a>         ArrayList&lt;String&gt; headers = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;(1);
-<a class="jxr_linenumber" name="L1289" href="#L1289">1289</a>         <strong class="jxr_keyword">int</strong> nameStart;
-<a class="jxr_linenumber" name="L1290" href="#L1290">1290</a>         <strong class="jxr_keyword">int</strong> nameEnd;
-<a class="jxr_linenumber" name="L1291" href="#L1291">1291</a>         <strong class="jxr_keyword">int</strong> colonEnd;
-<a class="jxr_linenumber" name="L1292" href="#L1292">1292</a>         <strong class="jxr_keyword">int</strong> valueStart;
-<a class="jxr_linenumber" name="L1293" href="#L1293">1293</a>         <strong class="jxr_keyword">int</strong> valueEnd;
-<a class="jxr_linenumber" name="L1294" href="#L1294">1294</a>         nameStart = HttpPostBodyUtil.findNonWhitespace(sb, 0);
-<a class="jxr_linenumber" name="L1295" href="#L1295">1295</a>         <strong class="jxr_keyword">for</strong> (nameEnd = nameStart; nameEnd &lt; sb.length(); nameEnd++) {
-<a class="jxr_linenumber" name="L1296" href="#L1296">1296</a>             <strong class="jxr_keyword">char</strong> ch = sb.charAt(nameEnd);
-<a class="jxr_linenumber" name="L1297" href="#L1297">1297</a>             <strong class="jxr_keyword">if</strong> (ch == ':' || Character.isWhitespace(ch)) {
-<a class="jxr_linenumber" name="L1298" href="#L1298">1298</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1299" href="#L1299">1299</a>             }
-<a class="jxr_linenumber" name="L1300" href="#L1300">1300</a>         }
-<a class="jxr_linenumber" name="L1301" href="#L1301">1301</a>         <strong class="jxr_keyword">for</strong> (colonEnd = nameEnd; colonEnd &lt; sb.length(); colonEnd++) {
-<a class="jxr_linenumber" name="L1302" href="#L1302">1302</a>             <strong class="jxr_keyword">if</strong> (sb.charAt(colonEnd) == ':') {
-<a class="jxr_linenumber" name="L1303" href="#L1303">1303</a>                 colonEnd++;
-<a class="jxr_linenumber" name="L1304" href="#L1304">1304</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1305" href="#L1305">1305</a>             }
-<a class="jxr_linenumber" name="L1306" href="#L1306">1306</a>         }
-<a class="jxr_linenumber" name="L1307" href="#L1307">1307</a>         valueStart = HttpPostBodyUtil.findNonWhitespace(sb, colonEnd);
-<a class="jxr_linenumber" name="L1308" href="#L1308">1308</a>         valueEnd = HttpPostBodyUtil.findEndOfString(sb);
-<a class="jxr_linenumber" name="L1309" href="#L1309">1309</a>         headers.add(sb.substring(nameStart, nameEnd));
-<a class="jxr_linenumber" name="L1310" href="#L1310">1310</a>         String svalue = (valueStart &gt;= valueEnd) ? StringUtil.EMPTY_STRING : sb.substring(valueStart, valueEnd);
-<a class="jxr_linenumber" name="L1311" href="#L1311">1311</a>         String[] values;
-<a class="jxr_linenumber" name="L1312" href="#L1312">1312</a>         <strong class="jxr_keyword">if</strong> (svalue.indexOf(';') &gt;= 0) {
-<a class="jxr_linenumber" name="L1313" href="#L1313">1313</a>             values = splitMultipartHeaderValues(svalue);
-<a class="jxr_linenumber" name="L1314" href="#L1314">1314</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1315" href="#L1315">1315</a>             values = svalue.split(<span class="jxr_string">","</span>);
+<a class="jxr_linenumber" name="L1178" href="#L1178">1178</a>             <strong class="jxr_keyword">int</strong> readableBytes = undecodedChunk.readableBytes();
+<a class="jxr_linenumber" name="L1179" href="#L1179">1179</a>             <strong class="jxr_keyword">int</strong> lastPosition = readableBytes - bdelimiter.length - 1;
+<a class="jxr_linenumber" name="L1180" href="#L1180">1180</a>             <strong class="jxr_keyword">if</strong> (lastPosition &lt; 0) {
+<a class="jxr_linenumber" name="L1181" href="#L1181">1181</a>                 <em class="jxr_comment">// Not enough bytes, but at most delimiter.length bytes available so can still try to find CRLF there</em>
+<a class="jxr_linenumber" name="L1182" href="#L1182">1182</a>                 lastPosition = 0;
+<a class="jxr_linenumber" name="L1183" href="#L1183">1183</a>             }
+<a class="jxr_linenumber" name="L1184" href="#L1184">1184</a>             posDelimiter = HttpPostBodyUtil.findLastLineBreak(undecodedChunk, startReaderIndex + lastPosition);
+<a class="jxr_linenumber" name="L1185" href="#L1185">1185</a>             <em class="jxr_comment">// No LineBreak, however CR can be at the end of the buffer, LF not yet there (issue #11668)</em>
+<a class="jxr_linenumber" name="L1186" href="#L1186">1186</a>             <em class="jxr_comment">// Check if last CR (if any) shall not be in the content (definedLength vs actual length + buffer - 1)</em>
+<a class="jxr_linenumber" name="L1187" href="#L1187">1187</a>             <strong class="jxr_keyword">if</strong> (posDelimiter &lt; 0 &amp;&amp;
+<a class="jxr_linenumber" name="L1188" href="#L1188">1188</a>                 httpData.definedLength() == httpData.length() + readableBytes - 1 &amp;&amp;
+<a class="jxr_linenumber" name="L1189" href="#L1189">1189</a>                 undecodedChunk.getByte(readableBytes + startReaderIndex - 1) == HttpConstants.CR) {
+<a class="jxr_linenumber" name="L1190" href="#L1190">1190</a>                 <em class="jxr_comment">// Last CR shall preceed a future LF</em>
+<a class="jxr_linenumber" name="L1191" href="#L1191">1191</a>                 lastPosition = 0;
+<a class="jxr_linenumber" name="L1192" href="#L1192">1192</a>                 posDelimiter = readableBytes - 1;
+<a class="jxr_linenumber" name="L1193" href="#L1193">1193</a>             }
+<a class="jxr_linenumber" name="L1194" href="#L1194">1194</a>             <strong class="jxr_keyword">if</strong> (posDelimiter &lt; 0) {
+<a class="jxr_linenumber" name="L1195" href="#L1195">1195</a>                 <em class="jxr_comment">// not found so this chunk can be fully added</em>
+<a class="jxr_linenumber" name="L1196" href="#L1196">1196</a>                 <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content = undecodedChunk.copy();
+<a class="jxr_linenumber" name="L1197" href="#L1197">1197</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L1198" href="#L1198">1198</a>                     httpData.addContent(content, false);
+<a class="jxr_linenumber" name="L1199" href="#L1199">1199</a>                 } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="L1200" href="#L1200">1200</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
+<a class="jxr_linenumber" name="L1201" href="#L1201">1201</a>                 }
+<a class="jxr_linenumber" name="L1202" href="#L1202">1202</a>                 undecodedChunk.readerIndex(startReaderIndex);
+<a class="jxr_linenumber" name="L1203" href="#L1203">1203</a>                 undecodedChunk.writerIndex(startReaderIndex);
+<a class="jxr_linenumber" name="L1204" href="#L1204">1204</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1205" href="#L1205">1205</a>             }
+<a class="jxr_linenumber" name="L1206" href="#L1206">1206</a>             <em class="jxr_comment">// posDelimiter is not from startReaderIndex but from startReaderIndex + lastPosition</em>
+<a class="jxr_linenumber" name="L1207" href="#L1207">1207</a>             posDelimiter += lastPosition;
+<a class="jxr_linenumber" name="L1208" href="#L1208">1208</a>             <strong class="jxr_keyword">if</strong> (posDelimiter == 0) {
+<a class="jxr_linenumber" name="L1209" href="#L1209">1209</a>                 <em class="jxr_comment">// Nothing to add</em>
+<a class="jxr_linenumber" name="L1210" href="#L1210">1210</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1211" href="#L1211">1211</a>             }
+<a class="jxr_linenumber" name="L1212" href="#L1212">1212</a>             <em class="jxr_comment">// Not fully but still some bytes to provide: httpData is not yet finished since delimiter not found</em>
+<a class="jxr_linenumber" name="L1213" href="#L1213">1213</a>             <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content = undecodedChunk.copy(startReaderIndex, posDelimiter);
+<a class="jxr_linenumber" name="L1214" href="#L1214">1214</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L1215" href="#L1215">1215</a>                 httpData.addContent(content, false);
+<a class="jxr_linenumber" name="L1216" href="#L1216">1216</a>             } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="L1217" href="#L1217">1217</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
+<a class="jxr_linenumber" name="L1218" href="#L1218">1218</a>             }
+<a class="jxr_linenumber" name="L1219" href="#L1219">1219</a>             rewriteCurrentBuffer(undecodedChunk, posDelimiter);
+<a class="jxr_linenumber" name="L1220" href="#L1220">1220</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1221" href="#L1221">1221</a>         }
+<a class="jxr_linenumber" name="L1222" href="#L1222">1222</a>         <em class="jxr_comment">// Delimiter found at posDelimiter, including LF or CRLF, so httpData has its last chunk</em>
+<a class="jxr_linenumber" name="L1223" href="#L1223">1223</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content = undecodedChunk.copy(startReaderIndex, posDelimiter);
+<a class="jxr_linenumber" name="L1224" href="#L1224">1224</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L1225" href="#L1225">1225</a>             httpData.addContent(content, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L1226" href="#L1226">1226</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="L1227" href="#L1227">1227</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
+<a class="jxr_linenumber" name="L1228" href="#L1228">1228</a>         }
+<a class="jxr_linenumber" name="L1229" href="#L1229">1229</a>         rewriteCurrentBuffer(undecodedChunk, posDelimiter);
+<a class="jxr_linenumber" name="L1230" href="#L1230">1230</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1231" href="#L1231">1231</a>     }
+<a class="jxr_linenumber" name="L1232" href="#L1232">1232</a> 
+<a class="jxr_linenumber" name="L1233" href="#L1233">1233</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L1234" href="#L1234">1234</a> <em class="jxr_javadoccomment">     * Clean the String from any unallowed character</em>
+<a class="jxr_linenumber" name="L1235" href="#L1235">1235</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L1236" href="#L1236">1236</a> <em class="jxr_javadoccomment">     * @return the cleaned String</em>
+<a class="jxr_linenumber" name="L1237" href="#L1237">1237</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L1238" href="#L1238">1238</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String cleanString(String field) {
+<a class="jxr_linenumber" name="L1239" href="#L1239">1239</a>         <strong class="jxr_keyword">int</strong> size = field.length();
+<a class="jxr_linenumber" name="L1240" href="#L1240">1240</a>         StringBuilder sb = <strong class="jxr_keyword">new</strong> StringBuilder(size);
+<a class="jxr_linenumber" name="L1241" href="#L1241">1241</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; size; i++) {
+<a class="jxr_linenumber" name="L1242" href="#L1242">1242</a>             <strong class="jxr_keyword">char</strong> nextChar = field.charAt(i);
+<a class="jxr_linenumber" name="L1243" href="#L1243">1243</a>             <strong class="jxr_keyword">switch</strong> (nextChar) {
+<a class="jxr_linenumber" name="L1244" href="#L1244">1244</a>             <strong class="jxr_keyword">case</strong> HttpConstants.COLON:
+<a class="jxr_linenumber" name="L1245" href="#L1245">1245</a>             <strong class="jxr_keyword">case</strong> HttpConstants.COMMA:
+<a class="jxr_linenumber" name="L1246" href="#L1246">1246</a>             <strong class="jxr_keyword">case</strong> HttpConstants.EQUALS:
+<a class="jxr_linenumber" name="L1247" href="#L1247">1247</a>             <strong class="jxr_keyword">case</strong> HttpConstants.SEMICOLON:
+<a class="jxr_linenumber" name="L1248" href="#L1248">1248</a>             <strong class="jxr_keyword">case</strong> HttpConstants.HT:
+<a class="jxr_linenumber" name="L1249" href="#L1249">1249</a>                 sb.append(HttpConstants.SP_CHAR);
+<a class="jxr_linenumber" name="L1250" href="#L1250">1250</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1251" href="#L1251">1251</a>             <strong class="jxr_keyword">case</strong> HttpConstants.DOUBLE_QUOTE:
+<a class="jxr_linenumber" name="L1252" href="#L1252">1252</a>                 <em class="jxr_comment">// nothing added, just removes it</em>
+<a class="jxr_linenumber" name="L1253" href="#L1253">1253</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1254" href="#L1254">1254</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="L1255" href="#L1255">1255</a>                 sb.append(nextChar);
+<a class="jxr_linenumber" name="L1256" href="#L1256">1256</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1257" href="#L1257">1257</a>             }
+<a class="jxr_linenumber" name="L1258" href="#L1258">1258</a>         }
+<a class="jxr_linenumber" name="L1259" href="#L1259">1259</a>         <strong class="jxr_keyword">return</strong> sb.toString().trim();
+<a class="jxr_linenumber" name="L1260" href="#L1260">1260</a>     }
+<a class="jxr_linenumber" name="L1261" href="#L1261">1261</a> 
+<a class="jxr_linenumber" name="L1262" href="#L1262">1262</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L1263" href="#L1263">1263</a> <em class="jxr_javadoccomment">     * Skip one empty line</em>
+<a class="jxr_linenumber" name="L1264" href="#L1264">1264</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L1265" href="#L1265">1265</a> <em class="jxr_javadoccomment">     * @return True if one empty line was skipped</em>
+<a class="jxr_linenumber" name="L1266" href="#L1266">1266</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L1267" href="#L1267">1267</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> skipOneLine() {
+<a class="jxr_linenumber" name="L1268" href="#L1268">1268</a>         <strong class="jxr_keyword">if</strong> (!undecodedChunk.isReadable()) {
+<a class="jxr_linenumber" name="L1269" href="#L1269">1269</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1270" href="#L1270">1270</a>         }
+<a class="jxr_linenumber" name="L1271" href="#L1271">1271</a>         byte nextByte = undecodedChunk.readByte();
+<a class="jxr_linenumber" name="L1272" href="#L1272">1272</a>         <strong class="jxr_keyword">if</strong> (nextByte == HttpConstants.CR) {
+<a class="jxr_linenumber" name="L1273" href="#L1273">1273</a>             <strong class="jxr_keyword">if</strong> (!undecodedChunk.isReadable()) {
+<a class="jxr_linenumber" name="L1274" href="#L1274">1274</a>                 undecodedChunk.readerIndex(undecodedChunk.readerIndex() - 1);
+<a class="jxr_linenumber" name="L1275" href="#L1275">1275</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1276" href="#L1276">1276</a>             }
+<a class="jxr_linenumber" name="L1277" href="#L1277">1277</a>             nextByte = undecodedChunk.readByte();
+<a class="jxr_linenumber" name="L1278" href="#L1278">1278</a>             <strong class="jxr_keyword">if</strong> (nextByte == HttpConstants.LF) {
+<a class="jxr_linenumber" name="L1279" href="#L1279">1279</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1280" href="#L1280">1280</a>             }
+<a class="jxr_linenumber" name="L1281" href="#L1281">1281</a>             undecodedChunk.readerIndex(undecodedChunk.readerIndex() - 2);
+<a class="jxr_linenumber" name="L1282" href="#L1282">1282</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1283" href="#L1283">1283</a>         }
+<a class="jxr_linenumber" name="L1284" href="#L1284">1284</a>         <strong class="jxr_keyword">if</strong> (nextByte == HttpConstants.LF) {
+<a class="jxr_linenumber" name="L1285" href="#L1285">1285</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1286" href="#L1286">1286</a>         }
+<a class="jxr_linenumber" name="L1287" href="#L1287">1287</a>         undecodedChunk.readerIndex(undecodedChunk.readerIndex() - 1);
+<a class="jxr_linenumber" name="L1288" href="#L1288">1288</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1289" href="#L1289">1289</a>     }
+<a class="jxr_linenumber" name="L1290" href="#L1290">1290</a> 
+<a class="jxr_linenumber" name="L1291" href="#L1291">1291</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L1292" href="#L1292">1292</a> <em class="jxr_javadoccomment">     * Split one header in Multipart</em>
+<a class="jxr_linenumber" name="L1293" href="#L1293">1293</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L1294" href="#L1294">1294</a> <em class="jxr_javadoccomment">     * @return an array of String where rank 0 is the name of the header,</em>
+<a class="jxr_linenumber" name="L1295" href="#L1295">1295</a> <em class="jxr_javadoccomment">     *         follows by several values that were separated by ';' or ','</em>
+<a class="jxr_linenumber" name="L1296" href="#L1296">1296</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L1297" href="#L1297">1297</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String[] splitMultipartHeader(String sb) {
+<a class="jxr_linenumber" name="L1298" href="#L1298">1298</a>         ArrayList&lt;String&gt; headers = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;(1);
+<a class="jxr_linenumber" name="L1299" href="#L1299">1299</a>         <strong class="jxr_keyword">int</strong> nameStart;
+<a class="jxr_linenumber" name="L1300" href="#L1300">1300</a>         <strong class="jxr_keyword">int</strong> nameEnd;
+<a class="jxr_linenumber" name="L1301" href="#L1301">1301</a>         <strong class="jxr_keyword">int</strong> colonEnd;
+<a class="jxr_linenumber" name="L1302" href="#L1302">1302</a>         <strong class="jxr_keyword">int</strong> valueStart;
+<a class="jxr_linenumber" name="L1303" href="#L1303">1303</a>         <strong class="jxr_keyword">int</strong> valueEnd;
+<a class="jxr_linenumber" name="L1304" href="#L1304">1304</a>         nameStart = HttpPostBodyUtil.findNonWhitespace(sb, 0);
+<a class="jxr_linenumber" name="L1305" href="#L1305">1305</a>         <strong class="jxr_keyword">for</strong> (nameEnd = nameStart; nameEnd &lt; sb.length(); nameEnd++) {
+<a class="jxr_linenumber" name="L1306" href="#L1306">1306</a>             <strong class="jxr_keyword">char</strong> ch = sb.charAt(nameEnd);
+<a class="jxr_linenumber" name="L1307" href="#L1307">1307</a>             <strong class="jxr_keyword">if</strong> (ch == ':' || Character.isWhitespace(ch)) {
+<a class="jxr_linenumber" name="L1308" href="#L1308">1308</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1309" href="#L1309">1309</a>             }
+<a class="jxr_linenumber" name="L1310" href="#L1310">1310</a>         }
+<a class="jxr_linenumber" name="L1311" href="#L1311">1311</a>         <strong class="jxr_keyword">for</strong> (colonEnd = nameEnd; colonEnd &lt; sb.length(); colonEnd++) {
+<a class="jxr_linenumber" name="L1312" href="#L1312">1312</a>             <strong class="jxr_keyword">if</strong> (sb.charAt(colonEnd) == ':') {
+<a class="jxr_linenumber" name="L1313" href="#L1313">1313</a>                 colonEnd++;
+<a class="jxr_linenumber" name="L1314" href="#L1314">1314</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1315" href="#L1315">1315</a>             }
 <a class="jxr_linenumber" name="L1316" href="#L1316">1316</a>         }
-<a class="jxr_linenumber" name="L1317" href="#L1317">1317</a>         <strong class="jxr_keyword">for</strong> (String value : values) {
-<a class="jxr_linenumber" name="L1318" href="#L1318">1318</a>             headers.add(value.trim());
-<a class="jxr_linenumber" name="L1319" href="#L1319">1319</a>         }
-<a class="jxr_linenumber" name="L1320" href="#L1320">1320</a>         String[] array = <strong class="jxr_keyword">new</strong> String[headers.size()];
-<a class="jxr_linenumber" name="L1321" href="#L1321">1321</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; headers.size(); i++) {
-<a class="jxr_linenumber" name="L1322" href="#L1322">1322</a>             array[i] = headers.get(i);
-<a class="jxr_linenumber" name="L1323" href="#L1323">1323</a>         }
-<a class="jxr_linenumber" name="L1324" href="#L1324">1324</a>         <strong class="jxr_keyword">return</strong> array;
-<a class="jxr_linenumber" name="L1325" href="#L1325">1325</a>     }
-<a class="jxr_linenumber" name="L1326" href="#L1326">1326</a> 
-<a class="jxr_linenumber" name="L1327" href="#L1327">1327</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L1328" href="#L1328">1328</a> <em class="jxr_javadoccomment">     * Split one header value in Multipart</em>
-<a class="jxr_linenumber" name="L1329" href="#L1329">1329</a> <em class="jxr_javadoccomment">     * @return an array of String where values that were separated by ';' or ','</em>
-<a class="jxr_linenumber" name="L1330" href="#L1330">1330</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L1331" href="#L1331">1331</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String[] splitMultipartHeaderValues(String svalue) {
-<a class="jxr_linenumber" name="L1332" href="#L1332">1332</a>         List&lt;String&gt; values = InternalThreadLocalMap.get().arrayList(1);
-<a class="jxr_linenumber" name="L1333" href="#L1333">1333</a>         <strong class="jxr_keyword">boolean</strong> inQuote = false;
-<a class="jxr_linenumber" name="L1334" href="#L1334">1334</a>         <strong class="jxr_keyword">boolean</strong> escapeNext = false;
-<a class="jxr_linenumber" name="L1335" href="#L1335">1335</a>         <strong class="jxr_keyword">int</strong> start = 0;
-<a class="jxr_linenumber" name="L1336" href="#L1336">1336</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; svalue.length(); i++) {
-<a class="jxr_linenumber" name="L1337" href="#L1337">1337</a>             <strong class="jxr_keyword">char</strong> c = svalue.charAt(i);
-<a class="jxr_linenumber" name="L1338" href="#L1338">1338</a>             <strong class="jxr_keyword">if</strong> (inQuote) {
-<a class="jxr_linenumber" name="L1339" href="#L1339">1339</a>                 <strong class="jxr_keyword">if</strong> (escapeNext) {
-<a class="jxr_linenumber" name="L1340" href="#L1340">1340</a>                     escapeNext = false;
-<a class="jxr_linenumber" name="L1341" href="#L1341">1341</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1342" href="#L1342">1342</a>                     <strong class="jxr_keyword">if</strong> (c == '&#92;&#92;') {
-<a class="jxr_linenumber" name="L1343" href="#L1343">1343</a>                         escapeNext = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1344" href="#L1344">1344</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (c == '&quot;') {
-<a class="jxr_linenumber" name="L1345" href="#L1345">1345</a>                         inQuote = false;
-<a class="jxr_linenumber" name="L1346" href="#L1346">1346</a>                     }
-<a class="jxr_linenumber" name="L1347" href="#L1347">1347</a>                 }
-<a class="jxr_linenumber" name="L1348" href="#L1348">1348</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1349" href="#L1349">1349</a>                 <strong class="jxr_keyword">if</strong> (c == '&quot;') {
-<a class="jxr_linenumber" name="L1350" href="#L1350">1350</a>                     inQuote = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1351" href="#L1351">1351</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (c == ';') {
-<a class="jxr_linenumber" name="L1352" href="#L1352">1352</a>                     values.add(svalue.substring(start, i));
-<a class="jxr_linenumber" name="L1353" href="#L1353">1353</a>                     start = i + 1;
-<a class="jxr_linenumber" name="L1354" href="#L1354">1354</a>                 }
-<a class="jxr_linenumber" name="L1355" href="#L1355">1355</a>             }
-<a class="jxr_linenumber" name="L1356" href="#L1356">1356</a>         }
-<a class="jxr_linenumber" name="L1357" href="#L1357">1357</a>         values.add(svalue.substring(start));
-<a class="jxr_linenumber" name="L1358" href="#L1358">1358</a>         <strong class="jxr_keyword">return</strong> values.toArray(<strong class="jxr_keyword">new</strong> String[0]);
-<a class="jxr_linenumber" name="L1359" href="#L1359">1359</a>     }
-<a class="jxr_linenumber" name="L1360" href="#L1360">1360</a> 
-<a class="jxr_linenumber" name="L1361" href="#L1361">1361</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L1362" href="#L1362">1362</a> <em class="jxr_javadoccomment">     * This method is package private intentionally in order to allow during tests</em>
-<a class="jxr_linenumber" name="L1363" href="#L1363">1363</a> <em class="jxr_javadoccomment">     * to access to the amount of memory allocated (capacity) within the private</em>
-<a class="jxr_linenumber" name="L1364" href="#L1364">1364</a> <em class="jxr_javadoccomment">     * ByteBuf undecodedChunk</em>
-<a class="jxr_linenumber" name="L1365" href="#L1365">1365</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L1366" href="#L1366">1366</a> <em class="jxr_javadoccomment">     * @return the number of bytes the internal buffer can contain</em>
-<a class="jxr_linenumber" name="L1367" href="#L1367">1367</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L1368" href="#L1368">1368</a>     <strong class="jxr_keyword">int</strong> getCurrentAllocatedCapacity() {
-<a class="jxr_linenumber" name="L1369" href="#L1369">1369</a>         <strong class="jxr_keyword">return</strong> undecodedChunk.capacity();
-<a class="jxr_linenumber" name="L1370" href="#L1370">1370</a>     }
-<a class="jxr_linenumber" name="L1371" href="#L1371">1371</a> }
+<a class="jxr_linenumber" name="L1317" href="#L1317">1317</a>         valueStart = HttpPostBodyUtil.findNonWhitespace(sb, colonEnd);
+<a class="jxr_linenumber" name="L1318" href="#L1318">1318</a>         valueEnd = HttpPostBodyUtil.findEndOfString(sb);
+<a class="jxr_linenumber" name="L1319" href="#L1319">1319</a>         headers.add(sb.substring(nameStart, nameEnd));
+<a class="jxr_linenumber" name="L1320" href="#L1320">1320</a>         String svalue = (valueStart &gt;= valueEnd) ? StringUtil.EMPTY_STRING : sb.substring(valueStart, valueEnd);
+<a class="jxr_linenumber" name="L1321" href="#L1321">1321</a>         String[] values;
+<a class="jxr_linenumber" name="L1322" href="#L1322">1322</a>         <strong class="jxr_keyword">if</strong> (svalue.indexOf(';') &gt;= 0) {
+<a class="jxr_linenumber" name="L1323" href="#L1323">1323</a>             values = splitMultipartHeaderValues(svalue);
+<a class="jxr_linenumber" name="L1324" href="#L1324">1324</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1325" href="#L1325">1325</a>             values = svalue.split(<span class="jxr_string">","</span>);
+<a class="jxr_linenumber" name="L1326" href="#L1326">1326</a>         }
+<a class="jxr_linenumber" name="L1327" href="#L1327">1327</a>         <strong class="jxr_keyword">for</strong> (String value : values) {
+<a class="jxr_linenumber" name="L1328" href="#L1328">1328</a>             headers.add(value.trim());
+<a class="jxr_linenumber" name="L1329" href="#L1329">1329</a>         }
+<a class="jxr_linenumber" name="L1330" href="#L1330">1330</a>         String[] array = <strong class="jxr_keyword">new</strong> String[headers.size()];
+<a class="jxr_linenumber" name="L1331" href="#L1331">1331</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; headers.size(); i++) {
+<a class="jxr_linenumber" name="L1332" href="#L1332">1332</a>             array[i] = headers.get(i);
+<a class="jxr_linenumber" name="L1333" href="#L1333">1333</a>         }
+<a class="jxr_linenumber" name="L1334" href="#L1334">1334</a>         <strong class="jxr_keyword">return</strong> array;
+<a class="jxr_linenumber" name="L1335" href="#L1335">1335</a>     }
+<a class="jxr_linenumber" name="L1336" href="#L1336">1336</a> 
+<a class="jxr_linenumber" name="L1337" href="#L1337">1337</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L1338" href="#L1338">1338</a> <em class="jxr_javadoccomment">     * Split one header value in Multipart</em>
+<a class="jxr_linenumber" name="L1339" href="#L1339">1339</a> <em class="jxr_javadoccomment">     * @return an array of String where values that were separated by ';' or ','</em>
+<a class="jxr_linenumber" name="L1340" href="#L1340">1340</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L1341" href="#L1341">1341</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String[] splitMultipartHeaderValues(String svalue) {
+<a class="jxr_linenumber" name="L1342" href="#L1342">1342</a>         List&lt;String&gt; values = InternalThreadLocalMap.get().arrayList(1);
+<a class="jxr_linenumber" name="L1343" href="#L1343">1343</a>         <strong class="jxr_keyword">boolean</strong> inQuote = false;
+<a class="jxr_linenumber" name="L1344" href="#L1344">1344</a>         <strong class="jxr_keyword">boolean</strong> escapeNext = false;
+<a class="jxr_linenumber" name="L1345" href="#L1345">1345</a>         <strong class="jxr_keyword">int</strong> start = 0;
+<a class="jxr_linenumber" name="L1346" href="#L1346">1346</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; svalue.length(); i++) {
+<a class="jxr_linenumber" name="L1347" href="#L1347">1347</a>             <strong class="jxr_keyword">char</strong> c = svalue.charAt(i);
+<a class="jxr_linenumber" name="L1348" href="#L1348">1348</a>             <strong class="jxr_keyword">if</strong> (inQuote) {
+<a class="jxr_linenumber" name="L1349" href="#L1349">1349</a>                 <strong class="jxr_keyword">if</strong> (escapeNext) {
+<a class="jxr_linenumber" name="L1350" href="#L1350">1350</a>                     escapeNext = false;
+<a class="jxr_linenumber" name="L1351" href="#L1351">1351</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1352" href="#L1352">1352</a>                     <strong class="jxr_keyword">if</strong> (c == '&#92;&#92;') {
+<a class="jxr_linenumber" name="L1353" href="#L1353">1353</a>                         escapeNext = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1354" href="#L1354">1354</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (c == '&quot;') {
+<a class="jxr_linenumber" name="L1355" href="#L1355">1355</a>                         inQuote = false;
+<a class="jxr_linenumber" name="L1356" href="#L1356">1356</a>                     }
+<a class="jxr_linenumber" name="L1357" href="#L1357">1357</a>                 }
+<a class="jxr_linenumber" name="L1358" href="#L1358">1358</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1359" href="#L1359">1359</a>                 <strong class="jxr_keyword">if</strong> (c == '&quot;') {
+<a class="jxr_linenumber" name="L1360" href="#L1360">1360</a>                     inQuote = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1361" href="#L1361">1361</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (c == ';') {
+<a class="jxr_linenumber" name="L1362" href="#L1362">1362</a>                     values.add(svalue.substring(start, i));
+<a class="jxr_linenumber" name="L1363" href="#L1363">1363</a>                     start = i + 1;
+<a class="jxr_linenumber" name="L1364" href="#L1364">1364</a>                 }
+<a class="jxr_linenumber" name="L1365" href="#L1365">1365</a>             }
+<a class="jxr_linenumber" name="L1366" href="#L1366">1366</a>         }
+<a class="jxr_linenumber" name="L1367" href="#L1367">1367</a>         values.add(svalue.substring(start));
+<a class="jxr_linenumber" name="L1368" href="#L1368">1368</a>         <strong class="jxr_keyword">return</strong> values.toArray(<strong class="jxr_keyword">new</strong> String[0]);
+<a class="jxr_linenumber" name="L1369" href="#L1369">1369</a>     }
+<a class="jxr_linenumber" name="L1370" href="#L1370">1370</a> 
+<a class="jxr_linenumber" name="L1371" href="#L1371">1371</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L1372" href="#L1372">1372</a> <em class="jxr_javadoccomment">     * This method is package private intentionally in order to allow during tests</em>
+<a class="jxr_linenumber" name="L1373" href="#L1373">1373</a> <em class="jxr_javadoccomment">     * to access to the amount of memory allocated (capacity) within the private</em>
+<a class="jxr_linenumber" name="L1374" href="#L1374">1374</a> <em class="jxr_javadoccomment">     * ByteBuf undecodedChunk</em>
+<a class="jxr_linenumber" name="L1375" href="#L1375">1375</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L1376" href="#L1376">1376</a> <em class="jxr_javadoccomment">     * @return the number of bytes the internal buffer can contain</em>
+<a class="jxr_linenumber" name="L1377" href="#L1377">1377</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L1378" href="#L1378">1378</a>     <strong class="jxr_keyword">int</strong> getCurrentAllocatedCapacity() {
+<a class="jxr_linenumber" name="L1379" href="#L1379">1379</a>         <strong class="jxr_keyword">return</strong> undecodedChunk.capacity();
+<a class="jxr_linenumber" name="L1380" href="#L1380">1380</a>     }
+<a class="jxr_linenumber" name="L1381" href="#L1381">1381</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2021 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
