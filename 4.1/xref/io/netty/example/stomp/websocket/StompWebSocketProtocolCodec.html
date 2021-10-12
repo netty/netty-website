@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_DE" lang="en_DE">
+<head><meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>StompWebSocketProtocolCodec xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../../apidocs/io/netty/example/stomp/websocket/StompWebSocketProtocolCodec.html">View Javadoc</a></div><pre>
+<a class="jxr_linenumber" name="L1" href="#L1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L2" href="#L2">2</a>   <em class="jxr_comment"> * Copyright 2020 The Netty Project</em>
+<a class="jxr_linenumber" name="L3" href="#L3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="L5" href="#L5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="L6" href="#L6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <em class="jxr_comment"> *   <a href="https://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">https://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="L11" href="#L11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="L12" href="#L12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="L13" href="#L13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="L14" href="#L14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.example.stomp.websocket;
+<a class="jxr_linenumber" name="L17" href="#L17">17</a>  
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandler.Sharable;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.MessageToMessageCodec;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.websocketx.WebSocketFrame;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.websocketx.WebSocketFrameAggregator;
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler.HandshakeComplete;
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.stomp.StompSubframe;
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.stomp.StompSubframeAggregator;
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.stomp.StompSubframeDecoder;
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">import</strong> java.util.List;
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>  @Sharable
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> <a name="StompWebSocketProtocolCodec" href="../../../../../io/netty/example/stomp/websocket/StompWebSocketProtocolCodec.html#StompWebSocketProtocolCodec">StompWebSocketProtocolCodec</a> <strong class="jxr_keyword">extends</strong> MessageToMessageCodec&lt;WebSocketFrame, StompSubframe&gt; {
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>  
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="StompChatHandler" href="../../../../../io/netty/example/stomp/websocket/StompChatHandler.html#StompChatHandler">StompChatHandler</a> stompChatHandler = <strong class="jxr_keyword">new</strong> <a name="StompChatHandler" href="../../../../../io/netty/example/stomp/websocket/StompChatHandler.html#StompChatHandler">StompChatHandler</a>();
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="StompWebSocketFrameEncoder" href="../../../../../io/netty/example/stomp/websocket/StompWebSocketFrameEncoder.html#StompWebSocketFrameEncoder">StompWebSocketFrameEncoder</a> stompWebSocketFrameEncoder = <strong class="jxr_keyword">new</strong> <a name="StompWebSocketFrameEncoder" href="../../../../../io/netty/example/stomp/websocket/StompWebSocketFrameEncoder.html#StompWebSocketFrameEncoder">StompWebSocketFrameEncoder</a>();
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>  
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>      @Override
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>          <strong class="jxr_keyword">if</strong> (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete) {
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>              <a name="StompVersion" href="../../../../../io/netty/example/stomp/websocket/StompVersion.html#StompVersion">StompVersion</a> stompVersion = StompVersion.findBySubProtocol(((HandshakeComplete) evt).selectedSubprotocol());
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>              ctx.channel().attr(StompVersion.CHANNEL_ATTRIBUTE_KEY).set(stompVersion);
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>              ctx.pipeline()
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>                 .addLast(<strong class="jxr_keyword">new</strong> <a name="WebSocketFrameAggregator" href="../../../../../io/netty/handler/codec/http/websocketx/WebSocketFrameAggregator.html#WebSocketFrameAggregator">WebSocketFrameAggregator</a>(65536))
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>                 .addLast(<strong class="jxr_keyword">new</strong> <a name="StompSubframeDecoder" href="../../../../../io/netty/handler/codec/stomp/StompSubframeDecoder.html#StompSubframeDecoder">StompSubframeDecoder</a>())
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>                 .addLast(<strong class="jxr_keyword">new</strong> <a name="StompSubframeAggregator" href="../../../../../io/netty/handler/codec/stomp/StompSubframeAggregator.html#StompSubframeAggregator">StompSubframeAggregator</a>(65536))
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>                 .addLast(stompChatHandler)
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>                 .remove(StompWebSocketClientPageHandler.INSTANCE);
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>              <strong class="jxr_keyword">super</strong>.userEventTriggered(ctx, evt);
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>          }
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>      }
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>  
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>      @Override
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encode(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="StompSubframe" href="../../../../../io/netty/handler/codec/stomp/StompSubframe.html#StompSubframe">StompSubframe</a> stompFrame, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>          stompWebSocketFrameEncoder.encode(ctx, stompFrame, out);
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>      }
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>  
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>      @Override
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> decode(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="WebSocketFrame" href="../../../../../io/netty/handler/codec/http/websocketx/WebSocketFrame.html#WebSocketFrame">WebSocketFrame</a> webSocketFrame, List&lt;Object&gt; out) {
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>          <strong class="jxr_keyword">if</strong> (webSocketFrame instanceof <a name="TextWebSocketFrame" href="../../../../../io/netty/handler/codec/http/websocketx/TextWebSocketFrame.html#TextWebSocketFrame">TextWebSocketFrame</a> || webSocketFrame instanceof <a name="BinaryWebSocketFrame" href="../../../../../io/netty/handler/codec/http/websocketx/BinaryWebSocketFrame.html#BinaryWebSocketFrame">BinaryWebSocketFrame</a>) {
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>              out.add(webSocketFrame.content().retain());
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>              ctx.close();
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>          }
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>      }
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>  }
+</pre>
+<hr/>
+<div id="footer">Copyright &#169; 2008&#x2013;2021 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+</body>
+</html>
