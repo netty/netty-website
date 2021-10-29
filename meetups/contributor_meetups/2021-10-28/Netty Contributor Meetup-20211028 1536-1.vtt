@@ -1,0 +1,2058 @@
+WEBVTT
+
+1
+00:01:01.320 --> 00:01:15.329
+Okay, I think we can start. So the agenda is, um, what we had discussed in this.
+
+2
+00:01:15.329 --> 00:01:20.010
+Give have the discussion thread that started.
+
+3
+00:01:20.010 --> 00:01:25.500
+A little while ago. Last time there was some request for some.
+
+4
+00:01:25.500 --> 00:01:30.780
+But for updates on the latest changes we've made since merging the.
+
+5
+00:01:30.780 --> 00:01:36.750
+New buffer API PR and then I also have some.
+
+6
+00:01:36.750 --> 00:01:50.250
+Information about a new thing we're doing where we're separating the repositories out a little bit in medical and then some country repositories and then there was a request.
+
+7
+00:01:50.250 --> 00:01:55.469
+To talk about some caching from, uh.
+
+8
+00:01:57.120 --> 00:02:08.370
+So, let's get started with the buffer updates, so I don't have any, uh, code on my slides. So we can jump into that. If there's.
+
+9
+00:02:08.370 --> 00:02:14.370
+I made what we've done since, uh, merging the.
+
+10
+00:02:14.370 --> 00:02:21.569
+Offer API PR, is that, uh, we've simplified the life cycle around purpose.
+
+11
+00:02:21.569 --> 00:02:26.250
+We have addressed all the feedback we've gotten.
+
+12
+00:02:26.250 --> 00:02:33.389
+And we have made it more integrated Internet itself and started porting some.
+
+13
+00:02:33.389 --> 00:02:41.849
+All the modules and handlers to use the new API, and we've added a number of convenience APIs to it as well.
+
+14
+00:02:41.849 --> 00:02:46.469
+To make it easier to use in, in common use cases.
+
+15
+00:02:47.669 --> 00:02:54.389
+So the way the life cycle has been simplified, is that, uh.
+
+16
+00:02:54.389 --> 00:03:00.150
+There's not really any visible reference counting anymore. You.
+
+17
+00:03:00.150 --> 00:03:04.080
+Allocate or a split or copy, or receive from us.
+
+18
+00:03:04.080 --> 00:03:07.889
+Whatever way you get a buffer and then you close it.
+
+19
+00:03:07.889 --> 00:03:17.250
+And as it goes through a pipeline, you're not really concerned with it. So, this is the, uh, 1 of the beginning and the end of the buffers.
+
+20
+00:03:17.250 --> 00:03:25.229
+What you really need to care about and this, uh, there's no visible reference counting, so there's no acquire no release.
+
+21
+00:03:25.229 --> 00:03:30.960
+There's no more concept of whether the, uh.
+
+22
+00:03:30.960 --> 00:03:39.240
+Buffer is owned or not owned specifically. It's another buffers are always in an owned state. So you don't have to think about it.
+
+23
+00:03:39.240 --> 00:03:45.120
+And the way we made buffers always be in this own state.
+
+24
+00:03:45.120 --> 00:03:48.120
+Where all features are available is by.
+
+25
+00:03:48.120 --> 00:03:52.050
+Not having alias means that there are.
+
+26
+00:03:52.050 --> 00:03:55.439
+2 references to the same memory.
+
+27
+00:03:55.439 --> 00:04:02.939
+Uh, for instance, slicing does alias and and the, uh, type of duplicate mess that also does alias.
+
+28
+00:04:02.939 --> 00:04:06.719
+Uh, we don't have methods like this in the near.
+
+29
+00:04:06.719 --> 00:04:13.469
+So no more slicing no duplicates. Likewise retained versions of those.
+
+30
+00:04:13.469 --> 00:04:20.430
+Uh, do not exist instead we have the split method and we have a copy method for when you do.
+
+31
+00:04:20.430 --> 00:04:25.230
+Can't use split or can't just directly share a reference.
+
+32
+00:04:25.230 --> 00:04:31.889
+And we still have the send method for when you want to specify in the API that the ownership of.
+
+33
+00:04:31.889 --> 00:04:38.699
+The changes from 1 place to another is used when you compose buffers, for instance.
+
+34
+00:04:38.699 --> 00:04:43.978
+Because he composite buffer takes ownership of all the components to prevent it.
+
+35
+00:04:47.153 --> 00:04:59.184
+Then all the feedback, Chris, just 3rd, um, maybe for the people that didn't attend the last 1 when you talked about the API, can you give a small?
+
+36
+00:04:59.184 --> 00:05:05.274
+I would say introduction about the new, the new message, like, split.
+
+37
+00:05:06.538 --> 00:05:13.918
+For example, to get a better to have them a better idea about why these are useful to place slice and the duplicate.
+
+38
+00:05:13.918 --> 00:05:17.728
+Uh, for example, yeah.
+
+39
+00:05:17.728 --> 00:05:26.608
+Yeah, so previous meet up was actually about, but on the 1st, 1 it was about yeah the 1st 1 but yes. Yeah.
+
+40
+00:05:26.608 --> 00:05:30.928
+Right. So split takes a a.
+
+41
+00:05:30.928 --> 00:05:41.668
+The buffer and breaks it into to this joint buffer. So they are not overlapping anymore. And by default you do this for the readable bites.
+
+42
+00:05:41.668 --> 00:05:49.468
+So it will read, so when you call it split on a buffer, it will return to you a new buffer, for instance, that contain.
+
+43
+00:05:49.468 --> 00:05:53.488
+The readable section of the original buffer and whatever.
+
+44
+00:05:53.488 --> 00:06:01.918
+Before that in case, you've written read into it already and then the buffer you call split on.
+
+45
+00:06:01.918 --> 00:06:06.689
+Will be truncated at the beginning, such that.
+
+46
+00:06:06.689 --> 00:06:12.809
+The area covered by the return buffer is not accessible by the original buffer. So it changes capacity.
+
+47
+00:06:12.809 --> 00:06:17.189
+When you call spit on a buffer and that way we, uh.
+
+48
+00:06:17.189 --> 00:06:20.819
+We ensure that there's no a blessing.
+
+49
+00:06:20.819 --> 00:06:23.939
+Between these 2 buffers, they cannot access the same memory.
+
+50
+00:06:25.168 --> 00:06:28.499
+Uh, but the memory is still share it, right?
+
+51
+00:06:28.499 --> 00:06:32.309
+Like, the backfill memory, it's still shared behind the scenes.
+
+52
+00:06:32.309 --> 00:06:37.978
+So, we have like, hidden reference accounts going on that.
+
+53
+00:06:37.978 --> 00:06:50.189
+Make sure that this works, but it's mentally similar to a read slice except the memory you get back is no longer accessible to the original platform.
+
+54
+00:06:54.689 --> 00:06:58.678
+All right, and I guess I should also mentioned send.
+
+55
+00:06:58.678 --> 00:07:01.798
+That's also a new thing with the new API.
+
+56
+00:07:01.798 --> 00:07:07.738
+Uh, you call send on a buffer and then you get back an object that is a sense of.
+
+57
+00:07:07.738 --> 00:07:16.139
+But for some buffer is the type parameter to send in this case. And what happens is that the calls sent on effectively.
+
+58
+00:07:16.139 --> 00:07:20.278
+Becomes close, but the memory is still kept the life.
+
+59
+00:07:20.278 --> 00:07:26.009
+And, uh, help inside the same object. And when you call receive.
+
+60
+00:07:26.009 --> 00:07:29.939
+On the send object, you get back and you buffer instance.
+
+61
+00:07:29.939 --> 00:07:42.358
+That then has the memory and these 2 buffer instances are not the same instance. The 1, the old 1 will appear to be closed, but the memory has moved to the new instance.
+
+62
+00:07:42.358 --> 00:07:45.598
+And that way, we can.
+
+63
+00:07:45.598 --> 00:07:49.168
+Guarantee in the type system that.
+
+64
+00:07:49.168 --> 00:07:53.309
+There's only 1 buffer object is actually accessing the memory.
+
+65
+00:07:55.829 --> 00:08:02.548
+Okay, makes sense. Those are the 2 biggest new concepts in the new buffer API.
+
+66
+00:08:02.548 --> 00:08:08.639
+I would say all right.
+
+67
+00:08:09.749 --> 00:08:12.928
+Um, so.
+
+68
+00:08:12.928 --> 00:08:19.228
+That's the simplification originally in the big PR.
+
+69
+00:08:19.228 --> 00:08:27.298
+Merging the buffer API there was reference counting, but that's been removed. Uh, there were also a number of other feedbacks, like.
+
+70
+00:08:27.298 --> 00:08:31.259
+Composite buffer, uh, is now an interface.
+
+71
+00:08:31.259 --> 00:08:35.698
+And his static factory methods for.
+
+72
+00:08:35.698 --> 00:08:43.828
+Composing buffers no static factory methods are not accessible on the instance.
+
+73
+00:08:43.828 --> 00:08:48.359
+That's how it works when you're a static methods on interfaces. So, uh, that was a.
+
+74
+00:08:48.359 --> 00:08:52.589
+Problem in some cases, when you put static methods on classes.
+
+75
+00:08:52.589 --> 00:08:57.509
+The instances would also have those methods available, but that's not a problem for interfaces.
+
+76
+00:08:57.509 --> 00:09:04.798
+The bite Chris has also been simplified. So, originally, the idea was that you could, uh.
+
+77
+00:09:04.798 --> 00:09:10.979
+Iterate in a batch and fashion by consuming 8 bytes at a time.
+
+78
+00:09:10.979 --> 00:09:15.599
+Package together in a long we've removed that.
+
+79
+00:09:15.599 --> 00:09:20.788
+Because there, it was kind of confusing at least, uh, uh.
+
+80
+00:09:20.788 --> 00:09:27.749
+At the time when and Dennis could be configured, but also, I don't think this, uh.
+
+81
+00:09:27.749 --> 00:09:30.749
+A whole lot of use for it.
+
+82
+00:09:30.749 --> 00:09:36.089
+So, we remove that it can come back if we feel doesn't need.
+
+83
+00:09:36.089 --> 00:09:42.629
+Then we have made purpose to always be big Indian and is no longer configurable.
+
+84
+00:09:42.629 --> 00:09:48.448
+And also there are no deal engine equivalent methods.
+
+85
+00:09:48.448 --> 00:09:53.668
+So, there's no right and L. E instead.
+
+86
+00:09:53.668 --> 00:09:58.318
+There are these reverse bytes methods on.
+
+87
+00:09:58.318 --> 00:10:03.389
+Integer and long and what have you that will and then.
+
+88
+00:10:03.389 --> 00:10:06.479
+For for the value before you write it.
+
+89
+00:10:06.479 --> 00:10:11.639
+Uh, and the reason is that, uh, if you look and.
+
+90
+00:10:11.639 --> 00:10:16.619
+And the various use cases, there's very few where.
+
+91
+00:10:16.619 --> 00:10:20.908
+We actually need the Indian accesses.
+
+92
+00:10:20.908 --> 00:10:24.328
+It was mostly in the, uh, compression.
+
+93
+00:10:24.328 --> 00:10:28.139
+That I could see, so.
+
+94
+00:10:28.139 --> 00:10:31.168
+We removed in DNS.
+
+95
+00:10:31.168 --> 00:10:37.619
+So, it's always big engine and then the read only state is now irreversible.
+
+96
+00:10:37.619 --> 00:10:45.479
+That makes you, once you make a buffer read, only then, you know, it's not going to change.
+
+97
+00:10:45.479 --> 00:10:53.369
+No, 1 else can grab hold of your buffer and make it writable and overwrite your contents.
+
+98
+00:10:53.369 --> 00:10:58.649
+Still, if you want to have buffers in some constant.
+
+99
+00:10:58.649 --> 00:11:04.918
+Versions or whatever they will.
+
+100
+00:11:04.918 --> 00:11:08.278
+Pieces of strings that was that are used over and over.
+
+101
+00:11:08.278 --> 00:11:19.318
+Then the allocator still has the offer supplier method that would give you a supplier of office that share the underlying memory. Uh.
+
+102
+00:11:19.318 --> 00:11:23.849
+As efficiently as possible and and those are.
+
+103
+00:11:23.849 --> 00:11:27.928
+What we should use for context. There is a recently also, there was a.
+
+104
+00:11:27.928 --> 00:11:32.999
+Pr, fixing some usages of.
+
+105
+00:11:32.999 --> 00:11:38.038
+Pipe off that were placed in static final.
+
+106
+00:11:38.038 --> 00:11:49.678
+Constance, uh, they were writable. They were being shared, uh, sometimes they were being expanded and suddenly discussed and changes throughout the whole system.
+
+107
+00:11:49.678 --> 00:11:55.528
+That's not gonna be a problem if you use the, uh, uh, it's a completely solve that.
+
+108
+00:11:56.698 --> 00:12:09.839
+All right, then DHA guys gotten more integrated. Initially it was just its own thing on the side, but now we have that channel conflict. We can set the alligator.
+
+109
+00:12:09.839 --> 00:12:16.948
+That's, uh, I miss it on channel. I have a context where you can get it, get it back. The configured.
+
+110
+00:12:16.948 --> 00:12:22.408
+Uh, we also have a default global buffer.
+
+111
+00:12:22.408 --> 00:12:25.739
+And the constant for it.
+
+112
+00:12:25.739 --> 00:12:33.178
+Where you can access it and allocate buffers that you don't care about what what's been configured.
+
+113
+00:12:33.178 --> 00:12:39.208
+That's a new functioning liquid sector and, uh.
+
+114
+00:12:39.208 --> 00:12:43.678
+We are hitting the native memory address previously. That was just.
+
+115
+00:12:43.678 --> 00:12:55.198
+Accessible on a method directly on buffer now it's hidden inside the components that you need to use for each component, which also makes sense because, uh, you need to go through the components when you need to, uh.
+
+116
+00:12:55.198 --> 00:13:01.798
+Get get the actual value in case, your progress can pass it.
+
+117
+00:13:03.568 --> 00:13:13.619
+And we use this for to this as well and this is only for internal stuff. So it's, uh, it's only used that IO touch points. I don't think it.
+
+118
+00:13:13.619 --> 00:13:16.948
+Matters for most external uses.
+
+119
+00:13:16.948 --> 00:13:20.399
+Finally.
+
+120
+00:13:20.399 --> 00:13:25.859
+There's a bunch of new convenience APIs, uh.
+
+121
+00:13:25.859 --> 00:13:29.369
+We can now decompose composite buffers so.
+
+122
+00:13:29.369 --> 00:13:36.058
+Once you compose a, a bunch of profits together, and it composite buffer, you can now break it apart again.
+
+123
+00:13:36.058 --> 00:13:43.078
+And when you call decompose on the composite buffer, then it will effectively be close particular back all the components.
+
+124
+00:13:43.078 --> 00:13:47.489
+Uh, we can skip readable and viable for, uh.
+
+125
+00:13:47.489 --> 00:13:50.729
+And modifying the offsets easily.
+
+126
+00:13:50.729 --> 00:13:55.469
+Uh, put it over the fast.
+
+127
+00:13:55.469 --> 00:14:04.139
+Index off and buys before, uh, equivalent methods. So we're only ported over bytes before because there seems to be the.
+
+128
+00:14:04.139 --> 00:14:07.168
+Only 1, that's really used.
+
+129
+00:14:07.168 --> 00:14:10.678
+And the most important 1.
+
+130
+00:14:10.678 --> 00:14:15.839
+And now, regardless of the buffer implementation, it's always fast.
+
+131
+00:14:15.839 --> 00:14:18.869
+With pipe of previously, you might.
+
+132
+00:14:18.869 --> 00:14:23.458
+Depending on how the is wrapped and how it implemented.
+
+133
+00:14:23.458 --> 00:14:30.509
+The performance could vary quite a bit, but now it's it's all the same because there is.
+
+134
+00:14:30.509 --> 00:14:35.698
+There's a most 1 indirection away from the memory.
+
+135
+00:14:35.698 --> 00:14:42.389
+That's how they're implemented and we have a right sequence that takes.
+
+136
+00:14:42.389 --> 00:14:46.828
+Uh, task sequence set.
+
+137
+00:14:46.828 --> 00:14:52.469
+So, you can invite you to have data easily.
+
+138
+00:14:52.469 --> 00:14:55.859
+We have more split methods for spitting out.
+
+139
+00:14:55.859 --> 00:14:59.009
+All the readable bits and.
+
+140
+00:14:59.009 --> 00:15:02.278
+The writable area, uh.
+
+141
+00:15:02.278 --> 00:15:07.288
+You can now allocate 0 sized buffers.
+
+142
+00:15:07.288 --> 00:15:10.859
+Which is useful for getting empty buffers. It's Houston. Uh.
+
+143
+00:15:10.859 --> 00:15:14.188
+A bunch of places, uh.
+
+144
+00:15:14.188 --> 00:15:26.729
+And then the allocator also has a copy, a new copy off that takes a final rate, or a BI buffer. So you can easily allocate a buffer that.
+
+145
+00:15:26.729 --> 00:15:38.729
+Continues a certain has a certain contents based either on the binary on existing by buffer. Uh, and if copy off, because it does copying if it.
+
+146
+00:15:38.729 --> 00:15:42.028
+Didn't then we would have alias saying on the memory.
+
+147
+00:15:42.028 --> 00:15:50.519
+There is a way to safely directly. Rep, the vital rate.
+
+148
+00:15:50.519 --> 00:15:55.798
+But it's on the memory manager interface and, uh.
+
+149
+00:15:55.798 --> 00:15:58.859
+That's the name and price it is on save. So I.
+
+150
+00:15:58.859 --> 00:16:02.188
+I don't think that's a whole lot of uses for it.
+
+151
+00:16:02.188 --> 00:16:05.188
+Because it can cross and.
+
+152
+00:16:05.188 --> 00:16:13.078
+Weird effects, and then finally the send out the new map Combinator.
+
+153
+00:16:13.078 --> 00:16:16.619
+That, uh, it's quite useful for when you.
+
+154
+00:16:16.619 --> 00:16:19.798
+Implement classes that rep. a buffer.
+
+155
+00:16:19.798 --> 00:16:31.349
+For instance, then you can use that you can call, send on the buffer and you can map it back into the class that is wrapping the buffer.
+
+156
+00:16:31.349 --> 00:16:35.399
+That's quite useful for that and.
+
+157
+00:16:35.399 --> 00:16:42.269
+That's all I had for the buffer updates. That's what we've done since the PR that merged.
+
+158
+00:16:42.269 --> 00:16:49.438
+Any questions on that.
+
+159
+00:16:53.068 --> 00:17:04.259
+Hello can you hear me? Yes, I have a question. It sounds like the update is just to the API. The allocator is still the same right? The underlying allocator.
+
+160
+00:17:05.338 --> 00:17:08.578
+We put it over the.
+
+161
+00:17:08.578 --> 00:17:12.659
+Yeah, dating based.
+
+162
+00:17:12.659 --> 00:17:17.788
+The implementation is slightly different in some places.
+
+163
+00:17:17.788 --> 00:17:21.838
+Okay, this is the same algorithm.
+
+164
+00:17:21.838 --> 00:17:31.138
+Got it how about, uh, configuration knobs for allocator? Cause I know it has a ton of different settings, right? You can configure a lot of things.
+
+165
+00:17:31.138 --> 00:17:36.538
+And, um, is it still the same amount of knobs you have to configure it? Or is it less.
+
+166
+00:17:36.538 --> 00:17:40.469
+It's the same amount got it. Thanks.
+
+167
+00:17:42.384 --> 00:17:51.294
+No problem, but also, just just to Jim here, um, in here. Um, I think it's still the same amount of configuration options that we have at the moment.
+
+168
+00:17:51.294 --> 00:17:59.364
+But I think what is definitely true is that we need to revisit what are the correct default values for that before we do another release.
+
+169
+00:17:59.878 --> 00:18:07.769
+I think a lot of I would say a lot of the default will use that we use the default. 1 may not be the right 1 anymore.
+
+170
+00:18:07.769 --> 00:18:12.148
+When we assumed like, how many reno's upgraded and all that kind of stuff.
+
+171
+00:18:12.148 --> 00:18:17.729
+So, um, I think at least the default values should probably change.
+
+172
+00:18:20.638 --> 00:18:33.054
+Sounds good, I'm glad to hear that we spent a lot of time trying to configure those and making sure we had a good default and I don't think we arrive at 1 yet. Um, and we definitely need to revisit it at some point.
+
+173
+00:18:33.084 --> 00:18:38.933
+So, if you ever publish them guidance on how to do it, when you change the default will be super helpful. Thanks.
+
+174
+00:18:40.469 --> 00:18:45.689
+We'll keep that in in hearing about use cases and what.
+
+175
+00:18:45.689 --> 00:18:49.499
+Tunings other people have done in their deployments.
+
+176
+00:18:51.298 --> 00:18:58.108
+That would be really helpful for proceeding updates that proceeding defaults that work for the most people.
+
+177
+00:18:58.108 --> 00:19:02.638
+Yeah, for us, it was mostly, um.
+
+178
+00:19:02.638 --> 00:19:08.909
+The base of the default number of, uh, traps we allocate for media workers.
+
+179
+00:19:08.909 --> 00:19:16.199
+We try to size everything kind of smaller cause. Otherwise we have huge, uh, boxes with a ton of.
+
+180
+00:19:16.199 --> 00:19:29.219
+And it occupied all native memory for all here because the default values, I think pretty big. So we have to size it down quite significantly but we never revisited back. Maybe we should at some point.
+
+181
+00:19:30.419 --> 00:19:38.394
+Yeah, I think the problem is that, I mean, when when 94 was released, um, you know, like, that's that's a long time ago. Right?
+
+182
+00:19:38.394 --> 00:19:39.653
+And we basically assumed,
+
+183
+00:19:39.653 --> 00:19:40.074
+like,
+
+184
+00:19:40.074 --> 00:19:44.394
+the event loop thread should be like 2 times course and the winners,
+
+185
+00:19:44.394 --> 00:19:50.153
+the same basically but these days with all these big machines with all,
+
+186
+00:19:50.153 --> 00:19:50.513
+of course,
+
+187
+00:19:50.513 --> 00:19:54.203
+and also visualization these numbers are most likely,
+
+188
+00:19:54.203 --> 00:19:55.193
+not optimal anymore.
+
+189
+00:19:55.979 --> 00:20:00.749
+And that's especially true when we're talking about clients as well. Right because, I mean.
+
+190
+00:20:00.749 --> 00:20:07.409
+For clients that most of the times doesn't make a lot of sense to have, you know, like a lot of.
+
+191
+00:20:07.409 --> 00:20:14.308
+A lot of event loops basically compared to servers, or even like, for accepting new connections. There's.
+
+192
+00:20:14.308 --> 00:20:21.269
+Most of the times, no really need to have more than 1 threat. I mean, sometimes you want to if you something like sport.
+
+193
+00:20:21.269 --> 00:20:26.638
+But for most use cases, I mean, if you use, like, the default settings, um, it's a waste.
+
+194
+00:20:26.638 --> 00:20:31.648
+Of resources.
+
+195
+00:20:32.999 --> 00:20:37.048
+Which is also, by the way 1 of the reasons why I'm still not sure if.
+
+196
+00:20:37.048 --> 00:20:42.808
+At least for the event loops, I mean, I'm not sure about the allocated, but for vendors, I'm not even sure if we should.
+
+197
+00:20:42.808 --> 00:20:51.239
+Half a default value, or just, you know, like, basically require the user to always specify how many event loops should be used.
+
+198
+00:20:51.239 --> 00:20:55.858
+Because at the end, whatever we pick us default is probably not the right 1.
+
+199
+00:20:58.709 --> 00:21:02.608
+Yeah, maybe it's just me, but.
+
+200
+00:21:02.608 --> 00:21:11.249
+Yeah, no, I agree. I think it makes sense. Um, I think you receive folks set it to, uh, a number of CPUs you have, uh, by default.
+
+201
+00:21:11.249 --> 00:21:22.679
+And ideally, it should be dynamic right? It's like not the number not dynamic. Depends on your machine on number of CPUs you have but dynamic come to workload I guess.
+
+202
+00:21:22.679 --> 00:21:27.898
+Um, just besides itself, that's something we've been experimenting internally and, uh.
+
+203
+00:21:27.898 --> 00:21:32.489
+Maybe it will share more detail so we have more data, but not yet.
+
+204
+00:21:32.489 --> 00:21:42.388
+Yeah, that's that's definitely something that would be super interesting for us like, you know, like, maybe depending on how long the IO, um.
+
+205
+00:21:42.388 --> 00:21:53.969
+I all run, basically was pay duration, depending on that, maybe, you know, like start new event loops or shut down or shut down all the groups or something like this.
+
+206
+00:21:53.969 --> 00:21:59.009
+But it's definitely not as easy as it sounds. I think.
+
+207
+00:21:59.009 --> 00:22:06.778
+To do and do it the right way. Yeah.
+
+208
+00:22:13.769 --> 00:22:17.249
+Hi, this is Julian. I have a question.
+
+209
+00:22:19.108 --> 00:22:23.128
+Uh, I, I was wondering, uh.
+
+210
+00:22:23.128 --> 00:22:31.769
+I think today the stuff using the new buffer is mainly the China, the pipeline, the channels.
+
+211
+00:22:31.769 --> 00:22:38.159
+And I would like to know which products are currently using the new buffer API versus.
+
+212
+00:22:38.159 --> 00:22:52.709
+Api currently, there's not a lot of correct, like, using the new API, but we have a project going on that.
+
+213
+00:22:52.709 --> 00:22:56.848
+Leading reporting 1.
+
+214
+00:22:56.848 --> 00:23:00.118
+Correct and handless over to the new.
+
+215
+00:23:00.118 --> 00:23:04.169
+Test has a huge PR up with that work.
+
+216
+00:23:07.679 --> 00:23:16.618
+Okay, thank you. Another question that what is not clear to me, is that, uh, is it possible to mix, uh, in the same pipeline?
+
+217
+00:23:16.618 --> 00:23:21.659
+And Ross with the bypass API and using the API.
+
+218
+00:23:24.269 --> 00:23:28.199
+Yeah, you can do it if you put them together and.
+
+219
+00:23:28.199 --> 00:23:32.878
+In the right way conversion methods. Uh.
+
+220
+00:23:32.878 --> 00:23:37.409
+On the, not on buffer directly, but, uh.
+
+221
+00:23:37.409 --> 00:23:40.888
+On some other adapt the class.
+
+222
+00:23:40.888 --> 00:23:46.679
+And this whole design stack methods are converting between 1 to the other.
+
+223
+00:23:46.679 --> 00:23:51.959
+Uh, and some of these are being used in the.
+
+224
+00:23:51.959 --> 00:23:56.489
+And the PR.
+
+225
+00:23:56.489 --> 00:24:01.648
+I just think it's that's cool.
+
+226
+00:24:01.648 --> 00:24:06.148
+Yeah, but I think while we are doing this at the moment, I think the.
+
+227
+00:24:06.148 --> 00:24:11.459
+The outcome should be that we basically only have 1 API at the end.
+
+228
+00:24:12.294 --> 00:24:26.933
+I mean, I think it's just like a middle step, because, I mean, if we would port everything at once, it would be like, such a big PR. It would be impossible to review. Right? So the parents qualify, maybe to have everything using the new.
+
+229
+00:24:29.669 --> 00:24:34.588
+I'm not sure if it's true for alpha, but it should be definitely true for before better.
+
+230
+00:24:35.969 --> 00:24:44.249
+Thank you and other question is also, when do we want to remove the, uh, bypass API and the.
+
+231
+00:24:44.249 --> 00:24:50.729
+Ability to convert between them, uh, because those features might be useful. Yes.
+
+232
+00:24:50.729 --> 00:24:59.098
+Able to support their own code. I agree. Uh, that would be something super useful to have to be not.
+
+233
+00:24:59.098 --> 00:25:02.759
+To to be not forced to upgrade everything at once.
+
+234
+00:25:06.719 --> 00:25:10.828
+Yeah.
+
+235
+00:25:12.479 --> 00:25:15.719
+Any more questions or shall I move on.
+
+236
+00:25:20.249 --> 00:25:28.259
+Okay, so the other thing I had on the agenda is that we want to try to.
+
+237
+00:25:28.259 --> 00:25:33.689
+Break up the Neti repository up into a.
+
+238
+00:25:33.689 --> 00:25:44.189
+Core repository, which is the current meeting and then a number of contract repositories where.
+
+239
+00:25:44.189 --> 00:25:50.699
+Modules that are not very often changed or that we and the.
+
+240
+00:25:50.699 --> 00:25:54.959
+Don't quite have expertise to maintain.
+
+241
+00:25:54.959 --> 00:26:03.659
+This or we can live and, uh, be maintained, but who has an interest in them and who has the expertise and.
+
+242
+00:26:03.659 --> 00:26:08.219
+If they don't need to change them, they also don't need to release together with the rest of it.
+
+243
+00:26:08.219 --> 00:26:17.699
+So the plan is look looking current plan is looking like this. So it would be for 95 only I should say, uh, we're not going to.
+
+244
+00:26:17.699 --> 00:26:24.179
+To 4.1 on the chopping block so yes, we have the.
+
+245
+00:26:24.179 --> 00:26:29.788
+I don't know if she can see on my mouse pointer, but it is to have to call him.
+
+246
+00:26:29.788 --> 00:26:34.229
+Module or repository.
+
+247
+00:26:34.229 --> 00:26:37.888
+And then there's a 1 for the.
+
+248
+00:26:37.888 --> 00:26:45.838
+Uh, coding, XML, uh, transport, production and cast and so on. So.
+
+249
+00:26:45.838 --> 00:26:54.209
+Those things that are currently existing as, uh, mostly codex, but also, uh, handler.
+
+250
+00:26:54.209 --> 00:26:59.878
+And also pull pull out some of these things that currently exist in.
+
+251
+00:26:59.878 --> 00:27:03.179
+Very direct into another.
+
+252
+00:27:03.179 --> 00:27:07.588
+That would be best story, contract repository uh.
+
+253
+00:27:07.588 --> 00:27:11.548
+Maybe the as well, I don't know.
+
+254
+00:27:11.548 --> 00:27:15.239
+But, yeah, the benefit of.
+
+255
+00:27:15.239 --> 00:27:27.239
+Doing it, this way is that then each repository can then have their own independent set of maintainers. They can have their own independent release schedule.
+
+256
+00:27:27.239 --> 00:27:30.808
+Most of these do not need to change very often.
+
+257
+00:27:30.808 --> 00:27:35.219
+And as Maven modules, they could depend on.
+
+258
+00:27:35.219 --> 00:27:39.118
+A version range for itself.
+
+259
+00:27:39.118 --> 00:27:44.368
+Version ranges for whatever, modules existing or.
+
+260
+00:27:44.368 --> 00:27:47.459
+So that if you depend on, say.
+
+261
+00:27:47.459 --> 00:27:53.519
+Men cashed then you can still upgrade that itself and.
+
+262
+00:27:53.519 --> 00:27:58.378
+Assuming backwards compatibility.
+
+263
+00:27:58.378 --> 00:28:03.538
+Uh, that we've been good on on maintaining that, then it should just work.
+
+264
+00:28:05.368 --> 00:28:18.209
+So, for that reason, we also need to have concerns separated, which this would help with such that we can contract modules do not depend on channels as, uh.
+
+265
+00:28:18.209 --> 00:28:22.229
+Now, they are becoming more external code, so.
+
+266
+00:28:22.229 --> 00:28:26.578
+That should also help reduce the maintenance burdens of.
+
+267
+00:28:26.578 --> 00:28:33.148
+Both itself, and also of the modules themselves, the contract modules.
+
+268
+00:28:33.148 --> 00:28:40.919
+So, uh, we've laid a plan to do this in phases.
+
+269
+00:28:40.919 --> 00:28:49.169
+So the 1st phase is to migrate out a pilot module into its own repository and I picked.
+
+270
+00:28:49.169 --> 00:28:54.419
+Xml because it's small and.
+
+271
+00:28:54.419 --> 00:28:59.818
+I don't know if anyone would.
+
+272
+00:29:00.929 --> 00:29:06.479
+Come screaming if I broke something, it's 95 only anyway.
+
+273
+00:29:06.479 --> 00:29:09.598
+Uh, but it seems like, uh.
+
+274
+00:29:09.598 --> 00:29:15.659
+No risk module to start with and most of the work will be around.
+
+275
+00:29:15.659 --> 00:29:20.459
+Getting the build work to work, uh, setting up the.
+
+276
+00:29:20.459 --> 00:29:24.749
+To help actions workflow.
+
+277
+00:29:24.749 --> 00:29:35.189
+Having a release process that is as simple as possible that sort of thing that's where most of the work is going to be. And then also the Java package.
+
+278
+00:29:35.189 --> 00:29:41.999
+Needs to move into country, or maybe it's going to be iron 85. I dunno.
+
+279
+00:29:41.999 --> 00:29:48.719
+What the final 95 package is going to be, but something that is different from.
+
+280
+00:29:48.719 --> 00:29:51.868
+Coordinate itself because.
+
+281
+00:29:51.868 --> 00:29:56.489
+We need to make sure that.
+
+282
+00:29:56.489 --> 00:30:03.118
+If someone uses Java modules, then we cannot have any conflict on Java packages.
+
+283
+00:30:03.118 --> 00:30:08.519
+So, therefore they need to be separated out and this.
+
+284
+00:30:08.519 --> 00:30:10.314
+I don't know if we are gonna use,
+
+285
+00:30:10.943 --> 00:30:11.334
+uh,
+
+286
+00:30:11.394 --> 00:30:13.344
+explicit our modules in 85,
+
+287
+00:30:13.344 --> 00:30:17.544
+or if we're gonna stick with the automatic modules,
+
+288
+00:30:17.574 --> 00:30:20.334
+but either way in order to support modules,
+
+289
+00:30:20.334 --> 00:30:25.943
+we cannot have any Java package that exist in more than 11 module at a time.
+
+290
+00:30:26.608 --> 00:30:30.209
+Otherwise it will not work at 1 time.
+
+291
+00:30:30.209 --> 00:30:33.838
+And then once this.
+
+292
+00:30:33.838 --> 00:30:37.709
+Pilot module is working as it should.
+
+293
+00:30:37.709 --> 00:30:46.288
+As we want it to be, then phase 2 would be to repeat the success of all the other modules that we consider non core.
+
+294
+00:30:46.288 --> 00:30:49.648
+Uh, and then.
+
+295
+00:30:49.648 --> 00:30:52.679
+Uh, currently.
+
+296
+00:30:52.679 --> 00:30:57.959
+It would fall to me to just move the code out. Um.
+
+297
+00:30:57.959 --> 00:31:01.499
+And the fall to Norman to create the repositories.
+
+298
+00:31:01.499 --> 00:31:05.638
+Because I don't have that privileged and, uh.
+
+299
+00:31:05.638 --> 00:31:10.469
+When, or if someone wants to.
+
+300
+00:31:10.469 --> 00:31:19.949
+Take 1 of these up and start maintaining them that I, something, I think should be discussed with Norman and trust and.
+
+301
+00:31:19.949 --> 00:31:23.818
+And we have good discussions for that purpose. I think that would work. Fine.
+
+302
+00:31:23.818 --> 00:31:28.169
+And then we'll figure out how to get the permissions working.
+
+303
+00:31:28.169 --> 00:31:36.719
+And then we'll report the modules over to the new buffer API before we move the code. And the answer is no.
+
+304
+00:31:36.719 --> 00:31:40.078
+This is like a parallel thing. So.
+
+305
+00:31:40.078 --> 00:31:44.818
+Some of the reporting work will have to proceed.
+
+306
+00:31:44.818 --> 00:31:48.898
+In the module contract modules after that, they moved out.
+
+307
+00:31:48.898 --> 00:31:52.378
+Finally.
+
+308
+00:31:52.378 --> 00:32:02.189
+For future phases, we've been thinking to move the SSL handler into a maybe TLS module, but still keeping it in.
+
+309
+00:32:02.189 --> 00:32:05.999
+Maybe it's less, maybe repository and to.
+
+310
+00:32:05.999 --> 00:32:13.588
+Move the boring SSL, implementation of tissue, native native into maybe TLS native.
+
+311
+00:32:13.588 --> 00:32:18.028
+Uh, maybe to move to compression algorithms to.
+
+312
+00:32:18.028 --> 00:32:26.338
+Their own modules to make the IO transport into its own module. So if you only use EPO, you don't need to have both.
+
+313
+00:32:26.338 --> 00:32:30.989
+And then, of course, to avoid Java module packaging contracts.
+
+314
+00:32:32.249 --> 00:32:35.969
+So, that's the gist of that.
+
+315
+00:32:37.318 --> 00:32:43.199
+Any questions on this, or any discussion on this.
+
+316
+00:32:45.058 --> 00:32:46.044
+I have a question.
+
+317
+00:32:46.463 --> 00:33:00.624
+Yeah, but not for you mostly for, I think probably because, um, I know that finagle is also having some sort of a con trip module or country repository or something like this.
+
+318
+00:33:00.923 --> 00:33:04.104
+And it would be interested to hear how that worked out for finagle.
+
+319
+00:33:06.084 --> 00:33:20.243
+At least it's head at some point. Yeah, it's a, it's a separate work on GitHub. That's how we use it and it's a, it has a bunch of, uh, community driven projects in it. So it's not like finagle. Depends on them.
+
+320
+00:33:20.243 --> 00:33:21.743
+It's the other way around.
+
+321
+00:33:22.048 --> 00:33:30.808
+Yeah, and yeah, but it's sort of like self contained it leaves on its own and there's a.
+
+322
+00:33:30.808 --> 00:33:34.469
+There's a few projects that are quite popular, but, uh.
+
+323
+00:33:34.469 --> 00:33:45.269
+We don't, I don't think we extract, like, separate models into it. We have most of this stuff is in finagle itself. We don't do. I don't think we do Tripp as in, like, traditional way.
+
+324
+00:33:47.548 --> 00:33:55.409
+Okay, so it's a little bit different than what Chris just described, right? Yeah, I think so. It's more like.
+
+325
+00:33:55.409 --> 00:34:06.148
+It's more like a big kind of thing and, you know, like in some like, multiple implementations live in there, and it's not scoped on a specific protocol, for example, right?
+
+326
+00:34:06.148 --> 00:34:09.418
+Yeah, yeah, it's a, it's like.
+
+327
+00:34:09.418 --> 00:34:21.384
+Uh, there are a few projects for, I don't know what, what is the example lake podcast clients for example, that's started as an open source project. It's not driven by anyone at Twitter right?
+
+328
+00:34:21.414 --> 00:34:24.744
+And it lives there in that work and, uh.
+
+329
+00:34:25.018 --> 00:34:39.233
+The reason we do that is sort of increased visibility discoverability of those projects, but also give a signal that it's not something that we maintain. So if it's behind the main line, finagle version, it's not powerful.
+
+330
+00:34:39.534 --> 00:34:52.673
+It's the fault of the contributors and the maintainers of the project, but yeah, that's about it just to make sure there's a single place for people to go to, to find projects related to your main open source project.
+
+331
+00:34:55.199 --> 00:35:05.699
+I see. Okay, thanks. That's helpful. I, I, I'm curious about, uh, about that. Like, how do you, uh, how do we integrate.
+
+332
+00:35:05.699 --> 00:35:12.599
+Such projects into that, uh, that whole, because there is, uh, a bench of, uh.
+
+333
+00:35:12.599 --> 00:35:23.548
+No concerns, but, uh, around permissions like, how do you on both maintain channels and ensure that there is a level of, um.
+
+334
+00:35:23.548 --> 00:35:34.199
+Yeah, a minimum level of due diligence and I don't know, like, reviews and all that stuff, uh, for for.
+
+335
+00:35:34.199 --> 00:35:40.378
+Community driven projects are they held at the same level of standard as, as the main.
+
+336
+00:35:40.378 --> 00:35:50.369
+Check in the case of for for example. Oh, no, they're not. So, what usually happens is that somebody starts a project um.
+
+337
+00:35:50.369 --> 00:35:53.518
+Uh, that's related to finagle somehow.
+
+338
+00:35:53.518 --> 00:36:07.373
+Um, we learn about this project we see if it gets struction if it has, you know, activity contributors and if it's useful, maybe it'll talk to them, ask them to move it to the main work to again increase visibility.
+
+339
+00:36:07.614 --> 00:36:11.664
+Maybe we will shoot email to finagle. Is telling about this project.
+
+340
+00:36:12.353 --> 00:36:21.353
+Kind of give it a stage to be more recognizable with something and people usually go ahead with that. People like this stuff.
+
+341
+00:36:22.193 --> 00:36:31.403
+And but they continue working on this project just like they normally do, except for maybe we'll add 1 more folks people who own finagle to.
+
+342
+00:36:31.708 --> 00:36:35.068
+Like, Co, owners of the project, sort of like a back up if they.
+
+343
+00:36:35.483 --> 00:36:48.264
+If they just drop the ball on it, we will have access to it and we can do something with it at least try to maybe find new maintainers or anything. But, yeah, there's no way to hold any standards for that. It's all community driven.
+
+344
+00:36:48.833 --> 00:36:51.833
+We do very basic minimal stuff to make sure that.
+
+345
+00:36:52.079 --> 00:36:58.949
+I don't know, at least what I was doing, I was making sure that the project has releases set up.
+
+346
+00:36:58.949 --> 00:37:11.998
+It's published in 2, maybe in Central, and that's pretty much it that's the only requirement and maybe has a read me or anything like that. But beyond that, it's really hard to require anything else. I think.
+
+347
+00:37:13.048 --> 00:37:16.259
+Yeah, and I guess maybe it's.
+
+348
+00:37:16.259 --> 00:37:22.889
+Maybe it's a little bit easier now to require something, because you can make use of workflows and somehow.
+
+349
+00:37:22.889 --> 00:37:27.239
+Maybe at least, you know, like, ensure that, I don't know, like.
+
+350
+00:37:27.239 --> 00:37:34.858
+I'm sure about check style, but the license is in the inside there and all that kind of stuff but I completely agree. I think it's.
+
+351
+00:37:34.858 --> 00:37:45.809
+It would be hard to ensure that, for example, if someone picks, I don't know, a patch software license too, that they don't pull in.
+
+352
+00:37:45.809 --> 00:37:49.048
+Right if it's community driven, I mean.
+
+353
+00:37:49.048 --> 00:37:52.829
+I think it's pretty hard to kind of.
+
+354
+00:37:52.829 --> 00:37:59.009
+Also guarantee that we have oversight here, because then we could also just keep it in Eddie itself.
+
+355
+00:37:59.009 --> 00:38:03.179
+I would say so.
+
+356
+00:38:03.179 --> 00:38:10.679
+Yeah, I don't know. Yeah, and then the fact that, uh, like.
+
+357
+00:38:10.679 --> 00:38:19.889
+For finagle live in the, the separate org, I think is a, is a good signal that, um, a good way to signal that, uh, it's not.
+
+358
+00:38:19.889 --> 00:38:23.519
+Really maintained by the the call maintainers.
+
+359
+00:38:23.519 --> 00:38:37.769
+Um, yeah, maybe that's also maybe that would be also something to, to consider phonetic. Maybe we should have, you know, like, uh, we shouldn't hosted in the navy or but call it, like many countries or whatever.
+
+360
+00:38:37.769 --> 00:38:41.010
+So, it's more clear what the ownership is.
+
+361
+00:38:41.010 --> 00:38:50.639
+Maybe that's that's something I will write it down. Um, to to think a little bit about this, because I also like the idea that it makes ownership a little bit more clear.
+
+362
+00:38:50.639 --> 00:38:57.840
+And expectations and all that kind of stuff. I mean, why we are doing this in the 1st place, is that.
+
+363
+00:38:57.840 --> 00:39:06.360
+Um, I mean, the problem really is with with of today at least, that's my opinion that we are. Maybe we're a little bit too.
+
+364
+00:39:06.360 --> 00:39:10.380
+I would say too quick to pull the specific stuff in.
+
+365
+00:39:10.380 --> 00:39:15.119
+In the past, which at the end, um, you know, like.
+
+366
+00:39:15.119 --> 00:39:21.480
+It was kind of nice because we got a lot of contributions, but at the end, it also means we need to support all of that.
+
+367
+00:39:21.864 --> 00:39:35.125
+And we are just liking the expertise for specific protocols, I would say, right I mean, there's only so much RCS that you can read and know. So it's pretty hard sometimes for us to make the right call.
+
+368
+00:39:35.125 --> 00:39:39.355
+If that's the right change without rereading the whole RC or something like this. Yeah.
+
+369
+00:39:39.750 --> 00:39:47.789
+So, it would be would be nice also it would be nice for them for the user, I think, to kind of say, like, okay, so this is.
+
+370
+00:39:47.994 --> 00:39:59.065
+And whatever is in Eddie core has some kind of, I would say, maybe that sounds a bit strong, but has some guarantee of, of, of, of, of quality you know, that you can assume.
+
+371
+00:39:59.065 --> 00:40:05.244
+So, I assume that what whatever lives in has the same quality in terms of maintenance mode.
+
+372
+00:40:05.550 --> 00:40:09.000
+And and knowledge basically.
+
+373
+00:40:09.000 --> 00:40:18.360
+And I think that's not really something we can currently give. Right because, like I said, if something, for example, breaks and I don't know, and stomp.
+
+374
+00:40:18.360 --> 00:40:21.480
+I have no idea about I mean.
+
+375
+00:40:21.480 --> 00:40:26.250
+At least without reading the RC. So I think it's.
+
+376
+00:40:26.250 --> 00:40:35.730
+It's not really the same as if something bad happens in, for example, because they have much better knowledge there or an SSL.
+
+377
+00:40:35.730 --> 00:40:40.349
+And I think the same is true for, for most of the computers.
+
+378
+00:40:40.349 --> 00:40:47.969
+But that's also 1 of the reasons why I think should remain, for example, in the core.
+
+379
+00:40:47.969 --> 00:40:54.329
+Yeah, that makes sense. It's such such a core protocol to use.
+
+380
+00:40:54.329 --> 00:40:57.659
+Same for SSL Yeah and DNS.
+
+381
+00:40:57.659 --> 00:41:05.130
+You know, all this kind of stuff right? I mean, there, I think there's a bunch of things that just ended up in Eddie over.
+
+382
+00:41:05.130 --> 00:41:11.519
+Over the last few years, right? That at the end, maybe it was not the right call to pull in.
+
+383
+00:41:11.519 --> 00:41:15.780
+But, you know, it is, it is what it is, right?
+
+384
+00:41:15.780 --> 00:41:21.659
+But I think now is, uh, now it's a chance to basically decouple stuff a little bit again.
+
+385
+00:41:21.659 --> 00:41:31.829
+And clean things up. Yeah. So, 1 thing you might want to consider if you hand the keys to these projects to, uh.
+
+386
+00:41:31.829 --> 00:41:38.579
+Like, new maintainers and I, I'm sure that you've, you've thought about it, but, uh, um.
+
+387
+00:41:39.025 --> 00:41:40.344
+Is the,
+
+388
+00:41:40.494 --> 00:41:40.974
+um,
+
+389
+00:41:41.005 --> 00:41:43.914
+isolation of all these projects in terms of,
+
+390
+00:41:44.545 --> 00:41:44.844
+you know,
+
+391
+00:41:44.844 --> 00:41:45.684
+access to,
+
+392
+00:41:45.684 --> 00:41:46.375
+um,
+
+393
+00:41:46.704 --> 00:41:47.784
+signing keys,
+
+394
+00:41:47.784 --> 00:41:48.204
+um,
+
+395
+00:41:48.744 --> 00:41:53.605
+to Maven central all of that permissions in at the repository level also,
+
+396
+00:41:53.605 --> 00:41:54.114
+I guess,
+
+397
+00:41:54.445 --> 00:41:55.405
+um.
+
+398
+00:41:55.710 --> 00:41:59.579
+Yes, yeah, it's it needs to be different. It's yeah.
+
+399
+00:41:59.579 --> 00:42:04.949
+Yeah, this should not be able to deploy, like, core stuff, for example.
+
+400
+00:42:04.949 --> 00:42:09.690
+Right. And, um, and I think also, um.
+
+401
+00:42:09.690 --> 00:42:22.650
+I think it was flooding who said it um, I think it's also what should be true. I mean, these can be this can depend on, but can't depend on these. Right? I mean, it can only be in 11 direction basically.
+
+402
+00:42:25.769 --> 00:42:31.860
+Yeah.
+
+403
+00:42:33.179 --> 00:42:38.519
+What what are the sorts of others of merging the, um.
+
+404
+00:42:38.519 --> 00:42:50.340
+Pc native stuff into Neti itself, because at least in in our experience at, at, um, at Apple and and I think that's also probably true. And for for others.
+
+405
+00:42:50.340 --> 00:42:57.719
+It's, it's sometimes it's sometimes hard to to basically.
+
+406
+00:42:57.719 --> 00:43:01.829
+Coordinate like versions right?
+
+407
+00:43:01.829 --> 00:43:09.179
+And, um, sometimes people miss to upgrade, he's native and then you get, like, wired issues or the other way around.
+
+408
+00:43:09.179 --> 00:43:21.869
+Um, so I think it would make things a lot easier in terms of coordinating upgrades if all the native code for assets. I would just live in Eddie, especially if we make, uh, TLS sub module.
+
+409
+00:43:21.869 --> 00:43:26.400
+Basically, in the core of natty, anyone has any thoughts on that. I mean.
+
+410
+00:43:26.400 --> 00:43:29.760
+I don't think that anyone should use TC, native directly.
+
+411
+00:43:34.679 --> 00:43:38.639
+yeah i just want him to chat but um 
+
+412
+00:43:38.639 --> 00:43:43.019
+That's something that's been us a couple of times is, is a.
+
+413
+00:43:43.019 --> 00:43:49.949
+Doing an Eddie version upgrade and then, you know, the TC native, we forgot to upgrade for whatever reason and.
+
+414
+00:43:49.949 --> 00:43:57.719
+Start having issues, so, yeah, that would be super convenient for us. Just doing regular Neti upgrades.
+
+415
+00:43:57.719 --> 00:44:10.980
+I think just, um, 1 thing, um, because she may might not be aware of we also have a bomb file now, which also includes the TC, native artifacts. So if you depend on the bomb, it should just work.
+
+416
+00:44:10.980 --> 00:44:15.539
+Um, we added this, like, 2 releases back or 3 releases back. I don't remember.
+
+417
+00:44:15.539 --> 00:44:20.940
+So, that might help a little bit. That's that's a good tip. Yeah, I wasn't aware of that.
+
+418
+00:44:20.940 --> 00:44:26.369
+We had several times problems with supporting cases so.
+
+419
+00:44:26.369 --> 00:44:38.369
+We are upgrading Canadians, um, something starts failing and then, uh, we upgrade.
+
+420
+00:44:39.389 --> 00:44:53.155
+Yeah, also another so also, another thing we are considering here is, um, and that's also something I would like to hear more people about and we should probably also bring it up in the issue.
+
+421
+00:44:53.155 --> 00:44:58.255
+Tracker is, um, I was wondering if we could only support boring SSL.
+
+422
+00:44:58.559 --> 00:45:03.449
+And not open necessarily and repress the cell because the reality is, it's.
+
+423
+00:45:03.449 --> 00:45:06.480
+So the core basis diverse.
+
+424
+00:45:06.480 --> 00:45:20.670
+A lot over the years, and a lot of features are only, I would say accessible in boring SSL and things will become even more messy. Once openness. 3 dot is out.
+
+425
+00:45:20.670 --> 00:45:26.460
+So, um, I was wondering if there's any reason why we.
+
+426
+00:45:26.460 --> 00:45:29.550
+Can't just only support.
+
+427
+00:45:29.550 --> 00:45:41.489
+Completion so I, and Justin had a conversation on this, we both are expecting openness will to deploy the FIPS version of.
+
+428
+00:45:41.489 --> 00:45:47.519
+And we, uh, kind of depended on them. So if we can support.
+
+429
+00:45:48.929 --> 00:45:54.030
+I think if I'm not wrong, at least boring SSL.
+
+430
+00:45:54.030 --> 00:45:57.840
+I'm not sure if they completely support tips yet, but at least.
+
+431
+00:45:59.880 --> 00:46:04.170
+It's on their, um, road map, or it wasn't the road map.
+
+432
+00:46:04.170 --> 00:46:11.760
+I'm not sure if it's completely implemented, but I had a conversation with, uh, 1 of the Google.
+
+433
+00:46:11.760 --> 00:46:19.289
+And he told me that there is built, but it's like to compile it manually.
+
+434
+00:46:19.289 --> 00:46:23.760
+Nothing which is very painful.
+
+435
+00:46:25.980 --> 00:46:29.429
+Okay.
+
+436
+00:46:29.429 --> 00:46:32.880
+And we need to think about it.
+
+437
+00:46:32.880 --> 00:46:45.210
+But we can do that or not because, I mean, the problem release at the moment is a native, it's a lot of code we need to maintain just to make it work for all different openness itself. Flavors. I would say.
+
+438
+00:46:45.210 --> 00:46:51.449
+And, um, yeah, some of the features are only supported by 1.
+
+439
+00:46:51.449 --> 00:47:02.219
+For example, so it's pretty pretty messy and also for, like, stuff like 1.3 or, uh, when we're talking about quick and all that kind of stuff.
+
+440
+00:47:02.219 --> 00:47:05.369
+Um, it becomes even more.
+
+441
+00:47:05.369 --> 00:47:08.820
+Basically, P3 is going to get messy to support both.
+
+442
+00:47:08.820 --> 00:47:16.230
+Yeah, because, I mean, I'm not sure if you saw that, but they decide to handle their own API.
+
+443
+00:47:16.230 --> 00:47:23.309
+And not use the 1 from boring SSL, which I don't understand why, but it is what it is. So it will become super messy.
+
+444
+00:47:32.190 --> 00:47:35.369
+Anyone else any more thoughts on.
+
+445
+00:47:35.369 --> 00:47:49.679
+Splitting merging and so on. I guess that's no.
+
+446
+00:47:49.679 --> 00:47:53.400
+So, we can probably move on. Yeah.
+
+447
+00:47:53.400 --> 00:48:01.170
+The last agenda item was from about cashing I don't have any slides for that.
+
+448
+00:48:01.170 --> 00:48:05.130
+So, um, uh, uh.
+
+449
+00:48:06.300 --> 00:48:11.880
+I don't know if you should have any slides, but otherwise we can just.
+
+450
+00:48:11.880 --> 00:48:16.199
+Discuss not yet, but I was waiting for Steven to join this.
+
+451
+00:48:16.199 --> 00:48:19.739
+Variety of McKesson.
+
+452
+00:48:28.199 --> 00:48:34.590
+So, I think my question would be what exactly you wanted to know about that just if it's on the roadmap or.
+
+453
+00:48:37.079 --> 00:48:40.170
+What was the specific question about, like, cash in here?
+
+454
+00:48:43.139 --> 00:48:49.530
+So that's like, we have the DNS cashing feature if we have a some sort of a.
+
+455
+00:48:49.530 --> 00:48:53.280
+Handler, which can handle the cashing of a, the client.
+
+456
+00:48:53.280 --> 00:48:57.059
+It will be much easier by the application of that.
+
+457
+00:48:57.059 --> 00:49:01.409
+Because, okay has it okay.
+
+458
+00:49:05.400 --> 00:49:16.559
+I see, I guess, I mean, from that's just my feeling, but, I mean, sure it could be a handler, but on the other hand, I mean, okay, GP is much more high level than.
+
+459
+00:49:16.559 --> 00:49:28.110
+um so i'm not sure if that would be something that lives in mary or if it's more like that lives in the framework that use like for example webex finagle 
+
+460
+00:49:28.110 --> 00:49:31.590
+I don't know you name them or microphone out, or? I don't know.
+
+461
+00:49:31.590 --> 00:49:36.210
+Maybe that's a question more also for the maintainers of these frameworks.
+
+462
+00:49:36.210 --> 00:49:46.739
+What what they feel? What.
+
+463
+00:49:46.739 --> 00:49:49.980
+is it like plane cashing or server 
+
+464
+00:49:51.269 --> 00:49:58.949
+Hello.
+
+465
+00:50:00.570 --> 00:50:05.219
+I think he was interested in both both of them.
+
+466
+00:50:05.219 --> 00:50:10.920
+Okay, in the text we do implement now some.
+
+467
+00:50:10.920 --> 00:50:17.940
+Indeed us as in what common says I don't feel that's a that maybe I should take care of this.
+
+468
+00:50:17.940 --> 00:50:22.050
+Doesn't seem to be in the scope of, of.
+
+469
+00:50:23.219 --> 00:50:26.460
+I'm also not sure.
+
+470
+00:50:26.460 --> 00:50:30.269
+Oh, exactly. That would be implemented as a because.
+
+471
+00:50:30.269 --> 00:50:36.420
+Cashing doesn't have to be at, like, a single connection level necessarily so it would be a bit.
+
+472
+00:50:36.420 --> 00:50:43.230
+Yes, implement then you have security questions that might that can arise and so on.
+
+473
+00:50:44.005 --> 00:50:59.005
+On the client yeah, I guess also, like, I think like, all these kind of things like retries catching, all kinds of things also probably depends a little bit on.
+
+474
+00:50:59.219 --> 00:51:07.139
+What exactly you trying to cash or retry I mean, how big are the, the responses or something like this right? Because you might need to.
+
+475
+00:51:07.139 --> 00:51:11.550
+Hold it in memory for quite some time. Um.
+
+476
+00:51:11.550 --> 00:51:16.619
+I think there was also like the blog post from the.
+
+477
+00:51:16.619 --> 00:51:21.059
+The other day for, like, well, beginning of the week where they explained how they.
+
+478
+00:51:21.059 --> 00:51:31.260
+Do like retries on the client side now um, and still ensure that the memory overhead is not too big, because they only did, like, gets before with all the body.
+
+479
+00:51:31.260 --> 00:51:37.860
+Because otherwise they felt that it was too much of overhead in terms of memory usage. If they also.
+
+480
+00:51:37.860 --> 00:51:41.340
+Basically, retry with a body in between.
+
+481
+00:51:41.340 --> 00:51:46.199
+So, I'm also not sure if it's really something that belongs into.
+
+482
+00:51:46.199 --> 00:51:50.190
+Itself, I think for DNS, it's a little bit different in the sense that.
+
+483
+00:51:50.190 --> 00:51:55.619
+I mean, you need DNS resolution if you connect to.
+
+484
+00:51:55.619 --> 00:51:58.769
+You know, like remote pier and.
+
+485
+00:51:58.769 --> 00:52:06.030
+I mean, the set state is that with Java, you only get blocking in s resolution so we need to do something about that right?
+
+486
+00:52:06.030 --> 00:52:09.059
+So, I think it's a little bit different.
+
+487
+00:52:09.059 --> 00:52:12.599
+An issue at least that's my feeling.
+
+488
+00:52:22.110 --> 00:52:29.789
+Uh, I have a question, uh, like, uh, I had a, do we ever have to plan it?
+
+489
+00:52:29.789 --> 00:52:33.690
+So, for like, mainstream into the core.
+
+490
+00:52:33.690 --> 00:52:38.460
+Uh, so I, I remember that.
+
+491
+00:52:38.460 --> 00:52:43.559
+Maybe, I'm not sure I mean, that's another 1 of the things that.
+
+492
+00:52:43.559 --> 00:52:49.710
+I was wondering if we want to have that in any core, or maybe it should be just in contract or whatever.
+
+493
+00:52:49.710 --> 00:52:53.429
+But just like a, another project that you can depend on.
+
+494
+00:52:53.429 --> 00:52:59.070
+I'm I'm not sure if.
+
+495
+00:52:59.070 --> 00:53:03.179
+Dns over or or whatever.
+
+496
+00:53:03.179 --> 00:53:06.780
+Yes.
+
+497
+00:53:06.780 --> 00:53:13.590
+Or should should be in core I don't know.
+
+498
+00:53:40.289 --> 00:53:49.110
+Any more questions not I think we are probably at the end. I think the only thing would be to.
+
+499
+00:53:49.110 --> 00:53:54.059
+If anyone has any ideas about, like, next topics or the next 1.
+
+500
+00:53:57.809 --> 00:54:07.019
+Yeah, I was the last 1, so I was experimenting with the resolver and I was thinking to implement a DNS precursor.
+
+501
+00:54:07.019 --> 00:54:12.329
+Mm, hmm right.
+
+502
+00:54:12.329 --> 00:54:20.190
+Depending on the upstream data servers, we can have the, because of writing the. So, it's much faster to quality.
+
+503
+00:54:22.829 --> 00:54:29.190
+I'm not sure I understand exactly what you're proposing because I think we already support that.
+
+504
+00:54:30.570 --> 00:54:34.079
+No.
+
+505
+00:54:37.559 --> 00:54:40.710
+Maybe just open up an issue and explain exactly what.
+
+506
+00:54:40.710 --> 00:54:45.630
+What is missing? Oh, yeah. Don't get it. I think.
+
+507
+00:55:02.489 --> 00:55:05.730
+Oh, okay. Then yeah.
+
+508
+00:55:05.730 --> 00:55:10.530
+If there's nothing else, then I think it was a good time to stop.
+
+509
+00:55:10.530 --> 00:55:14.280
+And, uh, then we have.
+
+510
+00:55:14.280 --> 00:55:18.329
+Have discussion, or what we want to talk about.
+
+511
+00:55:18.329 --> 00:55:23.159
+Next time, and when that might be so thanks everyone.
+
+512
+00:55:23.159 --> 00:55:28.380
+Have a nice remainder of the day. However much. You have left.
+
+513
+00:55:28.380 --> 00:55:31.739
+Thanks a lot.
+
+514
+00:55:31.739 --> 00:55:37.739
+Have a good 1.
+
