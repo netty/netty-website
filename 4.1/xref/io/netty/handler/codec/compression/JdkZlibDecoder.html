@@ -396,7 +396,7 @@
 <a class="jxr_linenumber" name="L388" href="#L388">388</a>                 <em class="jxr_comment">// fall through</em>
 <a class="jxr_linenumber" name="L389" href="#L389">389</a>             <strong class="jxr_keyword">case</strong> PROCESS_FHCRC:
 <a class="jxr_linenumber" name="L390" href="#L390">390</a>                 <strong class="jxr_keyword">if</strong> ((flags &amp; FHCRC) != 0) {
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>                     <strong class="jxr_keyword">if</strong> (!verifyCrc(in)) {
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>                     <strong class="jxr_keyword">if</strong> (!verifyCrc16(in)) {
 <a class="jxr_linenumber" name="L392" href="#L392">392</a>                         <strong class="jxr_keyword">return</strong> false;
 <a class="jxr_linenumber" name="L393" href="#L393">393</a>                     }
 <a class="jxr_linenumber" name="L394" href="#L394">394</a>                 }
@@ -486,18 +486,37 @@
 <a class="jxr_linenumber" name="L478" href="#L478">478</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="L479" href="#L479">479</a>     }
 <a class="jxr_linenumber" name="L480" href="#L480">480</a> 
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>     <em class="jxr_comment">/*</em>
-<a class="jxr_linenumber" name="L482" href="#L482">482</a> <em class="jxr_comment">     * Returns true if the cmf_flg parameter (think: first two bytes of a zlib stream)</em>
-<a class="jxr_linenumber" name="L483" href="#L483">483</a> <em class="jxr_comment">     * indicates that this is a zlib stream.</em>
-<a class="jxr_linenumber" name="L484" href="#L484">484</a> <em class="jxr_comment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="L485" href="#L485">485</a> <em class="jxr_comment">     * You can lookup the details in the ZLIB RFC:</em>
-<a class="jxr_linenumber" name="L486" href="#L486">486</a> <em class="jxr_comment">     * &lt;a href="<a href="https://tools.ietf.org/html/rfc1950" target="alexandria_uri">https://tools.ietf.org/html/rfc1950</a>#section-2.2"&gt;RFC 1950&lt;/a&gt;.</em>
-<a class="jxr_linenumber" name="L487" href="#L487">487</a> <em class="jxr_comment">     */</em>
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> looksLikeZlib(<strong class="jxr_keyword">short</strong> cmf_flg) {
-<a class="jxr_linenumber" name="L489" href="#L489">489</a>         <strong class="jxr_keyword">return</strong> (cmf_flg &amp; 0x7800) == 0x7800 &amp;&amp;
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>                 cmf_flg % 31 == 0;
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>     }
-<a class="jxr_linenumber" name="L492" href="#L492">492</a> }
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> verifyCrc16(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in) {
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>         <strong class="jxr_keyword">if</strong> (in.readableBytes() &lt; 2) {
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>         }
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>         <strong class="jxr_keyword">long</strong> readCrc32 = crc.getValue();
+<a class="jxr_linenumber" name="L486" href="#L486">486</a>         <strong class="jxr_keyword">long</strong> crc16Value = 0;
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>         <strong class="jxr_keyword">long</strong> readCrc16 = 0; <em class="jxr_comment">// the two least significant bytes from the CRC32</em>
+<a class="jxr_linenumber" name="L488" href="#L488">488</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; 2; ++i) {
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>             crc16Value |= (<strong class="jxr_keyword">long</strong>) in.readUnsignedByte() &lt;&lt; (i * 8);
+<a class="jxr_linenumber" name="L490" href="#L490">490</a>             readCrc16 |= ((readCrc32 &gt;&gt; (i * 8)) &amp; 0xff) &lt;&lt; (i * 8);
+<a class="jxr_linenumber" name="L491" href="#L491">491</a>         }
+<a class="jxr_linenumber" name="L492" href="#L492">492</a> 
+<a class="jxr_linenumber" name="L493" href="#L493">493</a>         <strong class="jxr_keyword">if</strong> (crc16Value != readCrc16) {
+<a class="jxr_linenumber" name="L494" href="#L494">494</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="DecompressionException" href="../../../../../io/netty/handler/codec/compression/DecompressionException.html#DecompressionException">DecompressionException</a>(
+<a class="jxr_linenumber" name="L495" href="#L495">495</a>                     <span class="jxr_string">"CRC16 value mismatch. Expected: "</span> + crc16Value + <span class="jxr_string">", Got: "</span> + readCrc16);
+<a class="jxr_linenumber" name="L496" href="#L496">496</a>         }
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L498" href="#L498">498</a>     }
+<a class="jxr_linenumber" name="L499" href="#L499">499</a> 
+<a class="jxr_linenumber" name="L500" href="#L500">500</a>     <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L501" href="#L501">501</a> <em class="jxr_comment">     * Returns true if the cmf_flg parameter (think: first two bytes of a zlib stream)</em>
+<a class="jxr_linenumber" name="L502" href="#L502">502</a> <em class="jxr_comment">     * indicates that this is a zlib stream.</em>
+<a class="jxr_linenumber" name="L503" href="#L503">503</a> <em class="jxr_comment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L504" href="#L504">504</a> <em class="jxr_comment">     * You can lookup the details in the ZLIB RFC:</em>
+<a class="jxr_linenumber" name="L505" href="#L505">505</a> <em class="jxr_comment">     * &lt;a href="<a href="https://tools.ietf.org/html/rfc1950" target="alexandria_uri">https://tools.ietf.org/html/rfc1950</a>#section-2.2"&gt;RFC 1950&lt;/a&gt;.</em>
+<a class="jxr_linenumber" name="L506" href="#L506">506</a> <em class="jxr_comment">     */</em>
+<a class="jxr_linenumber" name="L507" href="#L507">507</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> looksLikeZlib(<strong class="jxr_keyword">short</strong> cmf_flg) {
+<a class="jxr_linenumber" name="L508" href="#L508">508</a>         <strong class="jxr_keyword">return</strong> (cmf_flg &amp; 0x7800) == 0x7800 &amp;&amp;
+<a class="jxr_linenumber" name="L509" href="#L509">509</a>                 cmf_flg % 31 == 0;
+<a class="jxr_linenumber" name="L510" href="#L510">510</a>     }
+<a class="jxr_linenumber" name="L511" href="#L511">511</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2021 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
