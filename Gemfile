@@ -9,6 +9,6 @@ gem 'coffee-rails', '~> 4.1.1'
 
 gem 'eventmachine', '~> 1.2.7'
 gem 'disqus', '~> 1.0.4'
-gem 'nokogiri', '~> 1.11.4'
+gem 'nokogiri', '~> 1.12.5'
 gem 'htmlentities', '~> 4.3.4'
 gem 'listen', '~> 3.1'                                    # Needed for the Rakefi
