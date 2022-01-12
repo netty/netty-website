@@ -425,60 +425,62 @@
 <a class="jxr_linenumber" name="L417" href="#L417">417</a> 
 <a class="jxr_linenumber" name="L418" href="#L418">418</a>         @SuppressWarnings({ <span class="jxr_string">"unchecked"</span>, <span class="jxr_string">"rawtypes"</span> })
 <a class="jxr_linenumber" name="L419" href="#L419">419</a>         <strong class="jxr_keyword">private</strong>  <strong class="jxr_keyword">void</strong> freeEntry(Entry entry, <strong class="jxr_keyword">boolean</strong> finalizer) {
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>             <a name="PoolChunk" href="../../../io/netty/buffer/PoolChunk.html#PoolChunk">PoolChunk</a> chunk = entry.chunk;
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <strong class="jxr_keyword">long</strong> handle = entry.handle;
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>             ByteBuffer nioBuffer = entry.nioBuffer;
-<a class="jxr_linenumber" name="L423" href="#L423">423</a> 
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">if</strong> (!finalizer) {
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <em class="jxr_comment">// recycle now so PoolChunk can be GC'ed. This will only be done if this is not freed because of</em>
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>                 <em class="jxr_comment">// a finalizer.</em>
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>                 entry.recycle();
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>             }
-<a class="jxr_linenumber" name="L429" href="#L429">429</a> 
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>             chunk.arena.freeChunk(chunk, handle, entry.normCapacity, sizeClass, nioBuffer, finalizer);
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>         }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>         <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Entry&lt;T&gt; {
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>             <strong class="jxr_keyword">final</strong> Handle&lt;Entry&lt;?&gt;&gt; recyclerHandle;
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>             PoolChunk&lt;T&gt; chunk;
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>             ByteBuffer nioBuffer;
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>             <strong class="jxr_keyword">long</strong> handle = -1;
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>             <strong class="jxr_keyword">int</strong> normCapacity;
-<a class="jxr_linenumber" name="L439" href="#L439">439</a> 
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>             Entry(Handle&lt;Entry&lt;?&gt;&gt; recyclerHandle) {
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>                 <strong class="jxr_keyword">this</strong>.recyclerHandle = recyclerHandle;
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>             }
-<a class="jxr_linenumber" name="L443" href="#L443">443</a> 
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>             <strong class="jxr_keyword">void</strong> recycle() {
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 chunk = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>                 nioBuffer = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 handle = -1;
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>                 recyclerHandle.recycle(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>             }
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>         }
-<a class="jxr_linenumber" name="L451" href="#L451">451</a> 
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>         @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Entry newEntry(PoolChunk&lt;?&gt; chunk, ByteBuffer nioBuffer, <strong class="jxr_keyword">long</strong> handle, <strong class="jxr_keyword">int</strong> normCapacity) {
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>             Entry entry = RECYCLER.get();
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>             entry.chunk = chunk;
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>             entry.nioBuffer = nioBuffer;
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>             entry.handle = handle;
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             entry.normCapacity = normCapacity;
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">return</strong> entry;
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>         }
-<a class="jxr_linenumber" name="L461" href="#L461">461</a> 
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>         @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> ObjectPool&lt;Entry&gt; RECYCLER = ObjectPool.newPool(<strong class="jxr_keyword">new</strong> ObjectCreator&lt;Entry&gt;() {
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>             @Override
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>             <strong class="jxr_keyword">public</strong> Entry newObject(Handle&lt;Entry&gt; handle) {
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> Entry(handle);
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>             }
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>         });
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>     }
-<a class="jxr_linenumber" name="L471" href="#L471">471</a> }
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>             <em class="jxr_comment">// Capture entry state before we recycle the entry object.</em>
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <a name="PoolChunk" href="../../../io/netty/buffer/PoolChunk.html#PoolChunk">PoolChunk</a> chunk = entry.chunk;
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>             <strong class="jxr_keyword">long</strong> handle = entry.handle;
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>             ByteBuffer nioBuffer = entry.nioBuffer;
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">int</strong> normCapacity = entry.normCapacity;
+<a class="jxr_linenumber" name="L425" href="#L425">425</a> 
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>             <strong class="jxr_keyword">if</strong> (!finalizer) {
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>                 <em class="jxr_comment">// recycle now so PoolChunk can be GC'ed. This will only be done if this is not freed because of</em>
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>                 <em class="jxr_comment">// a finalizer.</em>
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>                 entry.recycle();
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>             }
+<a class="jxr_linenumber" name="L431" href="#L431">431</a> 
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>             chunk.arena.freeChunk(chunk, handle, normCapacity, sizeClass, nioBuffer, finalizer);
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>         }
+<a class="jxr_linenumber" name="L434" href="#L434">434</a> 
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Entry&lt;T&gt; {
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>             <strong class="jxr_keyword">final</strong> Handle&lt;Entry&lt;?&gt;&gt; recyclerHandle;
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>             PoolChunk&lt;T&gt; chunk;
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>             ByteBuffer nioBuffer;
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>             <strong class="jxr_keyword">long</strong> handle = -1;
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>             <strong class="jxr_keyword">int</strong> normCapacity;
+<a class="jxr_linenumber" name="L441" href="#L441">441</a> 
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>             Entry(Handle&lt;Entry&lt;?&gt;&gt; recyclerHandle) {
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>                 <strong class="jxr_keyword">this</strong>.recyclerHandle = recyclerHandle;
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>             }
+<a class="jxr_linenumber" name="L445" href="#L445">445</a> 
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>             <strong class="jxr_keyword">void</strong> recycle() {
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 chunk = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>                 nioBuffer = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>                 handle = -1;
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>                 recyclerHandle.recycle(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>             }
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>         }
+<a class="jxr_linenumber" name="L453" href="#L453">453</a> 
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>         @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Entry newEntry(PoolChunk&lt;?&gt; chunk, ByteBuffer nioBuffer, <strong class="jxr_keyword">long</strong> handle, <strong class="jxr_keyword">int</strong> normCapacity) {
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             Entry entry = RECYCLER.get();
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>             entry.chunk = chunk;
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>             entry.nioBuffer = nioBuffer;
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>             entry.handle = handle;
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>             entry.normCapacity = normCapacity;
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>             <strong class="jxr_keyword">return</strong> entry;
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>         }
+<a class="jxr_linenumber" name="L463" href="#L463">463</a> 
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>         @SuppressWarnings(<span class="jxr_string">"rawtypes"</span>)
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> ObjectPool&lt;Entry&gt; RECYCLER = ObjectPool.newPool(<strong class="jxr_keyword">new</strong> ObjectCreator&lt;Entry&gt;() {
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>             @Override
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>             <strong class="jxr_keyword">public</strong> Entry newObject(Handle&lt;Entry&gt; handle) {
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> Entry(handle);
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>             }
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>         });
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>     }
+<a class="jxr_linenumber" name="L473" href="#L473">473</a> }
 </pre>
 <hr/>
-<div id="footer">Copyright &#169; 2008&#x2013;2021 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+<div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
 </body>
 </html>
