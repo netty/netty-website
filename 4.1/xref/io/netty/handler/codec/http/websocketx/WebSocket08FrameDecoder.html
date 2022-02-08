@@ -471,33 +471,26 @@
 <a class="jxr_linenumber" name="L463" href="#L463">463</a>         <strong class="jxr_keyword">if</strong> (buffer == <strong class="jxr_keyword">null</strong> || !buffer.isReadable()) {
 <a class="jxr_linenumber" name="L464" href="#L464">464</a>             <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L465" href="#L465">465</a>         }
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() == 1) {
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &lt; 2) {
 <a class="jxr_linenumber" name="L467" href="#L467">467</a>             protocolViolation(ctx, buffer, WebSocketCloseStatus.INVALID_PAYLOAD_DATA, <span class="jxr_string">"Invalid close frame body"</span>);
 <a class="jxr_linenumber" name="L468" href="#L468">468</a>         }
 <a class="jxr_linenumber" name="L469" href="#L469">469</a> 
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>         <em class="jxr_comment">// Save reader index</em>
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>         <strong class="jxr_keyword">int</strong> idx = buffer.readerIndex();
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>         buffer.readerIndex(0);
-<a class="jxr_linenumber" name="L473" href="#L473">473</a> 
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>         <em class="jxr_comment">// Must have 2 byte integer within the valid range</em>
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>         <strong class="jxr_keyword">int</strong> statusCode = buffer.readShort();
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>         <strong class="jxr_keyword">if</strong> (!WebSocketCloseStatus.isValidStatusCode(statusCode)) {
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>             protocolViolation(ctx, buffer, <span class="jxr_string">"Invalid close frame getStatus code: "</span> + statusCode);
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>         }
-<a class="jxr_linenumber" name="L479" href="#L479">479</a> 
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>         <em class="jxr_comment">// May have UTF-8 message</em>
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>         <strong class="jxr_keyword">if</strong> (buffer.isReadable()) {
-<a class="jxr_linenumber" name="L482" href="#L482">482</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>                 <strong class="jxr_keyword">new</strong> <a name="Utf8Validator" href="../../../../../../io/netty/handler/codec/http/websocketx/Utf8Validator.html#Utf8Validator">Utf8Validator</a>().check(buffer);
-<a class="jxr_linenumber" name="L484" href="#L484">484</a>             } <strong class="jxr_keyword">catch</strong> (<a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a> ex) {
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>                 protocolViolation(ctx, buffer, ex);
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>             }
-<a class="jxr_linenumber" name="L487" href="#L487">487</a>         }
-<a class="jxr_linenumber" name="L488" href="#L488">488</a> 
-<a class="jxr_linenumber" name="L489" href="#L489">489</a>         <em class="jxr_comment">// Restore reader index</em>
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>         buffer.readerIndex(idx);
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>     }
-<a class="jxr_linenumber" name="L492" href="#L492">492</a> }
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>         <em class="jxr_comment">// Must have 2 byte integer within the valid range</em>
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>         <strong class="jxr_keyword">int</strong> statusCode = buffer.getShort(buffer.readerIndex());
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>         <strong class="jxr_keyword">if</strong> (!WebSocketCloseStatus.isValidStatusCode(statusCode)) {
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>             protocolViolation(ctx, buffer, <span class="jxr_string">"Invalid close frame getStatus code: "</span> + statusCode);
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>         }
+<a class="jxr_linenumber" name="L475" href="#L475">475</a> 
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>         <em class="jxr_comment">// May have UTF-8 message</em>
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &gt; 2) {
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>                 <strong class="jxr_keyword">new</strong> <a name="Utf8Validator" href="../../../../../../io/netty/handler/codec/http/websocketx/Utf8Validator.html#Utf8Validator">Utf8Validator</a>().check(buffer, buffer.readerIndex() + 2, buffer.readableBytes() - 2);
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>             } <strong class="jxr_keyword">catch</strong> (<a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a> ex) {
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>                 protocolViolation(ctx, buffer, ex);
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>             }
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>         }
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>     }
+<a class="jxr_linenumber" name="L485" href="#L485">485</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
