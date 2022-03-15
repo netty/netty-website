@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_DE" lang="en_DE">
+<head><meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>EventExecutorGroup xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../apidocs/io/netty5/util/concurrent/EventExecutorGroup.html">View Javadoc</a></div><pre>
+<a class="jxr_linenumber" name="L1" href="#L1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L2" href="#L2">2</a>   <em class="jxr_comment"> * Copyright 2012 The Netty Project</em>
+<a class="jxr_linenumber" name="L3" href="#L3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="L5" href="#L5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="L6" href="#L6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <em class="jxr_comment"> *   <a href="https://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">https://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="L11" href="#L11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="L12" href="#L12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="L13" href="#L13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="L14" href="#L14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty5.util.concurrent;
+<a class="jxr_linenumber" name="L17" href="#L17">17</a>  
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> java.util.Iterator;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.Callable;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.Executor;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.TimeUnit;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.util.concurrent.AbstractEventExecutor.DEFAULT_SHUTDOWN_QUIET_PERIOD;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.util.concurrent.AbstractEventExecutor.DEFAULT_SHUTDOWN_TIMEOUT;
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <em class="jxr_javadoccomment"> * The {@link EventExecutorGroup} is responsible for providing the {@link EventExecutor}'s to use</em>
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <em class="jxr_javadoccomment"> * via its {@link #next()} method. Besides this, it is also responsible for handling their</em>
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <em class="jxr_javadoccomment"> * life-cycle and allows shutting them down in a global fashion.</em>
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <em class="jxr_javadoccomment"> *</em>
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">interface</strong> <a name="EventExecutorGroup" href="../../../../io/netty5/util/concurrent/EventExecutorGroup.html#EventExecutorGroup">EventExecutorGroup</a> <strong class="jxr_keyword">extends</strong> Iterable&lt;EventExecutor&gt;, Executor {
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <em class="jxr_javadoccomment">     * Returns {@code true} if and only if all {@link EventExecutor}s managed by this {@link EventExecutorGroup}</em>
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>  <em class="jxr_javadoccomment">     * are being {@linkplain #shutdownGracefully() shut down gracefully} or was {@linkplain #isShutdown() shut down}.</em>
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>  <em class="jxr_javadoccomment">     * An executor group that "is shutting down" can still accept new tasks for a little while (the grace period),</em>
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>  <em class="jxr_javadoccomment">     * but will eventually start rejecting new tasks.</em>
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>  <em class="jxr_javadoccomment">     * At that point, the executor group will be {@linkplain #isShutdown() shut down}.</em>
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>  <em class="jxr_javadoccomment">     * @return {@code true} if all executors in this group have at least started shutting down, otherwise {@code false}.</em>
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>      <strong class="jxr_keyword">boolean</strong> isShuttingDown();
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>  
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <em class="jxr_javadoccomment">     * Returns {@code true} if all {@link EventExecutor}s managed by this {@link EventExecutorGroup} have been</em>
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>  <em class="jxr_javadoccomment">     * {@linkplain #shutdownGracefully() shut down gracefully} and moved past the grace period so that they are no</em>
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>  <em class="jxr_javadoccomment">     * longer accepting any new tasks.</em>
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>  <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>  <em class="jxr_javadoccomment">     * An executor group that "is shut down" might still be executing tasks that it has queued up, but it will no</em>
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>  <em class="jxr_javadoccomment">     * longer be accepting any new tasks.</em>
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>  <em class="jxr_javadoccomment">     * Once all running and queued tasks have completed, the executor group will be</em>
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>  <em class="jxr_javadoccomment">     * {@linkplain #isTerminated() terminated}.</em>
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>  <em class="jxr_javadoccomment">     * @return {@code true} if all executors in this group have shut down and are no longer accepting any new tasks.</em>
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>      <strong class="jxr_keyword">boolean</strong> isShutdown();
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>  
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>  <em class="jxr_javadoccomment">     * Returns {@code true} if all {@link EventExecutor}s managed by this {@link EventExecutorGroup} are</em>
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>  <em class="jxr_javadoccomment">     * {@linkplain #isShutdown() shut down}, and all of their tasks have completed.</em>
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>  <em class="jxr_javadoccomment">     * @return {@code true} if all executors in this group have terminated.</em>
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>      <strong class="jxr_keyword">default</strong> <strong class="jxr_keyword">boolean</strong> isTerminated() {
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>          <strong class="jxr_keyword">return</strong> terminationFuture().isDone();
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>      }
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>  
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>  <em class="jxr_javadoccomment">     * Wait for this {@link EventExecutorGroup} to {@linkplain #isTerminated() terminate}, up to the given timeout.</em>
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>  <em class="jxr_javadoccomment">     * @param timeout The non-negative maximum amount of time to wait for the executor group to terminate.</em>
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>  <em class="jxr_javadoccomment">     * @param unit The non-null time unit of the timeout.</em>
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>  <em class="jxr_javadoccomment">     * @return {@code true} if the executor group terminated within the specific timeout.</em>
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>  <em class="jxr_javadoccomment">     * @throws InterruptedException If this thread was {@linkplain Thread#interrupt() interrupted} while waiting for</em>
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>  <em class="jxr_javadoccomment">     * executor group to terminate.</em>
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>      <strong class="jxr_keyword">default</strong> <strong class="jxr_keyword">boolean</strong> awaitTermination(<strong class="jxr_keyword">long</strong> timeout, TimeUnit unit) <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>          <strong class="jxr_keyword">return</strong> terminationFuture().await(timeout, unit);
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>      }
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>  
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>  <em class="jxr_javadoccomment">     * Shortcut method for {@link #shutdownGracefully(long, long, TimeUnit)} with sensible default values.</em>
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>  <em class="jxr_javadoccomment">     * @return the {@link #terminationFuture()}</em>
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>      <strong class="jxr_keyword">default</strong> Future&lt;Void&gt; shutdownGracefully() {
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>          <strong class="jxr_keyword">return</strong> shutdownGracefully(DEFAULT_SHUTDOWN_QUIET_PERIOD, DEFAULT_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>      }
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>  
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>  <em class="jxr_javadoccomment">     * Signals this executor that the caller wants the executor to be shut down.  Once this method is called,</em>
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>  <em class="jxr_javadoccomment">     * {@link #isShuttingDown()} starts to return {@code true}, and the executor prepares to shut itself down.</em>
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>  <em class="jxr_javadoccomment">     * This method ensures that no tasks are submitted for &lt;i&gt;'the quiet period'&lt;/i&gt; (usually a couple seconds) before</em>
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>  <em class="jxr_javadoccomment">     * it shuts itself down. If a task is submitted during the quiet period, it is guaranteed to be accepted and the</em>
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>  <em class="jxr_javadoccomment">     * quiet period will start over.</em>
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>  <em class="jxr_javadoccomment">     * @param quietPeriod the quiet period as described in the documentation</em>
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>  <em class="jxr_javadoccomment">     * @param timeout     the maximum amount of time to wait until the executor is</em>
+<a class="jxr_linenumber" name="L100" href="#L100">100</a> <em class="jxr_javadoccomment">     * {@linkplain #isShuttingDown() shutting down} regardless if a task was submitted during the quiet period.</em>
+<a class="jxr_linenumber" name="L101" href="#L101">101</a> <em class="jxr_javadoccomment">     * @param unit        the unit of {@code quietPeriod} and {@code timeout}</em>
+<a class="jxr_linenumber" name="L102" href="#L102">102</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L103" href="#L103">103</a> <em class="jxr_javadoccomment">     * @return the {@link #terminationFuture()}</em>
+<a class="jxr_linenumber" name="L104" href="#L104">104</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L105" href="#L105">105</a>     Future&lt;Void&gt; shutdownGracefully(<strong class="jxr_keyword">long</strong> quietPeriod, <strong class="jxr_keyword">long</strong> timeout, TimeUnit unit);
+<a class="jxr_linenumber" name="L106" href="#L106">106</a> 
+<a class="jxr_linenumber" name="L107" href="#L107">107</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L108" href="#L108">108</a> <em class="jxr_javadoccomment">     * Returns the {@link Future} which is notified when all {@link EventExecutor}s managed by this</em>
+<a class="jxr_linenumber" name="L109" href="#L109">109</a> <em class="jxr_javadoccomment">     * {@link EventExecutorGroup} have been terminated.</em>
+<a class="jxr_linenumber" name="L110" href="#L110">110</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L111" href="#L111">111</a> <em class="jxr_javadoccomment">     * @return The {@link Future} representing the termination of this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L112" href="#L112">112</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L113" href="#L113">113</a>     Future&lt;Void&gt; terminationFuture();
+<a class="jxr_linenumber" name="L114" href="#L114">114</a> 
+<a class="jxr_linenumber" name="L115" href="#L115">115</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L116" href="#L116">116</a> <em class="jxr_javadoccomment">     * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L117" href="#L117">117</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L118" href="#L118">118</a>     <a name="EventExecutor" href="../../../../io/netty5/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> next();
+<a class="jxr_linenumber" name="L119" href="#L119">119</a> 
+<a class="jxr_linenumber" name="L120" href="#L120">120</a>     @Override
+<a class="jxr_linenumber" name="L121" href="#L121">121</a>     Iterator&lt;EventExecutor&gt; iterator();
+<a class="jxr_linenumber" name="L122" href="#L122">122</a> 
+<a class="jxr_linenumber" name="L123" href="#L123">123</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L124" href="#L124">124</a> <em class="jxr_javadoccomment">     * Submit the given task for execution in the next available {@link EventExecutor} in this group,</em>
+<a class="jxr_linenumber" name="L125" href="#L125">125</a> <em class="jxr_javadoccomment">     * and return a future that produces a {@code null} result when the task completes.</em>
+<a class="jxr_linenumber" name="L126" href="#L126">126</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L127" href="#L127">127</a> <em class="jxr_javadoccomment">     * @param task The task that should be executed in this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L128" href="#L128">128</a> <em class="jxr_javadoccomment">     * @return A future that represents the completion of the submitted task.</em>
+<a class="jxr_linenumber" name="L129" href="#L129">129</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L130" href="#L130">130</a>     <strong class="jxr_keyword">default</strong> Future&lt;Void&gt; submit(Runnable task) {
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>         <strong class="jxr_keyword">return</strong> next().submit(task);
+<a class="jxr_linenumber" name="L132" href="#L132">132</a>     }
+<a class="jxr_linenumber" name="L133" href="#L133">133</a> 
+<a class="jxr_linenumber" name="L134" href="#L134">134</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L135" href="#L135">135</a> <em class="jxr_javadoccomment">     * Submit the given task for execution in the next available {@link EventExecutor} in this group,</em>
+<a class="jxr_linenumber" name="L136" href="#L136">136</a> <em class="jxr_javadoccomment">     * and return a future that produces the given result when the task completes.</em>
+<a class="jxr_linenumber" name="L137" href="#L137">137</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L138" href="#L138">138</a> <em class="jxr_javadoccomment">     * @param task The task that should be executed in this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L139" href="#L139">139</a> <em class="jxr_javadoccomment">     * @param result The value that the returned future will complete with, if the task completes successfully.</em>
+<a class="jxr_linenumber" name="L140" href="#L140">140</a> <em class="jxr_javadoccomment">     * @param &lt;T&gt; The type of the future result.</em>
+<a class="jxr_linenumber" name="L141" href="#L141">141</a> <em class="jxr_javadoccomment">     * @return A future that represents the completion of the submitted task.</em>
+<a class="jxr_linenumber" name="L142" href="#L142">142</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L143" href="#L143">143</a>     <strong class="jxr_keyword">default</strong> &lt;T&gt; Future&lt;T&gt; submit(Runnable task, T result) {
+<a class="jxr_linenumber" name="L144" href="#L144">144</a>         <strong class="jxr_keyword">return</strong> next().submit(task, result);
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>     }
+<a class="jxr_linenumber" name="L146" href="#L146">146</a> 
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L148" href="#L148">148</a> <em class="jxr_javadoccomment">     * Submit the given task for execution in the next available {@link EventExecutor} in this group,</em>
+<a class="jxr_linenumber" name="L149" href="#L149">149</a> <em class="jxr_javadoccomment">     * and return a future that will return the result of the callable when the task completes.</em>
+<a class="jxr_linenumber" name="L150" href="#L150">150</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L151" href="#L151">151</a> <em class="jxr_javadoccomment">     * @param task The task that should be executed in this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L152" href="#L152">152</a> <em class="jxr_javadoccomment">     * @param &lt;T&gt; The type of the future result.</em>
+<a class="jxr_linenumber" name="L153" href="#L153">153</a> <em class="jxr_javadoccomment">     * @return A future that represents the completion of the submitted task.</em>
+<a class="jxr_linenumber" name="L154" href="#L154">154</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>     <strong class="jxr_keyword">default</strong> &lt;T&gt; Future&lt;T&gt; submit(Callable&lt;T&gt; task) {
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>         <strong class="jxr_keyword">return</strong> next().submit(task);
+<a class="jxr_linenumber" name="L157" href="#L157">157</a>     }
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> 
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L160" href="#L160">160</a> <em class="jxr_javadoccomment">     * Schedule the given task for execution after the given delay, in the next available {@link EventExecutor}</em>
+<a class="jxr_linenumber" name="L161" href="#L161">161</a> <em class="jxr_javadoccomment">     * in this group, and return a future that produces a {@code null} result when the task completes.</em>
+<a class="jxr_linenumber" name="L162" href="#L162">162</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L163" href="#L163">163</a> <em class="jxr_javadoccomment">     * @param task The task that should be executed in this {@link EventExecutorGroup} after the given delay.</em>
+<a class="jxr_linenumber" name="L164" href="#L164">164</a> <em class="jxr_javadoccomment">     * @param delay A positive time delay, in the given time unit.</em>
+<a class="jxr_linenumber" name="L165" href="#L165">165</a> <em class="jxr_javadoccomment">     * @param unit The non-null time unit for the delay.</em>
+<a class="jxr_linenumber" name="L166" href="#L166">166</a> <em class="jxr_javadoccomment">     * @return A future that represents the completion of the scheduled task.</em>
+<a class="jxr_linenumber" name="L167" href="#L167">167</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>     <strong class="jxr_keyword">default</strong> Future&lt;Void&gt; schedule(Runnable task, <strong class="jxr_keyword">long</strong> delay, TimeUnit unit) {
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>         <strong class="jxr_keyword">return</strong> next().schedule(task, delay, unit);
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>     }
+<a class="jxr_linenumber" name="L171" href="#L171">171</a> 
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L173" href="#L173">173</a> <em class="jxr_javadoccomment">     * Schedule the given task for execution after the given delay, in the next available {@link EventExecutor}</em>
+<a class="jxr_linenumber" name="L174" href="#L174">174</a> <em class="jxr_javadoccomment">     * in this group, and return a future that will return the result of the callable when the task completes.</em>
+<a class="jxr_linenumber" name="L175" href="#L175">175</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L176" href="#L176">176</a> <em class="jxr_javadoccomment">     * @param task The task that should be executed in this {@link EventExecutorGroup} after the given delay.</em>
+<a class="jxr_linenumber" name="L177" href="#L177">177</a> <em class="jxr_javadoccomment">     * @param delay A positive time delay, in the given time unit.</em>
+<a class="jxr_linenumber" name="L178" href="#L178">178</a> <em class="jxr_javadoccomment">     * @param unit The non-null time unit for the delay.</em>
+<a class="jxr_linenumber" name="L179" href="#L179">179</a> <em class="jxr_javadoccomment">     * @param &lt;V&gt; The type of the future result.</em>
+<a class="jxr_linenumber" name="L180" href="#L180">180</a> <em class="jxr_javadoccomment">     * @return A future that represents the completion of the scheduled task.</em>
+<a class="jxr_linenumber" name="L181" href="#L181">181</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>     <strong class="jxr_keyword">default</strong> &lt;V&gt; Future&lt;V&gt; schedule(Callable&lt;V&gt; task, <strong class="jxr_keyword">long</strong> delay, TimeUnit unit) {
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>         <strong class="jxr_keyword">return</strong> next().schedule(task, delay, unit);
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>     }
+<a class="jxr_linenumber" name="L185" href="#L185">185</a> 
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L187" href="#L187">187</a> <em class="jxr_javadoccomment">     * Schedule the given task for periodic execution in the next available {@link EventExecutor}.</em>
+<a class="jxr_linenumber" name="L188" href="#L188">188</a> <em class="jxr_javadoccomment">     * The first execution will occur after the given initial delay, and the following repeated executions will occur</em>
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> <em class="jxr_javadoccomment">     * with the given period of time between each execution is started.</em>
+<a class="jxr_linenumber" name="L190" href="#L190">190</a> <em class="jxr_javadoccomment">     * If the task takes longer to complete than the requested period, then the following executions will be delayed,</em>
+<a class="jxr_linenumber" name="L191" href="#L191">191</a> <em class="jxr_javadoccomment">     * rather than allowing multiple instances of the task to run concurrently.</em>
+<a class="jxr_linenumber" name="L192" href="#L192">192</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L193" href="#L193">193</a> <em class="jxr_javadoccomment">     * The task will be executed repeatedly until it either fails with an exception, or its future is</em>
+<a class="jxr_linenumber" name="L194" href="#L194">194</a> <em class="jxr_javadoccomment">     * {@linkplain Future#cancel() cancelled}. The future thus will never complete successfully.</em>
+<a class="jxr_linenumber" name="L195" href="#L195">195</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L196" href="#L196">196</a> <em class="jxr_javadoccomment">     * @param task The task that should be scheduled to execute at a fixed rate in this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L197" href="#L197">197</a> <em class="jxr_javadoccomment">     * @param initialDelay The positive initial delay for the first task execution, in terms of the given time unit.</em>
+<a class="jxr_linenumber" name="L198" href="#L198">198</a> <em class="jxr_javadoccomment">     * @param period The positive period for the execution frequency to use after the first execution has started,</em>
+<a class="jxr_linenumber" name="L199" href="#L199">199</a> <em class="jxr_javadoccomment">     *               in terms of the given time unit.</em>
+<a class="jxr_linenumber" name="L200" href="#L200">200</a> <em class="jxr_javadoccomment">     * @param unit The non-null time unit for the delay and period.</em>
+<a class="jxr_linenumber" name="L201" href="#L201">201</a> <em class="jxr_javadoccomment">     * @return A future that represents the recurring task, and which can be cancelled to stop future executions.</em>
+<a class="jxr_linenumber" name="L202" href="#L202">202</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>     <strong class="jxr_keyword">default</strong> Future&lt;Void&gt; scheduleAtFixedRate(Runnable task, <strong class="jxr_keyword">long</strong> initialDelay, <strong class="jxr_keyword">long</strong> period, TimeUnit unit) {
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>         <strong class="jxr_keyword">return</strong> next().scheduleAtFixedRate(task, initialDelay, period, unit);
+<a class="jxr_linenumber" name="L205" href="#L205">205</a>     }
+<a class="jxr_linenumber" name="L206" href="#L206">206</a> 
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L208" href="#L208">208</a> <em class="jxr_javadoccomment">     * Schedule the given task for periodic execution in the next available {@link EventExecutor}.</em>
+<a class="jxr_linenumber" name="L209" href="#L209">209</a> <em class="jxr_javadoccomment">     * The first execution will occur after the given initial delay, and the following repeated executions will occur</em>
+<a class="jxr_linenumber" name="L210" href="#L210">210</a> <em class="jxr_javadoccomment">     * with the given subsequent delay between one task completing and the next task starting.</em>
+<a class="jxr_linenumber" name="L211" href="#L211">211</a> <em class="jxr_javadoccomment">     * The delay from the completion of one task, to the start of the next, stays unchanged regardless of how long a</em>
+<a class="jxr_linenumber" name="L212" href="#L212">212</a> <em class="jxr_javadoccomment">     * task takes to complete.</em>
+<a class="jxr_linenumber" name="L213" href="#L213">213</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L214" href="#L214">214</a> <em class="jxr_javadoccomment">     * This is in contrast to {@link #scheduleAtFixedRate(Runnable, long, long, TimeUnit)} which varies the delays</em>
+<a class="jxr_linenumber" name="L215" href="#L215">215</a> <em class="jxr_javadoccomment">     * between the tasks in order to hit a given frequency.</em>
+<a class="jxr_linenumber" name="L216" href="#L216">216</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L217" href="#L217">217</a> <em class="jxr_javadoccomment">     * The task will be executed repeatedly until it either fails with an exception, or its future is</em>
+<a class="jxr_linenumber" name="L218" href="#L218">218</a> <em class="jxr_javadoccomment">     * {@linkplain Future#cancel() cancelled}. The future thus will never complete successfully.</em>
+<a class="jxr_linenumber" name="L219" href="#L219">219</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L220" href="#L220">220</a> <em class="jxr_javadoccomment">     * @param task The task that should be scheduled to execute with fixed delays in this {@link EventExecutorGroup}.</em>
+<a class="jxr_linenumber" name="L221" href="#L221">221</a> <em class="jxr_javadoccomment">     * @param initialDelay The positive initial delay for the first task execution, in terms of the given time unit.</em>
+<a class="jxr_linenumber" name="L222" href="#L222">222</a> <em class="jxr_javadoccomment">     * @param delay The positive subsequent delay between task, to use after the first execution has completed,</em>
+<a class="jxr_linenumber" name="L223" href="#L223">223</a> <em class="jxr_javadoccomment">     *              in terms of the given time unit.</em>
+<a class="jxr_linenumber" name="L224" href="#L224">224</a> <em class="jxr_javadoccomment">     * @param unit The non-null time unit for the delays.</em>
+<a class="jxr_linenumber" name="L225" href="#L225">225</a> <em class="jxr_javadoccomment">     * @return A future that represents the recurring task, and which can be cancelled to stop future executions.</em>
+<a class="jxr_linenumber" name="L226" href="#L226">226</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>     <strong class="jxr_keyword">default</strong> Future&lt;Void&gt; scheduleWithFixedDelay(Runnable task, <strong class="jxr_keyword">long</strong> initialDelay, <strong class="jxr_keyword">long</strong> delay, TimeUnit unit) {
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>         <strong class="jxr_keyword">return</strong> next().scheduleWithFixedDelay(task, initialDelay, delay, unit);
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>     }
+<a class="jxr_linenumber" name="L230" href="#L230">230</a> 
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>     @Override
+<a class="jxr_linenumber" name="L232" href="#L232">232</a>     <strong class="jxr_keyword">default</strong> <strong class="jxr_keyword">void</strong> execute(Runnable task) {
+<a class="jxr_linenumber" name="L233" href="#L233">233</a>         next().execute(task);
+<a class="jxr_linenumber" name="L234" href="#L234">234</a>     }
+<a class="jxr_linenumber" name="L235" href="#L235">235</a> }
+</pre>
+<hr/>
+<div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+</body>
+</html>
