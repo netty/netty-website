@@ -1,1 +1,1 @@
-/Library/Java/JavaVirtualMachines/applejdk-11.0.14.9.2.jdk/Contents/Home/bin/javadoc @options @argfile
+/Users/norman/.sdkman/candidates/java/11.0.14-zulu/zulu-11.jdk/Contents/Home/bin/javadoc @options @argfile
