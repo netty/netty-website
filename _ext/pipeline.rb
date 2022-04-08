@@ -74,10 +74,12 @@ class ReleaseInfo
   module Release
     def example_url(page, name = nil)
       if self.major_version > 3
+        package_name = if self.major_version == 5 then "netty5" else "netty" end
+        branch_name = if self.major_version == 5 then "main" else self.branch end
         if name.nil?
-          'https://github.com/netty/netty/tree/' + self.branch + '/example/src/main/java/io/netty/example'
+          'https://github.com/netty/netty/tree/' + branch_name + '/example/src/main/java/io/' + package_name + '/example'
         else
-          RelativeSiteUrl.get(self.site, page) + '/' + self.simple_version + '/xref/io/netty/example/' + name + '/package-summary.html'
+          RelativeSiteUrl.get(self.site, page) + '/' + self.simple_version + '/xref/io/' + package_name + '/example/' + name + '/package-summary.html'
         end
       else
         # The WorldClock example was LocalTime in 3.
