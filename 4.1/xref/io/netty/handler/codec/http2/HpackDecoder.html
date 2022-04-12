@@ -406,7 +406,7 @@
 <a class="jxr_linenumber" name="L398" href="#L398">398</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, PROTOCOL_ERROR, <span class="jxr_string">"Mix of request and response pseudo-headers."</span>);
 <a class="jxr_linenumber" name="L399" href="#L399">399</a>             }
 <a class="jxr_linenumber" name="L400" href="#L400">400</a> 
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>             <strong class="jxr_keyword">if</strong> (headers.contains(name)) {
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>             <strong class="jxr_keyword">if</strong> (contains(headers, name)) {
 <a class="jxr_linenumber" name="L402" href="#L402">402</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, PROTOCOL_ERROR, <span class="jxr_string">"Duplicate HTTP/2 pseudo-header '%s' encountered."</span>, name);
 <a class="jxr_linenumber" name="L403" href="#L403">403</a>             }
 <a class="jxr_linenumber" name="L404" href="#L404">404</a> 
@@ -416,172 +416,200 @@
 <a class="jxr_linenumber" name="L408" href="#L408">408</a>         <strong class="jxr_keyword">return</strong> HeaderType.REGULAR_HEADER;
 <a class="jxr_linenumber" name="L409" href="#L409">409</a>     }
 <a class="jxr_linenumber" name="L410" href="#L410">410</a> 
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>     <strong class="jxr_keyword">private</strong> CharSequence readName(<strong class="jxr_keyword">int</strong> index) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>         <strong class="jxr_keyword">if</strong> (index &lt;= HpackStaticTable.length) {
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>             <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a> hpackHeaderField = HpackStaticTable.getEntry(index);
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>             <strong class="jxr_keyword">return</strong> hpackHeaderField.name;
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>         }
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>         <strong class="jxr_keyword">if</strong> (index - HpackStaticTable.length &lt;= hpackDynamicTable.length()) {
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>             <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a> hpackHeaderField = hpackDynamicTable.getEntry(index - HpackStaticTable.length);
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>             <strong class="jxr_keyword">return</strong> hpackHeaderField.name;
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>         }
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>         <strong class="jxr_keyword">throw</strong> READ_NAME_ILLEGAL_INDEX_VALUE;
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>     }
-<a class="jxr_linenumber" name="L422" href="#L422">422</a> 
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>     <strong class="jxr_keyword">private</strong> <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a> getIndexedHeader(<strong class="jxr_keyword">int</strong> index) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>         <strong class="jxr_keyword">if</strong> (index &lt;= HpackStaticTable.length) {
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>             <strong class="jxr_keyword">return</strong> HpackStaticTable.getEntry(index);
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>         }
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>         <strong class="jxr_keyword">if</strong> (index - HpackStaticTable.length &lt;= hpackDynamicTable.length()) {
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>             <strong class="jxr_keyword">return</strong> hpackDynamicTable.getEntry(index - HpackStaticTable.length);
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>         }
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>         <strong class="jxr_keyword">throw</strong> INDEX_HEADER_ILLEGAL_INDEX_VALUE;
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>     }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> insertHeader(Sink sink, CharSequence name, CharSequence value, IndexType indexType) {
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>         sink.appendToHeaderList(name, value);
-<a class="jxr_linenumber" name="L435" href="#L435">435</a> 
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>         <strong class="jxr_keyword">switch</strong> (indexType) {
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>             <strong class="jxr_keyword">case</strong> NONE:
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>             <strong class="jxr_keyword">case</strong> NEVER:
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L440" href="#L440">440</a> 
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>             <strong class="jxr_keyword">case</strong> INCREMENTAL:
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>                 hpackDynamicTable.add(<strong class="jxr_keyword">new</strong> <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a>(name, value));
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L444" href="#L444">444</a> 
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>             <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error(<span class="jxr_string">"should not reach here"</span>);
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> contains(<a name="Http2Headers" href="../../../../../io/netty/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers, CharSequence name) {
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>         <strong class="jxr_keyword">if</strong> (headers == EmptyHttp2Headers.INSTANCE) {
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>         }
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>         <strong class="jxr_keyword">if</strong> (headers instanceof <a name="DefaultHttp2Headers" href="../../../../../io/netty/handler/codec/http2/DefaultHttp2Headers.html#DefaultHttp2Headers">DefaultHttp2Headers</a> || headers instanceof <a name="ReadOnlyHttp2Headers" href="../../../../../io/netty/handler/codec/http2/ReadOnlyHttp2Headers.html#ReadOnlyHttp2Headers">ReadOnlyHttp2Headers</a>) {
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>             <strong class="jxr_keyword">return</strong> headers.contains(name);
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>         }
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>         <em class="jxr_comment">// We can't be sure the Http2Headers implementation support contains on pseudo-headers,</em>
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>         <em class="jxr_comment">// so we have to use the direct accessors instead.</em>
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>         <strong class="jxr_keyword">if</strong> (Http2Headers.PseudoHeaderName.METHOD.value().equals(name)) {
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <strong class="jxr_keyword">return</strong> headers.method() != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>         }
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>         <strong class="jxr_keyword">if</strong> (Http2Headers.PseudoHeaderName.SCHEME.value().equals(name)) {
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">return</strong> headers.scheme() != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>         }
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>         <strong class="jxr_keyword">if</strong> (Http2Headers.PseudoHeaderName.AUTHORITY.value().equals(name)) {
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>             <strong class="jxr_keyword">return</strong> headers.authority() != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>         }
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>         <strong class="jxr_keyword">if</strong> (Http2Headers.PseudoHeaderName.PATH.value().equals(name)) {
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>             <strong class="jxr_keyword">return</strong> headers.path() != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>         }
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>         <strong class="jxr_keyword">if</strong> (Http2Headers.PseudoHeaderName.STATUS.value().equals(name)) {
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>             <strong class="jxr_keyword">return</strong> headers.status() != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>         }
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <em class="jxr_comment">// Note: We don't check PROTOCOL because the API presents no alternative way to access it.</em>
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>     }
+<a class="jxr_linenumber" name="L438" href="#L438">438</a> 
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>     <strong class="jxr_keyword">private</strong> CharSequence readName(<strong class="jxr_keyword">int</strong> index) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>         <strong class="jxr_keyword">if</strong> (index &lt;= HpackStaticTable.length) {
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>             <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a> hpackHeaderField = HpackStaticTable.getEntry(index);
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>             <strong class="jxr_keyword">return</strong> hpackHeaderField.name;
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>         }
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>         <strong class="jxr_keyword">if</strong> (index - HpackStaticTable.length &lt;= hpackDynamicTable.length()) {
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>             <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a> hpackHeaderField = hpackDynamicTable.getEntry(index - HpackStaticTable.length);
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>             <strong class="jxr_keyword">return</strong> hpackHeaderField.name;
 <a class="jxr_linenumber" name="L447" href="#L447">447</a>         }
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>     }
-<a class="jxr_linenumber" name="L449" href="#L449">449</a> 
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>     <strong class="jxr_keyword">private</strong> CharSequence readStringLiteral(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <strong class="jxr_keyword">int</strong> length, <strong class="jxr_keyword">boolean</strong> huffmanEncoded) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>         <strong class="jxr_keyword">if</strong> (huffmanEncoded) {
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <strong class="jxr_keyword">return</strong> huffmanDecoder.decode(in, length);
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>         }
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>         byte[] buf = <strong class="jxr_keyword">new</strong> byte[length];
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>         in.readBytes(buf);
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a>(buf, false);
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>     }
-<a class="jxr_linenumber" name="L458" href="#L458">458</a> 
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> IllegalArgumentException notEnoughDataException(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in) {
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"decode only works with an entire header block! "</span> + in);
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>     }
-<a class="jxr_linenumber" name="L462" href="#L462">462</a> 
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L464" href="#L464">464</a> <em class="jxr_javadoccomment">     * Unsigned Little Endian Base 128 Variable-Length Integer Encoding</em>
-<a class="jxr_linenumber" name="L465" href="#L465">465</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="L466" href="#L466">466</a> <em class="jxr_javadoccomment">     * Visible for testing only!</em>
-<a class="jxr_linenumber" name="L467" href="#L467">467</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> decodeULE128(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <strong class="jxr_keyword">int</strong> result) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readerIndex = in.readerIndex();
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> v = decodeULE128(in, (<strong class="jxr_keyword">long</strong>) result);
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>         <strong class="jxr_keyword">if</strong> (v &gt; Integer.MAX_VALUE) {
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>             <em class="jxr_comment">// the maximum value that can be represented by a signed 32 bit number is:</em>
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>             <em class="jxr_comment">// [0x1,0x7f] + 0x7f + (0x7f &lt;&lt; 7) + (0x7f &lt;&lt; 14) + (0x7f &lt;&lt; 21) + (0x6 &lt;&lt; 28)</em>
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>             <em class="jxr_comment">// OR</em>
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>             <em class="jxr_comment">// 0x0 + 0x7f + (0x7f &lt;&lt; 7) + (0x7f &lt;&lt; 14) + (0x7f &lt;&lt; 21) + (0x7 &lt;&lt; 28)</em>
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <em class="jxr_comment">// we should reset the readerIndex if we overflowed the int type.</em>
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>             in.readerIndex(readerIndex);
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>             <strong class="jxr_keyword">throw</strong> DECODE_ULE_128_TO_INT_DECOMPRESSION_EXCEPTION;
-<a class="jxr_linenumber" name="L479" href="#L479">479</a>         }
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) v;
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>     }
-<a class="jxr_linenumber" name="L482" href="#L482">482</a> 
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L484" href="#L484">484</a> <em class="jxr_javadoccomment">     * Unsigned Little Endian Base 128 Variable-Length Integer Encoding</em>
-<a class="jxr_linenumber" name="L485" href="#L485">485</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
-<a class="jxr_linenumber" name="L486" href="#L486">486</a> <em class="jxr_javadoccomment">     * Visible for testing only!</em>
-<a class="jxr_linenumber" name="L487" href="#L487">487</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> decodeULE128(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <strong class="jxr_keyword">long</strong> result) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L489" href="#L489">489</a>         assert result &lt;= 0x7f &amp;&amp; result &gt;= 0;
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> resultStartedAtZero = result == 0;
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> writerIndex = in.writerIndex();
-<a class="jxr_linenumber" name="L492" href="#L492">492</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> readerIndex = in.readerIndex(), shift = 0; readerIndex &lt; writerIndex; ++readerIndex, shift += 7) {
-<a class="jxr_linenumber" name="L493" href="#L493">493</a>             byte b = in.getByte(readerIndex);
-<a class="jxr_linenumber" name="L494" href="#L494">494</a>             <strong class="jxr_keyword">if</strong> (shift == 56 &amp;&amp; ((b &amp; 0x80) != 0 || b == 0x7F &amp;&amp; !resultStartedAtZero)) {
-<a class="jxr_linenumber" name="L495" href="#L495">495</a>                 <em class="jxr_comment">// the maximum value that can be represented by a signed 64 bit number is:</em>
-<a class="jxr_linenumber" name="L496" href="#L496">496</a>                 <em class="jxr_comment">// [0x01L, 0x7fL] + 0x7fL + (0x7fL &lt;&lt; 7) + (0x7fL &lt;&lt; 14) + (0x7fL &lt;&lt; 21) + (0x7fL &lt;&lt; 28) + (0x7fL &lt;&lt; 35)</em>
-<a class="jxr_linenumber" name="L497" href="#L497">497</a>                 <em class="jxr_comment">// + (0x7fL &lt;&lt; 42) + (0x7fL &lt;&lt; 49) + (0x7eL &lt;&lt; 56)</em>
-<a class="jxr_linenumber" name="L498" href="#L498">498</a>                 <em class="jxr_comment">// OR</em>
-<a class="jxr_linenumber" name="L499" href="#L499">499</a>                 <em class="jxr_comment">// 0x0L + 0x7fL + (0x7fL &lt;&lt; 7) + (0x7fL &lt;&lt; 14) + (0x7fL &lt;&lt; 21) + (0x7fL &lt;&lt; 28) + (0x7fL &lt;&lt; 35) +</em>
-<a class="jxr_linenumber" name="L500" href="#L500">500</a>                 <em class="jxr_comment">// (0x7fL &lt;&lt; 42) + (0x7fL &lt;&lt; 49) + (0x7fL &lt;&lt; 56)</em>
-<a class="jxr_linenumber" name="L501" href="#L501">501</a>                 <em class="jxr_comment">// this means any more shifts will result in overflow so we should break out and throw an error.</em>
-<a class="jxr_linenumber" name="L502" href="#L502">502</a>                 <strong class="jxr_keyword">throw</strong> DECODE_ULE_128_TO_LONG_DECOMPRESSION_EXCEPTION;
-<a class="jxr_linenumber" name="L503" href="#L503">503</a>             }
-<a class="jxr_linenumber" name="L504" href="#L504">504</a> 
-<a class="jxr_linenumber" name="L505" href="#L505">505</a>             <strong class="jxr_keyword">if</strong> ((b &amp; 0x80) == 0) {
-<a class="jxr_linenumber" name="L506" href="#L506">506</a>                 in.readerIndex(readerIndex + 1);
-<a class="jxr_linenumber" name="L507" href="#L507">507</a>                 <strong class="jxr_keyword">return</strong> result + ((b &amp; 0x7FL) &lt;&lt; shift);
-<a class="jxr_linenumber" name="L508" href="#L508">508</a>             }
-<a class="jxr_linenumber" name="L509" href="#L509">509</a>             result += (b &amp; 0x7FL) &lt;&lt; shift;
-<a class="jxr_linenumber" name="L510" href="#L510">510</a>         }
-<a class="jxr_linenumber" name="L511" href="#L511">511</a> 
-<a class="jxr_linenumber" name="L512" href="#L512">512</a>         <strong class="jxr_keyword">throw</strong> DECODE_ULE_128_DECOMPRESSION_EXCEPTION;
-<a class="jxr_linenumber" name="L513" href="#L513">513</a>     }
-<a class="jxr_linenumber" name="L514" href="#L514">514</a> 
-<a class="jxr_linenumber" name="L515" href="#L515">515</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L516" href="#L516">516</a> <em class="jxr_javadoccomment">     * HTTP/2 header types.</em>
-<a class="jxr_linenumber" name="L517" href="#L517">517</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L518" href="#L518">518</a>     <strong class="jxr_keyword">private</strong> enum HeaderType {
-<a class="jxr_linenumber" name="L519" href="#L519">519</a>         REGULAR_HEADER,
-<a class="jxr_linenumber" name="L520" href="#L520">520</a>         REQUEST_PSEUDO_HEADER,
-<a class="jxr_linenumber" name="L521" href="#L521">521</a>         RESPONSE_PSEUDO_HEADER
-<a class="jxr_linenumber" name="L522" href="#L522">522</a>     }
-<a class="jxr_linenumber" name="L523" href="#L523">523</a> 
-<a class="jxr_linenumber" name="L524" href="#L524">524</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">interface</strong> Sink {
-<a class="jxr_linenumber" name="L525" href="#L525">525</a>         <strong class="jxr_keyword">void</strong> appendToHeaderList(CharSequence name, CharSequence value);
-<a class="jxr_linenumber" name="L526" href="#L526">526</a>         <strong class="jxr_keyword">void</strong> finish() <strong class="jxr_keyword">throws</strong> Http2Exception;
-<a class="jxr_linenumber" name="L527" href="#L527">527</a>     }
-<a class="jxr_linenumber" name="L528" href="#L528">528</a> 
-<a class="jxr_linenumber" name="L529" href="#L529">529</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Http2HeadersSink <strong class="jxr_keyword">implements</strong> Sink {
-<a class="jxr_linenumber" name="L530" href="#L530">530</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="Http2Headers" href="../../../../../io/netty/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers;
-<a class="jxr_linenumber" name="L531" href="#L531">531</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> maxHeaderListSize;
-<a class="jxr_linenumber" name="L532" href="#L532">532</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> streamId;
-<a class="jxr_linenumber" name="L533" href="#L533">533</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> validate;
-<a class="jxr_linenumber" name="L534" href="#L534">534</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> headersLength;
-<a class="jxr_linenumber" name="L535" href="#L535">535</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> exceededMaxLength;
-<a class="jxr_linenumber" name="L536" href="#L536">536</a>         <strong class="jxr_keyword">private</strong> HeaderType previousType;
-<a class="jxr_linenumber" name="L537" href="#L537">537</a>         <strong class="jxr_keyword">private</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> validationException;
-<a class="jxr_linenumber" name="L538" href="#L538">538</a> 
-<a class="jxr_linenumber" name="L539" href="#L539">539</a>         Http2HeadersSink(<strong class="jxr_keyword">int</strong> streamId, <a name="Http2Headers" href="../../../../../io/netty/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers, <strong class="jxr_keyword">long</strong> maxHeaderListSize, <strong class="jxr_keyword">boolean</strong> validate) {
-<a class="jxr_linenumber" name="L540" href="#L540">540</a>             <strong class="jxr_keyword">this</strong>.headers = headers;
-<a class="jxr_linenumber" name="L541" href="#L541">541</a>             <strong class="jxr_keyword">this</strong>.maxHeaderListSize = maxHeaderListSize;
-<a class="jxr_linenumber" name="L542" href="#L542">542</a>             <strong class="jxr_keyword">this</strong>.streamId = streamId;
-<a class="jxr_linenumber" name="L543" href="#L543">543</a>             <strong class="jxr_keyword">this</strong>.validate = validate;
-<a class="jxr_linenumber" name="L544" href="#L544">544</a>         }
-<a class="jxr_linenumber" name="L545" href="#L545">545</a> 
-<a class="jxr_linenumber" name="L546" href="#L546">546</a>         @Override
-<a class="jxr_linenumber" name="L547" href="#L547">547</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> finish() <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L548" href="#L548">548</a>             <strong class="jxr_keyword">if</strong> (exceededMaxLength) {
-<a class="jxr_linenumber" name="L549" href="#L549">549</a>                 headerListSizeExceeded(streamId, maxHeaderListSize, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L550" href="#L550">550</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (validationException != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L551" href="#L551">551</a>                 <strong class="jxr_keyword">throw</strong> validationException;
-<a class="jxr_linenumber" name="L552" href="#L552">552</a>             }
-<a class="jxr_linenumber" name="L553" href="#L553">553</a>         }
-<a class="jxr_linenumber" name="L554" href="#L554">554</a> 
-<a class="jxr_linenumber" name="L555" href="#L555">555</a>         @Override
-<a class="jxr_linenumber" name="L556" href="#L556">556</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> appendToHeaderList(CharSequence name, CharSequence value) {
-<a class="jxr_linenumber" name="L557" href="#L557">557</a>             headersLength += HpackHeaderField.sizeOf(name, value);
-<a class="jxr_linenumber" name="L558" href="#L558">558</a>             exceededMaxLength |= headersLength &gt; maxHeaderListSize;
-<a class="jxr_linenumber" name="L559" href="#L559">559</a> 
-<a class="jxr_linenumber" name="L560" href="#L560">560</a>             <strong class="jxr_keyword">if</strong> (exceededMaxLength || validationException != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L561" href="#L561">561</a>                 <em class="jxr_comment">// We don't store the header since we've already failed validation requirements.</em>
-<a class="jxr_linenumber" name="L562" href="#L562">562</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L563" href="#L563">563</a>             }
-<a class="jxr_linenumber" name="L564" href="#L564">564</a> 
-<a class="jxr_linenumber" name="L565" href="#L565">565</a>             <strong class="jxr_keyword">if</strong> (validate) {
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>                     previousType = validate(streamId, name, previousType, headers);
-<a class="jxr_linenumber" name="L568" href="#L568">568</a>                 } <strong class="jxr_keyword">catch</strong> (<a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> ex) {
-<a class="jxr_linenumber" name="L569" href="#L569">569</a>                     validationException = ex;
-<a class="jxr_linenumber" name="L570" href="#L570">570</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>                 }
-<a class="jxr_linenumber" name="L572" href="#L572">572</a>             }
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>             headers.add(name, value);
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>         }
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>     }
-<a class="jxr_linenumber" name="L576" href="#L576">576</a> }
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>         <strong class="jxr_keyword">throw</strong> READ_NAME_ILLEGAL_INDEX_VALUE;
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>     }
+<a class="jxr_linenumber" name="L450" href="#L450">450</a> 
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>     <strong class="jxr_keyword">private</strong> <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a> getIndexedHeader(<strong class="jxr_keyword">int</strong> index) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>         <strong class="jxr_keyword">if</strong> (index &lt;= HpackStaticTable.length) {
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>             <strong class="jxr_keyword">return</strong> HpackStaticTable.getEntry(index);
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>         }
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>         <strong class="jxr_keyword">if</strong> (index - HpackStaticTable.length &lt;= hpackDynamicTable.length()) {
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             <strong class="jxr_keyword">return</strong> hpackDynamicTable.getEntry(index - HpackStaticTable.length);
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>         }
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>         <strong class="jxr_keyword">throw</strong> INDEX_HEADER_ILLEGAL_INDEX_VALUE;
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>     }
+<a class="jxr_linenumber" name="L460" href="#L460">460</a> 
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> insertHeader(Sink sink, CharSequence name, CharSequence value, IndexType indexType) {
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>         sink.appendToHeaderList(name, value);
+<a class="jxr_linenumber" name="L463" href="#L463">463</a> 
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>         <strong class="jxr_keyword">switch</strong> (indexType) {
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>             <strong class="jxr_keyword">case</strong> NONE:
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>             <strong class="jxr_keyword">case</strong> NEVER:
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L468" href="#L468">468</a> 
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>             <strong class="jxr_keyword">case</strong> INCREMENTAL:
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>                 hpackDynamicTable.add(<strong class="jxr_keyword">new</strong> <a name="HpackHeaderField" href="../../../../../io/netty/handler/codec/http2/HpackHeaderField.html#HpackHeaderField">HpackHeaderField</a>(name, value));
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L472" href="#L472">472</a> 
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error(<span class="jxr_string">"should not reach here"</span>);
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>         }
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>     }
+<a class="jxr_linenumber" name="L477" href="#L477">477</a> 
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>     <strong class="jxr_keyword">private</strong> CharSequence readStringLiteral(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <strong class="jxr_keyword">int</strong> length, <strong class="jxr_keyword">boolean</strong> huffmanEncoded) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>         <strong class="jxr_keyword">if</strong> (huffmanEncoded) {
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>             <strong class="jxr_keyword">return</strong> huffmanDecoder.decode(in, length);
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>         }
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>         byte[] buf = <strong class="jxr_keyword">new</strong> byte[length];
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>         in.readBytes(buf);
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a>(buf, false);
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>     }
+<a class="jxr_linenumber" name="L486" href="#L486">486</a> 
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> IllegalArgumentException notEnoughDataException(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in) {
+<a class="jxr_linenumber" name="L488" href="#L488">488</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"decode only works with an entire header block! "</span> + in);
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>     }
+<a class="jxr_linenumber" name="L490" href="#L490">490</a> 
+<a class="jxr_linenumber" name="L491" href="#L491">491</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L492" href="#L492">492</a> <em class="jxr_javadoccomment">     * Unsigned Little Endian Base 128 Variable-Length Integer Encoding</em>
+<a class="jxr_linenumber" name="L493" href="#L493">493</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L494" href="#L494">494</a> <em class="jxr_javadoccomment">     * Visible for testing only!</em>
+<a class="jxr_linenumber" name="L495" href="#L495">495</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L496" href="#L496">496</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> decodeULE128(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <strong class="jxr_keyword">int</strong> result) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readerIndex = in.readerIndex();
+<a class="jxr_linenumber" name="L498" href="#L498">498</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> v = decodeULE128(in, (<strong class="jxr_keyword">long</strong>) result);
+<a class="jxr_linenumber" name="L499" href="#L499">499</a>         <strong class="jxr_keyword">if</strong> (v &gt; Integer.MAX_VALUE) {
+<a class="jxr_linenumber" name="L500" href="#L500">500</a>             <em class="jxr_comment">// the maximum value that can be represented by a signed 32 bit number is:</em>
+<a class="jxr_linenumber" name="L501" href="#L501">501</a>             <em class="jxr_comment">// [0x1,0x7f] + 0x7f + (0x7f &lt;&lt; 7) + (0x7f &lt;&lt; 14) + (0x7f &lt;&lt; 21) + (0x6 &lt;&lt; 28)</em>
+<a class="jxr_linenumber" name="L502" href="#L502">502</a>             <em class="jxr_comment">// OR</em>
+<a class="jxr_linenumber" name="L503" href="#L503">503</a>             <em class="jxr_comment">// 0x0 + 0x7f + (0x7f &lt;&lt; 7) + (0x7f &lt;&lt; 14) + (0x7f &lt;&lt; 21) + (0x7 &lt;&lt; 28)</em>
+<a class="jxr_linenumber" name="L504" href="#L504">504</a>             <em class="jxr_comment">// we should reset the readerIndex if we overflowed the int type.</em>
+<a class="jxr_linenumber" name="L505" href="#L505">505</a>             in.readerIndex(readerIndex);
+<a class="jxr_linenumber" name="L506" href="#L506">506</a>             <strong class="jxr_keyword">throw</strong> DECODE_ULE_128_TO_INT_DECOMPRESSION_EXCEPTION;
+<a class="jxr_linenumber" name="L507" href="#L507">507</a>         }
+<a class="jxr_linenumber" name="L508" href="#L508">508</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) v;
+<a class="jxr_linenumber" name="L509" href="#L509">509</a>     }
+<a class="jxr_linenumber" name="L510" href="#L510">510</a> 
+<a class="jxr_linenumber" name="L511" href="#L511">511</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L512" href="#L512">512</a> <em class="jxr_javadoccomment">     * Unsigned Little Endian Base 128 Variable-Length Integer Encoding</em>
+<a class="jxr_linenumber" name="L513" href="#L513">513</a> <em class="jxr_javadoccomment">     * &lt;p&gt;</em>
+<a class="jxr_linenumber" name="L514" href="#L514">514</a> <em class="jxr_javadoccomment">     * Visible for testing only!</em>
+<a class="jxr_linenumber" name="L515" href="#L515">515</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L516" href="#L516">516</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> decodeULE128(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <strong class="jxr_keyword">long</strong> result) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L517" href="#L517">517</a>         assert result &lt;= 0x7f &amp;&amp; result &gt;= 0;
+<a class="jxr_linenumber" name="L518" href="#L518">518</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> resultStartedAtZero = result == 0;
+<a class="jxr_linenumber" name="L519" href="#L519">519</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> writerIndex = in.writerIndex();
+<a class="jxr_linenumber" name="L520" href="#L520">520</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> readerIndex = in.readerIndex(), shift = 0; readerIndex &lt; writerIndex; ++readerIndex, shift += 7) {
+<a class="jxr_linenumber" name="L521" href="#L521">521</a>             byte b = in.getByte(readerIndex);
+<a class="jxr_linenumber" name="L522" href="#L522">522</a>             <strong class="jxr_keyword">if</strong> (shift == 56 &amp;&amp; ((b &amp; 0x80) != 0 || b == 0x7F &amp;&amp; !resultStartedAtZero)) {
+<a class="jxr_linenumber" name="L523" href="#L523">523</a>                 <em class="jxr_comment">// the maximum value that can be represented by a signed 64 bit number is:</em>
+<a class="jxr_linenumber" name="L524" href="#L524">524</a>                 <em class="jxr_comment">// [0x01L, 0x7fL] + 0x7fL + (0x7fL &lt;&lt; 7) + (0x7fL &lt;&lt; 14) + (0x7fL &lt;&lt; 21) + (0x7fL &lt;&lt; 28) + (0x7fL &lt;&lt; 35)</em>
+<a class="jxr_linenumber" name="L525" href="#L525">525</a>                 <em class="jxr_comment">// + (0x7fL &lt;&lt; 42) + (0x7fL &lt;&lt; 49) + (0x7eL &lt;&lt; 56)</em>
+<a class="jxr_linenumber" name="L526" href="#L526">526</a>                 <em class="jxr_comment">// OR</em>
+<a class="jxr_linenumber" name="L527" href="#L527">527</a>                 <em class="jxr_comment">// 0x0L + 0x7fL + (0x7fL &lt;&lt; 7) + (0x7fL &lt;&lt; 14) + (0x7fL &lt;&lt; 21) + (0x7fL &lt;&lt; 28) + (0x7fL &lt;&lt; 35) +</em>
+<a class="jxr_linenumber" name="L528" href="#L528">528</a>                 <em class="jxr_comment">// (0x7fL &lt;&lt; 42) + (0x7fL &lt;&lt; 49) + (0x7fL &lt;&lt; 56)</em>
+<a class="jxr_linenumber" name="L529" href="#L529">529</a>                 <em class="jxr_comment">// this means any more shifts will result in overflow so we should break out and throw an error.</em>
+<a class="jxr_linenumber" name="L530" href="#L530">530</a>                 <strong class="jxr_keyword">throw</strong> DECODE_ULE_128_TO_LONG_DECOMPRESSION_EXCEPTION;
+<a class="jxr_linenumber" name="L531" href="#L531">531</a>             }
+<a class="jxr_linenumber" name="L532" href="#L532">532</a> 
+<a class="jxr_linenumber" name="L533" href="#L533">533</a>             <strong class="jxr_keyword">if</strong> ((b &amp; 0x80) == 0) {
+<a class="jxr_linenumber" name="L534" href="#L534">534</a>                 in.readerIndex(readerIndex + 1);
+<a class="jxr_linenumber" name="L535" href="#L535">535</a>                 <strong class="jxr_keyword">return</strong> result + ((b &amp; 0x7FL) &lt;&lt; shift);
+<a class="jxr_linenumber" name="L536" href="#L536">536</a>             }
+<a class="jxr_linenumber" name="L537" href="#L537">537</a>             result += (b &amp; 0x7FL) &lt;&lt; shift;
+<a class="jxr_linenumber" name="L538" href="#L538">538</a>         }
+<a class="jxr_linenumber" name="L539" href="#L539">539</a> 
+<a class="jxr_linenumber" name="L540" href="#L540">540</a>         <strong class="jxr_keyword">throw</strong> DECODE_ULE_128_DECOMPRESSION_EXCEPTION;
+<a class="jxr_linenumber" name="L541" href="#L541">541</a>     }
+<a class="jxr_linenumber" name="L542" href="#L542">542</a> 
+<a class="jxr_linenumber" name="L543" href="#L543">543</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L544" href="#L544">544</a> <em class="jxr_javadoccomment">     * HTTP/2 header types.</em>
+<a class="jxr_linenumber" name="L545" href="#L545">545</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L546" href="#L546">546</a>     <strong class="jxr_keyword">private</strong> enum HeaderType {
+<a class="jxr_linenumber" name="L547" href="#L547">547</a>         REGULAR_HEADER,
+<a class="jxr_linenumber" name="L548" href="#L548">548</a>         REQUEST_PSEUDO_HEADER,
+<a class="jxr_linenumber" name="L549" href="#L549">549</a>         RESPONSE_PSEUDO_HEADER
+<a class="jxr_linenumber" name="L550" href="#L550">550</a>     }
+<a class="jxr_linenumber" name="L551" href="#L551">551</a> 
+<a class="jxr_linenumber" name="L552" href="#L552">552</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">interface</strong> Sink {
+<a class="jxr_linenumber" name="L553" href="#L553">553</a>         <strong class="jxr_keyword">void</strong> appendToHeaderList(CharSequence name, CharSequence value);
+<a class="jxr_linenumber" name="L554" href="#L554">554</a>         <strong class="jxr_keyword">void</strong> finish() <strong class="jxr_keyword">throws</strong> Http2Exception;
+<a class="jxr_linenumber" name="L555" href="#L555">555</a>     }
+<a class="jxr_linenumber" name="L556" href="#L556">556</a> 
+<a class="jxr_linenumber" name="L557" href="#L557">557</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> Http2HeadersSink <strong class="jxr_keyword">implements</strong> Sink {
+<a class="jxr_linenumber" name="L558" href="#L558">558</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="Http2Headers" href="../../../../../io/netty/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers;
+<a class="jxr_linenumber" name="L559" href="#L559">559</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> maxHeaderListSize;
+<a class="jxr_linenumber" name="L560" href="#L560">560</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> streamId;
+<a class="jxr_linenumber" name="L561" href="#L561">561</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> validate;
+<a class="jxr_linenumber" name="L562" href="#L562">562</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> headersLength;
+<a class="jxr_linenumber" name="L563" href="#L563">563</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> exceededMaxLength;
+<a class="jxr_linenumber" name="L564" href="#L564">564</a>         <strong class="jxr_keyword">private</strong> HeaderType previousType;
+<a class="jxr_linenumber" name="L565" href="#L565">565</a>         <strong class="jxr_keyword">private</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> validationException;
+<a class="jxr_linenumber" name="L566" href="#L566">566</a> 
+<a class="jxr_linenumber" name="L567" href="#L567">567</a>         Http2HeadersSink(<strong class="jxr_keyword">int</strong> streamId, <a name="Http2Headers" href="../../../../../io/netty/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers, <strong class="jxr_keyword">long</strong> maxHeaderListSize, <strong class="jxr_keyword">boolean</strong> validate) {
+<a class="jxr_linenumber" name="L568" href="#L568">568</a>             <strong class="jxr_keyword">this</strong>.headers = headers;
+<a class="jxr_linenumber" name="L569" href="#L569">569</a>             <strong class="jxr_keyword">this</strong>.maxHeaderListSize = maxHeaderListSize;
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>             <strong class="jxr_keyword">this</strong>.streamId = streamId;
+<a class="jxr_linenumber" name="L571" href="#L571">571</a>             <strong class="jxr_keyword">this</strong>.validate = validate;
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>         }
+<a class="jxr_linenumber" name="L573" href="#L573">573</a> 
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>         @Override
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> finish() <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>             <strong class="jxr_keyword">if</strong> (exceededMaxLength) {
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>                 headerListSizeExceeded(streamId, maxHeaderListSize, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L578" href="#L578">578</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (validationException != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>                 <strong class="jxr_keyword">throw</strong> validationException;
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>             }
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>         }
+<a class="jxr_linenumber" name="L582" href="#L582">582</a> 
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>         @Override
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> appendToHeaderList(CharSequence name, CharSequence value) {
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>             headersLength += HpackHeaderField.sizeOf(name, value);
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>             exceededMaxLength |= headersLength &gt; maxHeaderListSize;
+<a class="jxr_linenumber" name="L587" href="#L587">587</a> 
+<a class="jxr_linenumber" name="L588" href="#L588">588</a>             <strong class="jxr_keyword">if</strong> (exceededMaxLength || validationException != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>                 <em class="jxr_comment">// We don't store the header since we've already failed validation requirements.</em>
+<a class="jxr_linenumber" name="L590" href="#L590">590</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L591" href="#L591">591</a>             }
+<a class="jxr_linenumber" name="L592" href="#L592">592</a> 
+<a class="jxr_linenumber" name="L593" href="#L593">593</a>             <strong class="jxr_keyword">if</strong> (validate) {
+<a class="jxr_linenumber" name="L594" href="#L594">594</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L595" href="#L595">595</a>                     previousType = validate(streamId, name, previousType, headers);
+<a class="jxr_linenumber" name="L596" href="#L596">596</a>                 } <strong class="jxr_keyword">catch</strong> (<a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> ex) {
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>                     validationException = ex;
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>                 }
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>             }
+<a class="jxr_linenumber" name="L601" href="#L601">601</a>             headers.add(name, value);
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>         }
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>     }
+<a class="jxr_linenumber" name="L604" href="#L604">604</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
