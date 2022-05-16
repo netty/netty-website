@@ -23,13 +23,13 @@
 <a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty5.handler.codec.compression;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
-<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.ByteBuf;
-<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.ByteBufAllocator;
-<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.Unpooled;
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBufAllocator;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.Unpooled;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> java.util.function.Supplier;
 <a class="jxr_linenumber" name="L23" href="#L23">23</a>  
-<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.handler.codec.compression.Snappy.*;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.handler.codec.compression.Snappy.calculateChecksum;
 <a class="jxr_linenumber" name="L25" href="#L25">25</a>  
 <a class="jxr_linenumber" name="L26" href="#L26">26</a>  <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="L27" href="#L27">27</a>  <em class="jxr_javadoccomment"> * Compresses a {@link ByteBuf} using the Snappy framing format.</em>
@@ -74,7 +74,7 @@
 <a class="jxr_linenumber" name="L66" href="#L66">66</a>      }
 <a class="jxr_linenumber" name="L67" href="#L67">67</a>  
 <a class="jxr_linenumber" name="L68" href="#L68">68</a>      @Override
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>      <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> compress(<a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <a name="ByteBufAllocator" href="../../../../../io/netty5/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> allocator) <strong class="jxr_keyword">throws</strong> <a name="CompressionException" href="../../../../../io/netty5/handler/codec/compression/CompressionException.html#CompressionException">CompressionException</a> {
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>      <strong class="jxr_keyword">public</strong> ByteBuf compress(ByteBuf in, ByteBufAllocator allocator) <strong class="jxr_keyword">throws</strong> <a name="CompressionException" href="../../../../../io/netty5/handler/codec/compression/CompressionException.html#CompressionException">CompressionException</a> {
 <a class="jxr_linenumber" name="L70" href="#L70">70</a>          <strong class="jxr_keyword">switch</strong> (state) {
 <a class="jxr_linenumber" name="L71" href="#L71">71</a>              <strong class="jxr_keyword">case</strong> Finished:
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>                  <strong class="jxr_keyword">return</strong> Unpooled.EMPTY_BUFFER;
@@ -82,7 +82,7 @@
 <a class="jxr_linenumber" name="L74" href="#L74">74</a>                  <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="CompressionException" href="../../../../../io/netty5/handler/codec/compression/CompressionException.html#CompressionException">CompressionException</a>(<span class="jxr_string">"Compressor closed"</span>);
 <a class="jxr_linenumber" name="L75" href="#L75">75</a>              <strong class="jxr_keyword">default</strong>:
 <a class="jxr_linenumber" name="L76" href="#L76">76</a>                  <em class="jxr_comment">// TODO: Make some smart decision about the initial capacity.</em>
-<a class="jxr_linenumber" name="L77" href="#L77">77</a>                  <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> out = allocator.buffer();
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>                  ByteBuf out = allocator.buffer();
 <a class="jxr_linenumber" name="L78" href="#L78">78</a>                  <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L79" href="#L79">79</a>                      <strong class="jxr_keyword">if</strong> (state == State.Init) {
 <a class="jxr_linenumber" name="L80" href="#L80">80</a>                          state = State.Started;
@@ -96,20 +96,20 @@
 <a class="jxr_linenumber" name="L88" href="#L88">88</a>                          <strong class="jxr_keyword">for</strong> (;;) {
 <a class="jxr_linenumber" name="L89" href="#L89">89</a>                              <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> lengthIdx = out.writerIndex() + 1;
 <a class="jxr_linenumber" name="L90" href="#L90">90</a>                              <strong class="jxr_keyword">if</strong> (dataLength &lt; MIN_COMPRESSIBLE_LENGTH) {
-<a class="jxr_linenumber" name="L91" href="#L91">91</a>                                  <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> slice = in.readSlice(dataLength);
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>                                  ByteBuf slice = in.readSlice(dataLength);
 <a class="jxr_linenumber" name="L92" href="#L92">92</a>                                  writeUnencodedChunk(slice, out, dataLength);
 <a class="jxr_linenumber" name="L93" href="#L93">93</a>                                  <strong class="jxr_keyword">break</strong>;
 <a class="jxr_linenumber" name="L94" href="#L94">94</a>                              }
 <a class="jxr_linenumber" name="L95" href="#L95">95</a>  
 <a class="jxr_linenumber" name="L96" href="#L96">96</a>                              out.writeInt(0);
 <a class="jxr_linenumber" name="L97" href="#L97">97</a>                              <strong class="jxr_keyword">if</strong> (dataLength &gt; Short.MAX_VALUE) {
-<a class="jxr_linenumber" name="L98" href="#L98">98</a>                                  <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> slice = in.readSlice(Short.MAX_VALUE);
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>                                  ByteBuf slice = in.readSlice(Short.MAX_VALUE);
 <a class="jxr_linenumber" name="L99" href="#L99">99</a>                                  calculateAndWriteChecksum(slice, out);
 <a class="jxr_linenumber" name="L100" href="#L100">100</a>                                 snappy.encode(slice, out, Short.MAX_VALUE);
 <a class="jxr_linenumber" name="L101" href="#L101">101</a>                                 setChunkLength(out, lengthIdx);
 <a class="jxr_linenumber" name="L102" href="#L102">102</a>                                 dataLength -= Short.MAX_VALUE;
 <a class="jxr_linenumber" name="L103" href="#L103">103</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L104" href="#L104">104</a>                                 <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> slice = in.readSlice(dataLength);
+<a class="jxr_linenumber" name="L104" href="#L104">104</a>                                 ByteBuf slice = in.readSlice(dataLength);
 <a class="jxr_linenumber" name="L105" href="#L105">105</a>                                 calculateAndWriteChecksum(slice, out);
 <a class="jxr_linenumber" name="L106" href="#L106">106</a>                                 snappy.encode(slice, out, dataLength);
 <a class="jxr_linenumber" name="L107" href="#L107">107</a>                                 setChunkLength(out, lengthIdx);
@@ -128,7 +128,7 @@
 <a class="jxr_linenumber" name="L120" href="#L120">120</a>     }
 <a class="jxr_linenumber" name="L121" href="#L121">121</a> 
 <a class="jxr_linenumber" name="L122" href="#L122">122</a>     @Override
-<a class="jxr_linenumber" name="L123" href="#L123">123</a>     <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> finish(<a name="ByteBufAllocator" href="../../../../../io/netty5/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> allocator) {
+<a class="jxr_linenumber" name="L123" href="#L123">123</a>     <strong class="jxr_keyword">public</strong> ByteBuf finish(ByteBufAllocator allocator) {
 <a class="jxr_linenumber" name="L124" href="#L124">124</a>         <strong class="jxr_keyword">switch</strong> (state) {
 <a class="jxr_linenumber" name="L125" href="#L125">125</a>             <strong class="jxr_keyword">case</strong> Closed:
 <a class="jxr_linenumber" name="L126" href="#L126">126</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="CompressionException" href="../../../../../io/netty5/handler/codec/compression/CompressionException.html#CompressionException">CompressionException</a>(<span class="jxr_string">"Compressor closed"</span>);
@@ -163,14 +163,14 @@
 <a class="jxr_linenumber" name="L155" href="#L155">155</a>         state = State.Closed;
 <a class="jxr_linenumber" name="L156" href="#L156">156</a>     }
 <a class="jxr_linenumber" name="L157" href="#L157">157</a> 
-<a class="jxr_linenumber" name="L158" href="#L158">158</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeUnencodedChunk(<a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> out, <strong class="jxr_keyword">int</strong> dataLength) {
+<a class="jxr_linenumber" name="L158" href="#L158">158</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeUnencodedChunk(ByteBuf in, ByteBuf out, <strong class="jxr_keyword">int</strong> dataLength) {
 <a class="jxr_linenumber" name="L159" href="#L159">159</a>         out.writeByte(1);
 <a class="jxr_linenumber" name="L160" href="#L160">160</a>         writeChunkLength(out, dataLength + 4);
 <a class="jxr_linenumber" name="L161" href="#L161">161</a>         calculateAndWriteChecksum(in, out);
 <a class="jxr_linenumber" name="L162" href="#L162">162</a>         out.writeBytes(in, dataLength);
 <a class="jxr_linenumber" name="L163" href="#L163">163</a>     }
 <a class="jxr_linenumber" name="L164" href="#L164">164</a> 
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setChunkLength(<a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> out, <strong class="jxr_keyword">int</strong> lengthIdx) {
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setChunkLength(ByteBuf out, <strong class="jxr_keyword">int</strong> lengthIdx) {
 <a class="jxr_linenumber" name="L166" href="#L166">166</a>         <strong class="jxr_keyword">int</strong> chunkLength = out.writerIndex() - lengthIdx - 3;
 <a class="jxr_linenumber" name="L167" href="#L167">167</a>         <strong class="jxr_keyword">if</strong> (chunkLength &gt;&gt;&gt; 24 != 0) {
 <a class="jxr_linenumber" name="L168" href="#L168">168</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="CompressionException" href="../../../../../io/netty5/handler/codec/compression/CompressionException.html#CompressionException">CompressionException</a>(<span class="jxr_string">"compressed data too large: "</span> + chunkLength);
@@ -184,7 +184,7 @@
 <a class="jxr_linenumber" name="L176" href="#L176">176</a> <em class="jxr_javadoccomment">     * @param out The buffer to write to</em>
 <a class="jxr_linenumber" name="L177" href="#L177">177</a> <em class="jxr_javadoccomment">     * @param chunkLength The length to write</em>
 <a class="jxr_linenumber" name="L178" href="#L178">178</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeChunkLength(<a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> out, <strong class="jxr_keyword">int</strong> chunkLength) {
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeChunkLength(ByteBuf out, <strong class="jxr_keyword">int</strong> chunkLength) {
 <a class="jxr_linenumber" name="L180" href="#L180">180</a>         out.writeMediumLE(chunkLength);
 <a class="jxr_linenumber" name="L181" href="#L181">181</a>     }
 <a class="jxr_linenumber" name="L182" href="#L182">182</a> 
@@ -194,7 +194,7 @@
 <a class="jxr_linenumber" name="L186" href="#L186">186</a> <em class="jxr_javadoccomment">     * @param slice The data to calculate the checksum for</em>
 <a class="jxr_linenumber" name="L187" href="#L187">187</a> <em class="jxr_javadoccomment">     * @param out The output buffer to write the checksum to</em>
 <a class="jxr_linenumber" name="L188" href="#L188">188</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> calculateAndWriteChecksum(<a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> slice, <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> out) {
+<a class="jxr_linenumber" name="L189" href="#L189">189</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> calculateAndWriteChecksum(ByteBuf slice, ByteBuf out) {
 <a class="jxr_linenumber" name="L190" href="#L190">190</a>         out.writeIntLE(calculateChecksum(slice));
 <a class="jxr_linenumber" name="L191" href="#L191">191</a>     }
 <a class="jxr_linenumber" name="L192" href="#L192">192</a> }

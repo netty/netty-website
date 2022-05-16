@@ -24,196 +24,196 @@
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  <strong class="jxr_keyword">package</strong> io.netty5.resolver.dns;
 <a class="jxr_linenumber" name="L18" href="#L18">18</a>  
-<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.ByteBuf;
-<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.ByteBufHolder;
-<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.AddressedEnvelope;
-<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.EventLoop;
-<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.CorruptedFrameException;
-<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DefaultDnsQuestion;
-<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DefaultDnsRecordDecoder;
-<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsQuestion;
-<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsRawRecord;
-<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsRecord;
-<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsRecordType;
-<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsResponse;
-<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsResponseCode;
-<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsSection;
-<a class="jxr_linenumber" name="L33" href="#L33">33</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.NetUtil;
-<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.ReferenceCountUtil;
-<a class="jxr_linenumber" name="L35" href="#L35">35</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.Future;
-<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.FutureListener;
-<a class="jxr_linenumber" name="L37" href="#L37">37</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.Promise;
-<a class="jxr_linenumber" name="L38" href="#L38">38</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.PlatformDependent;
-<a class="jxr_linenumber" name="L39" href="#L39">39</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.StringUtil;
-<a class="jxr_linenumber" name="L40" href="#L40">40</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.ThrowableUtil;
-<a class="jxr_linenumber" name="L41" href="#L41">41</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.logging.InternalLogger;
-<a class="jxr_linenumber" name="L42" href="#L42">42</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.logging.InternalLoggerFactory;
-<a class="jxr_linenumber" name="L43" href="#L43">43</a>  
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>  <strong class="jxr_keyword">import</strong> java.net.InetAddress;
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>  <strong class="jxr_keyword">import</strong> java.net.InetSocketAddress;
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <strong class="jxr_keyword">import</strong> java.net.UnknownHostException;
-<a class="jxr_linenumber" name="L47" href="#L47">47</a>  <strong class="jxr_keyword">import</strong> java.util.AbstractList;
-<a class="jxr_linenumber" name="L48" href="#L48">48</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayList;
-<a class="jxr_linenumber" name="L49" href="#L49">49</a>  <strong class="jxr_keyword">import</strong> java.util.Arrays;
-<a class="jxr_linenumber" name="L50" href="#L50">50</a>  <strong class="jxr_keyword">import</strong> java.util.Collections;
-<a class="jxr_linenumber" name="L51" href="#L51">51</a>  <strong class="jxr_keyword">import</strong> java.util.HashMap;
-<a class="jxr_linenumber" name="L52" href="#L52">52</a>  <strong class="jxr_keyword">import</strong> java.util.IdentityHashMap;
-<a class="jxr_linenumber" name="L53" href="#L53">53</a>  <strong class="jxr_keyword">import</strong> java.util.Iterator;
-<a class="jxr_linenumber" name="L54" href="#L54">54</a>  <strong class="jxr_keyword">import</strong> java.util.List;
-<a class="jxr_linenumber" name="L55" href="#L55">55</a>  <strong class="jxr_keyword">import</strong> java.util.Locale;
-<a class="jxr_linenumber" name="L56" href="#L56">56</a>  <strong class="jxr_keyword">import</strong> java.util.Map;
-<a class="jxr_linenumber" name="L57" href="#L57">57</a>  <strong class="jxr_keyword">import</strong> java.util.NoSuchElementException;
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>  <strong class="jxr_keyword">import</strong> java.util.Set;
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>  
-<a class="jxr_linenumber" name="L60" href="#L60">60</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.resolver.dns.DnsAddressDecoder.decodeAddress;
-<a class="jxr_linenumber" name="L61" href="#L61">61</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> java.lang.Math.min;
-<a class="jxr_linenumber" name="L62" href="#L62">62</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> java.util.Objects.requireNonNull;
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>  
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>  <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> DnsResolveContext&lt;T&gt; {
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="InternalLogger" href="../../../../io/netty5/util/internal/logging/InternalLogger.html#InternalLogger">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DnsResolveContext.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="L66" href="#L66">66</a>  
-<a class="jxr_linenumber" name="L67" href="#L67">67</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException NXDOMAIN_QUERY_FAILED_EXCEPTION =
-<a class="jxr_linenumber" name="L68" href="#L68">68</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No answer found and NXDOMAIN response code returned"</span>,
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponse(..)"</span>);
-<a class="jxr_linenumber" name="L70" href="#L70">70</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException CNAME_NOT_FOUND_QUERY_FAILED_EXCEPTION =
-<a class="jxr_linenumber" name="L71" href="#L71">71</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No matching CNAME record found"</span>,
-<a class="jxr_linenumber" name="L72" href="#L72">72</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponseCNAME(..)"</span>);
-<a class="jxr_linenumber" name="L73" href="#L73">73</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException NO_MATCHING_RECORD_QUERY_FAILED_EXCEPTION =
-<a class="jxr_linenumber" name="L74" href="#L74">74</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No matching record type found"</span>,
-<a class="jxr_linenumber" name="L75" href="#L75">75</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponseAorAAAA(..)"</span>);
-<a class="jxr_linenumber" name="L76" href="#L76">76</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException UNRECOGNIZED_TYPE_QUERY_FAILED_EXCEPTION =
-<a class="jxr_linenumber" name="L77" href="#L77">77</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"Response type was unrecognized"</span>,
-<a class="jxr_linenumber" name="L78" href="#L78">78</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponse(..)"</span>);
-<a class="jxr_linenumber" name="L79" href="#L79">79</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException NAME_SERVERS_EXHAUSTED_EXCEPTION =
-<a class="jxr_linenumber" name="L80" href="#L80">80</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No name servers returned an answer"</span>,
-<a class="jxr_linenumber" name="L81" href="#L81">81</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"tryToFinishResolve(..)"</span>);
-<a class="jxr_linenumber" name="L82" href="#L82">82</a>  
-<a class="jxr_linenumber" name="L83" href="#L83">83</a>      <strong class="jxr_keyword">final</strong> <a name="DnsNameResolver" href="../../../../io/netty5/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> parent;
-<a class="jxr_linenumber" name="L84" href="#L84">84</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Promise&lt;?&gt; originalPromise;
-<a class="jxr_linenumber" name="L85" href="#L85">85</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> nameServerAddrs;
-<a class="jxr_linenumber" name="L86" href="#L86">86</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> String hostname;
-<a class="jxr_linenumber" name="L87" href="#L87">87</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> dnsClass;
-<a class="jxr_linenumber" name="L88" href="#L88">88</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="DnsRecordType" href="../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a>[] expectedTypes;
-<a class="jxr_linenumber" name="L89" href="#L89">89</a>      <strong class="jxr_keyword">final</strong> <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals;
-<a class="jxr_linenumber" name="L90" href="#L90">90</a>  
-<a class="jxr_linenumber" name="L91" href="#L91">91</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Set&lt;Future&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt;&gt; queriesInProgress =
-<a class="jxr_linenumber" name="L92" href="#L92">92</a>              Collections.newSetFromMap(
-<a class="jxr_linenumber" name="L93" href="#L93">93</a>                      <strong class="jxr_keyword">new</strong> IdentityHashMap&lt;&gt;());
-<a class="jxr_linenumber" name="L94" href="#L94">94</a>  
-<a class="jxr_linenumber" name="L95" href="#L95">95</a>      <strong class="jxr_keyword">private</strong> List&lt;T&gt; finalResult;
-<a class="jxr_linenumber" name="L96" href="#L96">96</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> allowedQueries;
-<a class="jxr_linenumber" name="L97" href="#L97">97</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> triedCNAME;
-<a class="jxr_linenumber" name="L98" href="#L98">98</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> completeEarly;
-<a class="jxr_linenumber" name="L99" href="#L99">99</a>  
-<a class="jxr_linenumber" name="L100" href="#L100">100</a>     <a name="DnsResolveContext" href="../../../../io/netty5/resolver/dns/DnsResolveContext.html#DnsResolveContext">DnsResolveContext</a>(<a name="DnsNameResolver" href="../../../../io/netty5/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> parent, Promise&lt;?&gt; originalPromise,
-<a class="jxr_linenumber" name="L101" href="#L101">101</a>                       String hostname, <strong class="jxr_keyword">int</strong> dnsClass, <a name="DnsRecordType" href="../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a>[] expectedTypes,
-<a class="jxr_linenumber" name="L102" href="#L102">102</a>                       <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals, <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> nameServerAddrs, <strong class="jxr_keyword">int</strong> allowedQueries) {
-<a class="jxr_linenumber" name="L103" href="#L103">103</a>         assert expectedTypes.length &gt; 0;
-<a class="jxr_linenumber" name="L104" href="#L104">104</a> 
-<a class="jxr_linenumber" name="L105" href="#L105">105</a>         <strong class="jxr_keyword">this</strong>.parent = parent;
-<a class="jxr_linenumber" name="L106" href="#L106">106</a>         <strong class="jxr_keyword">this</strong>.originalPromise = originalPromise;
-<a class="jxr_linenumber" name="L107" href="#L107">107</a>         <strong class="jxr_keyword">this</strong>.hostname = hostname;
-<a class="jxr_linenumber" name="L108" href="#L108">108</a>         <strong class="jxr_keyword">this</strong>.dnsClass = dnsClass;
-<a class="jxr_linenumber" name="L109" href="#L109">109</a>         <strong class="jxr_keyword">this</strong>.expectedTypes = expectedTypes;
-<a class="jxr_linenumber" name="L110" href="#L110">110</a>         <strong class="jxr_keyword">this</strong>.additionals = additionals;
-<a class="jxr_linenumber" name="L111" href="#L111">111</a> 
-<a class="jxr_linenumber" name="L112" href="#L112">112</a>         <strong class="jxr_keyword">this</strong>.nameServerAddrs = requireNonNull(nameServerAddrs, <span class="jxr_string">"nameServerAddrs"</span>);
-<a class="jxr_linenumber" name="L113" href="#L113">113</a>         <strong class="jxr_keyword">this</strong>.allowedQueries = allowedQueries;
-<a class="jxr_linenumber" name="L114" href="#L114">114</a>     }
-<a class="jxr_linenumber" name="L115" href="#L115">115</a> 
-<a class="jxr_linenumber" name="L116" href="#L116">116</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> DnsResolveContextException <strong class="jxr_keyword">extends</strong> RuntimeException {
-<a class="jxr_linenumber" name="L117" href="#L117">117</a> 
-<a class="jxr_linenumber" name="L118" href="#L118">118</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 1209303419266433003L;
-<a class="jxr_linenumber" name="L119" href="#L119">119</a> 
-<a class="jxr_linenumber" name="L120" href="#L120">120</a>         <strong class="jxr_keyword">private</strong> DnsResolveContextException(String message) {
-<a class="jxr_linenumber" name="L121" href="#L121">121</a>             <strong class="jxr_keyword">super</strong>(message, <strong class="jxr_keyword">null</strong>, false, <strong class="jxr_keyword">true</strong>); <em class="jxr_comment">// Need to keep the stack trace mutable.</em>
-<a class="jxr_linenumber" name="L122" href="#L122">122</a>         }
-<a class="jxr_linenumber" name="L123" href="#L123">123</a> 
-<a class="jxr_linenumber" name="L124" href="#L124">124</a>         <em class="jxr_comment">// Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the</em>
-<a class="jxr_linenumber" name="L125" href="#L125">125</a>         <em class="jxr_comment">// Classloader.</em>
-<a class="jxr_linenumber" name="L126" href="#L126">126</a>         @Override
-<a class="jxr_linenumber" name="L127" href="#L127">127</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
-<a class="jxr_linenumber" name="L128" href="#L128">128</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L129" href="#L129">129</a>         }
-<a class="jxr_linenumber" name="L130" href="#L130">130</a> 
-<a class="jxr_linenumber" name="L131" href="#L131">131</a>         <strong class="jxr_keyword">static</strong> DnsResolveContextException newStatic(String message, Class&lt;?&gt; clazz, String method) {
-<a class="jxr_linenumber" name="L132" href="#L132">132</a>             <strong class="jxr_keyword">return</strong> ThrowableUtil.unknownStackTrace(<strong class="jxr_keyword">new</strong> DnsResolveContextException(message), clazz, method);
-<a class="jxr_linenumber" name="L133" href="#L133">133</a>         }
-<a class="jxr_linenumber" name="L134" href="#L134">134</a>     }
-<a class="jxr_linenumber" name="L135" href="#L135">135</a> 
-<a class="jxr_linenumber" name="L136" href="#L136">136</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L137" href="#L137">137</a> <em class="jxr_javadoccomment">     * The {@link DnsCache} to use while resolving.</em>
-<a class="jxr_linenumber" name="L138" href="#L138">138</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L139" href="#L139">139</a>     <a name="DnsCache" href="../../../../io/netty5/resolver/dns/DnsCache.html#DnsCache">DnsCache</a> resolveCache() {
-<a class="jxr_linenumber" name="L140" href="#L140">140</a>         <strong class="jxr_keyword">return</strong> parent.resolveCache();
-<a class="jxr_linenumber" name="L141" href="#L141">141</a>     }
-<a class="jxr_linenumber" name="L142" href="#L142">142</a> 
-<a class="jxr_linenumber" name="L143" href="#L143">143</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L144" href="#L144">144</a> <em class="jxr_javadoccomment">     * The {@link DnsCnameCache} that is used for resolving.</em>
-<a class="jxr_linenumber" name="L145" href="#L145">145</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L146" href="#L146">146</a>     <a name="DnsCnameCache" href="../../../../io/netty5/resolver/dns/DnsCnameCache.html#DnsCnameCache">DnsCnameCache</a> cnameCache() {
-<a class="jxr_linenumber" name="L147" href="#L147">147</a>         <strong class="jxr_keyword">return</strong> parent.cnameCache();
-<a class="jxr_linenumber" name="L148" href="#L148">148</a>     }
-<a class="jxr_linenumber" name="L149" href="#L149">149</a> 
-<a class="jxr_linenumber" name="L150" href="#L150">150</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L151" href="#L151">151</a> <em class="jxr_javadoccomment">     * The {@link AuthoritativeDnsServerCache} to use while resolving.</em>
-<a class="jxr_linenumber" name="L152" href="#L152">152</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L153" href="#L153">153</a>     <a name="AuthoritativeDnsServerCache" href="../../../../io/netty5/resolver/dns/AuthoritativeDnsServerCache.html#AuthoritativeDnsServerCache">AuthoritativeDnsServerCache</a> authoritativeDnsServerCache() {
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>         <strong class="jxr_keyword">return</strong> parent.authoritativeDnsServerCache();
-<a class="jxr_linenumber" name="L155" href="#L155">155</a>     }
-<a class="jxr_linenumber" name="L156" href="#L156">156</a> 
-<a class="jxr_linenumber" name="L157" href="#L157">157</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L158" href="#L158">158</a> <em class="jxr_javadoccomment">     * Creates a new context with the given parameters.</em>
-<a class="jxr_linenumber" name="L159" href="#L159">159</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>     <strong class="jxr_keyword">abstract</strong> DnsResolveContext&lt;T&gt; newResolverContext(<a name="DnsNameResolver" href="../../../../io/netty5/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> parent, Promise&lt;?&gt; originalPromise,
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>                                                      String hostname,
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>                                                      <strong class="jxr_keyword">int</strong> dnsClass, <a name="DnsRecordType" href="../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a>[] expectedTypes,
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>                                                      <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals,
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>                                                      <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> nameServerAddrs, <strong class="jxr_keyword">int</strong> allowedQueries);
-<a class="jxr_linenumber" name="L165" href="#L165">165</a> 
-<a class="jxr_linenumber" name="L166" href="#L166">166</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L167" href="#L167">167</a> <em class="jxr_javadoccomment">     * Converts the given {@link DnsRecord} into {@code T}.</em>
-<a class="jxr_linenumber" name="L168" href="#L168">168</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>     <strong class="jxr_keyword">abstract</strong> T convertRecord(<a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a> record, String hostname, <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals, <a name="EventLoop" href="../../../../io/netty5/channel/EventLoop.html#EventLoop">EventLoop</a> eventLoop);
-<a class="jxr_linenumber" name="L170" href="#L170">170</a> 
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L172" href="#L172">172</a> <em class="jxr_javadoccomment">     * Returns a filtered list of results which should be the final result of DNS resolution. This must take into</em>
-<a class="jxr_linenumber" name="L173" href="#L173">173</a> <em class="jxr_javadoccomment">     * account JDK semantics such as {@link NetUtil#isIpV6AddressesPreferred()}.</em>
-<a class="jxr_linenumber" name="L174" href="#L174">174</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>     <strong class="jxr_keyword">abstract</strong> List&lt;T&gt; filterResults(List&lt;T&gt; unfiltered);
-<a class="jxr_linenumber" name="L176" href="#L176">176</a> 
-<a class="jxr_linenumber" name="L177" href="#L177">177</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isCompleteEarly(T resolved);
-<a class="jxr_linenumber" name="L178" href="#L178">178</a> 
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L180" href="#L180">180</a> <em class="jxr_javadoccomment">     * Returns {@code true} if we should allow duplicates in the result or {@code false} if no duplicates should</em>
-<a class="jxr_linenumber" name="L181" href="#L181">181</a> <em class="jxr_javadoccomment">     * be included.</em>
-<a class="jxr_linenumber" name="L182" href="#L182">182</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L183" href="#L183">183</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isDuplicateAllowed();
-<a class="jxr_linenumber" name="L184" href="#L184">184</a> 
-<a class="jxr_linenumber" name="L185" href="#L185">185</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L186" href="#L186">186</a> <em class="jxr_javadoccomment">     * Caches a successful resolution.</em>
-<a class="jxr_linenumber" name="L187" href="#L187">187</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L188" href="#L188">188</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> cache(String hostname, <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals,
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>                         <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a> result, T convertedResult);
-<a class="jxr_linenumber" name="L190" href="#L190">190</a> 
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L192" href="#L192">192</a> <em class="jxr_javadoccomment">     * Caches a failed resolution.</em>
-<a class="jxr_linenumber" name="L193" href="#L193">193</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> cache(String hostname, <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals,
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>                         UnknownHostException cause);
-<a class="jxr_linenumber" name="L196" href="#L196">196</a> 
-<a class="jxr_linenumber" name="L197" href="#L197">197</a>     <strong class="jxr_keyword">void</strong> resolve(<strong class="jxr_keyword">final</strong> Promise&lt;List&lt;T&gt;&gt; promise) {
-<a class="jxr_linenumber" name="L198" href="#L198">198</a>         <strong class="jxr_keyword">final</strong> String[] searchDomains = parent.searchDomains();
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>         <strong class="jxr_keyword">if</strong> (searchDomains.length == 0 || parent.ndots() == 0 || StringUtil.endsWith(hostname, '.')) {
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>             internalResolve(hostname, promise);
-<a class="jxr_linenumber" name="L201" href="#L201">201</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L202" href="#L202">202</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> startWithoutSearchDomain = hasNDots();
-<a class="jxr_linenumber" name="L203" href="#L203">203</a>             <strong class="jxr_keyword">final</strong> String initialHostname = startWithoutSearchDomain ? hostname : hostname + '.' + searchDomains[0];
-<a class="jxr_linenumber" name="L204" href="#L204">204</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> initialSearchDomainIdx = startWithoutSearchDomain ? 0 : 1;
-<a class="jxr_linenumber" name="L205" href="#L205">205</a> 
-<a class="jxr_linenumber" name="L206" href="#L206">206</a>             <strong class="jxr_keyword">final</strong> Promise&lt;List&lt;T&gt;&gt; searchDomainPromise = parent.executor().newPromise();
-<a class="jxr_linenumber" name="L207" href="#L207">207</a>             searchDomainPromise.asFuture().addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;List&lt;T&gt;&gt;() {
-<a class="jxr_linenumber" name="L208" href="#L208">208</a>                 <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> searchDomainIdx = initialSearchDomainIdx;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Buffer;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.AddressedEnvelope;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.EventLoop;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.CorruptedFrameException;
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DefaultDnsQuestion;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DefaultDnsRecordDecoder;
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsQuestion;
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsRawRecord;
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsRecord;
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsRecordType;
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsResponse;
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsResponseCode;
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.dns.DnsSection;
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.NetUtil;
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.ReferenceCountUtil;
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.Future;
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.FutureListener;
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.Promise;
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.PlatformDependent;
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.StringUtil;
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.ThrowableUtil;
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.logging.InternalLogger;
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.logging.InternalLoggerFactory;
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>  
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>  <strong class="jxr_keyword">import</strong> java.net.InetAddress;
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>  <strong class="jxr_keyword">import</strong> java.net.InetSocketAddress;
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>  <strong class="jxr_keyword">import</strong> java.net.UnknownHostException;
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <strong class="jxr_keyword">import</strong> java.util.AbstractList;
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayList;
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>  <strong class="jxr_keyword">import</strong> java.util.Arrays;
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>  <strong class="jxr_keyword">import</strong> java.util.Collections;
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>  <strong class="jxr_keyword">import</strong> java.util.HashMap;
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>  <strong class="jxr_keyword">import</strong> java.util.IdentityHashMap;
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>  <strong class="jxr_keyword">import</strong> java.util.Iterator;
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>  <strong class="jxr_keyword">import</strong> java.util.List;
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>  <strong class="jxr_keyword">import</strong> java.util.Locale;
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>  <strong class="jxr_keyword">import</strong> java.util.Map;
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>  <strong class="jxr_keyword">import</strong> java.util.NoSuchElementException;
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>  <strong class="jxr_keyword">import</strong> java.util.Set;
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>  
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.resolver.dns.DnsAddressDecoder.decodeAddress;
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> java.lang.Math.min;
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> java.util.Objects.requireNonNull;
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>  
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>  <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> DnsResolveContext&lt;T&gt; {
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="InternalLogger" href="../../../../io/netty5/util/internal/logging/InternalLogger.html#InternalLogger">InternalLogger</a> logger = InternalLoggerFactory.getInstance(DnsResolveContext.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>  
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException NXDOMAIN_QUERY_FAILED_EXCEPTION =
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No answer found and NXDOMAIN response code returned"</span>,
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponse(..)"</span>);
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException CNAME_NOT_FOUND_QUERY_FAILED_EXCEPTION =
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No matching CNAME record found"</span>,
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponseCNAME(..)"</span>);
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException NO_MATCHING_RECORD_QUERY_FAILED_EXCEPTION =
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No matching record type found"</span>,
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponseAorAAAA(..)"</span>);
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException UNRECOGNIZED_TYPE_QUERY_FAILED_EXCEPTION =
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"Response type was unrecognized"</span>,
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"onResponse(..)"</span>);
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> RuntimeException NAME_SERVERS_EXHAUSTED_EXCEPTION =
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>              DnsResolveContextException.newStatic(<span class="jxr_string">"No name servers returned an answer"</span>,
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>              DnsResolveContext.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"tryToFinishResolve(..)"</span>);
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>  
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>      <strong class="jxr_keyword">final</strong> <a name="DnsNameResolver" href="../../../../io/netty5/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> parent;
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Promise&lt;?&gt; originalPromise;
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> nameServerAddrs;
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> String hostname;
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> dnsClass;
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="DnsRecordType" href="../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a>[] expectedTypes;
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>      <strong class="jxr_keyword">final</strong> <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals;
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>  
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Set&lt;Future&lt;AddressedEnvelope&lt;DnsResponse, InetSocketAddress&gt;&gt;&gt; queriesInProgress =
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>              Collections.newSetFromMap(
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>                      <strong class="jxr_keyword">new</strong> IdentityHashMap&lt;&gt;());
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>  
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>      <strong class="jxr_keyword">private</strong> List&lt;T&gt; finalResult;
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> allowedQueries;
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> triedCNAME;
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> completeEarly;
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>  
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>      <a name="DnsResolveContext" href="../../../../io/netty5/resolver/dns/DnsResolveContext.html#DnsResolveContext">DnsResolveContext</a>(<a name="DnsNameResolver" href="../../../../io/netty5/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> parent, Promise&lt;?&gt; originalPromise,
+<a class="jxr_linenumber" name="L100" href="#L100">100</a>                       String hostname, <strong class="jxr_keyword">int</strong> dnsClass, <a name="DnsRecordType" href="../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a>[] expectedTypes,
+<a class="jxr_linenumber" name="L101" href="#L101">101</a>                       <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals, <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> nameServerAddrs, <strong class="jxr_keyword">int</strong> allowedQueries) {
+<a class="jxr_linenumber" name="L102" href="#L102">102</a>         assert expectedTypes.length &gt; 0;
+<a class="jxr_linenumber" name="L103" href="#L103">103</a> 
+<a class="jxr_linenumber" name="L104" href="#L104">104</a>         <strong class="jxr_keyword">this</strong>.parent = parent;
+<a class="jxr_linenumber" name="L105" href="#L105">105</a>         <strong class="jxr_keyword">this</strong>.originalPromise = originalPromise;
+<a class="jxr_linenumber" name="L106" href="#L106">106</a>         <strong class="jxr_keyword">this</strong>.hostname = hostname;
+<a class="jxr_linenumber" name="L107" href="#L107">107</a>         <strong class="jxr_keyword">this</strong>.dnsClass = dnsClass;
+<a class="jxr_linenumber" name="L108" href="#L108">108</a>         <strong class="jxr_keyword">this</strong>.expectedTypes = expectedTypes;
+<a class="jxr_linenumber" name="L109" href="#L109">109</a>         <strong class="jxr_keyword">this</strong>.additionals = additionals;
+<a class="jxr_linenumber" name="L110" href="#L110">110</a> 
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>         <strong class="jxr_keyword">this</strong>.nameServerAddrs = requireNonNull(nameServerAddrs, <span class="jxr_string">"nameServerAddrs"</span>);
+<a class="jxr_linenumber" name="L112" href="#L112">112</a>         <strong class="jxr_keyword">this</strong>.allowedQueries = allowedQueries;
+<a class="jxr_linenumber" name="L113" href="#L113">113</a>     }
+<a class="jxr_linenumber" name="L114" href="#L114">114</a> 
+<a class="jxr_linenumber" name="L115" href="#L115">115</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> DnsResolveContextException <strong class="jxr_keyword">extends</strong> RuntimeException {
+<a class="jxr_linenumber" name="L116" href="#L116">116</a> 
+<a class="jxr_linenumber" name="L117" href="#L117">117</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> serialVersionUID = 1209303419266433003L;
+<a class="jxr_linenumber" name="L118" href="#L118">118</a> 
+<a class="jxr_linenumber" name="L119" href="#L119">119</a>         <strong class="jxr_keyword">private</strong> DnsResolveContextException(String message) {
+<a class="jxr_linenumber" name="L120" href="#L120">120</a>             <strong class="jxr_keyword">super</strong>(message, <strong class="jxr_keyword">null</strong>, false, <strong class="jxr_keyword">true</strong>); <em class="jxr_comment">// Need to keep the stack trace mutable.</em>
+<a class="jxr_linenumber" name="L121" href="#L121">121</a>         }
+<a class="jxr_linenumber" name="L122" href="#L122">122</a> 
+<a class="jxr_linenumber" name="L123" href="#L123">123</a>         <em class="jxr_comment">// Override fillInStackTrace() so we not populate the backtrace via a native call and so leak the</em>
+<a class="jxr_linenumber" name="L124" href="#L124">124</a>         <em class="jxr_comment">// Classloader.</em>
+<a class="jxr_linenumber" name="L125" href="#L125">125</a>         @Override
+<a class="jxr_linenumber" name="L126" href="#L126">126</a>         <strong class="jxr_keyword">public</strong> Throwable fillInStackTrace() {
+<a class="jxr_linenumber" name="L127" href="#L127">127</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L128" href="#L128">128</a>         }
+<a class="jxr_linenumber" name="L129" href="#L129">129</a> 
+<a class="jxr_linenumber" name="L130" href="#L130">130</a>         <strong class="jxr_keyword">static</strong> DnsResolveContextException newStatic(String message, Class&lt;?&gt; clazz, String method) {
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>             <strong class="jxr_keyword">return</strong> ThrowableUtil.unknownStackTrace(<strong class="jxr_keyword">new</strong> DnsResolveContextException(message), clazz, method);
+<a class="jxr_linenumber" name="L132" href="#L132">132</a>         }
+<a class="jxr_linenumber" name="L133" href="#L133">133</a>     }
+<a class="jxr_linenumber" name="L134" href="#L134">134</a> 
+<a class="jxr_linenumber" name="L135" href="#L135">135</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L136" href="#L136">136</a> <em class="jxr_javadoccomment">     * The {@link DnsCache} to use while resolving.</em>
+<a class="jxr_linenumber" name="L137" href="#L137">137</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L138" href="#L138">138</a>     <a name="DnsCache" href="../../../../io/netty5/resolver/dns/DnsCache.html#DnsCache">DnsCache</a> resolveCache() {
+<a class="jxr_linenumber" name="L139" href="#L139">139</a>         <strong class="jxr_keyword">return</strong> parent.resolveCache();
+<a class="jxr_linenumber" name="L140" href="#L140">140</a>     }
+<a class="jxr_linenumber" name="L141" href="#L141">141</a> 
+<a class="jxr_linenumber" name="L142" href="#L142">142</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L143" href="#L143">143</a> <em class="jxr_javadoccomment">     * The {@link DnsCnameCache} that is used for resolving.</em>
+<a class="jxr_linenumber" name="L144" href="#L144">144</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>     <a name="DnsCnameCache" href="../../../../io/netty5/resolver/dns/DnsCnameCache.html#DnsCnameCache">DnsCnameCache</a> cnameCache() {
+<a class="jxr_linenumber" name="L146" href="#L146">146</a>         <strong class="jxr_keyword">return</strong> parent.cnameCache();
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>     }
+<a class="jxr_linenumber" name="L148" href="#L148">148</a> 
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L150" href="#L150">150</a> <em class="jxr_javadoccomment">     * The {@link AuthoritativeDnsServerCache} to use while resolving.</em>
+<a class="jxr_linenumber" name="L151" href="#L151">151</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L152" href="#L152">152</a>     <a name="AuthoritativeDnsServerCache" href="../../../../io/netty5/resolver/dns/AuthoritativeDnsServerCache.html#AuthoritativeDnsServerCache">AuthoritativeDnsServerCache</a> authoritativeDnsServerCache() {
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>         <strong class="jxr_keyword">return</strong> parent.authoritativeDnsServerCache();
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>     }
+<a class="jxr_linenumber" name="L155" href="#L155">155</a> 
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L157" href="#L157">157</a> <em class="jxr_javadoccomment">     * Creates a new context with the given parameters.</em>
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>     <strong class="jxr_keyword">abstract</strong> DnsResolveContext&lt;T&gt; newResolverContext(<a name="DnsNameResolver" href="../../../../io/netty5/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> parent, Promise&lt;?&gt; originalPromise,
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>                                                      String hostname,
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>                                                      <strong class="jxr_keyword">int</strong> dnsClass, <a name="DnsRecordType" href="../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a>[] expectedTypes,
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>                                                      <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals,
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>                                                      <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> nameServerAddrs, <strong class="jxr_keyword">int</strong> allowedQueries);
+<a class="jxr_linenumber" name="L164" href="#L164">164</a> 
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L166" href="#L166">166</a> <em class="jxr_javadoccomment">     * Converts the given {@link DnsRecord} into {@code T}.</em>
+<a class="jxr_linenumber" name="L167" href="#L167">167</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>     <strong class="jxr_keyword">abstract</strong> T convertRecord(<a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a> record, String hostname, <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals, <a name="EventLoop" href="../../../../io/netty5/channel/EventLoop.html#EventLoop">EventLoop</a> eventLoop);
+<a class="jxr_linenumber" name="L169" href="#L169">169</a> 
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L171" href="#L171">171</a> <em class="jxr_javadoccomment">     * Returns a filtered list of results which should be the final result of DNS resolution. This must take into</em>
+<a class="jxr_linenumber" name="L172" href="#L172">172</a> <em class="jxr_javadoccomment">     * account JDK semantics such as {@link NetUtil#isIpV6AddressesPreferred()}.</em>
+<a class="jxr_linenumber" name="L173" href="#L173">173</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>     <strong class="jxr_keyword">abstract</strong> List&lt;T&gt; filterResults(List&lt;T&gt; unfiltered);
+<a class="jxr_linenumber" name="L175" href="#L175">175</a> 
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isCompleteEarly(T resolved);
+<a class="jxr_linenumber" name="L177" href="#L177">177</a> 
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L179" href="#L179">179</a> <em class="jxr_javadoccomment">     * Returns {@code true} if we should allow duplicates in the result or {@code false} if no duplicates should</em>
+<a class="jxr_linenumber" name="L180" href="#L180">180</a> <em class="jxr_javadoccomment">     * be included.</em>
+<a class="jxr_linenumber" name="L181" href="#L181">181</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isDuplicateAllowed();
+<a class="jxr_linenumber" name="L183" href="#L183">183</a> 
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L185" href="#L185">185</a> <em class="jxr_javadoccomment">     * Caches a successful resolution.</em>
+<a class="jxr_linenumber" name="L186" href="#L186">186</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> cache(String hostname, <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals,
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>                         <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a> result, T convertedResult);
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> 
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L191" href="#L191">191</a> <em class="jxr_javadoccomment">     * Caches a failed resolution.</em>
+<a class="jxr_linenumber" name="L192" href="#L192">192</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>     <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> cache(String hostname, <a name="DnsRecord" href="../../../../io/netty5/handler/codec/dns/DnsRecord.html#DnsRecord">DnsRecord</a>[] additionals,
+<a class="jxr_linenumber" name="L194" href="#L194">194</a>                         UnknownHostException cause);
+<a class="jxr_linenumber" name="L195" href="#L195">195</a> 
+<a class="jxr_linenumber" name="L196" href="#L196">196</a>     <strong class="jxr_keyword">void</strong> resolve(<strong class="jxr_keyword">final</strong> Promise&lt;List&lt;T&gt;&gt; promise) {
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>         <strong class="jxr_keyword">final</strong> String[] searchDomains = parent.searchDomains();
+<a class="jxr_linenumber" name="L198" href="#L198">198</a>         <strong class="jxr_keyword">if</strong> (searchDomains.length == 0 || parent.ndots() == 0 || StringUtil.endsWith(hostname, '.')) {
+<a class="jxr_linenumber" name="L199" href="#L199">199</a>             internalResolve(hostname, promise);
+<a class="jxr_linenumber" name="L200" href="#L200">200</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L201" href="#L201">201</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> startWithoutSearchDomain = hasNDots();
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>             <strong class="jxr_keyword">final</strong> String initialHostname = startWithoutSearchDomain ? hostname : hostname + '.' + searchDomains[0];
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> initialSearchDomainIdx = startWithoutSearchDomain ? 0 : 1;
+<a class="jxr_linenumber" name="L204" href="#L204">204</a> 
+<a class="jxr_linenumber" name="L205" href="#L205">205</a>             <strong class="jxr_keyword">final</strong> Promise&lt;List&lt;T&gt;&gt; searchDomainPromise = parent.executor().newPromise();
+<a class="jxr_linenumber" name="L206" href="#L206">206</a>             searchDomainPromise.asFuture().addListener(<strong class="jxr_keyword">new</strong> FutureListener&lt;&gt;() {
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>                 <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> searchDomainIdx = initialSearchDomainIdx;
+<a class="jxr_linenumber" name="L208" href="#L208">208</a> 
 <a class="jxr_linenumber" name="L209" href="#L209">209</a>                 @Override
 <a class="jxr_linenumber" name="L210" href="#L210">210</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;? <strong class="jxr_keyword">extends</strong> List&lt;T&gt;&gt; future) {
 <a class="jxr_linenumber" name="L211" href="#L211">211</a>                     Throwable cause = future.cause();
@@ -697,7 +697,7 @@
 <a class="jxr_linenumber" name="L689" href="#L689">689</a> 
 <a class="jxr_linenumber" name="L690" href="#L690">690</a>         @Override
 <a class="jxr_linenumber" name="L691" href="#L691">691</a>         <strong class="jxr_keyword">public</strong> Iterator&lt;InetSocketAddress&gt; iterator() {
-<a class="jxr_linenumber" name="L692" href="#L692">692</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> Iterator&lt;InetSocketAddress&gt;() {
+<a class="jxr_linenumber" name="L692" href="#L692">692</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> Iterator&lt;&gt;() {
 <a class="jxr_linenumber" name="L693" href="#L693">693</a>                 <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="DnsServerAddressStream" href="../../../../io/netty5/resolver/dns/DnsServerAddressStream.html#DnsServerAddressStream">DnsServerAddressStream</a> stream = duplicate.duplicate();
 <a class="jxr_linenumber" name="L694" href="#L694">694</a>                 <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> i;
 <a class="jxr_linenumber" name="L695" href="#L695">695</a> 
@@ -907,7 +907,7 @@
 <a class="jxr_linenumber" name="L899" href="#L899">899</a>                 <strong class="jxr_keyword">continue</strong>;
 <a class="jxr_linenumber" name="L900" href="#L900">900</a>             }
 <a class="jxr_linenumber" name="L901" href="#L901">901</a> 
-<a class="jxr_linenumber" name="L902" href="#L902">902</a>             <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> recordContent = ((<a name="ByteBufHolder" href="../../../../io/netty5/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) r).content();
+<a class="jxr_linenumber" name="L902" href="#L902">902</a>             <strong class="jxr_keyword">final</strong> <a name="Buffer" href="../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> recordContent = ((<a name="DnsRawRecord" href="../../../../io/netty5/handler/codec/dns/DnsRawRecord.html#DnsRawRecord">DnsRawRecord</a>) r).content();
 <a class="jxr_linenumber" name="L903" href="#L903">903</a>             <strong class="jxr_keyword">final</strong> String domainName = decodeDomainName(recordContent);
 <a class="jxr_linenumber" name="L904" href="#L904">904</a>             <strong class="jxr_keyword">if</strong> (domainName == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L905" href="#L905">905</a>                 <strong class="jxr_keyword">continue</strong>;
@@ -1041,15 +1041,15 @@
 <a class="jxr_linenumber" name="L1033" href="#L1033">1033</a>         promise.tryFailure(unknownHostException);
 <a class="jxr_linenumber" name="L1034" href="#L1034">1034</a>     }
 <a class="jxr_linenumber" name="L1035" href="#L1035">1035</a> 
-<a class="jxr_linenumber" name="L1036" href="#L1036">1036</a>     <strong class="jxr_keyword">static</strong> String decodeDomainName(<a name="ByteBuf" href="../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in) {
-<a class="jxr_linenumber" name="L1037" href="#L1037">1037</a>         <strong class="jxr_keyword">int</strong> readerIndex = in.readerIndex();
+<a class="jxr_linenumber" name="L1036" href="#L1036">1036</a>     <strong class="jxr_keyword">static</strong> String decodeDomainName(<a name="Buffer" href="../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> in) {
+<a class="jxr_linenumber" name="L1037" href="#L1037">1037</a>         <strong class="jxr_keyword">int</strong> readerIndex = in.readerOffset();
 <a class="jxr_linenumber" name="L1038" href="#L1038">1038</a>         <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L1039" href="#L1039">1039</a>             <strong class="jxr_keyword">return</strong> DefaultDnsRecordDecoder.decodeName(in);
 <a class="jxr_linenumber" name="L1040" href="#L1040">1040</a>         } <strong class="jxr_keyword">catch</strong> (<a name="CorruptedFrameException" href="../../../../io/netty5/handler/codec/CorruptedFrameException.html#CorruptedFrameException">CorruptedFrameException</a> e) {
 <a class="jxr_linenumber" name="L1041" href="#L1041">1041</a>             <em class="jxr_comment">// In this case we just return null.</em>
 <a class="jxr_linenumber" name="L1042" href="#L1042">1042</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="L1043" href="#L1043">1043</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L1044" href="#L1044">1044</a>             in.readerIndex(readerIndex);
+<a class="jxr_linenumber" name="L1044" href="#L1044">1044</a>             in.readerOffset(readerIndex);
 <a class="jxr_linenumber" name="L1045" href="#L1045">1045</a>         }
 <a class="jxr_linenumber" name="L1046" href="#L1046">1046</a>     }
 <a class="jxr_linenumber" name="L1047" href="#L1047">1047</a> 
@@ -1190,7 +1190,7 @@
 <a class="jxr_linenumber" name="L1182" href="#L1182">1182</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L1183" href="#L1183">1183</a>             }
 <a class="jxr_linenumber" name="L1184" href="#L1184">1184</a> 
-<a class="jxr_linenumber" name="L1185" href="#L1185">1185</a>             <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> recordContent = ((<a name="ByteBufHolder" href="../../../../io/netty5/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) r).content();
+<a class="jxr_linenumber" name="L1185" href="#L1185">1185</a>             <strong class="jxr_keyword">final</strong> <a name="Buffer" href="../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> recordContent = ((<a name="DnsRawRecord" href="../../../../io/netty5/handler/codec/dns/DnsRawRecord.html#DnsRawRecord">DnsRawRecord</a>) r).content();
 <a class="jxr_linenumber" name="L1186" href="#L1186">1186</a>             <strong class="jxr_keyword">final</strong> String domainName = decodeDomainName(recordContent);
 <a class="jxr_linenumber" name="L1187" href="#L1187">1187</a>             <strong class="jxr_keyword">if</strong> (domainName == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L1188" href="#L1188">1188</a>                 <em class="jxr_comment">// Could not be parsed, ignore.</em>

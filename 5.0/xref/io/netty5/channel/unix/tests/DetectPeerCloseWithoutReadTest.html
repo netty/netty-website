@@ -25,7 +25,7 @@
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
 <a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty5.bootstrap.Bootstrap;
 <a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.bootstrap.ServerBootstrap;
-<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.ByteBuf;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Buffer;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.Channel;
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelFutureListeners;
 <a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandler;
@@ -81,7 +81,7 @@
 <a class="jxr_linenumber" name="L73" href="#L73">73</a>              sb.childOption(ChannelOption.AUTO_READ, false);
 <a class="jxr_linenumber" name="L74" href="#L74">74</a>              sb.childOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
 <a class="jxr_linenumber" name="L75" href="#L75">75</a>              sb.childOption(ChannelOption.RCVBUF_ALLOCATOR, <strong class="jxr_keyword">new</strong> <a name="FixedRecvBufferAllocator" href="../../../../../io/netty5/channel/FixedRecvBufferAllocator.html#FixedRecvBufferAllocator">FixedRecvBufferAllocator</a>(expectedBytes / 10));
-<a class="jxr_linenumber" name="L76" href="#L76">76</a>              sb.childHandler(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;Channel&gt;() {
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>              sb.childHandler(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;&gt;() {
 <a class="jxr_linenumber" name="L77" href="#L77">77</a>                  @Override
 <a class="jxr_linenumber" name="L78" href="#L78">78</a>                  <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> initChannel(<a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> ch) {
 <a class="jxr_linenumber" name="L79" href="#L79">79</a>                      ch.pipeline().addLast(<strong class="jxr_keyword">new</strong> TestHandler(bytesRead, extraReadRequested, latch));
@@ -95,8 +95,8 @@
 <a class="jxr_linenumber" name="L87" href="#L87">87</a>              cb.channel(clientChannel());
 <a class="jxr_linenumber" name="L88" href="#L88">88</a>              cb.handler(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() { });
 <a class="jxr_linenumber" name="L89" href="#L89">89</a>              <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> clientChannel = cb.connect(serverChannel.localAddress()).get();
-<a class="jxr_linenumber" name="L90" href="#L90">90</a>              <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = clientChannel.alloc().buffer(expectedBytes);
-<a class="jxr_linenumber" name="L91" href="#L91">91</a>              buf.writerIndex(buf.writerIndex() + expectedBytes);
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>              <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> buf = clientChannel.bufferAllocator().allocate(expectedBytes);
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>              buf.skipWritable(expectedBytes);
 <a class="jxr_linenumber" name="L92" href="#L92">92</a>              clientChannel.writeAndFlush(buf).addListener(clientChannel, ChannelFutureListeners.CLOSE);
 <a class="jxr_linenumber" name="L93" href="#L93">93</a>  
 <a class="jxr_linenumber" name="L94" href="#L94">94</a>              latch.await();
@@ -140,14 +140,14 @@
 <a class="jxr_linenumber" name="L132" href="#L132">132</a>             <a name="ServerBootstrap" href="../../../../../io/netty5/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a> sb = <strong class="jxr_keyword">new</strong> <a name="ServerBootstrap" href="../../../../../io/netty5/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a>();
 <a class="jxr_linenumber" name="L133" href="#L133">133</a>             sb.group(serverGroup);
 <a class="jxr_linenumber" name="L134" href="#L134">134</a>             sb.channel(serverChannel());
-<a class="jxr_linenumber" name="L135" href="#L135">135</a>             sb.childHandler(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;Channel&gt;() {
+<a class="jxr_linenumber" name="L135" href="#L135">135</a>             sb.childHandler(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;&gt;() {
 <a class="jxr_linenumber" name="L136" href="#L136">136</a>                 @Override
 <a class="jxr_linenumber" name="L137" href="#L137">137</a>                 <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> initChannel(<a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> ch) {
 <a class="jxr_linenumber" name="L138" href="#L138">138</a>                     ch.pipeline().addLast(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() {
 <a class="jxr_linenumber" name="L139" href="#L139">139</a>                         @Override
 <a class="jxr_linenumber" name="L140" href="#L140">140</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="L141" href="#L141">141</a>                             <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = ctx.alloc().buffer(expectedBytes);
-<a class="jxr_linenumber" name="L142" href="#L142">142</a>                             buf.writerIndex(buf.writerIndex() + expectedBytes);
+<a class="jxr_linenumber" name="L141" href="#L141">141</a>                             <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> buf = ctx.bufferAllocator().allocate(expectedBytes);
+<a class="jxr_linenumber" name="L142" href="#L142">142</a>                             buf.skipWritable(expectedBytes);
 <a class="jxr_linenumber" name="L143" href="#L143">143</a>                             ctx.writeAndFlush(buf).addListener(ctx.channel(), ChannelFutureListeners.CLOSE);
 <a class="jxr_linenumber" name="L144" href="#L144">144</a>                             ctx.fireChannelActive();
 <a class="jxr_linenumber" name="L145" href="#L145">145</a>                         }
@@ -165,7 +165,7 @@
 <a class="jxr_linenumber" name="L157" href="#L157">157</a>             cb.option(ChannelOption.AUTO_READ, false);
 <a class="jxr_linenumber" name="L158" href="#L158">158</a>             cb.option(ChannelOption.MAX_MESSAGES_PER_READ, 1);
 <a class="jxr_linenumber" name="L159" href="#L159">159</a>             cb.option(ChannelOption.RCVBUF_ALLOCATOR, <strong class="jxr_keyword">new</strong> <a name="FixedRecvBufferAllocator" href="../../../../../io/netty5/channel/FixedRecvBufferAllocator.html#FixedRecvBufferAllocator">FixedRecvBufferAllocator</a>(expectedBytes / 10));
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>             cb.handler(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;Channel&gt;() {
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>             cb.handler(<strong class="jxr_keyword">new</strong> ChannelInitializer&lt;&gt;() {
 <a class="jxr_linenumber" name="L161" href="#L161">161</a>                 @Override
 <a class="jxr_linenumber" name="L162" href="#L162">162</a>                 <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> initChannel(<a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> ch) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="L163" href="#L163">163</a>                     ch.pipeline().addLast(<strong class="jxr_keyword">new</strong> TestHandler(bytesRead, extraReadRequested, latch));
@@ -191,7 +191,7 @@
 <a class="jxr_linenumber" name="L183" href="#L183">183</a>         }
 <a class="jxr_linenumber" name="L184" href="#L184">184</a>     }
 <a class="jxr_linenumber" name="L185" href="#L185">185</a> 
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> TestHandler <strong class="jxr_keyword">extends</strong> SimpleChannelInboundHandler&lt;ByteBuf&gt; {
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> TestHandler <strong class="jxr_keyword">extends</strong> SimpleChannelInboundHandler&lt;Buffer&gt; {
 <a class="jxr_linenumber" name="L187" href="#L187">187</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> AtomicInteger bytesRead;
 <a class="jxr_linenumber" name="L188" href="#L188">188</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> extraReadRequested;
 <a class="jxr_linenumber" name="L189" href="#L189">189</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> CountDownLatch latch;
@@ -203,7 +203,7 @@
 <a class="jxr_linenumber" name="L195" href="#L195">195</a>         }
 <a class="jxr_linenumber" name="L196" href="#L196">196</a> 
 <a class="jxr_linenumber" name="L197" href="#L197">197</a>         @Override
-<a class="jxr_linenumber" name="L198" href="#L198">198</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> messageReceived(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../io/netty5/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> msg) {
+<a class="jxr_linenumber" name="L198" href="#L198">198</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> messageReceived(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> msg) {
 <a class="jxr_linenumber" name="L199" href="#L199">199</a>             bytesRead.addAndGet(msg.readableBytes());
 <a class="jxr_linenumber" name="L200" href="#L200">200</a> 
 <a class="jxr_linenumber" name="L201" href="#L201">201</a>             <strong class="jxr_keyword">if</strong> (extraReadRequested) {
