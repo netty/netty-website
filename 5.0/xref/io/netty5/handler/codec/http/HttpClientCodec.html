@@ -28,8 +28,8 @@
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandlerContext;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelPipeline;
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.CombinedChannelDuplexHandler;
-<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.PrematureChannelClosureException;
-<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.ReferenceCountUtil;
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.internal.DelegatingChannelHandlerContext;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.PrematureChannelClosureException;
 <a class="jxr_linenumber" name="L25" href="#L25">25</a>  
 <a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayDeque;
 <a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> java.util.List;
@@ -180,11 +180,11 @@
 <a class="jxr_linenumber" name="L172" href="#L172">172</a>         <strong class="jxr_keyword">boolean</strong> upgraded;
 <a class="jxr_linenumber" name="L173" href="#L173">173</a> 
 <a class="jxr_linenumber" name="L174" href="#L174">174</a>         @Override
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encode(
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> encodeAndClose(
 <a class="jxr_linenumber" name="L176" href="#L176">176</a>                 <a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object msg, List&lt;Object&gt; out) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="L177" href="#L177">177</a> 
 <a class="jxr_linenumber" name="L178" href="#L178">178</a>             <strong class="jxr_keyword">if</strong> (upgraded) {
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>                 out.add(ReferenceCountUtil.retain(msg));
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>                 out.add(msg);
 <a class="jxr_linenumber" name="L180" href="#L180">180</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L181" href="#L181">181</a>             }
 <a class="jxr_linenumber" name="L182" href="#L182">182</a> 
@@ -192,7 +192,7 @@
 <a class="jxr_linenumber" name="L184" href="#L184">184</a>                 queue.offer(((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) msg).method());
 <a class="jxr_linenumber" name="L185" href="#L185">185</a>             }
 <a class="jxr_linenumber" name="L186" href="#L186">186</a> 
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>             <strong class="jxr_keyword">super</strong>.encode(ctx, msg, out);
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>             <strong class="jxr_keyword">super</strong>.encodeAndClose(ctx, msg, out);
 <a class="jxr_linenumber" name="L188" href="#L188">188</a> 
 <a class="jxr_linenumber" name="L189" href="#L189">189</a>             <strong class="jxr_keyword">if</strong> (failOnMissingResponse &amp;&amp; !done) {
 <a class="jxr_linenumber" name="L190" href="#L190">190</a>                 <em class="jxr_comment">// check if the request is chunked if so do not increment</em>
@@ -221,7 +221,7 @@
 <a class="jxr_linenumber" name="L213" href="#L213">213</a>         @Override
 <a class="jxr_linenumber" name="L214" href="#L214">214</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handlerAdded0(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) {
 <a class="jxr_linenumber" name="L215" href="#L215">215</a>             <strong class="jxr_keyword">if</strong> (failOnMissingResponse) {
-<a class="jxr_linenumber" name="L216" href="#L216">216</a>                 context = <strong class="jxr_keyword">new</strong> <a name="DelegatingChannelHandlerContext" href="../../../../../io/netty5/handler/codec/http/DelegatingChannelHandlerContext.html#DelegatingChannelHandlerContext">DelegatingChannelHandlerContext</a>(ctx) {
+<a class="jxr_linenumber" name="L216" href="#L216">216</a>                 context = <strong class="jxr_keyword">new</strong> <a name="DelegatingChannelHandlerContext" href="../../../../../io/netty5/channel/internal/DelegatingChannelHandlerContext.html#DelegatingChannelHandlerContext">DelegatingChannelHandlerContext</a>(ctx) {
 <a class="jxr_linenumber" name="L217" href="#L217">217</a>                    @Override
 <a class="jxr_linenumber" name="L218" href="#L218">218</a>                    <strong class="jxr_keyword">public</strong> <a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> fireChannelRead(Object msg) {
 <a class="jxr_linenumber" name="L219" href="#L219">219</a>                        decrement(msg);
@@ -333,7 +333,7 @@
 <a class="jxr_linenumber" name="L325" href="#L325">325</a>             <strong class="jxr_keyword">if</strong> (failOnMissingResponse) {
 <a class="jxr_linenumber" name="L326" href="#L326">326</a>                 <strong class="jxr_keyword">long</strong> missingResponses = requestResponseCounter.get();
 <a class="jxr_linenumber" name="L327" href="#L327">327</a>                 <strong class="jxr_keyword">if</strong> (missingResponses &gt; 0) {
-<a class="jxr_linenumber" name="L328" href="#L328">328</a>                     ctx.fireExceptionCaught(<strong class="jxr_keyword">new</strong> <a name="PrematureChannelClosureException" href="../../../../../io/netty5/handler/codec/PrematureChannelClosureException.html#PrematureChannelClosureException">PrematureChannelClosureException</a>(
+<a class="jxr_linenumber" name="L328" href="#L328">328</a>                     ctx.fireChannelExceptionCaught(<strong class="jxr_keyword">new</strong> <a name="PrematureChannelClosureException" href="../../../../../io/netty5/handler/codec/PrematureChannelClosureException.html#PrematureChannelClosureException">PrematureChannelClosureException</a>(
 <a class="jxr_linenumber" name="L329" href="#L329">329</a>                             <span class="jxr_string">"channel gone inactive with "</span> + missingResponses +
 <a class="jxr_linenumber" name="L330" href="#L330">330</a>                             <span class="jxr_string">" missing response(s)"</span>));
 <a class="jxr_linenumber" name="L331" href="#L331">331</a>                 }

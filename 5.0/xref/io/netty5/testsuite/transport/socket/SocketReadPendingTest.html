@@ -27,7 +27,7 @@
 <a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.bootstrap.ServerBootstrap;
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Buffer;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.BufferAllocator;
-<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Resource;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.Resource;
 <a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.Channel;
 <a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelConfig;
 <a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandler;
@@ -70,13 +70,13 @@
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>                .childOption(ChannelOption.RCVBUF_ALLOCATOR, <strong class="jxr_keyword">new</strong> TestNumReadsRecvBufferAllocator(2))
 <a class="jxr_linenumber" name="L63" href="#L63">63</a>                .childHandler(serverInitializer);
 <a class="jxr_linenumber" name="L64" href="#L64">64</a>  
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>              serverChannel = sb.bind().get();
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>              serverChannel = sb.bind().asStage().get();
 <a class="jxr_linenumber" name="L66" href="#L66">66</a>  
 <a class="jxr_linenumber" name="L67" href="#L67">67</a>              cb.option(ChannelOption.AUTO_READ, false)
 <a class="jxr_linenumber" name="L68" href="#L68">68</a>                <em class="jxr_comment">// We intend to do 2 reads per read loop wakeup</em>
 <a class="jxr_linenumber" name="L69" href="#L69">69</a>                .option(ChannelOption.RCVBUF_ALLOCATOR, <strong class="jxr_keyword">new</strong> TestNumReadsRecvBufferAllocator(2))
 <a class="jxr_linenumber" name="L70" href="#L70">70</a>                .handler(clientInitializer);
-<a class="jxr_linenumber" name="L71" href="#L71">71</a>              clientChannel = cb.connect(serverChannel.localAddress()).get();
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>              clientChannel = cb.connect(serverChannel.localAddress()).asStage().get();
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>  
 <a class="jxr_linenumber" name="L73" href="#L73">73</a>              <em class="jxr_comment">// 4 bytes means 2 read loops for TestNumReadsRecvBufferAllocator</em>
 <a class="jxr_linenumber" name="L74" href="#L74">74</a>              clientChannel.writeAndFlush(preferredAllocator().copyOf(<strong class="jxr_keyword">new</strong> byte[4]));
@@ -92,10 +92,10 @@
 <a class="jxr_linenumber" name="L84" href="#L84">84</a>              clientInitializer.readPendingHandler.assertAllRead();
 <a class="jxr_linenumber" name="L85" href="#L85">85</a>          } <strong class="jxr_keyword">finally</strong> {
 <a class="jxr_linenumber" name="L86" href="#L86">86</a>              <strong class="jxr_keyword">if</strong> (serverChannel != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L87" href="#L87">87</a>                  serverChannel.close().syncUninterruptibly();
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>                  serverChannel.close().asStage().sync();
 <a class="jxr_linenumber" name="L88" href="#L88">88</a>              }
 <a class="jxr_linenumber" name="L89" href="#L89">89</a>              <strong class="jxr_keyword">if</strong> (clientChannel != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L90" href="#L90">90</a>                  clientChannel.close().syncUninterruptibly();
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>                  clientChannel.close().asStage().sync();
 <a class="jxr_linenumber" name="L91" href="#L91">91</a>              }
 <a class="jxr_linenumber" name="L92" href="#L92">92</a>          }
 <a class="jxr_linenumber" name="L93" href="#L93">93</a>      }

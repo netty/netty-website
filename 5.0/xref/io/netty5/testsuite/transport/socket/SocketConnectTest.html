@@ -70,28 +70,28 @@
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>          <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L63" href="#L63">63</a>              <strong class="jxr_keyword">final</strong> Promise&lt;InetSocketAddress&gt; localAddressPromise = ImmediateEventExecutor.INSTANCE.newPromise();
 <a class="jxr_linenumber" name="L64" href="#L64">64</a>              serverChannel = sb.childHandler(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() {
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>                          @Override
-<a class="jxr_linenumber" name="L66" href="#L66">66</a>                          <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L67" href="#L67">67</a>                              localAddressPromise.setSuccess((InetSocketAddress) ctx.channel().localAddress());
-<a class="jxr_linenumber" name="L68" href="#L68">68</a>                          }
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>                      }).bind().get();
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>                  @Override
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>                  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelActive(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>                      localAddressPromise.setSuccess((InetSocketAddress) ctx.channel().localAddress());
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>                  }
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>              }).bind().asStage().get();
 <a class="jxr_linenumber" name="L70" href="#L70">70</a>  
-<a class="jxr_linenumber" name="L71" href="#L71">71</a>              clientChannel = cb.handler(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() { }).register().get();
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>              clientChannel = cb.handler(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() { }).register().asStage().get();
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>  
 <a class="jxr_linenumber" name="L73" href="#L73">73</a>              assertNull(clientChannel.localAddress());
 <a class="jxr_linenumber" name="L74" href="#L74">74</a>              assertNull(clientChannel.remoteAddress());
 <a class="jxr_linenumber" name="L75" href="#L75">75</a>  
-<a class="jxr_linenumber" name="L76" href="#L76">76</a>              clientChannel.connect(serverChannel.localAddress()).get();
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>              clientChannel.connect(serverChannel.localAddress()).asStage().get();
 <a class="jxr_linenumber" name="L77" href="#L77">77</a>              assertLocalAddress((InetSocketAddress) clientChannel.localAddress());
 <a class="jxr_linenumber" name="L78" href="#L78">78</a>              assertNotNull(clientChannel.remoteAddress());
 <a class="jxr_linenumber" name="L79" href="#L79">79</a>  
-<a class="jxr_linenumber" name="L80" href="#L80">80</a>              assertLocalAddress(localAddressPromise.asFuture().get());
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>              assertLocalAddress(localAddressPromise.asFuture().asStage().get());
 <a class="jxr_linenumber" name="L81" href="#L81">81</a>          } <strong class="jxr_keyword">finally</strong> {
 <a class="jxr_linenumber" name="L82" href="#L82">82</a>              <strong class="jxr_keyword">if</strong> (clientChannel != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L83" href="#L83">83</a>                  clientChannel.close().syncUninterruptibly();
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>                  clientChannel.close().asStage().sync();
 <a class="jxr_linenumber" name="L84" href="#L84">84</a>              }
 <a class="jxr_linenumber" name="L85" href="#L85">85</a>              <strong class="jxr_keyword">if</strong> (serverChannel != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L86" href="#L86">86</a>                  serverChannel.close().syncUninterruptibly();
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>                  serverChannel.close().asStage().sync();
 <a class="jxr_linenumber" name="L87" href="#L87">87</a>              }
 <a class="jxr_linenumber" name="L88" href="#L88">88</a>          }
 <a class="jxr_linenumber" name="L89" href="#L89">89</a>      }
@@ -109,7 +109,7 @@
 <a class="jxr_linenumber" name="L101" href="#L101">101</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> cc = <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="L102" href="#L102">102</a>         <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L103" href="#L103">103</a>             sb.childHandler(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() { });
-<a class="jxr_linenumber" name="L104" href="#L104">104</a>             sc = sb.bind().get();
+<a class="jxr_linenumber" name="L104" href="#L104">104</a>             sc = sb.bind().asStage().get();
 <a class="jxr_linenumber" name="L105" href="#L105">105</a> 
 <a class="jxr_linenumber" name="L106" href="#L106">106</a>             cb.handler(<strong class="jxr_keyword">new</strong> <a name="ChannelHandler" href="../../../../../io/netty5/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a>() {
 <a class="jxr_linenumber" name="L107" href="#L107">107</a>                 @Override
@@ -123,7 +123,7 @@
 <a class="jxr_linenumber" name="L115" href="#L115">115</a>                 }
 <a class="jxr_linenumber" name="L116" href="#L116">116</a>             });
 <a class="jxr_linenumber" name="L117" href="#L117">117</a>             <em class="jxr_comment">// Connect and directly close again.</em>
-<a class="jxr_linenumber" name="L118" href="#L118">118</a>             cc = cb.connect(sc.localAddress()).addListener(future -&gt; future.getNow().close()).get();
+<a class="jxr_linenumber" name="L118" href="#L118">118</a>             cc = cb.connect(sc.localAddress()).addListener(future -&gt; future.getNow().close()).asStage().get();
 <a class="jxr_linenumber" name="L119" href="#L119">119</a>             assertEquals(0, events.take().intValue());
 <a class="jxr_linenumber" name="L120" href="#L120">120</a>             assertEquals(1, events.take().intValue());
 <a class="jxr_linenumber" name="L121" href="#L121">121</a>         } <strong class="jxr_keyword">finally</strong> {
@@ -154,7 +154,7 @@
 <a class="jxr_linenumber" name="L146" href="#L146">146</a>             }
 <a class="jxr_linenumber" name="L147" href="#L147">147</a>         });
 <a class="jxr_linenumber" name="L148" href="#L148">148</a> 
-<a class="jxr_linenumber" name="L149" href="#L149">149</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> sc = sb.bind().get();
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> sc = sb.bind().asStage().get();
 <a class="jxr_linenumber" name="L150" href="#L150">150</a>         connectAndVerifyDataTransfer(cb, sc);
 <a class="jxr_linenumber" name="L151" href="#L151">151</a>         connectAndVerifyDataTransfer(cb, sc);
 <a class="jxr_linenumber" name="L152" href="#L152">152</a>     }
@@ -164,21 +164,21 @@
 <a class="jxr_linenumber" name="L156" href="#L156">156</a>         BufferingClientHandler handler = <strong class="jxr_keyword">new</strong> BufferingClientHandler();
 <a class="jxr_linenumber" name="L157" href="#L157">157</a>         cb.handler(handler);
 <a class="jxr_linenumber" name="L158" href="#L158">158</a>         Future&lt;Channel&gt; register = cb.register();
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> channel = register.get();
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> channel = register.asStage().get();
 <a class="jxr_linenumber" name="L160" href="#L160">160</a>         Future&lt;Void&gt; write = channel.write(writeAsciiBuffer(sc, <span class="jxr_string">"[fastopen]"</span>));
 <a class="jxr_linenumber" name="L161" href="#L161">161</a>         SocketAddress remoteAddress = sc.localAddress();
 <a class="jxr_linenumber" name="L162" href="#L162">162</a>         Future&lt;Void&gt; connectFuture = channel.connect(remoteAddress);
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>         connectFuture.sync();
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>         channel.writeAndFlush(writeAsciiBuffer(sc, <span class="jxr_string">"[normal data]"</span>)).sync();
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>         write.sync();
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>         connectFuture.asStage().sync();
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>         channel.writeAndFlush(writeAsciiBuffer(sc, <span class="jxr_string">"[normal data]"</span>)).asStage().sync();
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>         write.asStage().sync();
 <a class="jxr_linenumber" name="L166" href="#L166">166</a>         String expectedString = <span class="jxr_string">"[fastopen][normal data]"</span>;
 <a class="jxr_linenumber" name="L167" href="#L167">167</a>         String result = handler.collectBuffer(expectedString.getBytes(US_ASCII).length);
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>         channel.disconnect().sync();
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>         channel.disconnect().asStage().sync();
 <a class="jxr_linenumber" name="L169" href="#L169">169</a>         assertEquals(expectedString, result);
 <a class="jxr_linenumber" name="L170" href="#L170">170</a>     }
 <a class="jxr_linenumber" name="L171" href="#L171">171</a> 
 <a class="jxr_linenumber" name="L172" href="#L172">172</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Object writeAsciiBuffer(<a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> sc, String seq) {
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>         <strong class="jxr_keyword">return</strong> DefaultBufferAllocators.preferredAllocator().copyOf(seq.getBytes(US_ASCII));
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>         <strong class="jxr_keyword">return</strong> DefaultBufferAllocators.preferredAllocator().copyOf(seq, US_ASCII);
 <a class="jxr_linenumber" name="L174" href="#L174">174</a>     }
 <a class="jxr_linenumber" name="L175" href="#L175">175</a> 
 <a class="jxr_linenumber" name="L176" href="#L176">176</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> enableTcpFastOpen(<a name="ServerBootstrap" href="../../../../../io/netty5/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a> sb, <a name="Bootstrap" href="../../../../../io/netty5/bootstrap/Bootstrap.html#Bootstrap">Bootstrap</a> cb) {

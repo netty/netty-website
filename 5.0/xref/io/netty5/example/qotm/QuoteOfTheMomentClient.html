@@ -33,46 +33,50 @@
 <a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.nio.NioHandler;
 <a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.socket.DatagramPacket;
 <a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.socket.nio.NioDatagramChannel;
-<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.CharsetUtil;
-<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.SocketUtils;
-<a class="jxr_linenumber" name="L30" href="#L30">30</a>  
-<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <em class="jxr_javadoccomment"> * A UDP broadcast client that asks for a quote of the moment (QOTM) to {@link QuoteOfTheMomentServer}.</em>
-<a class="jxr_linenumber" name="L33" href="#L33">33</a>  <em class="jxr_javadoccomment"> *</em>
-<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <em class="jxr_javadoccomment"> * Inspired by &lt;a href="<a href="https://docs.oracle.com/javase/tutorial/networking/datagrams/clientServer.html" target="alexandria_uri">https://docs.oracle.com/javase/tutorial/networking/datagrams/clientServer.html</a>"&gt;the official</em>
-<a class="jxr_linenumber" name="L35" href="#L35">35</a>  <em class="jxr_javadoccomment"> * Java tutorial&lt;/a&gt;.</em>
-<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="L37" href="#L37">37</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="QuoteOfTheMomentClient" href="../../../../io/netty5/example/qotm/QuoteOfTheMomentClient.html#QuoteOfTheMomentClient">QuoteOfTheMomentClient</a> {
-<a class="jxr_linenumber" name="L38" href="#L38">38</a>  
-<a class="jxr_linenumber" name="L39" href="#L39">39</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> PORT = Integer.parseInt(System.getProperty(<span class="jxr_string">"port"</span>, <span class="jxr_string">"7686"</span>));
-<a class="jxr_linenumber" name="L40" href="#L40">40</a>  
-<a class="jxr_linenumber" name="L41" href="#L41">41</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> main(String[] args) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L42" href="#L42">42</a>  
-<a class="jxr_linenumber" name="L43" href="#L43">43</a>          <a name="EventLoopGroup" href="../../../../io/netty5/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group = <strong class="jxr_keyword">new</strong> <a name="MultithreadEventLoopGroup" href="../../../../io/netty5/channel/MultithreadEventLoopGroup.html#MultithreadEventLoopGroup">MultithreadEventLoopGroup</a>(NioHandler.newFactory());
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>          <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>              <a name="Bootstrap" href="../../../../io/netty5/bootstrap/Bootstrap.html#Bootstrap">Bootstrap</a> b = <strong class="jxr_keyword">new</strong> <a name="Bootstrap" href="../../../../io/netty5/bootstrap/Bootstrap.html#Bootstrap">Bootstrap</a>();
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>              b.group(group)
-<a class="jxr_linenumber" name="L47" href="#L47">47</a>               .channel(NioDatagramChannel.<strong class="jxr_keyword">class</strong>)
-<a class="jxr_linenumber" name="L48" href="#L48">48</a>               .option(ChannelOption.SO_BROADCAST, <strong class="jxr_keyword">true</strong>)
-<a class="jxr_linenumber" name="L49" href="#L49">49</a>               .handler(<strong class="jxr_keyword">new</strong> <a name="QuoteOfTheMomentClientHandler" href="../../../../io/netty5/example/qotm/QuoteOfTheMomentClientHandler.html#QuoteOfTheMomentClientHandler">QuoteOfTheMomentClientHandler</a>());
-<a class="jxr_linenumber" name="L50" href="#L50">50</a>  
-<a class="jxr_linenumber" name="L51" href="#L51">51</a>              <a name="Channel" href="../../../../io/netty5/channel/Channel.html#Channel">Channel</a> ch = b.bind(0).get();
-<a class="jxr_linenumber" name="L52" href="#L52">52</a>  
-<a class="jxr_linenumber" name="L53" href="#L53">53</a>              <em class="jxr_comment">// Broadcast the QOTM request to port 8080.</em>
-<a class="jxr_linenumber" name="L54" href="#L54">54</a>              <a name="Buffer" href="../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> message = DefaultBufferAllocators.preferredAllocator().copyOf(<span class="jxr_string">"QOTM?"</span>.getBytes(CharsetUtil.UTF_8));
-<a class="jxr_linenumber" name="L55" href="#L55">55</a>              ch.writeAndFlush(<strong class="jxr_keyword">new</strong> <a name="DatagramPacket" href="../../../../io/netty5/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a>(message, SocketUtils.socketAddress(<span class="jxr_string">"255.255.255.255"</span>, PORT))).sync();
-<a class="jxr_linenumber" name="L56" href="#L56">56</a>  
-<a class="jxr_linenumber" name="L57" href="#L57">57</a>              <em class="jxr_comment">// QuoteOfTheMomentClientHandler will close the DatagramChannel when a</em>
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>              <em class="jxr_comment">// response is received.  If the channel is not closed within 5 seconds,</em>
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>              <em class="jxr_comment">// print an error message and quit.</em>
-<a class="jxr_linenumber" name="L60" href="#L60">60</a>              <strong class="jxr_keyword">if</strong> (!ch.closeFuture().await(5000)) {
-<a class="jxr_linenumber" name="L61" href="#L61">61</a>                  System.err.println(<span class="jxr_string">"QOTM request timed out."</span>);
-<a class="jxr_linenumber" name="L62" href="#L62">62</a>              }
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>          } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>              group.shutdownGracefully();
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>          }
-<a class="jxr_linenumber" name="L66" href="#L66">66</a>      }
-<a class="jxr_linenumber" name="L67" href="#L67">67</a>  }
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.SocketUtils;
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <strong class="jxr_keyword">import</strong> java.util.concurrent.TimeUnit;
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> java.nio.charset.StandardCharsets.UTF_8;
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>  
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>  <em class="jxr_javadoccomment"> * A UDP broadcast client that asks for a quote of the moment (QOTM) to {@link QuoteOfTheMomentServer}.</em>
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <em class="jxr_javadoccomment"> *</em>
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>  <em class="jxr_javadoccomment"> * Inspired by &lt;a href="<a href="https://docs.oracle.com/javase/tutorial/networking/datagrams/clientServer.html" target="alexandria_uri">https://docs.oracle.com/javase/tutorial/networking/datagrams/clientServer.html</a>"&gt;the official</em>
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>  <em class="jxr_javadoccomment"> * Java tutorial&lt;/a&gt;.</em>
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="QuoteOfTheMomentClient" href="../../../../io/netty5/example/qotm/QuoteOfTheMomentClient.html#QuoteOfTheMomentClient">QuoteOfTheMomentClient</a> {
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>  
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> PORT = Integer.parseInt(System.getProperty(<span class="jxr_string">"port"</span>, <span class="jxr_string">"7686"</span>));
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>  
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> main(String[] args) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>  
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>          <a name="EventLoopGroup" href="../../../../io/netty5/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group = <strong class="jxr_keyword">new</strong> <a name="MultithreadEventLoopGroup" href="../../../../io/netty5/channel/MultithreadEventLoopGroup.html#MultithreadEventLoopGroup">MultithreadEventLoopGroup</a>(NioHandler.newFactory());
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>          <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>              <a name="Bootstrap" href="../../../../io/netty5/bootstrap/Bootstrap.html#Bootstrap">Bootstrap</a> b = <strong class="jxr_keyword">new</strong> <a name="Bootstrap" href="../../../../io/netty5/bootstrap/Bootstrap.html#Bootstrap">Bootstrap</a>();
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>              b.group(group)
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>               .channel(NioDatagramChannel.<strong class="jxr_keyword">class</strong>)
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>               .option(ChannelOption.SO_BROADCAST, <strong class="jxr_keyword">true</strong>)
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>               .handler(<strong class="jxr_keyword">new</strong> <a name="QuoteOfTheMomentClientHandler" href="../../../../io/netty5/example/qotm/QuoteOfTheMomentClientHandler.html#QuoteOfTheMomentClientHandler">QuoteOfTheMomentClientHandler</a>());
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>  
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>              <a name="Channel" href="../../../../io/netty5/channel/Channel.html#Channel">Channel</a> ch = b.bind(0).asStage().get();
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>  
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>              <em class="jxr_comment">// Broadcast the QOTM request to port 8080.</em>
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>              <a name="Buffer" href="../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> message = DefaultBufferAllocators.preferredAllocator().copyOf(<span class="jxr_string">"QOTM?"</span>, UTF_8);
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>              ch.writeAndFlush(<strong class="jxr_keyword">new</strong> <a name="DatagramPacket" href="../../../../io/netty5/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a>(message, SocketUtils.socketAddress(<span class="jxr_string">"255.255.255.255"</span>, PORT)))
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>                .asStage().sync();
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>  
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>              <em class="jxr_comment">// QuoteOfTheMomentClientHandler will close the DatagramChannel when a</em>
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>              <em class="jxr_comment">// response is received.  If the channel is not closed within 5 seconds,</em>
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>              <em class="jxr_comment">// print an error message and quit.</em>
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>              <strong class="jxr_keyword">if</strong> (!ch.closeFuture().asStage().await(5000, TimeUnit.MILLISECONDS)) {
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>                  System.err.println(<span class="jxr_string">"QOTM request timed out."</span>);
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>              }
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>          } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>              group.shutdownGracefully();
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>          }
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>      }
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>  }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

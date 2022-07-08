@@ -51,7 +51,7 @@
 <a class="jxr_linenumber" name="L43" href="#L43">43</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.ssl.SslHandler;
 <a class="jxr_linenumber" name="L44" href="#L44">44</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.ssl.SslProvider;
 <a class="jxr_linenumber" name="L45" href="#L45">45</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.ssl.ocsp.OcspClientHandler;
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.ReferenceCountUtil;
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.Resource;
 <a class="jxr_linenumber" name="L47" href="#L47">47</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.Promise;
 <a class="jxr_linenumber" name="L48" href="#L48">48</a>  <strong class="jxr_keyword">import</strong> org.bouncycastle.asn1.ocsp.OCSPResponseStatus;
 <a class="jxr_linenumber" name="L49" href="#L49">49</a>  <strong class="jxr_keyword">import</strong> org.bouncycastle.cert.ocsp.BasicOCSPResp;
@@ -104,11 +104,11 @@
 <a class="jxr_linenumber" name="L96" href="#L96">96</a>                          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5 * 1000)
 <a class="jxr_linenumber" name="L97" href="#L97">97</a>                          .handler(newClientHandler(context, host, promise));
 <a class="jxr_linenumber" name="L98" href="#L98">98</a>  
-<a class="jxr_linenumber" name="L99" href="#L99">99</a>                  <a name="Channel" href="../../../../io/netty5/channel/Channel.html#Channel">Channel</a> channel = bootstrap.connect(host, 443).get();
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>                  <a name="Channel" href="../../../../io/netty5/channel/Channel.html#Channel">Channel</a> channel = bootstrap.connect(host, 443).asStage().get();
 <a class="jxr_linenumber" name="L100" href="#L100">100</a> 
 <a class="jxr_linenumber" name="L101" href="#L101">101</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L102" href="#L102">102</a>                     <a name="FullHttpResponse" href="../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> response = promise.asFuture().get();
-<a class="jxr_linenumber" name="L103" href="#L103">103</a>                     ReferenceCountUtil.release(response);
+<a class="jxr_linenumber" name="L102" href="#L102">102</a>                     <a name="FullHttpResponse" href="../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> response = promise.asFuture().asStage().get();
+<a class="jxr_linenumber" name="L103" href="#L103">103</a>                     Resource.dispose(response);
 <a class="jxr_linenumber" name="L104" href="#L104">104</a>                 } <strong class="jxr_keyword">finally</strong> {
 <a class="jxr_linenumber" name="L105" href="#L105">105</a>                     channel.close();
 <a class="jxr_linenumber" name="L106" href="#L106">106</a>                 }
@@ -148,9 +148,9 @@
 <a class="jxr_linenumber" name="L140" href="#L140">140</a>             }
 <a class="jxr_linenumber" name="L141" href="#L141">141</a> 
 <a class="jxr_linenumber" name="L142" href="#L142">142</a>             @Override
-<a class="jxr_linenumber" name="L143" href="#L143">143</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L143" href="#L143">143</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelExceptionCaught(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="L144" href="#L144">144</a>                 <strong class="jxr_keyword">if</strong> (!promise.tryFailure(cause)) {
-<a class="jxr_linenumber" name="L145" href="#L145">145</a>                     ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>                     ctx.fireChannelExceptionCaught(cause);
 <a class="jxr_linenumber" name="L146" href="#L146">146</a>                 }
 <a class="jxr_linenumber" name="L147" href="#L147">147</a>             }
 <a class="jxr_linenumber" name="L148" href="#L148">148</a>         };
@@ -191,7 +191,7 @@
 <a class="jxr_linenumber" name="L183" href="#L183">183</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelRead(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object msg) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="L184" href="#L184">184</a>             <strong class="jxr_keyword">if</strong> (msg instanceof <a name="FullHttpResponse" href="../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a>) {
 <a class="jxr_linenumber" name="L185" href="#L185">185</a>                 <strong class="jxr_keyword">if</strong> (!promise.trySuccess((<a name="FullHttpResponse" href="../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a>) msg)) {
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>                     ReferenceCountUtil.release(msg);
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>                     Resource.dispose(msg);
 <a class="jxr_linenumber" name="L187" href="#L187">187</a>                 }
 <a class="jxr_linenumber" name="L188" href="#L188">188</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L189" href="#L189">189</a>             }
@@ -200,9 +200,9 @@
 <a class="jxr_linenumber" name="L192" href="#L192">192</a>         }
 <a class="jxr_linenumber" name="L193" href="#L193">193</a> 
 <a class="jxr_linenumber" name="L194" href="#L194">194</a>         @Override
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelExceptionCaught(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="L196" href="#L196">196</a>             <strong class="jxr_keyword">if</strong> (!promise.tryFailure(cause)) {
-<a class="jxr_linenumber" name="L197" href="#L197">197</a>                 ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>                 ctx.fireChannelExceptionCaught(cause);
 <a class="jxr_linenumber" name="L198" href="#L198">198</a>             }
 <a class="jxr_linenumber" name="L199" href="#L199">199</a>         }
 <a class="jxr_linenumber" name="L200" href="#L200">200</a>     }

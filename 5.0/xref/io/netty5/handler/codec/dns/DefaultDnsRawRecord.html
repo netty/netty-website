@@ -24,7 +24,7 @@
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty5.handler.codec.dns;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
 <a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Buffer;
-<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Send;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.Send;
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.StringUtil;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.UnstableApi;
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  
@@ -68,13 +68,13 @@
 <a class="jxr_linenumber" name="L60" href="#L60">60</a>      <strong class="jxr_keyword">public</strong> <a name="DefaultDnsRawRecord" href="../../../../../io/netty5/handler/codec/dns/DefaultDnsRawRecord.html#DefaultDnsRawRecord">DefaultDnsRawRecord</a>(
 <a class="jxr_linenumber" name="L61" href="#L61">61</a>              String name, <a name="DnsRecordType" href="../../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a> type, <strong class="jxr_keyword">int</strong> dnsClass, <strong class="jxr_keyword">long</strong> timeToLive, <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> content) {
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>          <strong class="jxr_keyword">super</strong>(name, type, dnsClass, timeToLive);
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>          <strong class="jxr_keyword">this</strong>.content = requireNonNull(content, <span class="jxr_string">"content"</span>);
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>          <strong class="jxr_keyword">this</strong>.content = requireNonNull(content, <span class="jxr_string">"content"</span>).makeReadOnly();
 <a class="jxr_linenumber" name="L64" href="#L64">64</a>      }
 <a class="jxr_linenumber" name="L65" href="#L65">65</a>  
 <a class="jxr_linenumber" name="L66" href="#L66">66</a>      <strong class="jxr_keyword">public</strong> <a name="DefaultDnsRawRecord" href="../../../../../io/netty5/handler/codec/dns/DefaultDnsRawRecord.html#DefaultDnsRawRecord">DefaultDnsRawRecord</a>(
 <a class="jxr_linenumber" name="L67" href="#L67">67</a>              String name, <a name="DnsRecordType" href="../../../../../io/netty5/handler/codec/dns/DnsRecordType.html#DnsRecordType">DnsRecordType</a> type, <strong class="jxr_keyword">int</strong> dnsClass, <strong class="jxr_keyword">long</strong> timeToLive, Send&lt;Buffer&gt; content) {
 <a class="jxr_linenumber" name="L68" href="#L68">68</a>          <strong class="jxr_keyword">super</strong>(name, type, dnsClass, timeToLive);
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>          <strong class="jxr_keyword">this</strong>.content = requireNonNull(content, <span class="jxr_string">"content"</span>).receive();
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>          <strong class="jxr_keyword">this</strong>.content = requireNonNull(content, <span class="jxr_string">"content"</span>).receive().makeReadOnly();
 <a class="jxr_linenumber" name="L70" href="#L70">70</a>      }
 <a class="jxr_linenumber" name="L71" href="#L71">71</a>  
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>      @Override
@@ -133,7 +133,13 @@
 <a class="jxr_linenumber" name="L125" href="#L125">125</a> 
 <a class="jxr_linenumber" name="L126" href="#L126">126</a>         <strong class="jxr_keyword">return</strong> buf.toString();
 <a class="jxr_linenumber" name="L127" href="#L127">127</a>     }
-<a class="jxr_linenumber" name="L128" href="#L128">128</a> }
+<a class="jxr_linenumber" name="L128" href="#L128">128</a> 
+<a class="jxr_linenumber" name="L129" href="#L129">129</a>     @Override
+<a class="jxr_linenumber" name="L130" href="#L130">130</a>     <strong class="jxr_keyword">public</strong> <a name="DnsRawRecord" href="../../../../../io/netty5/handler/codec/dns/DnsRawRecord.html#DnsRawRecord">DnsRawRecord</a> copy() {
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>         <em class="jxr_comment">// We're required to copy here, because we need independent life-time for 'content'.</em>
+<a class="jxr_linenumber" name="L132" href="#L132">132</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="DefaultDnsRawRecord" href="../../../../../io/netty5/handler/codec/dns/DefaultDnsRawRecord.html#DefaultDnsRawRecord">DefaultDnsRawRecord</a>(name(), type(), dnsClass(), timeToLive(), content.copy(<strong class="jxr_keyword">true</strong>));
+<a class="jxr_linenumber" name="L133" href="#L133">133</a>     }
+<a class="jxr_linenumber" name="L134" href="#L134">134</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

@@ -23,7 +23,7 @@
 <a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty5.handler.ssl;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
-<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBufUtil;
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.BufferUtil;
 <a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandler;
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandlerContext;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.ReflectionUtil;
@@ -130,79 +130,80 @@
 <a class="jxr_linenumber" name="L122" href="#L122">122</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> accept(SecretKey masterKey, SSLSession session);
 <a class="jxr_linenumber" name="L123" href="#L123">123</a> 
 <a class="jxr_linenumber" name="L124" href="#L124">124</a>     @Override
-<a class="jxr_linenumber" name="L125" href="#L125">125</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object evt) {
+<a class="jxr_linenumber" name="L125" href="#L125">125</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> channelInboundEvent(<a name="ChannelHandlerContext" href="../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object evt) {
 <a class="jxr_linenumber" name="L126" href="#L126">126</a>         <em class="jxr_comment">//only try to log the session info if the ssl handshake has successfully completed.</em>
-<a class="jxr_linenumber" name="L127" href="#L127">127</a>         <strong class="jxr_keyword">if</strong> (evt == SslHandshakeCompletionEvent.SUCCESS &amp;&amp; masterKeyHandlerEnabled()) {
-<a class="jxr_linenumber" name="L128" href="#L128">128</a>             <strong class="jxr_keyword">final</strong> <a name="SslHandler" href="../../../../io/netty5/handler/ssl/SslHandler.html#SslHandler">SslHandler</a> handler = ctx.pipeline().get(SslHandler.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="L129" href="#L129">129</a>             <strong class="jxr_keyword">final</strong> SSLEngine engine = handler.engine();
-<a class="jxr_linenumber" name="L130" href="#L130">130</a>             <strong class="jxr_keyword">final</strong> SSLSession sslSession = engine.getSession();
-<a class="jxr_linenumber" name="L131" href="#L131">131</a> 
-<a class="jxr_linenumber" name="L132" href="#L132">132</a>             <em class="jxr_comment">//the OpenJDK does not expose a way to get the master secret, so try to use reflection to get it.</em>
-<a class="jxr_linenumber" name="L133" href="#L133">133</a>             <strong class="jxr_keyword">if</strong> (isSunSslEngineAvailable() &amp;&amp; sslSession.getClass().equals(SSL_SESSIONIMPL_CLASS)) {
-<a class="jxr_linenumber" name="L134" href="#L134">134</a>                 <strong class="jxr_keyword">final</strong> SecretKey secretKey;
-<a class="jxr_linenumber" name="L135" href="#L135">135</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L136" href="#L136">136</a>                     secretKey = (SecretKey) SSL_SESSIONIMPL_MASTER_SECRET_FIELD.get(sslSession);
-<a class="jxr_linenumber" name="L137" href="#L137">137</a>                 } <strong class="jxr_keyword">catch</strong> (IllegalAccessException e) {
-<a class="jxr_linenumber" name="L138" href="#L138">138</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Failed to access the field 'masterSecret' "</span> +
-<a class="jxr_linenumber" name="L139" href="#L139">139</a>                             <span class="jxr_string">"via reflection."</span>, e);
-<a class="jxr_linenumber" name="L140" href="#L140">140</a>                 }
-<a class="jxr_linenumber" name="L141" href="#L141">141</a>                 accept(secretKey, sslSession);
-<a class="jxr_linenumber" name="L142" href="#L142">142</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (OpenSsl.isAvailable() &amp;&amp; engine instanceof <a name="ReferenceCountedOpenSslEngine" href="../../../../io/netty5/handler/ssl/ReferenceCountedOpenSslEngine.html#ReferenceCountedOpenSslEngine">ReferenceCountedOpenSslEngine</a>) {
-<a class="jxr_linenumber" name="L143" href="#L143">143</a>                 SecretKeySpec secretKey = ((<a name="ReferenceCountedOpenSslEngine" href="../../../../io/netty5/handler/ssl/ReferenceCountedOpenSslEngine.html#ReferenceCountedOpenSslEngine">ReferenceCountedOpenSslEngine</a>) engine).masterKey();
-<a class="jxr_linenumber" name="L144" href="#L144">144</a>                 accept(secretKey, sslSession);
-<a class="jxr_linenumber" name="L145" href="#L145">145</a>             }
-<a class="jxr_linenumber" name="L146" href="#L146">146</a>         }
-<a class="jxr_linenumber" name="L147" href="#L147">147</a> 
-<a class="jxr_linenumber" name="L148" href="#L148">148</a>         ctx.fireUserEventTriggered(evt);
-<a class="jxr_linenumber" name="L149" href="#L149">149</a>     }
-<a class="jxr_linenumber" name="L150" href="#L150">150</a> 
-<a class="jxr_linenumber" name="L151" href="#L151">151</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L152" href="#L152">152</a> <em class="jxr_javadoccomment">     * Checks if the handler is set up to actually handle/accept the event.</em>
-<a class="jxr_linenumber" name="L153" href="#L153">153</a> <em class="jxr_javadoccomment">     * By default the {@link #SYSTEM_PROP_KEY} property is checked, but any implementations of this class are</em>
-<a class="jxr_linenumber" name="L154" href="#L154">154</a> <em class="jxr_javadoccomment">     * free to override if they have different mechanisms of checking.</em>
-<a class="jxr_linenumber" name="L155" href="#L155">155</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L156" href="#L156">156</a> <em class="jxr_javadoccomment">     * @return true if it should handle, false otherwise.</em>
-<a class="jxr_linenumber" name="L157" href="#L157">157</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L158" href="#L158">158</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> masterKeyHandlerEnabled() {
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>         <strong class="jxr_keyword">return</strong> SystemPropertyUtil.getBoolean(SYSTEM_PROP_KEY, false);
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>     }
-<a class="jxr_linenumber" name="L161" href="#L161">161</a> 
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L163" href="#L163">163</a> <em class="jxr_javadoccomment">     * Create a {@link WiresharkSslMasterKeyHandler} instance.</em>
-<a class="jxr_linenumber" name="L164" href="#L164">164</a> <em class="jxr_javadoccomment">     * This TLS master key handler logs the master key and session-id in a format</em>
-<a class="jxr_linenumber" name="L165" href="#L165">165</a> <em class="jxr_javadoccomment">     * understood by Wireshark -- this can be especially useful if you need to ever</em>
-<a class="jxr_linenumber" name="L166" href="#L166">166</a> <em class="jxr_javadoccomment">     * decrypt a TLS session and are using perfect forward secrecy (i.e. Diffie-Hellman)</em>
-<a class="jxr_linenumber" name="L167" href="#L167">167</a> <em class="jxr_javadoccomment">     * The key and session identifier are forwarded to the log named 'io.netty5.wireshark'.</em>
-<a class="jxr_linenumber" name="L168" href="#L168">168</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="SslMasterKeyHandler" href="../../../../io/netty5/handler/ssl/SslMasterKeyHandler.html#SslMasterKeyHandler">SslMasterKeyHandler</a> newWireSharkSslMasterKeyHandler() {
-<a class="jxr_linenumber" name="L170" href="#L170">170</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> WiresharkSslMasterKeyHandler();
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>     }
-<a class="jxr_linenumber" name="L172" href="#L172">172</a> 
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L174" href="#L174">174</a> <em class="jxr_javadoccomment">     * Record the session identifier and master key to the {@link InternalLogger} named {@code io.netty5.wireshark}.</em>
-<a class="jxr_linenumber" name="L175" href="#L175">175</a> <em class="jxr_javadoccomment">     * ex. {@code RSA Session-ID:XXX Master-Key:YYY}</em>
-<a class="jxr_linenumber" name="L176" href="#L176">176</a> <em class="jxr_javadoccomment">     * This format is understood by Wireshark 1.6.0.</em>
-<a class="jxr_linenumber" name="L177" href="#L177">177</a> <em class="jxr_javadoccomment">     * <a href="https://code.wireshark.org/review/gitweb?p=wireshark.git;a=commit;h=686d4cabb41185591c361f9ec6b709034317144b" target="alexandria_uri">https://code.wireshark.org/review/gitweb?p=wireshark.git;a=commit;h=686d4cabb41185591c361f9ec6b709034317144b</a></em>
-<a class="jxr_linenumber" name="L178" href="#L178">178</a> <em class="jxr_javadoccomment">     * The key and session identifier are forwarded to the log named 'io.netty5.wireshark'.</em>
-<a class="jxr_linenumber" name="L179" href="#L179">179</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L180" href="#L180">180</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> WiresharkSslMasterKeyHandler <strong class="jxr_keyword">extends</strong> <a name="SslMasterKeyHandler" href="../../../../io/netty5/handler/ssl/SslMasterKeyHandler.html#SslMasterKeyHandler">SslMasterKeyHandler</a> {
-<a class="jxr_linenumber" name="L181" href="#L181">181</a> 
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="InternalLogger" href="../../../../io/netty5/util/internal/logging/InternalLogger.html#InternalLogger">InternalLogger</a> wireshark_logger =
-<a class="jxr_linenumber" name="L183" href="#L183">183</a>                 InternalLoggerFactory.getInstance(<span class="jxr_string">"io.netty5.wireshark"</span>);
-<a class="jxr_linenumber" name="L184" href="#L184">184</a> 
-<a class="jxr_linenumber" name="L185" href="#L185">185</a>         @Override
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> accept(SecretKey masterKey, SSLSession session) {
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>             <strong class="jxr_keyword">if</strong> (masterKey.getEncoded().length != 48) {
-<a class="jxr_linenumber" name="L188" href="#L188">188</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"An invalid length master key was provided."</span>);
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>             }
-<a class="jxr_linenumber" name="L190" href="#L190">190</a>             <strong class="jxr_keyword">final</strong> byte[] sessionId = session.getId();
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>             wireshark_logger.warn(<span class="jxr_string">"RSA Session-ID:{} Master-Key:{}"</span>,
-<a class="jxr_linenumber" name="L192" href="#L192">192</a>                     ByteBufUtil.hexDump(sessionId).toLowerCase(),
-<a class="jxr_linenumber" name="L193" href="#L193">193</a>                     ByteBufUtil.hexDump(masterKey.getEncoded()).toLowerCase());
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>         }
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>     }
-<a class="jxr_linenumber" name="L196" href="#L196">196</a> 
-<a class="jxr_linenumber" name="L197" href="#L197">197</a> }
+<a class="jxr_linenumber" name="L127" href="#L127">127</a>         <strong class="jxr_keyword">if</strong> (evt instanceof <a name="SslHandshakeCompletionEvent" href="../../../../io/netty5/handler/ssl/SslHandshakeCompletionEvent.html#SslHandshakeCompletionEvent">SslHandshakeCompletionEvent</a> &amp;&amp;
+<a class="jxr_linenumber" name="L128" href="#L128">128</a>                 ((<a name="SslHandshakeCompletionEvent" href="../../../../io/netty5/handler/ssl/SslHandshakeCompletionEvent.html#SslHandshakeCompletionEvent">SslHandshakeCompletionEvent</a>) evt).isSuccess() &amp;&amp; masterKeyHandlerEnabled()) {
+<a class="jxr_linenumber" name="L129" href="#L129">129</a>             <strong class="jxr_keyword">final</strong> <a name="SslHandler" href="../../../../io/netty5/handler/ssl/SslHandler.html#SslHandler">SslHandler</a> handler = ctx.pipeline().get(SslHandler.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="L130" href="#L130">130</a>             <strong class="jxr_keyword">final</strong> SSLEngine engine = handler.engine();
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>             <strong class="jxr_keyword">final</strong> SSLSession sslSession = engine.getSession();
+<a class="jxr_linenumber" name="L132" href="#L132">132</a> 
+<a class="jxr_linenumber" name="L133" href="#L133">133</a>             <em class="jxr_comment">//the OpenJDK does not expose a way to get the master secret, so try to use reflection to get it.</em>
+<a class="jxr_linenumber" name="L134" href="#L134">134</a>             <strong class="jxr_keyword">if</strong> (isSunSslEngineAvailable() &amp;&amp; sslSession.getClass().equals(SSL_SESSIONIMPL_CLASS)) {
+<a class="jxr_linenumber" name="L135" href="#L135">135</a>                 <strong class="jxr_keyword">final</strong> SecretKey secretKey;
+<a class="jxr_linenumber" name="L136" href="#L136">136</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L137" href="#L137">137</a>                     secretKey = (SecretKey) SSL_SESSIONIMPL_MASTER_SECRET_FIELD.get(sslSession);
+<a class="jxr_linenumber" name="L138" href="#L138">138</a>                 } <strong class="jxr_keyword">catch</strong> (IllegalAccessException e) {
+<a class="jxr_linenumber" name="L139" href="#L139">139</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Failed to access the field 'masterSecret' "</span> +
+<a class="jxr_linenumber" name="L140" href="#L140">140</a>                             <span class="jxr_string">"via reflection."</span>, e);
+<a class="jxr_linenumber" name="L141" href="#L141">141</a>                 }
+<a class="jxr_linenumber" name="L142" href="#L142">142</a>                 accept(secretKey, sslSession);
+<a class="jxr_linenumber" name="L143" href="#L143">143</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (OpenSsl.isAvailable() &amp;&amp; engine instanceof <a name="ReferenceCountedOpenSslEngine" href="../../../../io/netty5/handler/ssl/ReferenceCountedOpenSslEngine.html#ReferenceCountedOpenSslEngine">ReferenceCountedOpenSslEngine</a>) {
+<a class="jxr_linenumber" name="L144" href="#L144">144</a>                 SecretKeySpec secretKey = ((<a name="ReferenceCountedOpenSslEngine" href="../../../../io/netty5/handler/ssl/ReferenceCountedOpenSslEngine.html#ReferenceCountedOpenSslEngine">ReferenceCountedOpenSslEngine</a>) engine).masterKey();
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>                 accept(secretKey, sslSession);
+<a class="jxr_linenumber" name="L146" href="#L146">146</a>             }
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>         }
+<a class="jxr_linenumber" name="L148" href="#L148">148</a> 
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>         ctx.fireChannelInboundEvent(evt);
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>     }
+<a class="jxr_linenumber" name="L151" href="#L151">151</a> 
+<a class="jxr_linenumber" name="L152" href="#L152">152</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L153" href="#L153">153</a> <em class="jxr_javadoccomment">     * Checks if the handler is set up to actually handle/accept the event.</em>
+<a class="jxr_linenumber" name="L154" href="#L154">154</a> <em class="jxr_javadoccomment">     * By default the {@link #SYSTEM_PROP_KEY} property is checked, but any implementations of this class are</em>
+<a class="jxr_linenumber" name="L155" href="#L155">155</a> <em class="jxr_javadoccomment">     * free to override if they have different mechanisms of checking.</em>
+<a class="jxr_linenumber" name="L156" href="#L156">156</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L157" href="#L157">157</a> <em class="jxr_javadoccomment">     * @return true if it should handle, false otherwise.</em>
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> masterKeyHandlerEnabled() {
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>         <strong class="jxr_keyword">return</strong> SystemPropertyUtil.getBoolean(SYSTEM_PROP_KEY, false);
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>     }
+<a class="jxr_linenumber" name="L162" href="#L162">162</a> 
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L164" href="#L164">164</a> <em class="jxr_javadoccomment">     * Create a {@link WiresharkSslMasterKeyHandler} instance.</em>
+<a class="jxr_linenumber" name="L165" href="#L165">165</a> <em class="jxr_javadoccomment">     * This TLS master key handler logs the master key and session-id in a format</em>
+<a class="jxr_linenumber" name="L166" href="#L166">166</a> <em class="jxr_javadoccomment">     * understood by Wireshark -- this can be especially useful if you need to ever</em>
+<a class="jxr_linenumber" name="L167" href="#L167">167</a> <em class="jxr_javadoccomment">     * decrypt a TLS session and are using perfect forward secrecy (i.e. Diffie-Hellman)</em>
+<a class="jxr_linenumber" name="L168" href="#L168">168</a> <em class="jxr_javadoccomment">     * The key and session identifier are forwarded to the log named 'io.netty5.wireshark'.</em>
+<a class="jxr_linenumber" name="L169" href="#L169">169</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="SslMasterKeyHandler" href="../../../../io/netty5/handler/ssl/SslMasterKeyHandler.html#SslMasterKeyHandler">SslMasterKeyHandler</a> newWireSharkSslMasterKeyHandler() {
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> WiresharkSslMasterKeyHandler();
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>     }
+<a class="jxr_linenumber" name="L173" href="#L173">173</a> 
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L175" href="#L175">175</a> <em class="jxr_javadoccomment">     * Record the session identifier and master key to the {@link InternalLogger} named {@code io.netty5.wireshark}.</em>
+<a class="jxr_linenumber" name="L176" href="#L176">176</a> <em class="jxr_javadoccomment">     * ex. {@code RSA Session-ID:XXX Master-Key:YYY}</em>
+<a class="jxr_linenumber" name="L177" href="#L177">177</a> <em class="jxr_javadoccomment">     * This format is understood by Wireshark 1.6.0.</em>
+<a class="jxr_linenumber" name="L178" href="#L178">178</a> <em class="jxr_javadoccomment">     * <a href="https://code.wireshark.org/review/gitweb?p=wireshark.git;a=commit;h=686d4cabb41185591c361f9ec6b709034317144b" target="alexandria_uri">https://code.wireshark.org/review/gitweb?p=wireshark.git;a=commit;h=686d4cabb41185591c361f9ec6b709034317144b</a></em>
+<a class="jxr_linenumber" name="L179" href="#L179">179</a> <em class="jxr_javadoccomment">     * The key and session identifier are forwarded to the log named 'io.netty5.wireshark'.</em>
+<a class="jxr_linenumber" name="L180" href="#L180">180</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> WiresharkSslMasterKeyHandler <strong class="jxr_keyword">extends</strong> <a name="SslMasterKeyHandler" href="../../../../io/netty5/handler/ssl/SslMasterKeyHandler.html#SslMasterKeyHandler">SslMasterKeyHandler</a> {
+<a class="jxr_linenumber" name="L182" href="#L182">182</a> 
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="InternalLogger" href="../../../../io/netty5/util/internal/logging/InternalLogger.html#InternalLogger">InternalLogger</a> wireshark_logger =
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>                 InternalLoggerFactory.getInstance(<span class="jxr_string">"io.netty5.wireshark"</span>);
+<a class="jxr_linenumber" name="L185" href="#L185">185</a> 
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>         @Override
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> accept(SecretKey masterKey, SSLSession session) {
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>             <strong class="jxr_keyword">if</strong> (masterKey.getEncoded().length != 48) {
+<a class="jxr_linenumber" name="L189" href="#L189">189</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"An invalid length master key was provided."</span>);
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>             }
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>             <strong class="jxr_keyword">final</strong> byte[] sessionId = session.getId();
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>             wireshark_logger.warn(<span class="jxr_string">"RSA Session-ID:{} Master-Key:{}"</span>,
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>                                   BufferUtil.hexDump(sessionId).toLowerCase(),
+<a class="jxr_linenumber" name="L194" href="#L194">194</a>                                   BufferUtil.hexDump(masterKey.getEncoded()).toLowerCase());
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>         }
+<a class="jxr_linenumber" name="L196" href="#L196">196</a>     }
+<a class="jxr_linenumber" name="L197" href="#L197">197</a> 
+<a class="jxr_linenumber" name="L198" href="#L198">198</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

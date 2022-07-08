@@ -29,7 +29,7 @@
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.BufferAllocator;
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.CompositeBuffer;
 <a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.MemoryManager;
-<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Resource;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.Resource;
 <a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.Channel;
 <a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandlerContext;
 <a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelOption;
@@ -135,8 +135,8 @@
 <a class="jxr_linenumber" name="L127" href="#L127">127</a>         cb.handler(ch);
 <a class="jxr_linenumber" name="L128" href="#L128">128</a>         sb.childHandler(sh);
 <a class="jxr_linenumber" name="L129" href="#L129">129</a> 
-<a class="jxr_linenumber" name="L130" href="#L130">130</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> sc = sb.bind().get();
-<a class="jxr_linenumber" name="L131" href="#L131">131</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> cc = cb.connect(sc.localAddress()).get();
+<a class="jxr_linenumber" name="L130" href="#L130">130</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> sc = sb.bind().asStage().get();
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>         <a name="Channel" href="../../../../../io/netty5/channel/Channel.html#Channel">Channel</a> cc = cb.connect(sc.localAddress()).asStage().get();
 <a class="jxr_linenumber" name="L132" href="#L132">132</a> 
 <a class="jxr_linenumber" name="L133" href="#L133">133</a>         <a name="BufferAllocator" href="../../../../../io/netty5/buffer/api/BufferAllocator.html#BufferAllocator">BufferAllocator</a> alloc = preferredAllocator();
 <a class="jxr_linenumber" name="L134" href="#L134">134</a>         <strong class="jxr_keyword">try</strong> (<a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> src = MemoryManager.unsafeWrap(data)) {
@@ -158,18 +158,18 @@
 <a class="jxr_linenumber" name="L150" href="#L150">150</a> 
 <a class="jxr_linenumber" name="L151" href="#L151">151</a>         Future&lt;Void&gt; cf = cc.writeAndFlush(preferredAllocator().allocate(0));
 <a class="jxr_linenumber" name="L152" href="#L152">152</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L153" href="#L153">153</a>             assertTrue(cf.await(60000));
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>             cf.sync();
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>             assertTrue(cf.asStage().await(60000, TimeUnit.MILLISECONDS));
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>             cf.asStage().sync();
 <a class="jxr_linenumber" name="L155" href="#L155">155</a>         } <strong class="jxr_keyword">catch</strong> (Throwable t) {
 <a class="jxr_linenumber" name="L156" href="#L156">156</a>             <em class="jxr_comment">// TODO: Remove this once we fix this test.</em>
 <a class="jxr_linenumber" name="L157" href="#L157">157</a>             TestUtils.dump(StringUtil.simpleClassName(<strong class="jxr_keyword">this</strong>));
 <a class="jxr_linenumber" name="L158" href="#L158">158</a>             <strong class="jxr_keyword">throw</strong> t;
 <a class="jxr_linenumber" name="L159" href="#L159">159</a>         }
 <a class="jxr_linenumber" name="L160" href="#L160">160</a> 
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>         serverDonePromise.asFuture().sync();
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>         sh.channel.close().sync();
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>         ch.channel.close().sync();
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>         sc.close().sync();
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>         serverDonePromise.asFuture().asStage().sync();
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>         sh.channel.close().asStage().sync();
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>         ch.channel.close().asStage().sync();
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>         sc.close().asStage().sync();
 <a class="jxr_linenumber" name="L165" href="#L165">165</a> 
 <a class="jxr_linenumber" name="L166" href="#L166">166</a>         <strong class="jxr_keyword">if</strong> (sh.exception.get() != <strong class="jxr_keyword">null</strong> &amp;&amp; !(sh.exception.get() instanceof IOException)) {
 <a class="jxr_linenumber" name="L167" href="#L167">167</a>             <strong class="jxr_keyword">throw</strong> sh.exception.get();
@@ -257,11 +257,11 @@
 <a class="jxr_linenumber" name="L249" href="#L249">249</a>         }
 <a class="jxr_linenumber" name="L250" href="#L250">250</a> 
 <a class="jxr_linenumber" name="L251" href="#L251">251</a>         @Override
-<a class="jxr_linenumber" name="L252" href="#L252">252</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> channelExceptionCaught(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
 <a class="jxr_linenumber" name="L253" href="#L253">253</a>             <strong class="jxr_keyword">if</strong> (exception.compareAndSet(<strong class="jxr_keyword">null</strong>, cause)) {
 <a class="jxr_linenumber" name="L254" href="#L254">254</a>                 handleException(ctx, cause);
 <a class="jxr_linenumber" name="L255" href="#L255">255</a>             }
-<a class="jxr_linenumber" name="L256" href="#L256">256</a>             <strong class="jxr_keyword">super</strong>.exceptionCaught(ctx, cause);
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>             <strong class="jxr_keyword">super</strong>.channelExceptionCaught(ctx, cause);
 <a class="jxr_linenumber" name="L257" href="#L257">257</a>         }
 <a class="jxr_linenumber" name="L258" href="#L258">258</a> 
 <a class="jxr_linenumber" name="L259" href="#L259">259</a>         <strong class="jxr_keyword">void</strong> handleException(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) {

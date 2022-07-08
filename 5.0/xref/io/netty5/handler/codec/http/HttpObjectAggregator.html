@@ -26,12 +26,12 @@
 <a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Buffer;
 <a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.BufferAllocator;
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.CompositeBuffer;
-<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Send;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.Send;
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandler;
 <a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelHandlerContext;
 <a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty5.channel.ChannelPipeline;
 <a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.DecoderResult;
-<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.MessageAggregatorNew;
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty5.handler.codec.MessageAggregator;
 <a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.concurrent.Future;
 <a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.logging.InternalLogger;
 <a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.logging.InternalLoggerFactory;
@@ -98,7 +98,7 @@
 <a class="jxr_linenumber" name="L90" href="#L90">90</a>  <em class="jxr_javadoccomment"> * @see HttpServerCodec</em>
 <a class="jxr_linenumber" name="L91" href="#L91">91</a>  <em class="jxr_javadoccomment"> */</em>
 <a class="jxr_linenumber" name="L92" href="#L92">92</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> HttpObjectAggregator&lt;C <strong class="jxr_keyword">extends</strong> HttpContent&lt;C&gt;&gt;
-<a class="jxr_linenumber" name="L93" href="#L93">93</a>          <strong class="jxr_keyword">extends</strong> MessageAggregatorNew&lt;HttpObject, HttpMessage, HttpContent&lt;C&gt;, FullHttpMessage&lt;?&gt;&gt; {
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>          <strong class="jxr_keyword">extends</strong> MessageAggregator&lt;HttpObject, HttpMessage, HttpContent&lt;C&gt;, FullHttpMessage&lt;?&gt;&gt; {
 <a class="jxr_linenumber" name="L94" href="#L94">94</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="InternalLogger" href="../../../../../io/netty5/util/internal/logging/InternalLogger.html#InternalLogger">InternalLogger</a> logger = InternalLoggerFactory.getInstance(HttpObjectAggregator.<strong class="jxr_keyword">class</strong>);
 <a class="jxr_linenumber" name="L95" href="#L95">95</a>  
 <a class="jxr_linenumber" name="L96" href="#L96">96</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> closeOnExpectationFailed;
@@ -173,14 +173,14 @@
 <a class="jxr_linenumber" name="L165" href="#L165">165</a>                                                      <a name="ChannelPipeline" href="../../../../../io/netty5/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline) {
 <a class="jxr_linenumber" name="L166" href="#L166">166</a>         <strong class="jxr_keyword">if</strong> (HttpUtil.isUnsupportedExpectation(start)) {
 <a class="jxr_linenumber" name="L167" href="#L167">167</a>             <em class="jxr_comment">// if the request contains an unsupported expectation, we return 417</em>
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>             pipeline.fireUserEventTriggered(HttpExpectationFailedEvent.INSTANCE);
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>             pipeline.fireChannelInboundEvent(HttpExpectationFailedEvent.INSTANCE);
 <a class="jxr_linenumber" name="L169" href="#L169">169</a>             <strong class="jxr_keyword">return</strong> newErrorResponse(EXPECTATION_FAILED, pipeline.channel().bufferAllocator(), <strong class="jxr_keyword">true</strong>, false);
 <a class="jxr_linenumber" name="L170" href="#L170">170</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (HttpUtil.is100ContinueExpected(start)) {
 <a class="jxr_linenumber" name="L171" href="#L171">171</a>             <em class="jxr_comment">// if the request contains 100-continue but the content-length is too large, we return 413</em>
 <a class="jxr_linenumber" name="L172" href="#L172">172</a>             <strong class="jxr_keyword">if</strong> (getContentLength(start, -1L) &lt;= maxContentLength) {
 <a class="jxr_linenumber" name="L173" href="#L173">173</a>                 <strong class="jxr_keyword">return</strong> newErrorResponse(CONTINUE, pipeline.channel().bufferAllocator(), false, false);
 <a class="jxr_linenumber" name="L174" href="#L174">174</a>             }
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>             pipeline.fireUserEventTriggered(HttpExpectationFailedEvent.INSTANCE);
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>             pipeline.fireChannelInboundEvent(HttpExpectationFailedEvent.INSTANCE);
 <a class="jxr_linenumber" name="L176" href="#L176">176</a>             <strong class="jxr_keyword">return</strong> newErrorResponse(REQUEST_ENTITY_TOO_LARGE, pipeline.channel().bufferAllocator(), <strong class="jxr_keyword">true</strong>, false);
 <a class="jxr_linenumber" name="L177" href="#L177">177</a>         }
 <a class="jxr_linenumber" name="L178" href="#L178">178</a> 
@@ -292,8 +292,8 @@
 <a class="jxr_linenumber" name="L284" href="#L284">284</a>     }
 <a class="jxr_linenumber" name="L285" href="#L285">285</a> 
 <a class="jxr_linenumber" name="L286" href="#L286">286</a>     @Override
-<a class="jxr_linenumber" name="L287" href="#L287">287</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L288" href="#L288">288</a>         <strong class="jxr_keyword">super</strong>.exceptionCaught(ctx, cause);
+<a class="jxr_linenumber" name="L287" href="#L287">287</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelExceptionCaught(<a name="ChannelHandlerContext" href="../../../../../io/netty5/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L288" href="#L288">288</a>         <strong class="jxr_keyword">super</strong>.channelExceptionCaught(ctx, cause);
 <a class="jxr_linenumber" name="L289" href="#L289">289</a>         <strong class="jxr_keyword">if</strong> (cause instanceof ResponseTooLargeException) {
 <a class="jxr_linenumber" name="L290" href="#L290">290</a>             ctx.close();
 <a class="jxr_linenumber" name="L291" href="#L291">291</a>         }
@@ -400,87 +400,97 @@
 <a class="jxr_linenumber" name="L392" href="#L392">392</a>         }
 <a class="jxr_linenumber" name="L393" href="#L393">393</a> 
 <a class="jxr_linenumber" name="L394" href="#L394">394</a>         @Override
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> touch(Object hint) {
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>             payload().touch(hint);
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>         }
-<a class="jxr_linenumber" name="L399" href="#L399">399</a> 
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>         @Override
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> setMethod(<a name="HttpMethod" href="../../../../../io/netty5/handler/codec/http/HttpMethod.html#HttpMethod">HttpMethod</a> method) {
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>             ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).setMethod(method);
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>         }
-<a class="jxr_linenumber" name="L405" href="#L405">405</a> 
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>         @Override
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> setUri(String uri) {
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>             ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).setUri(uri);
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>         }
-<a class="jxr_linenumber" name="L411" href="#L411">411</a> 
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>         @Override
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>         <strong class="jxr_keyword">public</strong> <a name="HttpMethod" href="../../../../../io/netty5/handler/codec/http/HttpMethod.html#HttpMethod">HttpMethod</a> method() {
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>             <strong class="jxr_keyword">return</strong> ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).method();
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>         <strong class="jxr_keyword">public</strong> AggregatedFullHttpRequest copy() {
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> AggregatedFullHttpRequest(<strong class="jxr_keyword">this</strong>, payload().copy(), trailingHeaders().copy());
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>         }
+<a class="jxr_linenumber" name="L398" href="#L398">398</a> 
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>         @Override
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> touch(Object hint) {
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>             payload().touch(hint);
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>         }
+<a class="jxr_linenumber" name="L404" href="#L404">404</a> 
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>         @Override
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> setMethod(<a name="HttpMethod" href="../../../../../io/netty5/handler/codec/http/HttpMethod.html#HttpMethod">HttpMethod</a> method) {
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>             ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).setMethod(method);
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>         }
+<a class="jxr_linenumber" name="L410" href="#L410">410</a> 
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>         @Override
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> setUri(String uri) {
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>             ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).setUri(uri);
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
 <a class="jxr_linenumber" name="L415" href="#L415">415</a>         }
 <a class="jxr_linenumber" name="L416" href="#L416">416</a> 
 <a class="jxr_linenumber" name="L417" href="#L417">417</a>         @Override
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>         <strong class="jxr_keyword">public</strong> String uri() {
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>             <strong class="jxr_keyword">return</strong> ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).uri();
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>         <strong class="jxr_keyword">public</strong> <a name="HttpMethod" href="../../../../../io/netty5/handler/codec/http/HttpMethod.html#HttpMethod">HttpMethod</a> method() {
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>             <strong class="jxr_keyword">return</strong> ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).method();
 <a class="jxr_linenumber" name="L420" href="#L420">420</a>         }
 <a class="jxr_linenumber" name="L421" href="#L421">421</a> 
 <a class="jxr_linenumber" name="L422" href="#L422">422</a>         @Override
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> setProtocolVersion(<a name="HttpVersion" href="../../../../../io/netty5/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> version) {
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">super</strong>.setProtocolVersion(version);
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>         }
-<a class="jxr_linenumber" name="L427" href="#L427">427</a> 
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>         @Override
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>             <strong class="jxr_keyword">return</strong> HttpMessageUtil.appendFullRequest(<strong class="jxr_keyword">new</strong> StringBuilder(256), <strong class="jxr_keyword">this</strong>).toString();
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>         <strong class="jxr_keyword">public</strong> String uri() {
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">return</strong> ((<a name="HttpRequest" href="../../../../../io/netty5/handler/codec/http/HttpRequest.html#HttpRequest">HttpRequest</a>) message).uri();
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>         }
+<a class="jxr_linenumber" name="L426" href="#L426">426</a> 
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>         @Override
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpRequest" href="../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> setProtocolVersion(<a name="HttpVersion" href="../../../../../io/netty5/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> version) {
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>             <strong class="jxr_keyword">super</strong>.setProtocolVersion(version);
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
 <a class="jxr_linenumber" name="L431" href="#L431">431</a>         }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>     }
-<a class="jxr_linenumber" name="L433" href="#L433">433</a> 
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> AggregatedFullHttpResponse <strong class="jxr_keyword">extends</strong> AggregatedFullHttpMessage&lt;FullHttpResponse&gt;
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>             <strong class="jxr_keyword">implements</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> {
-<a class="jxr_linenumber" name="L436" href="#L436">436</a> 
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>         AggregatedFullHttpResponse(<a name="HttpResponse" href="../../../../../io/netty5/handler/codec/http/HttpResponse.html#HttpResponse">HttpResponse</a> message, <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> content, <a name="HttpHeaders" href="../../../../../io/netty5/handler/codec/http/HttpHeaders.html#HttpHeaders">HttpHeaders</a> trailingHeaders) {
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>             <strong class="jxr_keyword">super</strong>(message, content, trailingHeaders);
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>         }
-<a class="jxr_linenumber" name="L440" href="#L440">440</a> 
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>         @Override
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>         <strong class="jxr_keyword">public</strong> Send&lt;FullHttpResponse&gt; send() {
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>             <strong class="jxr_keyword">return</strong> payload().send().map(FullHttpResponse.<strong class="jxr_keyword">class</strong>,
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>                     p -&gt; <strong class="jxr_keyword">new</strong> AggregatedFullHttpResponse(<strong class="jxr_keyword">this</strong>, p, trailingHeaders()));
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>         }
-<a class="jxr_linenumber" name="L446" href="#L446">446</a> 
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>         @Override
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> touch(Object hint) {
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>             payload().touch(hint);
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>         }
-<a class="jxr_linenumber" name="L452" href="#L452">452</a> 
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>         @Override
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> setStatus(<a name="HttpResponseStatus" href="../../../../../io/netty5/handler/codec/http/HttpResponseStatus.html#HttpResponseStatus">HttpResponseStatus</a> status) {
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>             ((<a name="HttpResponse" href="../../../../../io/netty5/handler/codec/http/HttpResponse.html#HttpResponse">HttpResponse</a>) message).setStatus(status);
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>         }
-<a class="jxr_linenumber" name="L458" href="#L458">458</a> 
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>         @Override
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>         <strong class="jxr_keyword">public</strong> <a name="HttpResponseStatus" href="../../../../../io/netty5/handler/codec/http/HttpResponseStatus.html#HttpResponseStatus">HttpResponseStatus</a> status() {
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>             <strong class="jxr_keyword">return</strong> ((<a name="HttpResponse" href="../../../../../io/netty5/handler/codec/http/HttpResponse.html#HttpResponse">HttpResponse</a>) message).status();
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>         }
-<a class="jxr_linenumber" name="L463" href="#L463">463</a> 
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>         @Override
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> setProtocolVersion(<a name="HttpVersion" href="../../../../../io/netty5/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> version) {
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>             <strong class="jxr_keyword">super</strong>.setProtocolVersion(version);
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>         }
-<a class="jxr_linenumber" name="L469" href="#L469">469</a> 
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>         @Override
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>             <strong class="jxr_keyword">return</strong> HttpMessageUtil.appendFullResponse(<strong class="jxr_keyword">new</strong> StringBuilder(256), <strong class="jxr_keyword">this</strong>).toString();
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>         }
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>     }
-<a class="jxr_linenumber" name="L475" href="#L475">475</a> }
+<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>         @Override
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>             <strong class="jxr_keyword">return</strong> HttpMessageUtil.appendFullRequest(<strong class="jxr_keyword">new</strong> StringBuilder(256), <strong class="jxr_keyword">this</strong>).toString();
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         }
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>     }
+<a class="jxr_linenumber" name="L438" href="#L438">438</a> 
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> AggregatedFullHttpResponse <strong class="jxr_keyword">extends</strong> AggregatedFullHttpMessage&lt;FullHttpResponse&gt;
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>             <strong class="jxr_keyword">implements</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> {
+<a class="jxr_linenumber" name="L441" href="#L441">441</a> 
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>         AggregatedFullHttpResponse(<a name="HttpResponse" href="../../../../../io/netty5/handler/codec/http/HttpResponse.html#HttpResponse">HttpResponse</a> message, <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> content, <a name="HttpHeaders" href="../../../../../io/netty5/handler/codec/http/HttpHeaders.html#HttpHeaders">HttpHeaders</a> trailingHeaders) {
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>             <strong class="jxr_keyword">super</strong>(message, content, trailingHeaders);
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>         }
+<a class="jxr_linenumber" name="L445" href="#L445">445</a> 
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>         @Override
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>         <strong class="jxr_keyword">public</strong> Send&lt;FullHttpResponse&gt; send() {
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>             <strong class="jxr_keyword">return</strong> payload().send().map(FullHttpResponse.<strong class="jxr_keyword">class</strong>,
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>                     p -&gt; <strong class="jxr_keyword">new</strong> AggregatedFullHttpResponse(<strong class="jxr_keyword">this</strong>, p, trailingHeaders()));
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>         }
+<a class="jxr_linenumber" name="L451" href="#L451">451</a> 
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>         @Override
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>         <strong class="jxr_keyword">public</strong> AggregatedFullHttpResponse copy() {
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> AggregatedFullHttpResponse(<strong class="jxr_keyword">this</strong>, payload().copy(), trailingHeaders().copy());
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>         }
+<a class="jxr_linenumber" name="L456" href="#L456">456</a> 
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>         @Override
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> touch(Object hint) {
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>             payload().touch(hint);
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>         }
+<a class="jxr_linenumber" name="L462" href="#L462">462</a> 
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>         @Override
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> setStatus(<a name="HttpResponseStatus" href="../../../../../io/netty5/handler/codec/http/HttpResponseStatus.html#HttpResponseStatus">HttpResponseStatus</a> status) {
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>             ((<a name="HttpResponse" href="../../../../../io/netty5/handler/codec/http/HttpResponse.html#HttpResponse">HttpResponse</a>) message).setStatus(status);
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>         }
+<a class="jxr_linenumber" name="L468" href="#L468">468</a> 
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>         @Override
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>         <strong class="jxr_keyword">public</strong> <a name="HttpResponseStatus" href="../../../../../io/netty5/handler/codec/http/HttpResponseStatus.html#HttpResponseStatus">HttpResponseStatus</a> status() {
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>             <strong class="jxr_keyword">return</strong> ((<a name="HttpResponse" href="../../../../../io/netty5/handler/codec/http/HttpResponse.html#HttpResponse">HttpResponse</a>) message).status();
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>         }
+<a class="jxr_linenumber" name="L473" href="#L473">473</a> 
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>         @Override
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>         <strong class="jxr_keyword">public</strong> <a name="FullHttpResponse" href="../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> setProtocolVersion(<a name="HttpVersion" href="../../../../../io/netty5/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> version) {
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <strong class="jxr_keyword">super</strong>.setProtocolVersion(version);
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>         }
+<a class="jxr_linenumber" name="L479" href="#L479">479</a> 
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>         @Override
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>             <strong class="jxr_keyword">return</strong> HttpMessageUtil.appendFullResponse(<strong class="jxr_keyword">new</strong> StringBuilder(256), <strong class="jxr_keyword">this</strong>).toString();
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>         }
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>     }
+<a class="jxr_linenumber" name="L485" href="#L485">485</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

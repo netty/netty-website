@@ -23,8 +23,8 @@
 <a class="jxr_linenumber" name="L15" href="#L15">15</a>  
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty5.handler.codec.http2;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
-<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
-<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.Unpooled;
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.Buffer;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty5.buffer.api.BufferAllocator;
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty5.util.internal.UnstableApi;
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  
 <a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty5.handler.codec.http2.Http2Error.COMPRESSION_ERROR;
@@ -35,7 +35,7 @@
 <a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> <a name="DefaultHttp2HeadersEncoder" href="../../../../../io/netty5/handler/codec/http2/DefaultHttp2HeadersEncoder.html#DefaultHttp2HeadersEncoder">DefaultHttp2HeadersEncoder</a> <strong class="jxr_keyword">implements</strong> Http2HeadersEncoder, Http2HeadersEncoder.Configuration {
 <a class="jxr_linenumber" name="L28" href="#L28">28</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="HpackEncoder" href="../../../../../io/netty5/handler/codec/http2/HpackEncoder.html#HpackEncoder">HpackEncoder</a> hpackEncoder;
 <a class="jxr_linenumber" name="L29" href="#L29">29</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> SensitivityDetector sensitivityDetector;
-<a class="jxr_linenumber" name="L30" href="#L30">30</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> ByteBuf tableSizeChangeOutput = Unpooled.buffer();
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> tableSizeChangeOutput = BufferAllocator.onHeapUnpooled().allocate(256);
 <a class="jxr_linenumber" name="L31" href="#L31">31</a>  
 <a class="jxr_linenumber" name="L32" href="#L32">32</a>      <strong class="jxr_keyword">public</strong> <a name="DefaultHttp2HeadersEncoder" href="../../../../../io/netty5/handler/codec/http2/DefaultHttp2HeadersEncoder.html#DefaultHttp2HeadersEncoder">DefaultHttp2HeadersEncoder</a>() {
 <a class="jxr_linenumber" name="L33" href="#L33">33</a>          <strong class="jxr_keyword">this</strong>(NEVER_SENSITIVE);
@@ -70,13 +70,13 @@
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>      }
 <a class="jxr_linenumber" name="L63" href="#L63">63</a>  
 <a class="jxr_linenumber" name="L64" href="#L64">64</a>      @Override
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> encodeHeaders(<strong class="jxr_keyword">int</strong> streamId, <a name="Http2Headers" href="../../../../../io/netty5/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers, ByteBuf buffer) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty5/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> encodeHeaders(<strong class="jxr_keyword">int</strong> streamId, <a name="Http2Headers" href="../../../../../io/netty5/handler/codec/http2/Http2Headers.html#Http2Headers">Http2Headers</a> headers, <a name="Buffer" href="../../../../../io/netty5/buffer/api/Buffer.html#Buffer">Buffer</a> buffer) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty5/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
 <a class="jxr_linenumber" name="L66" href="#L66">66</a>          <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L67" href="#L67">67</a>              <em class="jxr_comment">// If there was a change in the table size, serialize the output from the hpackEncoder</em>
 <a class="jxr_linenumber" name="L68" href="#L68">68</a>              <em class="jxr_comment">// resulting from that change.</em>
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>              <strong class="jxr_keyword">if</strong> (tableSizeChangeOutput.isReadable()) {
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>              <strong class="jxr_keyword">if</strong> (tableSizeChangeOutput.readableBytes() &gt; 0) {
 <a class="jxr_linenumber" name="L70" href="#L70">70</a>                  buffer.writeBytes(tableSizeChangeOutput);
-<a class="jxr_linenumber" name="L71" href="#L71">71</a>                  tableSizeChangeOutput.clear();
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>                  tableSizeChangeOutput.resetOffsets();
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>              }
 <a class="jxr_linenumber" name="L73" href="#L73">73</a>  
 <a class="jxr_linenumber" name="L74" href="#L74">74</a>              hpackEncoder.encodeHeaders(streamId, buffer, headers, sensitivityDetector);
