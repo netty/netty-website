@@ -141,46 +141,58 @@
 <a class="jxr_linenumber" name="L133" href="#L133">133</a>     @Override
 <a class="jxr_linenumber" name="L134" href="#L134">134</a>     <strong class="jxr_keyword">protected</strong> <a name="FullHttpResponse" href="../../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> newHandshakeResponse(<a name="BufferAllocator" href="../../../../../../io/netty5/buffer/api/BufferAllocator.html#BufferAllocator">BufferAllocator</a> allocator, <a name="FullHttpRequest" href="../../../../../../io/netty5/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> req,
 <a class="jxr_linenumber" name="L135" href="#L135">135</a>                                                     <a name="HttpHeaders" href="../../../../../../io/netty5/handler/codec/http/HttpHeaders.html#HttpHeaders">HttpHeaders</a> headers) {
-<a class="jxr_linenumber" name="L136" href="#L136">136</a>         String key = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_KEY);
-<a class="jxr_linenumber" name="L137" href="#L137">137</a>         <strong class="jxr_keyword">if</strong> (key == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L138" href="#L138">138</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a>(<span class="jxr_string">"not a WebSocket request: missing key"</span>, req);
-<a class="jxr_linenumber" name="L139" href="#L139">139</a>         }
-<a class="jxr_linenumber" name="L140" href="#L140">140</a> 
-<a class="jxr_linenumber" name="L141" href="#L141">141</a>         <a name="FullHttpResponse" href="../../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> res = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpResponse" href="../../../../../../io/netty5/handler/codec/http/DefaultFullHttpResponse.html#DefaultFullHttpResponse">DefaultFullHttpResponse</a>(HTTP_1_1, HttpResponseStatus.SWITCHING_PROTOCOLS,
-<a class="jxr_linenumber" name="L142" href="#L142">142</a>                 allocator.allocate(0));
-<a class="jxr_linenumber" name="L143" href="#L143">143</a>         <strong class="jxr_keyword">if</strong> (headers != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L144" href="#L144">144</a>             res.headers().add(headers);
-<a class="jxr_linenumber" name="L145" href="#L145">145</a>         }
-<a class="jxr_linenumber" name="L146" href="#L146">146</a> 
-<a class="jxr_linenumber" name="L147" href="#L147">147</a>         String accept = WebSocketUtil.calculateV13Accept(key);
-<a class="jxr_linenumber" name="L148" href="#L148">148</a>         res.headers().set(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET)
-<a class="jxr_linenumber" name="L149" href="#L149">149</a>                      .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE)
-<a class="jxr_linenumber" name="L150" href="#L150">150</a>                      .set(HttpHeaderNames.SEC_WEBSOCKET_ACCEPT, accept);
-<a class="jxr_linenumber" name="L151" href="#L151">151</a> 
-<a class="jxr_linenumber" name="L152" href="#L152">152</a>         String subprotocols = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL);
-<a class="jxr_linenumber" name="L153" href="#L153">153</a>         <strong class="jxr_keyword">if</strong> (subprotocols != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>             String selectedSubprotocol = selectSubprotocol(subprotocols);
-<a class="jxr_linenumber" name="L155" href="#L155">155</a>             <strong class="jxr_keyword">if</strong> (selectedSubprotocol == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L156" href="#L156">156</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
-<a class="jxr_linenumber" name="L157" href="#L157">157</a>                     logger.debug(<span class="jxr_string">"Requested subprotocol(s) not supported: {}"</span>, subprotocols);
-<a class="jxr_linenumber" name="L158" href="#L158">158</a>                 }
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>                 res.headers().set(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL, selectedSubprotocol);
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>             }
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>         }
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>         <strong class="jxr_keyword">return</strong> res;
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>     }
-<a class="jxr_linenumber" name="L165" href="#L165">165</a> 
-<a class="jxr_linenumber" name="L166" href="#L166">166</a>     @Override
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketFrameDecoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketFrameDecoder.html#WebSocketFrameDecoder">WebSocketFrameDecoder</a> newWebsocketDecoder() {
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocket13FrameDecoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocket13FrameDecoder.html#WebSocket13FrameDecoder">WebSocket13FrameDecoder</a>(decoderConfig());
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>     }
-<a class="jxr_linenumber" name="L170" href="#L170">170</a> 
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>     @Override
-<a class="jxr_linenumber" name="L172" href="#L172">172</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketFrameEncoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketFrameEncoder.html#WebSocketFrameEncoder">WebSocketFrameEncoder</a> newWebSocketEncoder() {
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocket13FrameEncoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocket13FrameEncoder.html#WebSocket13FrameEncoder">WebSocket13FrameEncoder</a>(false);
-<a class="jxr_linenumber" name="L174" href="#L174">174</a>     }
-<a class="jxr_linenumber" name="L175" href="#L175">175</a> }
+<a class="jxr_linenumber" name="L136" href="#L136">136</a>         <a name="HttpHeaders" href="../../../../../../io/netty5/handler/codec/http/HttpHeaders.html#HttpHeaders">HttpHeaders</a> reqHeaders = req.headers();
+<a class="jxr_linenumber" name="L137" href="#L137">137</a>         <strong class="jxr_keyword">if</strong> (!reqHeaders.contains(HttpHeaderNames.CONNECTION) ||
+<a class="jxr_linenumber" name="L138" href="#L138">138</a>             !reqHeaders.containsValue(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, <strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="L139" href="#L139">139</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a>(
+<a class="jxr_linenumber" name="L140" href="#L140">140</a>                     <span class="jxr_string">"not a WebSocket request: a |Connection| header must includes a token 'Upgrade'"</span>, req);
+<a class="jxr_linenumber" name="L141" href="#L141">141</a>         }
+<a class="jxr_linenumber" name="L142" href="#L142">142</a> 
+<a class="jxr_linenumber" name="L143" href="#L143">143</a>         <strong class="jxr_keyword">if</strong> (!reqHeaders.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, <strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="L144" href="#L144">144</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a>(
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>                     <span class="jxr_string">"not a WebSocket request: a |Upgrade| header must containing the value 'websocket'"</span>, req);
+<a class="jxr_linenumber" name="L146" href="#L146">146</a>         }
+<a class="jxr_linenumber" name="L147" href="#L147">147</a> 
+<a class="jxr_linenumber" name="L148" href="#L148">148</a>         String key = reqHeaders.get(HttpHeaderNames.SEC_WEBSOCKET_KEY);
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>         <strong class="jxr_keyword">if</strong> (key == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a>(<span class="jxr_string">"not a WebSocket request: missing key"</span>, req);
+<a class="jxr_linenumber" name="L151" href="#L151">151</a>         }
+<a class="jxr_linenumber" name="L152" href="#L152">152</a> 
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>         <a name="FullHttpResponse" href="../../../../../../io/netty5/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> res = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpResponse" href="../../../../../../io/netty5/handler/codec/http/DefaultFullHttpResponse.html#DefaultFullHttpResponse">DefaultFullHttpResponse</a>(HTTP_1_1, HttpResponseStatus.SWITCHING_PROTOCOLS,
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>                 allocator.allocate(0));
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>         <strong class="jxr_keyword">if</strong> (headers != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>             res.headers().add(headers);
+<a class="jxr_linenumber" name="L157" href="#L157">157</a>         }
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> 
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>         String accept = WebSocketUtil.calculateV13Accept(key);
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>         res.headers().set(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET)
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>                      .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE)
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>                      .set(HttpHeaderNames.SEC_WEBSOCKET_ACCEPT, accept);
+<a class="jxr_linenumber" name="L163" href="#L163">163</a> 
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>         String subprotocols = reqHeaders.get(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL);
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>         <strong class="jxr_keyword">if</strong> (subprotocols != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>             String selectedSubprotocol = selectSubprotocol(subprotocols);
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>             <strong class="jxr_keyword">if</strong> (selectedSubprotocol == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>                 <strong class="jxr_keyword">if</strong> (logger.isDebugEnabled()) {
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>                     logger.debug(<span class="jxr_string">"Requested subprotocol(s) not supported: {}"</span>, subprotocols);
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>                 }
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>                 res.headers().set(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL, selectedSubprotocol);
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>             }
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>         }
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>         <strong class="jxr_keyword">return</strong> res;
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>     }
+<a class="jxr_linenumber" name="L177" href="#L177">177</a> 
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>     @Override
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketFrameDecoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketFrameDecoder.html#WebSocketFrameDecoder">WebSocketFrameDecoder</a> newWebsocketDecoder() {
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocket13FrameDecoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocket13FrameDecoder.html#WebSocket13FrameDecoder">WebSocket13FrameDecoder</a>(decoderConfig());
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>     }
+<a class="jxr_linenumber" name="L182" href="#L182">182</a> 
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>     @Override
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketFrameEncoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocketFrameEncoder.html#WebSocketFrameEncoder">WebSocketFrameEncoder</a> newWebSocketEncoder() {
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocket13FrameEncoder" href="../../../../../../io/netty5/handler/codec/http/websocketx/WebSocket13FrameEncoder.html#WebSocket13FrameEncoder">WebSocket13FrameEncoder</a>(false);
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>     }
+<a class="jxr_linenumber" name="L187" href="#L187">187</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
