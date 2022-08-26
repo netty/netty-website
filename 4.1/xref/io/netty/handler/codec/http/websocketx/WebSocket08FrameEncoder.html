@@ -91,7 +91,7 @@
 <a class="jxr_linenumber" name="L83" href="#L83">83</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> byte OPCODE_PONG = 0xA;
 <a class="jxr_linenumber" name="L84" href="#L84">84</a>  
 <a class="jxr_linenumber" name="L85" href="#L85">85</a>      <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L86" href="#L86">86</a>  <em class="jxr_javadoccomment">     * The size threshold for gathering writes. Non-Masked messages bigger than this size will be be sent fragmented as</em>
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>  <em class="jxr_javadoccomment">     * The size threshold for gathering writes. Non-Masked messages bigger than this size will be sent fragmented as</em>
 <a class="jxr_linenumber" name="L87" href="#L87">87</a>  <em class="jxr_javadoccomment">     * a header and a content ByteBuf whereas messages smaller than the size will be merged into a single buffer and</em>
 <a class="jxr_linenumber" name="L88" href="#L88">88</a>  <em class="jxr_javadoccomment">     * sent at once.&lt;br&gt;</em>
 <a class="jxr_linenumber" name="L89" href="#L89">89</a>  <em class="jxr_javadoccomment">     * Masked messages will always be sent at once.</em>
@@ -147,100 +147,104 @@
 <a class="jxr_linenumber" name="L139" href="#L139">139</a>         b0 |= opcode % 128;
 <a class="jxr_linenumber" name="L140" href="#L140">140</a> 
 <a class="jxr_linenumber" name="L141" href="#L141">141</a>         <strong class="jxr_keyword">if</strong> (opcode == OPCODE_PING &amp;&amp; length &gt; 125) {
-<a class="jxr_linenumber" name="L142" href="#L142">142</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(<span class="jxr_string">"invalid payload for PING (payload length must be &lt;= 125, was "</span>
-<a class="jxr_linenumber" name="L143" href="#L143">143</a>                     + length);
-<a class="jxr_linenumber" name="L144" href="#L144">144</a>         }
-<a class="jxr_linenumber" name="L145" href="#L145">145</a> 
-<a class="jxr_linenumber" name="L146" href="#L146">146</a>         <strong class="jxr_keyword">boolean</strong> release = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L147" href="#L147">147</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L148" href="#L148">148</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L149" href="#L149">149</a>             <strong class="jxr_keyword">int</strong> maskLength = maskPayload ? 4 : 0;
-<a class="jxr_linenumber" name="L150" href="#L150">150</a>             <strong class="jxr_keyword">if</strong> (length &lt;= 125) {
-<a class="jxr_linenumber" name="L151" href="#L151">151</a>                 <strong class="jxr_keyword">int</strong> size = 2 + maskLength;
-<a class="jxr_linenumber" name="L152" href="#L152">152</a>                 <strong class="jxr_keyword">if</strong> (maskPayload || length &lt;= GATHERING_WRITE_THRESHOLD) {
-<a class="jxr_linenumber" name="L153" href="#L153">153</a>                     size += length;
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>                 }
-<a class="jxr_linenumber" name="L155" href="#L155">155</a>                 buf = ctx.alloc().buffer(size);
-<a class="jxr_linenumber" name="L156" href="#L156">156</a>                 buf.writeByte(b0);
-<a class="jxr_linenumber" name="L157" href="#L157">157</a>                 byte b = (byte) (maskPayload ? 0x80 | (byte) length : (byte) length);
-<a class="jxr_linenumber" name="L158" href="#L158">158</a>                 buf.writeByte(b);
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (length &lt;= 0xFFFF) {
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>                 <strong class="jxr_keyword">int</strong> size = 4 + maskLength;
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>                 <strong class="jxr_keyword">if</strong> (maskPayload || length &lt;= GATHERING_WRITE_THRESHOLD) {
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>                     size += length;
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>                 }
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>                 buf = ctx.alloc().buffer(size);
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>                 buf.writeByte(b0);
-<a class="jxr_linenumber" name="L166" href="#L166">166</a>                 buf.writeByte(maskPayload ? 0xFE : 126);
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>                 buf.writeByte(length &gt;&gt;&gt; 8 &amp; 0xFF);
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>                 buf.writeByte(length &amp; 0xFF);
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L170" href="#L170">170</a>                 <strong class="jxr_keyword">int</strong> size = 10 + maskLength;
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>                 <strong class="jxr_keyword">if</strong> (maskPayload || length &lt;= GATHERING_WRITE_THRESHOLD) {
-<a class="jxr_linenumber" name="L172" href="#L172">172</a>                     size += length;
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>                 }
-<a class="jxr_linenumber" name="L174" href="#L174">174</a>                 buf = ctx.alloc().buffer(size);
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>                 buf.writeByte(b0);
-<a class="jxr_linenumber" name="L176" href="#L176">176</a>                 buf.writeByte(maskPayload ? 0xFF : 127);
-<a class="jxr_linenumber" name="L177" href="#L177">177</a>                 buf.writeLong(length);
-<a class="jxr_linenumber" name="L178" href="#L178">178</a>             }
-<a class="jxr_linenumber" name="L179" href="#L179">179</a> 
-<a class="jxr_linenumber" name="L180" href="#L180">180</a>             <em class="jxr_comment">// Write payload</em>
-<a class="jxr_linenumber" name="L181" href="#L181">181</a>             <strong class="jxr_keyword">if</strong> (maskPayload) {
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>                 <strong class="jxr_keyword">int</strong> random = PlatformDependent.threadLocalRandom().nextInt(Integer.MAX_VALUE);
-<a class="jxr_linenumber" name="L183" href="#L183">183</a>                 mask = ByteBuffer.allocate(4).putInt(random).array();
-<a class="jxr_linenumber" name="L184" href="#L184">184</a>                 buf.writeBytes(mask);
-<a class="jxr_linenumber" name="L185" href="#L185">185</a> 
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>                 ByteOrder srcOrder = data.order();
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>                 ByteOrder dstOrder = buf.order();
-<a class="jxr_linenumber" name="L188" href="#L188">188</a> 
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>                 <strong class="jxr_keyword">int</strong> counter = 0;
-<a class="jxr_linenumber" name="L190" href="#L190">190</a>                 <strong class="jxr_keyword">int</strong> i = data.readerIndex();
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>                 <strong class="jxr_keyword">int</strong> end = data.writerIndex();
-<a class="jxr_linenumber" name="L192" href="#L192">192</a> 
-<a class="jxr_linenumber" name="L193" href="#L193">193</a>                 <strong class="jxr_keyword">if</strong> (srcOrder == dstOrder) {
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>                     <em class="jxr_comment">// Use the optimized path only when byte orders match</em>
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>                     <em class="jxr_comment">// Remark: &amp; 0xFF is necessary because Java will do signed expansion from</em>
-<a class="jxr_linenumber" name="L196" href="#L196">196</a>                     <em class="jxr_comment">// byte to int which we don't want.</em>
-<a class="jxr_linenumber" name="L197" href="#L197">197</a>                     <strong class="jxr_keyword">int</strong> intMask = ((mask[0] &amp; 0xFF) &lt;&lt; 24)
-<a class="jxr_linenumber" name="L198" href="#L198">198</a>                                 | ((mask[1] &amp; 0xFF) &lt;&lt; 16)
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>                                 | ((mask[2] &amp; 0xFF) &lt;&lt; 8)
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>                                 | (mask[3] &amp; 0xFF);
-<a class="jxr_linenumber" name="L201" href="#L201">201</a> 
-<a class="jxr_linenumber" name="L202" href="#L202">202</a>                     <em class="jxr_comment">// If the byte order of our buffers it little endian we have to bring our mask</em>
-<a class="jxr_linenumber" name="L203" href="#L203">203</a>                     <em class="jxr_comment">// into the same format, because getInt() and writeInt() will use a reversed byte order</em>
-<a class="jxr_linenumber" name="L204" href="#L204">204</a>                     <strong class="jxr_keyword">if</strong> (srcOrder == ByteOrder.LITTLE_ENDIAN) {
-<a class="jxr_linenumber" name="L205" href="#L205">205</a>                         intMask = Integer.reverseBytes(intMask);
-<a class="jxr_linenumber" name="L206" href="#L206">206</a>                     }
-<a class="jxr_linenumber" name="L207" href="#L207">207</a> 
-<a class="jxr_linenumber" name="L208" href="#L208">208</a>                     <strong class="jxr_keyword">for</strong> (; i + 3 &lt; end; i += 4) {
-<a class="jxr_linenumber" name="L209" href="#L209">209</a>                         <strong class="jxr_keyword">int</strong> intData = data.getInt(i);
-<a class="jxr_linenumber" name="L210" href="#L210">210</a>                         buf.writeInt(intData ^ intMask);
-<a class="jxr_linenumber" name="L211" href="#L211">211</a>                     }
-<a class="jxr_linenumber" name="L212" href="#L212">212</a>                 }
-<a class="jxr_linenumber" name="L213" href="#L213">213</a>                 <strong class="jxr_keyword">for</strong> (; i &lt; end; i++) {
-<a class="jxr_linenumber" name="L214" href="#L214">214</a>                     byte byteData = data.getByte(i);
-<a class="jxr_linenumber" name="L215" href="#L215">215</a>                     buf.writeByte(byteData ^ mask[counter++ % 4]);
-<a class="jxr_linenumber" name="L216" href="#L216">216</a>                 }
-<a class="jxr_linenumber" name="L217" href="#L217">217</a>                 out.add(buf);
-<a class="jxr_linenumber" name="L218" href="#L218">218</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L219" href="#L219">219</a>                 <strong class="jxr_keyword">if</strong> (buf.writableBytes() &gt;= data.readableBytes()) {
-<a class="jxr_linenumber" name="L220" href="#L220">220</a>                     <em class="jxr_comment">// merge buffers as this is cheaper then a gathering write if the payload is small enough</em>
-<a class="jxr_linenumber" name="L221" href="#L221">221</a>                     buf.writeBytes(data);
-<a class="jxr_linenumber" name="L222" href="#L222">222</a>                     out.add(buf);
-<a class="jxr_linenumber" name="L223" href="#L223">223</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L224" href="#L224">224</a>                     out.add(buf);
-<a class="jxr_linenumber" name="L225" href="#L225">225</a>                     out.add(data.retain());
-<a class="jxr_linenumber" name="L226" href="#L226">226</a>                 }
-<a class="jxr_linenumber" name="L227" href="#L227">227</a>             }
-<a class="jxr_linenumber" name="L228" href="#L228">228</a>             release = false;
-<a class="jxr_linenumber" name="L229" href="#L229">229</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L230" href="#L230">230</a>             <strong class="jxr_keyword">if</strong> (release &amp;&amp; buf != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L231" href="#L231">231</a>                 buf.release();
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>             }
-<a class="jxr_linenumber" name="L233" href="#L233">233</a>         }
-<a class="jxr_linenumber" name="L234" href="#L234">234</a>     }
-<a class="jxr_linenumber" name="L235" href="#L235">235</a> }
+<a class="jxr_linenumber" name="L142" href="#L142">142</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(<span class="jxr_string">"invalid payload for PING (payload length must be &lt;= 125, was "</span> + length);
+<a class="jxr_linenumber" name="L143" href="#L143">143</a>         }
+<a class="jxr_linenumber" name="L144" href="#L144">144</a> 
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>         <strong class="jxr_keyword">boolean</strong> release = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L146" href="#L146">146</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L148" href="#L148">148</a>             <strong class="jxr_keyword">int</strong> maskLength = maskPayload ? 4 : 0;
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>             <strong class="jxr_keyword">if</strong> (length &lt;= 125) {
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>                 <strong class="jxr_keyword">int</strong> size = 2 + maskLength + length;
+<a class="jxr_linenumber" name="L151" href="#L151">151</a>                 buf = ctx.alloc().buffer(size);
+<a class="jxr_linenumber" name="L152" href="#L152">152</a>                 buf.writeByte(b0);
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>                 byte b = (byte) (maskPayload ? 0x80 | (byte) length : (byte) length);
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>                 buf.writeByte(b);
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (length &lt;= 0xFFFF) {
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>                 <strong class="jxr_keyword">int</strong> size = 4 + maskLength;
+<a class="jxr_linenumber" name="L157" href="#L157">157</a>                 <strong class="jxr_keyword">if</strong> (maskPayload || length &lt;= GATHERING_WRITE_THRESHOLD) {
+<a class="jxr_linenumber" name="L158" href="#L158">158</a>                     size += length;
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>                 }
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>                 buf = ctx.alloc().buffer(size);
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>                 buf.writeByte(b0);
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>                 buf.writeByte(maskPayload ? 0xFE : 126);
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>                 buf.writeByte(length &gt;&gt;&gt; 8 &amp; 0xFF);
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>                 buf.writeByte(length &amp; 0xFF);
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>                 <strong class="jxr_keyword">int</strong> size = 10 + maskLength;
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>                 <strong class="jxr_keyword">if</strong> (maskPayload) {
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>                     size += length;
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>                 }
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>                 buf = ctx.alloc().buffer(size);
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>                 buf.writeByte(b0);
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>                 buf.writeByte(maskPayload ? 0xFF : 127);
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>                 buf.writeLong(length);
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>             }
+<a class="jxr_linenumber" name="L175" href="#L175">175</a> 
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>             <em class="jxr_comment">// Write payload</em>
+<a class="jxr_linenumber" name="L177" href="#L177">177</a>             <strong class="jxr_keyword">if</strong> (maskPayload) {
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>                 <strong class="jxr_keyword">int</strong> random = PlatformDependent.threadLocalRandom().nextInt(Integer.MAX_VALUE);
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>                 mask = ByteBuffer.allocate(4).putInt(random).array();
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>                 buf.writeBytes(mask);
+<a class="jxr_linenumber" name="L181" href="#L181">181</a> 
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>                 <strong class="jxr_keyword">if</strong> (data.isReadable()) {
+<a class="jxr_linenumber" name="L183" href="#L183">183</a> 
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>                     ByteOrder srcOrder = data.order();
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>                     ByteOrder dstOrder = buf.order();
+<a class="jxr_linenumber" name="L186" href="#L186">186</a> 
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>                     <strong class="jxr_keyword">int</strong> i = data.readerIndex();
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>                     <strong class="jxr_keyword">int</strong> end = data.writerIndex();
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> 
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>                     <strong class="jxr_keyword">if</strong> (srcOrder == dstOrder) {
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>                         <em class="jxr_comment">// Use the optimized path only when byte orders match</em>
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>                         <em class="jxr_comment">// Remark: &amp; 0xFF is necessary because Java will do signed expansion from</em>
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>                         <em class="jxr_comment">// byte to int which we don't want.</em>
+<a class="jxr_linenumber" name="L194" href="#L194">194</a>                         <strong class="jxr_keyword">long</strong> longMask = (<strong class="jxr_keyword">long</strong>) (mask[0] &amp; 0xff) &lt;&lt; 24
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>                                         | (mask[1] &amp; 0xff) &lt;&lt; 16
+<a class="jxr_linenumber" name="L196" href="#L196">196</a>                                         | (mask[2] &amp; 0xff) &lt;&lt; 8
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>                                         | (mask[3] &amp; 0xff);
+<a class="jxr_linenumber" name="L198" href="#L198">198</a>                         longMask |= longMask &lt;&lt; 32;
+<a class="jxr_linenumber" name="L199" href="#L199">199</a> 
+<a class="jxr_linenumber" name="L200" href="#L200">200</a>                         <em class="jxr_comment">// If the byte order of our buffers it little endian we have to bring our mask</em>
+<a class="jxr_linenumber" name="L201" href="#L201">201</a>                         <em class="jxr_comment">// into the same format, because getInt() and writeInt() will use a reversed byte order</em>
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>                         <strong class="jxr_keyword">if</strong> (srcOrder == ByteOrder.LITTLE_ENDIAN) {
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>                             longMask = Long.reverseBytes(longMask);
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>                         }
+<a class="jxr_linenumber" name="L205" href="#L205">205</a> 
+<a class="jxr_linenumber" name="L206" href="#L206">206</a>                         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> lim = end - 7; i &lt; lim; i += 8) {
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>                             buf.writeLong(data.getLong(i) ^ longMask);
+<a class="jxr_linenumber" name="L208" href="#L208">208</a>                         }
+<a class="jxr_linenumber" name="L209" href="#L209">209</a> 
+<a class="jxr_linenumber" name="L210" href="#L210">210</a>                         <strong class="jxr_keyword">if</strong> (i &lt; end - 3) {
+<a class="jxr_linenumber" name="L211" href="#L211">211</a>                             buf.writeInt(data.getInt(i) ^ (<strong class="jxr_keyword">int</strong>) longMask);
+<a class="jxr_linenumber" name="L212" href="#L212">212</a>                             i += 4;
+<a class="jxr_linenumber" name="L213" href="#L213">213</a>                         }
+<a class="jxr_linenumber" name="L214" href="#L214">214</a>                     }
+<a class="jxr_linenumber" name="L215" href="#L215">215</a>                     <strong class="jxr_keyword">int</strong> maskOffset = 0;
+<a class="jxr_linenumber" name="L216" href="#L216">216</a>                     <strong class="jxr_keyword">for</strong> (; i &lt; end; i++) {
+<a class="jxr_linenumber" name="L217" href="#L217">217</a>                         byte byteData = data.getByte(i);
+<a class="jxr_linenumber" name="L218" href="#L218">218</a>                         buf.writeByte(byteData ^ mask[maskOffset++ &amp; 3]);
+<a class="jxr_linenumber" name="L219" href="#L219">219</a>                     }
+<a class="jxr_linenumber" name="L220" href="#L220">220</a>                 }
+<a class="jxr_linenumber" name="L221" href="#L221">221</a>                 out.add(buf);
+<a class="jxr_linenumber" name="L222" href="#L222">222</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L223" href="#L223">223</a>                 <strong class="jxr_keyword">if</strong> (buf.writableBytes() &gt;= data.readableBytes()) {
+<a class="jxr_linenumber" name="L224" href="#L224">224</a>                     <em class="jxr_comment">// merge buffers as this is cheaper then a gathering write if the payload is small enough</em>
+<a class="jxr_linenumber" name="L225" href="#L225">225</a>                     buf.writeBytes(data);
+<a class="jxr_linenumber" name="L226" href="#L226">226</a>                     out.add(buf);
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>                     out.add(buf);
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>                     out.add(data.retain());
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>                 }
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>             }
+<a class="jxr_linenumber" name="L232" href="#L232">232</a>             release = false;
+<a class="jxr_linenumber" name="L233" href="#L233">233</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L234" href="#L234">234</a>             <strong class="jxr_keyword">if</strong> (release &amp;&amp; buf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L235" href="#L235">235</a>                 buf.release();
+<a class="jxr_linenumber" name="L236" href="#L236">236</a>             }
+<a class="jxr_linenumber" name="L237" href="#L237">237</a>         }
+<a class="jxr_linenumber" name="L238" href="#L238">238</a>     }
+<a class="jxr_linenumber" name="L239" href="#L239">239</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
