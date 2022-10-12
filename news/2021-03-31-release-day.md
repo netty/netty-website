@@ -16,13 +16,13 @@ For more details about the included changes please check the [issue-tracker](htt
 
 ## Netty/Incubator/Codec/Http3 0.0.3.Final released
 
-As stated above you are now be able to run the http3 codec on linux-aarch64 as well, but thats not all. This release also includes a few small bugfixes when it comes to handling CONNECT requests and push streams in general
+As stated above you are now able to run the http3 codec on linux-aarch64 as well, but that's not all. This release also includes a few small bugfixes when it comes to handling CONNECT requests and push streams in general
 
 For more details about the included changes please check the [issue-tracker](https://github.com/netty/netty-incubator-codec-http3/milestone/3?closed=1)
 
 ## Netty/Incubator/Native/Transport/IOUring 0.0.5.Final released
 
-The new release of netty-incubator-transport-io_uring contains various interesting changes. First of we now use GCC10 when cross compile and so may be able to make use of LSE when you run on aarch64. Beside this this release also add support for UDP_GSO to increase the performance when sending datagrams over the wire. 
+The new release of netty-incubator-transport-io_uring contains various interesting changes. First of we now use GCC10 when cross compile and so may be able to make use of LSE when you run on aarch64. Beside this release also add support for UDP_GSO to increase the performance when sending datagrams over the wire. 
 
 For more details about the included changes please check the [issue-tracker](https://github.com/netty/netty-incubator-transport-io_uring/milestone/5?closed=1)
 
