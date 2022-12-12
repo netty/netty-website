@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_DE" lang="en_DE">
+<head><meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>OcspServerCertificateValidator xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../../apidocs/io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html">View Javadoc</a></div><pre>
+<a class="jxr_linenumber" name="L1" href="#L1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L2" href="#L2">2</a>   <em class="jxr_comment"> * Copyright 2022 The Netty Project</em>
+<a class="jxr_linenumber" name="L3" href="#L3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="L5" href="#L5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="L6" href="#L6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <em class="jxr_comment"> *   <a href="https://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">https://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="L11" href="#L11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="L12" href="#L12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="L13" href="#L13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="L14" href="#L14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.ssl.ocsp;
+<a class="jxr_linenumber" name="L17" href="#L17">17</a>  
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelInboundHandlerAdapter;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.SslHandler;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.SslHandshakeCompletionEvent;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.resolver.dns.DnsNameResolver;
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.resolver.dns.DnsNameResolverBuilder;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.concurrent.Future;
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> io.netty.util.concurrent.GenericFutureListener;
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> io.netty.util.concurrent.Promise;
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> org.bouncycastle.cert.ocsp.BasicOCSPResp;
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> org.bouncycastle.cert.ocsp.OCSPException;
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> org.bouncycastle.cert.ocsp.RevokedStatus;
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <strong class="jxr_keyword">import</strong> org.bouncycastle.cert.ocsp.SingleResp;
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">import</strong> java.security.cert.Certificate;
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>  <strong class="jxr_keyword">import</strong> java.security.cert.X509Certificate;
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <strong class="jxr_keyword">import</strong> java.util.Date;
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>  
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.util.internal.ObjectUtil.checkNotNull;
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>  
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>  <em class="jxr_javadoccomment"> * {@link OcspServerCertificateValidator} validates incoming server's certificate</em>
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>  <em class="jxr_javadoccomment"> * using OCSP. Once TLS handshake is completed, {@link SslHandshakeCompletionEvent#SUCCESS} is fired, validator</em>
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>  <em class="jxr_javadoccomment"> * will perform certificate validation using OCSP over HTTP/1.1 with the server's certificate issuer OCSP responder.</em>
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> <a name="OcspServerCertificateValidator" href="../../../../../io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html#OcspServerCertificateValidator">OcspServerCertificateValidator</a> <strong class="jxr_keyword">extends</strong> <a name="ChannelInboundHandlerAdapter" href="../../../../../io/netty/channel/ChannelInboundHandlerAdapter.html#ChannelInboundHandlerAdapter">ChannelInboundHandlerAdapter</a> {
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>  
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> closeAndThrowIfNotValid;
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> validateNonce;
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IoTransport" href="../../../../../io/netty/handler/ssl/ocsp/IoTransport.html#IoTransport">IoTransport</a> ioTransport;
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="DnsNameResolver" href="../../../../../io/netty/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> dnsNameResolver;
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>  
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>  <em class="jxr_javadoccomment">     * Create a new {@link OcspServerCertificateValidator} instance without nonce validation</em>
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>  <em class="jxr_javadoccomment">     * on OCSP response, using default {@link IoTransport#DEFAULT} instance,</em>
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>  <em class="jxr_javadoccomment">     * default {@link DnsNameResolver} implementation and with {@link #closeAndThrowIfNotValid}</em>
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>  <em class="jxr_javadoccomment">     * set to {@code true}</em>
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>      <strong class="jxr_keyword">public</strong> <a name="OcspServerCertificateValidator" href="../../../../../io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html#OcspServerCertificateValidator">OcspServerCertificateValidator</a>() {
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>          <strong class="jxr_keyword">this</strong>(false);
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>      }
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>  
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>  <em class="jxr_javadoccomment">     * Create a new {@link OcspServerCertificateValidator} instance with</em>
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>  <em class="jxr_javadoccomment">     * default {@link IoTransport#DEFAULT} instance and default {@link DnsNameResolver} implementation</em>
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>  <em class="jxr_javadoccomment">     * and {@link #closeAndThrowIfNotValid} set to {@code true}.</em>
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>  <em class="jxr_javadoccomment">     * @param validateNonce Set to {@code true} if we should force nonce validation on</em>
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>  <em class="jxr_javadoccomment">     *                      OCSP response else set to {@code false}</em>
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>      <strong class="jxr_keyword">public</strong> <a name="OcspServerCertificateValidator" href="../../../../../io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html#OcspServerCertificateValidator">OcspServerCertificateValidator</a>(<strong class="jxr_keyword">boolean</strong> validateNonce) {
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>          <strong class="jxr_keyword">this</strong>(validateNonce, IoTransport.DEFAULT);
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>      }
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>  
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>  <em class="jxr_javadoccomment">     * Create a new {@link OcspServerCertificateValidator} instance</em>
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>  <em class="jxr_javadoccomment">     * @param validateNonce Set to {@code true} if we should force nonce validation on</em>
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>  <em class="jxr_javadoccomment">     *                      OCSP response else set to {@code false}</em>
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>  <em class="jxr_javadoccomment">     * @param ioTransport   {@link IoTransport} to use</em>
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>      <strong class="jxr_keyword">public</strong> <a name="OcspServerCertificateValidator" href="../../../../../io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html#OcspServerCertificateValidator">OcspServerCertificateValidator</a>(<strong class="jxr_keyword">boolean</strong> validateNonce, <a name="IoTransport" href="../../../../../io/netty/handler/ssl/ocsp/IoTransport.html#IoTransport">IoTransport</a> ioTransport) {
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>          <strong class="jxr_keyword">this</strong>(validateNonce, ioTransport, createDefaultResolver(ioTransport));
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>      }
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>  
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>  <em class="jxr_javadoccomment">     * Create a new {@link IoTransport} instance with {@link #closeAndThrowIfNotValid} set to {@code true}</em>
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>  <em class="jxr_javadoccomment">     * @param validateNonce   Set to {@code true} if we should force nonce validation on</em>
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>  <em class="jxr_javadoccomment">     *                        OCSP response else set to {@code false}</em>
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>  <em class="jxr_javadoccomment">     * @param ioTransport     {@link IoTransport} to use</em>
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>  <em class="jxr_javadoccomment">     * @param dnsNameResolver {@link DnsNameResolver} implementation to use</em>
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>      <strong class="jxr_keyword">public</strong> <a name="OcspServerCertificateValidator" href="../../../../../io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html#OcspServerCertificateValidator">OcspServerCertificateValidator</a>(<strong class="jxr_keyword">boolean</strong> validateNonce, <a name="IoTransport" href="../../../../../io/netty/handler/ssl/ocsp/IoTransport.html#IoTransport">IoTransport</a> ioTransport,
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>                                            <a name="DnsNameResolver" href="../../../../../io/netty/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> dnsNameResolver) {
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>          <strong class="jxr_keyword">this</strong>(<strong class="jxr_keyword">true</strong>, validateNonce, ioTransport, dnsNameResolver);
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>      }
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>  
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>  <em class="jxr_javadoccomment">     * Create a new {@link IoTransport} instance</em>
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>  <em class="jxr_javadoccomment">     * @param closeAndThrowIfNotValid If set to {@code true} then we will close the channel and throw an exception</em>
+<a class="jxr_linenumber" name="L100" href="#L100">100</a> <em class="jxr_javadoccomment">     *                                when certificate is not {@link OcspResponse.Status#VALID}.</em>
+<a class="jxr_linenumber" name="L101" href="#L101">101</a> <em class="jxr_javadoccomment">     *                                If set to {@code false} then we will simply pass the {@link OcspValidationEvent}</em>
+<a class="jxr_linenumber" name="L102" href="#L102">102</a> <em class="jxr_javadoccomment">     *                                to the next handler in pipeline and let it decide what to do.</em>
+<a class="jxr_linenumber" name="L103" href="#L103">103</a> <em class="jxr_javadoccomment">     * @param validateNonce           Set to {@code true} if we should force nonce validation on</em>
+<a class="jxr_linenumber" name="L104" href="#L104">104</a> <em class="jxr_javadoccomment">     *                                OCSP response else set to {@code false}</em>
+<a class="jxr_linenumber" name="L105" href="#L105">105</a> <em class="jxr_javadoccomment">     * @param ioTransport             {@link IoTransport} to use</em>
+<a class="jxr_linenumber" name="L106" href="#L106">106</a> <em class="jxr_javadoccomment">     * @param dnsNameResolver         {@link DnsNameResolver} implementation to use</em>
+<a class="jxr_linenumber" name="L107" href="#L107">107</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L108" href="#L108">108</a>     <strong class="jxr_keyword">public</strong> <a name="OcspServerCertificateValidator" href="../../../../../io/netty/handler/ssl/ocsp/OcspServerCertificateValidator.html#OcspServerCertificateValidator">OcspServerCertificateValidator</a>(<strong class="jxr_keyword">boolean</strong> closeAndThrowIfNotValid, <strong class="jxr_keyword">boolean</strong> validateNonce,
+<a class="jxr_linenumber" name="L109" href="#L109">109</a>                                           <a name="IoTransport" href="../../../../../io/netty/handler/ssl/ocsp/IoTransport.html#IoTransport">IoTransport</a> ioTransport, <a name="DnsNameResolver" href="../../../../../io/netty/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> dnsNameResolver) {
+<a class="jxr_linenumber" name="L110" href="#L110">110</a>         <strong class="jxr_keyword">this</strong>.closeAndThrowIfNotValid = closeAndThrowIfNotValid;
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>         <strong class="jxr_keyword">this</strong>.validateNonce = validateNonce;
+<a class="jxr_linenumber" name="L112" href="#L112">112</a>         <strong class="jxr_keyword">this</strong>.ioTransport = checkNotNull(ioTransport, <span class="jxr_string">"IoTransport"</span>);
+<a class="jxr_linenumber" name="L113" href="#L113">113</a>         <strong class="jxr_keyword">this</strong>.dnsNameResolver = checkNotNull(dnsNameResolver, <span class="jxr_string">"DnsNameResolver"</span>);
+<a class="jxr_linenumber" name="L114" href="#L114">114</a>     }
+<a class="jxr_linenumber" name="L115" href="#L115">115</a> 
+<a class="jxr_linenumber" name="L116" href="#L116">116</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <a name="DnsNameResolver" href="../../../../../io/netty/resolver/dns/DnsNameResolver.html#DnsNameResolver">DnsNameResolver</a> createDefaultResolver(<strong class="jxr_keyword">final</strong> <a name="IoTransport" href="../../../../../io/netty/handler/ssl/ocsp/IoTransport.html#IoTransport">IoTransport</a> ioTransport) {
+<a class="jxr_linenumber" name="L117" href="#L117">117</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="DnsNameResolverBuilder" href="../../../../../io/netty/resolver/dns/DnsNameResolverBuilder.html#DnsNameResolverBuilder">DnsNameResolverBuilder</a>()
+<a class="jxr_linenumber" name="L118" href="#L118">118</a>                 .eventLoop(ioTransport.eventLoop())
+<a class="jxr_linenumber" name="L119" href="#L119">119</a>                 .channelFactory(ioTransport.datagramChannel())
+<a class="jxr_linenumber" name="L120" href="#L120">120</a>                 .socketChannelFactory(ioTransport.socketChannel())
+<a class="jxr_linenumber" name="L121" href="#L121">121</a>                 .build();
+<a class="jxr_linenumber" name="L122" href="#L122">122</a>     }
+<a class="jxr_linenumber" name="L123" href="#L123">123</a> 
+<a class="jxr_linenumber" name="L124" href="#L124">124</a>     @Override
+<a class="jxr_linenumber" name="L125" href="#L125">125</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<strong class="jxr_keyword">final</strong> <a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">final</strong> Object evt) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L126" href="#L126">126</a>         ctx.fireUserEventTriggered(evt);
+<a class="jxr_linenumber" name="L127" href="#L127">127</a> 
+<a class="jxr_linenumber" name="L128" href="#L128">128</a>         <strong class="jxr_keyword">if</strong> (evt instanceof <a name="SslHandshakeCompletionEvent" href="../../../../../io/netty/handler/ssl/SslHandshakeCompletionEvent.html#SslHandshakeCompletionEvent">SslHandshakeCompletionEvent</a>) {
+<a class="jxr_linenumber" name="L129" href="#L129">129</a>             <a name="SslHandshakeCompletionEvent" href="../../../../../io/netty/handler/ssl/SslHandshakeCompletionEvent.html#SslHandshakeCompletionEvent">SslHandshakeCompletionEvent</a> sslHandshakeCompletionEvent = (<a name="SslHandshakeCompletionEvent" href="../../../../../io/netty/handler/ssl/SslHandshakeCompletionEvent.html#SslHandshakeCompletionEvent">SslHandshakeCompletionEvent</a>) evt;
+<a class="jxr_linenumber" name="L130" href="#L130">130</a> 
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>             <em class="jxr_comment">// If TLS handshake was successful then only we will perform OCSP certificate validation.</em>
+<a class="jxr_linenumber" name="L132" href="#L132">132</a>             <em class="jxr_comment">// If not, then just forward the event to next handler in pipeline and remove ourselves from pipeline.</em>
+<a class="jxr_linenumber" name="L133" href="#L133">133</a>             <strong class="jxr_keyword">if</strong> (sslHandshakeCompletionEvent.isSuccess()) {
+<a class="jxr_linenumber" name="L134" href="#L134">134</a>                 Certificate[] certificates = ctx.pipeline().get(SslHandler.<strong class="jxr_keyword">class</strong>)
+<a class="jxr_linenumber" name="L135" href="#L135">135</a>                         .engine()
+<a class="jxr_linenumber" name="L136" href="#L136">136</a>                         .getSession()
+<a class="jxr_linenumber" name="L137" href="#L137">137</a>                         .getPeerCertificates();
+<a class="jxr_linenumber" name="L138" href="#L138">138</a> 
+<a class="jxr_linenumber" name="L139" href="#L139">139</a>                 assert certificates.length &lt;= 2 : <span class="jxr_string">"There must an end-entity certificate and issuer certificate"</span>;
+<a class="jxr_linenumber" name="L140" href="#L140">140</a> 
+<a class="jxr_linenumber" name="L141" href="#L141">141</a>                 Promise&lt;BasicOCSPResp&gt; ocspRespPromise = OcspClient.query((X509Certificate) certificates[0],
+<a class="jxr_linenumber" name="L142" href="#L142">142</a>                         (X509Certificate) certificates[1], validateNonce, ioTransport, dnsNameResolver);
+<a class="jxr_linenumber" name="L143" href="#L143">143</a> 
+<a class="jxr_linenumber" name="L144" href="#L144">144</a>                 ocspRespPromise.addListener(<strong class="jxr_keyword">new</strong> GenericFutureListener&lt;Future&lt;BasicOCSPResp&gt;&gt;() {
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>                     @Override
+<a class="jxr_linenumber" name="L146" href="#L146">146</a>                     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(Future&lt;BasicOCSPResp&gt; future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>                         <em class="jxr_comment">// If Future is success then we have successfully received OCSP response</em>
+<a class="jxr_linenumber" name="L148" href="#L148">148</a>                         <em class="jxr_comment">// from OCSP responder. We will validate it now and process.</em>
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>                         <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>                             SingleResp response = future.get().getResponses()[0];
+<a class="jxr_linenumber" name="L151" href="#L151">151</a> 
+<a class="jxr_linenumber" name="L152" href="#L152">152</a>                             Date current = <strong class="jxr_keyword">new</strong> Date();
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>                             <strong class="jxr_keyword">if</strong> (!(current.after(response.getThisUpdate()) &amp;&amp;
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>                                     current.before(response.getNextUpdate()))) {
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>                                 ctx.fireExceptionCaught(<strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"OCSP Response is out-of-date"</span>));
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>                             }
+<a class="jxr_linenumber" name="L157" href="#L157">157</a> 
+<a class="jxr_linenumber" name="L158" href="#L158">158</a>                             OcspResponse.Status status;
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>                             <strong class="jxr_keyword">if</strong> (response.getCertStatus() == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>                                 <em class="jxr_comment">// 'null' means certificate is valid</em>
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>                                 status = OcspResponse.Status.VALID;
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>                             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (response.getCertStatus() instanceof RevokedStatus) {
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>                                 status = OcspResponse.Status.REVOKED;
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>                                 status = OcspResponse.Status.UNKNOWN;
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>                             }
+<a class="jxr_linenumber" name="L167" href="#L167">167</a> 
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>                             ctx.fireUserEventTriggered(<strong class="jxr_keyword">new</strong> <a name="OcspValidationEvent" href="../../../../../io/netty/handler/ssl/ocsp/OcspValidationEvent.html#OcspValidationEvent">OcspValidationEvent</a>(
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>                                     <strong class="jxr_keyword">new</strong> <a name="OcspResponse" href="../../../../../io/netty/handler/ssl/ocsp/OcspResponse.html#OcspResponse">OcspResponse</a>(status, response.getThisUpdate(), response.getNextUpdate())));
+<a class="jxr_linenumber" name="L170" href="#L170">170</a> 
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>                             <em class="jxr_comment">// If Certificate is not VALID and 'closeAndThrowIfNotValid' is set</em>
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>                             <em class="jxr_comment">// to 'true' then close the channel and throw an exception.</em>
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>                             <strong class="jxr_keyword">if</strong> (status != OcspResponse.Status.VALID &amp;&amp; closeAndThrowIfNotValid) {
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>                                 ctx.channel().close();
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>                                 <em class="jxr_comment">// Certificate is not valid. Throw</em>
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>                                 ctx.fireExceptionCaught(<strong class="jxr_keyword">new</strong> OCSPException(
+<a class="jxr_linenumber" name="L177" href="#L177">177</a>                                         <span class="jxr_string">"Certificate not valid. Status: "</span> + status));
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>                             }
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>                             ctx.fireExceptionCaught(future.cause());
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>                         }
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>                     }
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>                 });
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>             }
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>             <em class="jxr_comment">// Lets remove ourselves from the pipeline because we are done processing validation.</em>
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>             ctx.pipeline().remove(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>         }
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>     }
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> 
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>     @Override
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>         ctx.channel().close();
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>     }
+<a class="jxr_linenumber" name="L194" href="#L194">194</a> }
+</pre>
+<hr/>
+<div id="footer">Copyright &#169; 2008&#x2013;2022 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+</body>
+</html>
