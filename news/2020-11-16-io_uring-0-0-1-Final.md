@@ -10,11 +10,11 @@ If you don't know about io_uring I highly recommend getting up to speed by readi
 
 # Incubator, what does this mean ?
 
-To be able to work on new exciting features without "affecting" the core of netty we decided to start development of such features in the "incubator". This means these features will be developed in a seperate repository and only be merged back into the core netty repository once we feel that we can guarantee we not need to break the API anymore and consider these production ready. This hopefully helps to clarify expections and stability of the code and so people should be fully aware that APIs may change. Beside this it also allows to use different release schedules.
+To be able to work on new exciting features without "affecting" the core of netty we decided to start development of such features in the "incubator". This means these features will be developed in a separate repository and only be merged back into the core netty repository once we feel that we can guarantee we not need to break the API anymore and consider these production ready. This hopefully helps to clarify exceptions and stability of the code and so people should be fully aware that APIs may change. Beside this it also allows to use different release schedules.
 
 # How can I use the io_uring based transport?
 
-First of you need to run on x86_64 linux and have a recent kernel. To be able to use io_uring without encountering "slowdowns" and "bugs" you need at least using [Linux Kernel](https://www.kernel.org) 5.9.0, any newer kernel will be fine as well. After this requirement is fullfilled it's just a matter of adding the right jar to your classpath and bootstrap using the right `EventLoopGroup` and `Channel` implementation.
+First of you need to run on x86_64 linux and have a recent kernel. To be able to use io_uring without encountering "slowdowns" and "bugs" you need at least using [Linux Kernel](https://www.kernel.org) 5.9.0, any newer kernel will be fine as well. After this requirement is fulfilled it's just a matter of adding the right jar to your classpath and bootstrap using the right `EventLoopGroup` and `Channel` implementation.
 
 An example for maven would be:
 
