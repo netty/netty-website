@@ -1,4 +1,4 @@
-This is an web site project based on [Awestruct](http://awestruct.org/).  It generates the complete web site and documentation of the [Netty project](http://netty.io/).  
+This is an web site project based on [Awestruct](https://github.com/awestruct/awestruct).  It generates the complete web site and documentation of the [Netty project](http://netty.io/).  
 
 To contribute to the project documentation, simply fork this repository and issue a pull request.
 
