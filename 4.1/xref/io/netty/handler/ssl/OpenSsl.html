@@ -733,37 +733,53 @@
 <a class="jxr_linenumber" name="L725" href="#L725">725</a>         <strong class="jxr_keyword">return</strong> TLSV13_SUPPORTED;
 <a class="jxr_linenumber" name="L726" href="#L726">726</a>     }
 <a class="jxr_linenumber" name="L727" href="#L727">727</a> 
-<a class="jxr_linenumber" name="L728" href="#L728">728</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Set&lt;String&gt; protocols(String property) {
-<a class="jxr_linenumber" name="L729" href="#L729">729</a>         String protocolsString = SystemPropertyUtil.get(property, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="L730" href="#L730">730</a>         <strong class="jxr_keyword">if</strong> (protocolsString != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L731" href="#L731">731</a>             Set&lt;String&gt; protocols = <strong class="jxr_keyword">new</strong> HashSet&lt;String&gt;();
-<a class="jxr_linenumber" name="L732" href="#L732">732</a>             <strong class="jxr_keyword">for</strong> (String proto : protocolsString.split(<span class="jxr_string">","</span>)) {
-<a class="jxr_linenumber" name="L733" href="#L733">733</a>                 String p = proto.trim();
-<a class="jxr_linenumber" name="L734" href="#L734">734</a>                 protocols.add(p);
-<a class="jxr_linenumber" name="L735" href="#L735">735</a>             }
-<a class="jxr_linenumber" name="L736" href="#L736">736</a>             <strong class="jxr_keyword">return</strong> protocols;
-<a class="jxr_linenumber" name="L737" href="#L737">737</a>         }
-<a class="jxr_linenumber" name="L738" href="#L738">738</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L739" href="#L739">739</a>     }
-<a class="jxr_linenumber" name="L740" href="#L740">740</a> 
-<a class="jxr_linenumber" name="L741" href="#L741">741</a>     <strong class="jxr_keyword">static</strong> String[] defaultProtocols(<strong class="jxr_keyword">boolean</strong> isClient) {
-<a class="jxr_linenumber" name="L742" href="#L742">742</a>         <strong class="jxr_keyword">final</strong> Collection&lt;String&gt; defaultProtocols = isClient ? CLIENT_DEFAULT_PROTOCOLS : SERVER_DEFAULT_PROTOCOLS;
-<a class="jxr_linenumber" name="L743" href="#L743">743</a>         <strong class="jxr_keyword">if</strong> (defaultProtocols == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L744" href="#L744">744</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L745" href="#L745">745</a>         }
-<a class="jxr_linenumber" name="L746" href="#L746">746</a>         List&lt;String&gt; protocols = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;(defaultProtocols.size());
-<a class="jxr_linenumber" name="L747" href="#L747">747</a>         <strong class="jxr_keyword">for</strong> (String proto : defaultProtocols) {
-<a class="jxr_linenumber" name="L748" href="#L748">748</a>             <strong class="jxr_keyword">if</strong> (SUPPORTED_PROTOCOLS_SET.contains(proto)) {
-<a class="jxr_linenumber" name="L749" href="#L749">749</a>                 protocols.add(proto);
-<a class="jxr_linenumber" name="L750" href="#L750">750</a>             }
-<a class="jxr_linenumber" name="L751" href="#L751">751</a>         }
-<a class="jxr_linenumber" name="L752" href="#L752">752</a>         <strong class="jxr_keyword">return</strong> protocols.toArray(<strong class="jxr_keyword">new</strong> String[0]);
-<a class="jxr_linenumber" name="L753" href="#L753">753</a>     }
-<a class="jxr_linenumber" name="L754" href="#L754">754</a> 
-<a class="jxr_linenumber" name="L755" href="#L755">755</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isBoringSSL() {
-<a class="jxr_linenumber" name="L756" href="#L756">756</a>         <strong class="jxr_keyword">return</strong> IS_BORINGSSL;
-<a class="jxr_linenumber" name="L757" href="#L757">757</a>     }
-<a class="jxr_linenumber" name="L758" href="#L758">758</a> }
+<a class="jxr_linenumber" name="L728" href="#L728">728</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isOptionSupported(SslContextOption&lt;?&gt; option) {
+<a class="jxr_linenumber" name="L729" href="#L729">729</a>         <strong class="jxr_keyword">if</strong> (isAvailable()) {
+<a class="jxr_linenumber" name="L730" href="#L730">730</a>             <strong class="jxr_keyword">if</strong> (option == OpenSslContextOption.USE_TASKS) {
+<a class="jxr_linenumber" name="L731" href="#L731">731</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L732" href="#L732">732</a>             }
+<a class="jxr_linenumber" name="L733" href="#L733">733</a>             <em class="jxr_comment">// Check for options that are only supported by BoringSSL atm.</em>
+<a class="jxr_linenumber" name="L734" href="#L734">734</a>             <strong class="jxr_keyword">if</strong> (isBoringSSL()) {
+<a class="jxr_linenumber" name="L735" href="#L735">735</a>                 <strong class="jxr_keyword">return</strong> option == OpenSslContextOption.ASYNC_PRIVATE_KEY_METHOD ||
+<a class="jxr_linenumber" name="L736" href="#L736">736</a>                         option == OpenSslContextOption.PRIVATE_KEY_METHOD ||
+<a class="jxr_linenumber" name="L737" href="#L737">737</a>                         option == OpenSslContextOption.CERTIFICATE_COMPRESSION_ALGORITHMS ||
+<a class="jxr_linenumber" name="L738" href="#L738">738</a>                         option == OpenSslContextOption.TLS_FALSE_START;
+<a class="jxr_linenumber" name="L739" href="#L739">739</a>             }
+<a class="jxr_linenumber" name="L740" href="#L740">740</a>         }
+<a class="jxr_linenumber" name="L741" href="#L741">741</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L742" href="#L742">742</a>     }
+<a class="jxr_linenumber" name="L743" href="#L743">743</a> 
+<a class="jxr_linenumber" name="L744" href="#L744">744</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> Set&lt;String&gt; protocols(String property) {
+<a class="jxr_linenumber" name="L745" href="#L745">745</a>         String protocolsString = SystemPropertyUtil.get(property, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="L746" href="#L746">746</a>         <strong class="jxr_keyword">if</strong> (protocolsString != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L747" href="#L747">747</a>             Set&lt;String&gt; protocols = <strong class="jxr_keyword">new</strong> HashSet&lt;String&gt;();
+<a class="jxr_linenumber" name="L748" href="#L748">748</a>             <strong class="jxr_keyword">for</strong> (String proto : protocolsString.split(<span class="jxr_string">","</span>)) {
+<a class="jxr_linenumber" name="L749" href="#L749">749</a>                 String p = proto.trim();
+<a class="jxr_linenumber" name="L750" href="#L750">750</a>                 protocols.add(p);
+<a class="jxr_linenumber" name="L751" href="#L751">751</a>             }
+<a class="jxr_linenumber" name="L752" href="#L752">752</a>             <strong class="jxr_keyword">return</strong> protocols;
+<a class="jxr_linenumber" name="L753" href="#L753">753</a>         }
+<a class="jxr_linenumber" name="L754" href="#L754">754</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L755" href="#L755">755</a>     }
+<a class="jxr_linenumber" name="L756" href="#L756">756</a> 
+<a class="jxr_linenumber" name="L757" href="#L757">757</a>     <strong class="jxr_keyword">static</strong> String[] defaultProtocols(<strong class="jxr_keyword">boolean</strong> isClient) {
+<a class="jxr_linenumber" name="L758" href="#L758">758</a>         <strong class="jxr_keyword">final</strong> Collection&lt;String&gt; defaultProtocols = isClient ? CLIENT_DEFAULT_PROTOCOLS : SERVER_DEFAULT_PROTOCOLS;
+<a class="jxr_linenumber" name="L759" href="#L759">759</a>         <strong class="jxr_keyword">if</strong> (defaultProtocols == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L760" href="#L760">760</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L761" href="#L761">761</a>         }
+<a class="jxr_linenumber" name="L762" href="#L762">762</a>         List&lt;String&gt; protocols = <strong class="jxr_keyword">new</strong> ArrayList&lt;String&gt;(defaultProtocols.size());
+<a class="jxr_linenumber" name="L763" href="#L763">763</a>         <strong class="jxr_keyword">for</strong> (String proto : defaultProtocols) {
+<a class="jxr_linenumber" name="L764" href="#L764">764</a>             <strong class="jxr_keyword">if</strong> (SUPPORTED_PROTOCOLS_SET.contains(proto)) {
+<a class="jxr_linenumber" name="L765" href="#L765">765</a>                 protocols.add(proto);
+<a class="jxr_linenumber" name="L766" href="#L766">766</a>             }
+<a class="jxr_linenumber" name="L767" href="#L767">767</a>         }
+<a class="jxr_linenumber" name="L768" href="#L768">768</a>         <strong class="jxr_keyword">return</strong> protocols.toArray(<strong class="jxr_keyword">new</strong> String[0]);
+<a class="jxr_linenumber" name="L769" href="#L769">769</a>     }
+<a class="jxr_linenumber" name="L770" href="#L770">770</a> 
+<a class="jxr_linenumber" name="L771" href="#L771">771</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isBoringSSL() {
+<a class="jxr_linenumber" name="L772" href="#L772">772</a>         <strong class="jxr_keyword">return</strong> IS_BORINGSSL;
+<a class="jxr_linenumber" name="L773" href="#L773">773</a>     }
+<a class="jxr_linenumber" name="L774" href="#L774">774</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2023 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
