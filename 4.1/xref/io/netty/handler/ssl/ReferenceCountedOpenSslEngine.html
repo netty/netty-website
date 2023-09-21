@@ -2363,372 +2363,401 @@
 <a class="jxr_linenumber" name="L2355" href="#L2355">2355</a>         session.setSessionId(id);
 <a class="jxr_linenumber" name="L2356" href="#L2356">2356</a>     }
 <a class="jxr_linenumber" name="L2357" href="#L2357">2357</a> 
-<a class="jxr_linenumber" name="L2358" href="#L2358">2358</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> DefaultOpenSslSession <strong class="jxr_keyword">implements</strong> <a name="OpenSslSession" href="../../../../io/netty/handler/ssl/OpenSslSession.html#OpenSslSession">OpenSslSession</a>  {
-<a class="jxr_linenumber" name="L2359" href="#L2359">2359</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="OpenSslSessionContext" href="../../../../io/netty/handler/ssl/OpenSslSessionContext.html#OpenSslSessionContext">OpenSslSessionContext</a> sessionContext;
-<a class="jxr_linenumber" name="L2360" href="#L2360">2360</a> 
-<a class="jxr_linenumber" name="L2361" href="#L2361">2361</a>         <em class="jxr_comment">// These are guarded by synchronized(OpenSslEngine.this) as handshakeFinished() may be triggered by any</em>
-<a class="jxr_linenumber" name="L2362" href="#L2362">2362</a>         <em class="jxr_comment">// thread.</em>
-<a class="jxr_linenumber" name="L2363" href="#L2363">2363</a>         <strong class="jxr_keyword">private</strong> X509Certificate[] x509PeerCerts;
-<a class="jxr_linenumber" name="L2364" href="#L2364">2364</a>         <strong class="jxr_keyword">private</strong> Certificate[] peerCerts;
-<a class="jxr_linenumber" name="L2365" href="#L2365">2365</a> 
-<a class="jxr_linenumber" name="L2366" href="#L2366">2366</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> valid = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L2367" href="#L2367">2367</a>         <strong class="jxr_keyword">private</strong> String protocol;
-<a class="jxr_linenumber" name="L2368" href="#L2368">2368</a>         <strong class="jxr_keyword">private</strong> String cipher;
-<a class="jxr_linenumber" name="L2369" href="#L2369">2369</a>         <strong class="jxr_keyword">private</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a> id = OpenSslSessionId.NULL_ID;
-<a class="jxr_linenumber" name="L2370" href="#L2370">2370</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">long</strong> creationTime;
-<a class="jxr_linenumber" name="L2371" href="#L2371">2371</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">int</strong> applicationBufferSize = MAX_PLAINTEXT_LENGTH;
-<a class="jxr_linenumber" name="L2372" href="#L2372">2372</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> Certificate[] localCertificateChain;
-<a class="jxr_linenumber" name="L2373" href="#L2373">2373</a>         <em class="jxr_comment">// lazy init for memory reasons</em>
-<a class="jxr_linenumber" name="L2374" href="#L2374">2374</a>         <strong class="jxr_keyword">private</strong> Map&lt;String, Object&gt; values;
-<a class="jxr_linenumber" name="L2375" href="#L2375">2375</a> 
-<a class="jxr_linenumber" name="L2376" href="#L2376">2376</a>         DefaultOpenSslSession(<a name="OpenSslSessionContext" href="../../../../io/netty/handler/ssl/OpenSslSessionContext.html#OpenSslSessionContext">OpenSslSessionContext</a> sessionContext) {
-<a class="jxr_linenumber" name="L2377" href="#L2377">2377</a>             <strong class="jxr_keyword">this</strong>.sessionContext = sessionContext;
-<a class="jxr_linenumber" name="L2378" href="#L2378">2378</a>         }
-<a class="jxr_linenumber" name="L2379" href="#L2379">2379</a> 
-<a class="jxr_linenumber" name="L2380" href="#L2380">2380</a>         <strong class="jxr_keyword">private</strong> SSLSessionBindingEvent newSSLSessionBindingEvent(String name) {
-<a class="jxr_linenumber" name="L2381" href="#L2381">2381</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> SSLSessionBindingEvent(session, name);
-<a class="jxr_linenumber" name="L2382" href="#L2382">2382</a>         }
-<a class="jxr_linenumber" name="L2383" href="#L2383">2383</a> 
-<a class="jxr_linenumber" name="L2384" href="#L2384">2384</a>         @Override
-<a class="jxr_linenumber" name="L2385" href="#L2385">2385</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> setSessionId(<a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a> sessionId) {
-<a class="jxr_linenumber" name="L2386" href="#L2386">2386</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2387" href="#L2387">2387</a>                 <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.id == OpenSslSessionId.NULL_ID) {
-<a class="jxr_linenumber" name="L2388" href="#L2388">2388</a>                     <strong class="jxr_keyword">this</strong>.id = sessionId;
-<a class="jxr_linenumber" name="L2389" href="#L2389">2389</a>                     creationTime = System.currentTimeMillis();
-<a class="jxr_linenumber" name="L2390" href="#L2390">2390</a>                 }
-<a class="jxr_linenumber" name="L2391" href="#L2391">2391</a>             }
-<a class="jxr_linenumber" name="L2392" href="#L2392">2392</a>         }
-<a class="jxr_linenumber" name="L2393" href="#L2393">2393</a> 
-<a class="jxr_linenumber" name="L2394" href="#L2394">2394</a>         @Override
-<a class="jxr_linenumber" name="L2395" href="#L2395">2395</a>         <strong class="jxr_keyword">public</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a> sessionId() {
-<a class="jxr_linenumber" name="L2396" href="#L2396">2396</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2397" href="#L2397">2397</a>                 <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.id == OpenSslSessionId.NULL_ID &amp;&amp; !isDestroyed()) {
-<a class="jxr_linenumber" name="L2398" href="#L2398">2398</a>                     byte[] sessionId = SSL.getSessionId(ssl);
-<a class="jxr_linenumber" name="L2399" href="#L2399">2399</a>                     <strong class="jxr_keyword">if</strong> (sessionId != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2400" href="#L2400">2400</a>                         id = <strong class="jxr_keyword">new</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a>(sessionId);
-<a class="jxr_linenumber" name="L2401" href="#L2401">2401</a>                     }
-<a class="jxr_linenumber" name="L2402" href="#L2402">2402</a>                 }
-<a class="jxr_linenumber" name="L2403" href="#L2403">2403</a> 
-<a class="jxr_linenumber" name="L2404" href="#L2404">2404</a>                 <strong class="jxr_keyword">return</strong> id;
-<a class="jxr_linenumber" name="L2405" href="#L2405">2405</a>             }
-<a class="jxr_linenumber" name="L2406" href="#L2406">2406</a>         }
-<a class="jxr_linenumber" name="L2407" href="#L2407">2407</a> 
-<a class="jxr_linenumber" name="L2408" href="#L2408">2408</a>         @Override
-<a class="jxr_linenumber" name="L2409" href="#L2409">2409</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> setLocalCertificate(Certificate[] localCertificate) {
-<a class="jxr_linenumber" name="L2410" href="#L2410">2410</a>             <strong class="jxr_keyword">this</strong>.localCertificateChain = localCertificate;
-<a class="jxr_linenumber" name="L2411" href="#L2411">2411</a>         }
-<a class="jxr_linenumber" name="L2412" href="#L2412">2412</a> 
-<a class="jxr_linenumber" name="L2413" href="#L2413">2413</a>         @Override
-<a class="jxr_linenumber" name="L2414" href="#L2414">2414</a>         <strong class="jxr_keyword">public</strong> byte[] getId() {
-<a class="jxr_linenumber" name="L2415" href="#L2415">2415</a>             <strong class="jxr_keyword">return</strong> sessionId().cloneBytes();
-<a class="jxr_linenumber" name="L2416" href="#L2416">2416</a>         }
-<a class="jxr_linenumber" name="L2417" href="#L2417">2417</a> 
-<a class="jxr_linenumber" name="L2418" href="#L2418">2418</a>         @Override
-<a class="jxr_linenumber" name="L2419" href="#L2419">2419</a>         <strong class="jxr_keyword">public</strong> <a name="OpenSslSessionContext" href="../../../../io/netty/handler/ssl/OpenSslSessionContext.html#OpenSslSessionContext">OpenSslSessionContext</a> getSessionContext() {
-<a class="jxr_linenumber" name="L2420" href="#L2420">2420</a>             <strong class="jxr_keyword">return</strong> sessionContext;
-<a class="jxr_linenumber" name="L2421" href="#L2421">2421</a>         }
-<a class="jxr_linenumber" name="L2422" href="#L2422">2422</a> 
-<a class="jxr_linenumber" name="L2423" href="#L2423">2423</a>         @Override
-<a class="jxr_linenumber" name="L2424" href="#L2424">2424</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> getCreationTime() {
-<a class="jxr_linenumber" name="L2425" href="#L2425">2425</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2426" href="#L2426">2426</a>                 <strong class="jxr_keyword">return</strong> creationTime;
-<a class="jxr_linenumber" name="L2427" href="#L2427">2427</a>             }
-<a class="jxr_linenumber" name="L2428" href="#L2428">2428</a>         }
-<a class="jxr_linenumber" name="L2429" href="#L2429">2429</a> 
-<a class="jxr_linenumber" name="L2430" href="#L2430">2430</a>         @Override
-<a class="jxr_linenumber" name="L2431" href="#L2431">2431</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> getLastAccessedTime() {
-<a class="jxr_linenumber" name="L2432" href="#L2432">2432</a>             <strong class="jxr_keyword">long</strong> lastAccessed = ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>.lastAccessed;
-<a class="jxr_linenumber" name="L2433" href="#L2433">2433</a>             <em class="jxr_comment">// if lastAccessed is -1 we will just return the creation time as the handshake was not started yet.</em>
-<a class="jxr_linenumber" name="L2434" href="#L2434">2434</a>             <strong class="jxr_keyword">return</strong> lastAccessed == -1 ? getCreationTime() : lastAccessed;
-<a class="jxr_linenumber" name="L2435" href="#L2435">2435</a>         }
-<a class="jxr_linenumber" name="L2436" href="#L2436">2436</a> 
-<a class="jxr_linenumber" name="L2437" href="#L2437">2437</a>         @Override
-<a class="jxr_linenumber" name="L2438" href="#L2438">2438</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> invalidate() {
-<a class="jxr_linenumber" name="L2439" href="#L2439">2439</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2440" href="#L2440">2440</a>                 valid = false;
-<a class="jxr_linenumber" name="L2441" href="#L2441">2441</a>                 sessionContext.removeFromCache(id);
-<a class="jxr_linenumber" name="L2442" href="#L2442">2442</a>             }
-<a class="jxr_linenumber" name="L2443" href="#L2443">2443</a>         }
-<a class="jxr_linenumber" name="L2444" href="#L2444">2444</a> 
-<a class="jxr_linenumber" name="L2445" href="#L2445">2445</a>         @Override
-<a class="jxr_linenumber" name="L2446" href="#L2446">2446</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isValid() {
-<a class="jxr_linenumber" name="L2447" href="#L2447">2447</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2448" href="#L2448">2448</a>                 <strong class="jxr_keyword">return</strong> valid || sessionContext.isInCache(id);
-<a class="jxr_linenumber" name="L2449" href="#L2449">2449</a>             }
-<a class="jxr_linenumber" name="L2450" href="#L2450">2450</a>         }
-<a class="jxr_linenumber" name="L2451" href="#L2451">2451</a> 
-<a class="jxr_linenumber" name="L2452" href="#L2452">2452</a>         @Override
-<a class="jxr_linenumber" name="L2453" href="#L2453">2453</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> putValue(String name, Object value) {
-<a class="jxr_linenumber" name="L2454" href="#L2454">2454</a>             checkNotNull(name, <span class="jxr_string">"name"</span>);
-<a class="jxr_linenumber" name="L2455" href="#L2455">2455</a>             checkNotNull(value, <span class="jxr_string">"value"</span>);
-<a class="jxr_linenumber" name="L2456" href="#L2456">2456</a> 
-<a class="jxr_linenumber" name="L2457" href="#L2457">2457</a>             <strong class="jxr_keyword">final</strong> Object old;
-<a class="jxr_linenumber" name="L2458" href="#L2458">2458</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2459" href="#L2459">2459</a>                 Map&lt;String, Object&gt; values = <strong class="jxr_keyword">this</strong>.values;
-<a class="jxr_linenumber" name="L2460" href="#L2460">2460</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2461" href="#L2461">2461</a>                     <em class="jxr_comment">// Use size of 2 to keep the memory overhead small</em>
-<a class="jxr_linenumber" name="L2462" href="#L2462">2462</a>                     values = <strong class="jxr_keyword">this</strong>.values = <strong class="jxr_keyword">new</strong> HashMap&lt;String, Object&gt;(2);
-<a class="jxr_linenumber" name="L2463" href="#L2463">2463</a>                 }
-<a class="jxr_linenumber" name="L2464" href="#L2464">2464</a>                 old = values.put(name, value);
-<a class="jxr_linenumber" name="L2465" href="#L2465">2465</a>             }
-<a class="jxr_linenumber" name="L2466" href="#L2466">2466</a> 
-<a class="jxr_linenumber" name="L2467" href="#L2467">2467</a>             <strong class="jxr_keyword">if</strong> (value instanceof SSLSessionBindingListener) {
-<a class="jxr_linenumber" name="L2468" href="#L2468">2468</a>                 <em class="jxr_comment">// Use newSSLSessionBindingEvent so we always use the wrapper if needed.</em>
-<a class="jxr_linenumber" name="L2469" href="#L2469">2469</a>                 ((SSLSessionBindingListener) value).valueBound(newSSLSessionBindingEvent(name));
-<a class="jxr_linenumber" name="L2470" href="#L2470">2470</a>             }
-<a class="jxr_linenumber" name="L2471" href="#L2471">2471</a>             notifyUnbound(old, name);
-<a class="jxr_linenumber" name="L2472" href="#L2472">2472</a>         }
-<a class="jxr_linenumber" name="L2473" href="#L2473">2473</a> 
-<a class="jxr_linenumber" name="L2474" href="#L2474">2474</a>         @Override
-<a class="jxr_linenumber" name="L2475" href="#L2475">2475</a>         <strong class="jxr_keyword">public</strong> Object getValue(String name) {
-<a class="jxr_linenumber" name="L2476" href="#L2476">2476</a>             checkNotNull(name, <span class="jxr_string">"name"</span>);
-<a class="jxr_linenumber" name="L2477" href="#L2477">2477</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2478" href="#L2478">2478</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2479" href="#L2479">2479</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L2480" href="#L2480">2480</a>                 }
-<a class="jxr_linenumber" name="L2481" href="#L2481">2481</a>                 <strong class="jxr_keyword">return</strong> values.get(name);
-<a class="jxr_linenumber" name="L2482" href="#L2482">2482</a>             }
-<a class="jxr_linenumber" name="L2483" href="#L2483">2483</a>         }
-<a class="jxr_linenumber" name="L2484" href="#L2484">2484</a> 
-<a class="jxr_linenumber" name="L2485" href="#L2485">2485</a>         @Override
-<a class="jxr_linenumber" name="L2486" href="#L2486">2486</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> removeValue(String name) {
-<a class="jxr_linenumber" name="L2487" href="#L2487">2487</a>             checkNotNull(name, <span class="jxr_string">"name"</span>);
-<a class="jxr_linenumber" name="L2488" href="#L2488">2488</a> 
-<a class="jxr_linenumber" name="L2489" href="#L2489">2489</a>             <strong class="jxr_keyword">final</strong> Object old;
-<a class="jxr_linenumber" name="L2490" href="#L2490">2490</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2491" href="#L2491">2491</a>                 Map&lt;String, Object&gt; values = <strong class="jxr_keyword">this</strong>.values;
-<a class="jxr_linenumber" name="L2492" href="#L2492">2492</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2493" href="#L2493">2493</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L2494" href="#L2494">2494</a>                 }
-<a class="jxr_linenumber" name="L2495" href="#L2495">2495</a>                 old = values.remove(name);
-<a class="jxr_linenumber" name="L2496" href="#L2496">2496</a>             }
-<a class="jxr_linenumber" name="L2497" href="#L2497">2497</a> 
-<a class="jxr_linenumber" name="L2498" href="#L2498">2498</a>             notifyUnbound(old, name);
-<a class="jxr_linenumber" name="L2499" href="#L2499">2499</a>         }
-<a class="jxr_linenumber" name="L2500" href="#L2500">2500</a> 
-<a class="jxr_linenumber" name="L2501" href="#L2501">2501</a>         @Override
-<a class="jxr_linenumber" name="L2502" href="#L2502">2502</a>         <strong class="jxr_keyword">public</strong> String[] getValueNames() {
-<a class="jxr_linenumber" name="L2503" href="#L2503">2503</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2504" href="#L2504">2504</a>                 Map&lt;String, Object&gt; values = <strong class="jxr_keyword">this</strong>.values;
-<a class="jxr_linenumber" name="L2505" href="#L2505">2505</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong> || values.isEmpty()) {
-<a class="jxr_linenumber" name="L2506" href="#L2506">2506</a>                     <strong class="jxr_keyword">return</strong> EMPTY_STRINGS;
-<a class="jxr_linenumber" name="L2507" href="#L2507">2507</a>                 }
-<a class="jxr_linenumber" name="L2508" href="#L2508">2508</a>                 <strong class="jxr_keyword">return</strong> values.keySet().toArray(EMPTY_STRINGS);
-<a class="jxr_linenumber" name="L2509" href="#L2509">2509</a>             }
-<a class="jxr_linenumber" name="L2510" href="#L2510">2510</a>         }
-<a class="jxr_linenumber" name="L2511" href="#L2511">2511</a> 
-<a class="jxr_linenumber" name="L2512" href="#L2512">2512</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyUnbound(Object value, String name) {
-<a class="jxr_linenumber" name="L2513" href="#L2513">2513</a>             <strong class="jxr_keyword">if</strong> (value instanceof SSLSessionBindingListener) {
-<a class="jxr_linenumber" name="L2514" href="#L2514">2514</a>                 <em class="jxr_comment">// Use newSSLSessionBindingEvent so we always use the wrapper if needed.</em>
-<a class="jxr_linenumber" name="L2515" href="#L2515">2515</a>                 ((SSLSessionBindingListener) value).valueUnbound(newSSLSessionBindingEvent(name));
-<a class="jxr_linenumber" name="L2516" href="#L2516">2516</a>             }
-<a class="jxr_linenumber" name="L2517" href="#L2517">2517</a>         }
-<a class="jxr_linenumber" name="L2518" href="#L2518">2518</a> 
-<a class="jxr_linenumber" name="L2519" href="#L2519">2519</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L2520" href="#L2520">2520</a> <em class="jxr_javadoccomment">         * Finish the handshake and so init everything in the {@link OpenSslSession} that should be accessible by</em>
-<a class="jxr_linenumber" name="L2521" href="#L2521">2521</a> <em class="jxr_javadoccomment">         * the user.</em>
-<a class="jxr_linenumber" name="L2522" href="#L2522">2522</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L2523" href="#L2523">2523</a>         @Override
-<a class="jxr_linenumber" name="L2524" href="#L2524">2524</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handshakeFinished(byte[] id, String cipher, String protocol, byte[] peerCertificate,
-<a class="jxr_linenumber" name="L2525" href="#L2525">2525</a>                                       byte[][] peerCertificateChain, <strong class="jxr_keyword">long</strong> creationTime, <strong class="jxr_keyword">long</strong> timeout)
-<a class="jxr_linenumber" name="L2526" href="#L2526">2526</a>                 <strong class="jxr_keyword">throws</strong> SSLException {
-<a class="jxr_linenumber" name="L2527" href="#L2527">2527</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2528" href="#L2528">2528</a>                 <strong class="jxr_keyword">if</strong> (!isDestroyed()) {
-<a class="jxr_linenumber" name="L2529" href="#L2529">2529</a>                     <strong class="jxr_keyword">this</strong>.creationTime = creationTime;
-<a class="jxr_linenumber" name="L2530" href="#L2530">2530</a>                     <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.id == OpenSslSessionId.NULL_ID) {
-<a class="jxr_linenumber" name="L2531" href="#L2531">2531</a>                         <strong class="jxr_keyword">this</strong>.id = id == <strong class="jxr_keyword">null</strong> ? OpenSslSessionId.NULL_ID : <strong class="jxr_keyword">new</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a>(id);
-<a class="jxr_linenumber" name="L2532" href="#L2532">2532</a>                     }
-<a class="jxr_linenumber" name="L2533" href="#L2533">2533</a>                     <strong class="jxr_keyword">this</strong>.cipher = toJavaCipherSuite(cipher);
-<a class="jxr_linenumber" name="L2534" href="#L2534">2534</a>                     <strong class="jxr_keyword">this</strong>.protocol = protocol;
-<a class="jxr_linenumber" name="L2535" href="#L2535">2535</a> 
-<a class="jxr_linenumber" name="L2536" href="#L2536">2536</a>                     <strong class="jxr_keyword">if</strong> (clientMode) {
-<a class="jxr_linenumber" name="L2537" href="#L2537">2537</a>                         <strong class="jxr_keyword">if</strong> (isEmpty(peerCertificateChain)) {
-<a class="jxr_linenumber" name="L2538" href="#L2538">2538</a>                             peerCerts = EmptyArrays.EMPTY_CERTIFICATES;
-<a class="jxr_linenumber" name="L2539" href="#L2539">2539</a>                             x509PeerCerts = EmptyArrays.EMPTY_JAVAX_X509_CERTIFICATES;
-<a class="jxr_linenumber" name="L2540" href="#L2540">2540</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2541" href="#L2541">2541</a>                             peerCerts = <strong class="jxr_keyword">new</strong> Certificate[peerCertificateChain.length];
-<a class="jxr_linenumber" name="L2542" href="#L2542">2542</a>                             x509PeerCerts = <strong class="jxr_keyword">new</strong> X509Certificate[peerCertificateChain.length];
-<a class="jxr_linenumber" name="L2543" href="#L2543">2543</a>                             initCerts(peerCertificateChain, 0);
-<a class="jxr_linenumber" name="L2544" href="#L2544">2544</a>                         }
-<a class="jxr_linenumber" name="L2545" href="#L2545">2545</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2546" href="#L2546">2546</a>                         <em class="jxr_comment">// if used on the server side SSL_get_peer_cert_chain(...) will not include the remote peer</em>
-<a class="jxr_linenumber" name="L2547" href="#L2547">2547</a>                         <em class="jxr_comment">// certificate. We use SSL_get_peer_certificate to get it in this case and add it to our</em>
-<a class="jxr_linenumber" name="L2548" href="#L2548">2548</a>                         <em class="jxr_comment">// array later.</em>
-<a class="jxr_linenumber" name="L2549" href="#L2549">2549</a>                         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L2550" href="#L2550">2550</a>                         <em class="jxr_comment">// See https://www.openssl.org/docs/ssl/SSL_get_peer_cert_chain.html</em>
-<a class="jxr_linenumber" name="L2551" href="#L2551">2551</a>                         <strong class="jxr_keyword">if</strong> (isEmpty(peerCertificate)) {
-<a class="jxr_linenumber" name="L2552" href="#L2552">2552</a>                             peerCerts = EmptyArrays.EMPTY_CERTIFICATES;
-<a class="jxr_linenumber" name="L2553" href="#L2553">2553</a>                             x509PeerCerts = EmptyArrays.EMPTY_JAVAX_X509_CERTIFICATES;
-<a class="jxr_linenumber" name="L2554" href="#L2554">2554</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2555" href="#L2555">2555</a>                             <strong class="jxr_keyword">if</strong> (isEmpty(peerCertificateChain)) {
-<a class="jxr_linenumber" name="L2556" href="#L2556">2556</a>                                 peerCerts = <strong class="jxr_keyword">new</strong> Certificate[] {<strong class="jxr_keyword">new</strong> <a name="LazyX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyX509Certificate.html#LazyX509Certificate">LazyX509Certificate</a>(peerCertificate)};
-<a class="jxr_linenumber" name="L2557" href="#L2557">2557</a>                                 x509PeerCerts = <strong class="jxr_keyword">new</strong> X509Certificate[] {<strong class="jxr_keyword">new</strong> <a name="LazyJavaxX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyJavaxX509Certificate.html#LazyJavaxX509Certificate">LazyJavaxX509Certificate</a>(peerCertificate)};
-<a class="jxr_linenumber" name="L2558" href="#L2558">2558</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2559" href="#L2559">2559</a>                                 peerCerts = <strong class="jxr_keyword">new</strong> Certificate[peerCertificateChain.length + 1];
-<a class="jxr_linenumber" name="L2560" href="#L2560">2560</a>                                 x509PeerCerts = <strong class="jxr_keyword">new</strong> X509Certificate[peerCertificateChain.length + 1];
-<a class="jxr_linenumber" name="L2561" href="#L2561">2561</a>                                 peerCerts[0] = <strong class="jxr_keyword">new</strong> <a name="LazyX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyX509Certificate.html#LazyX509Certificate">LazyX509Certificate</a>(peerCertificate);
-<a class="jxr_linenumber" name="L2562" href="#L2562">2562</a>                                 x509PeerCerts[0] = <strong class="jxr_keyword">new</strong> <a name="LazyJavaxX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyJavaxX509Certificate.html#LazyJavaxX509Certificate">LazyJavaxX509Certificate</a>(peerCertificate);
-<a class="jxr_linenumber" name="L2563" href="#L2563">2563</a>                                 initCerts(peerCertificateChain, 1);
-<a class="jxr_linenumber" name="L2564" href="#L2564">2564</a>                             }
-<a class="jxr_linenumber" name="L2565" href="#L2565">2565</a>                         }
-<a class="jxr_linenumber" name="L2566" href="#L2566">2566</a>                     }
-<a class="jxr_linenumber" name="L2567" href="#L2567">2567</a> 
-<a class="jxr_linenumber" name="L2568" href="#L2568">2568</a>                     calculateMaxWrapOverhead();
-<a class="jxr_linenumber" name="L2569" href="#L2569">2569</a> 
-<a class="jxr_linenumber" name="L2570" href="#L2570">2570</a>                     handshakeState = HandshakeState.FINISHED;
-<a class="jxr_linenumber" name="L2571" href="#L2571">2571</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2572" href="#L2572">2572</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLException(<span class="jxr_string">"Already closed"</span>);
-<a class="jxr_linenumber" name="L2573" href="#L2573">2573</a>                 }
-<a class="jxr_linenumber" name="L2574" href="#L2574">2574</a>             }
-<a class="jxr_linenumber" name="L2575" href="#L2575">2575</a>         }
-<a class="jxr_linenumber" name="L2576" href="#L2576">2576</a> 
-<a class="jxr_linenumber" name="L2577" href="#L2577">2577</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> initCerts(byte[][] chain, <strong class="jxr_keyword">int</strong> startPos) {
-<a class="jxr_linenumber" name="L2578" href="#L2578">2578</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; chain.length; i++) {
-<a class="jxr_linenumber" name="L2579" href="#L2579">2579</a>                 <strong class="jxr_keyword">int</strong> certPos = startPos + i;
-<a class="jxr_linenumber" name="L2580" href="#L2580">2580</a>                 peerCerts[certPos] = <strong class="jxr_keyword">new</strong> <a name="LazyX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyX509Certificate.html#LazyX509Certificate">LazyX509Certificate</a>(chain[i]);
-<a class="jxr_linenumber" name="L2581" href="#L2581">2581</a>                 x509PeerCerts[certPos] = <strong class="jxr_keyword">new</strong> <a name="LazyJavaxX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyJavaxX509Certificate.html#LazyJavaxX509Certificate">LazyJavaxX509Certificate</a>(chain[i]);
-<a class="jxr_linenumber" name="L2582" href="#L2582">2582</a>             }
-<a class="jxr_linenumber" name="L2583" href="#L2583">2583</a>         }
+<a class="jxr_linenumber" name="L2358" href="#L2358">2358</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> X509Certificate[] JAVAX_CERTS_NOT_SUPPORTED = <strong class="jxr_keyword">new</strong> X509Certificate[0];
+<a class="jxr_linenumber" name="L2359" href="#L2359">2359</a> 
+<a class="jxr_linenumber" name="L2360" href="#L2360">2360</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> DefaultOpenSslSession <strong class="jxr_keyword">implements</strong> <a name="OpenSslSession" href="../../../../io/netty/handler/ssl/OpenSslSession.html#OpenSslSession">OpenSslSession</a>  {
+<a class="jxr_linenumber" name="L2361" href="#L2361">2361</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="OpenSslSessionContext" href="../../../../io/netty/handler/ssl/OpenSslSessionContext.html#OpenSslSessionContext">OpenSslSessionContext</a> sessionContext;
+<a class="jxr_linenumber" name="L2362" href="#L2362">2362</a> 
+<a class="jxr_linenumber" name="L2363" href="#L2363">2363</a>         <em class="jxr_comment">// These are guarded by synchronized(OpenSslEngine.this) as handshakeFinished() may be triggered by any</em>
+<a class="jxr_linenumber" name="L2364" href="#L2364">2364</a>         <em class="jxr_comment">// thread.</em>
+<a class="jxr_linenumber" name="L2365" href="#L2365">2365</a>         <strong class="jxr_keyword">private</strong> X509Certificate[] x509PeerCerts;
+<a class="jxr_linenumber" name="L2366" href="#L2366">2366</a>         <strong class="jxr_keyword">private</strong> Certificate[] peerCerts;
+<a class="jxr_linenumber" name="L2367" href="#L2367">2367</a> 
+<a class="jxr_linenumber" name="L2368" href="#L2368">2368</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> valid = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L2369" href="#L2369">2369</a>         <strong class="jxr_keyword">private</strong> String protocol;
+<a class="jxr_linenumber" name="L2370" href="#L2370">2370</a>         <strong class="jxr_keyword">private</strong> String cipher;
+<a class="jxr_linenumber" name="L2371" href="#L2371">2371</a>         <strong class="jxr_keyword">private</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a> id = OpenSslSessionId.NULL_ID;
+<a class="jxr_linenumber" name="L2372" href="#L2372">2372</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">long</strong> creationTime;
+<a class="jxr_linenumber" name="L2373" href="#L2373">2373</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> <strong class="jxr_keyword">int</strong> applicationBufferSize = MAX_PLAINTEXT_LENGTH;
+<a class="jxr_linenumber" name="L2374" href="#L2374">2374</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">volatile</strong> Certificate[] localCertificateChain;
+<a class="jxr_linenumber" name="L2375" href="#L2375">2375</a>         <em class="jxr_comment">// lazy init for memory reasons</em>
+<a class="jxr_linenumber" name="L2376" href="#L2376">2376</a>         <strong class="jxr_keyword">private</strong> Map&lt;String, Object&gt; values;
+<a class="jxr_linenumber" name="L2377" href="#L2377">2377</a> 
+<a class="jxr_linenumber" name="L2378" href="#L2378">2378</a>         DefaultOpenSslSession(<a name="OpenSslSessionContext" href="../../../../io/netty/handler/ssl/OpenSslSessionContext.html#OpenSslSessionContext">OpenSslSessionContext</a> sessionContext) {
+<a class="jxr_linenumber" name="L2379" href="#L2379">2379</a>             <strong class="jxr_keyword">this</strong>.sessionContext = sessionContext;
+<a class="jxr_linenumber" name="L2380" href="#L2380">2380</a>         }
+<a class="jxr_linenumber" name="L2381" href="#L2381">2381</a> 
+<a class="jxr_linenumber" name="L2382" href="#L2382">2382</a>         <strong class="jxr_keyword">private</strong> SSLSessionBindingEvent newSSLSessionBindingEvent(String name) {
+<a class="jxr_linenumber" name="L2383" href="#L2383">2383</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> SSLSessionBindingEvent(session, name);
+<a class="jxr_linenumber" name="L2384" href="#L2384">2384</a>         }
+<a class="jxr_linenumber" name="L2385" href="#L2385">2385</a> 
+<a class="jxr_linenumber" name="L2386" href="#L2386">2386</a>         @Override
+<a class="jxr_linenumber" name="L2387" href="#L2387">2387</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> setSessionId(<a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a> sessionId) {
+<a class="jxr_linenumber" name="L2388" href="#L2388">2388</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2389" href="#L2389">2389</a>                 <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.id == OpenSslSessionId.NULL_ID) {
+<a class="jxr_linenumber" name="L2390" href="#L2390">2390</a>                     <strong class="jxr_keyword">this</strong>.id = sessionId;
+<a class="jxr_linenumber" name="L2391" href="#L2391">2391</a>                     creationTime = System.currentTimeMillis();
+<a class="jxr_linenumber" name="L2392" href="#L2392">2392</a>                 }
+<a class="jxr_linenumber" name="L2393" href="#L2393">2393</a>             }
+<a class="jxr_linenumber" name="L2394" href="#L2394">2394</a>         }
+<a class="jxr_linenumber" name="L2395" href="#L2395">2395</a> 
+<a class="jxr_linenumber" name="L2396" href="#L2396">2396</a>         @Override
+<a class="jxr_linenumber" name="L2397" href="#L2397">2397</a>         <strong class="jxr_keyword">public</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a> sessionId() {
+<a class="jxr_linenumber" name="L2398" href="#L2398">2398</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2399" href="#L2399">2399</a>                 <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.id == OpenSslSessionId.NULL_ID &amp;&amp; !isDestroyed()) {
+<a class="jxr_linenumber" name="L2400" href="#L2400">2400</a>                     byte[] sessionId = SSL.getSessionId(ssl);
+<a class="jxr_linenumber" name="L2401" href="#L2401">2401</a>                     <strong class="jxr_keyword">if</strong> (sessionId != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2402" href="#L2402">2402</a>                         id = <strong class="jxr_keyword">new</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a>(sessionId);
+<a class="jxr_linenumber" name="L2403" href="#L2403">2403</a>                     }
+<a class="jxr_linenumber" name="L2404" href="#L2404">2404</a>                 }
+<a class="jxr_linenumber" name="L2405" href="#L2405">2405</a> 
+<a class="jxr_linenumber" name="L2406" href="#L2406">2406</a>                 <strong class="jxr_keyword">return</strong> id;
+<a class="jxr_linenumber" name="L2407" href="#L2407">2407</a>             }
+<a class="jxr_linenumber" name="L2408" href="#L2408">2408</a>         }
+<a class="jxr_linenumber" name="L2409" href="#L2409">2409</a> 
+<a class="jxr_linenumber" name="L2410" href="#L2410">2410</a>         @Override
+<a class="jxr_linenumber" name="L2411" href="#L2411">2411</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> setLocalCertificate(Certificate[] localCertificate) {
+<a class="jxr_linenumber" name="L2412" href="#L2412">2412</a>             <strong class="jxr_keyword">this</strong>.localCertificateChain = localCertificate;
+<a class="jxr_linenumber" name="L2413" href="#L2413">2413</a>         }
+<a class="jxr_linenumber" name="L2414" href="#L2414">2414</a> 
+<a class="jxr_linenumber" name="L2415" href="#L2415">2415</a>         @Override
+<a class="jxr_linenumber" name="L2416" href="#L2416">2416</a>         <strong class="jxr_keyword">public</strong> byte[] getId() {
+<a class="jxr_linenumber" name="L2417" href="#L2417">2417</a>             <strong class="jxr_keyword">return</strong> sessionId().cloneBytes();
+<a class="jxr_linenumber" name="L2418" href="#L2418">2418</a>         }
+<a class="jxr_linenumber" name="L2419" href="#L2419">2419</a> 
+<a class="jxr_linenumber" name="L2420" href="#L2420">2420</a>         @Override
+<a class="jxr_linenumber" name="L2421" href="#L2421">2421</a>         <strong class="jxr_keyword">public</strong> <a name="OpenSslSessionContext" href="../../../../io/netty/handler/ssl/OpenSslSessionContext.html#OpenSslSessionContext">OpenSslSessionContext</a> getSessionContext() {
+<a class="jxr_linenumber" name="L2422" href="#L2422">2422</a>             <strong class="jxr_keyword">return</strong> sessionContext;
+<a class="jxr_linenumber" name="L2423" href="#L2423">2423</a>         }
+<a class="jxr_linenumber" name="L2424" href="#L2424">2424</a> 
+<a class="jxr_linenumber" name="L2425" href="#L2425">2425</a>         @Override
+<a class="jxr_linenumber" name="L2426" href="#L2426">2426</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> getCreationTime() {
+<a class="jxr_linenumber" name="L2427" href="#L2427">2427</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2428" href="#L2428">2428</a>                 <strong class="jxr_keyword">return</strong> creationTime;
+<a class="jxr_linenumber" name="L2429" href="#L2429">2429</a>             }
+<a class="jxr_linenumber" name="L2430" href="#L2430">2430</a>         }
+<a class="jxr_linenumber" name="L2431" href="#L2431">2431</a> 
+<a class="jxr_linenumber" name="L2432" href="#L2432">2432</a>         @Override
+<a class="jxr_linenumber" name="L2433" href="#L2433">2433</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> getLastAccessedTime() {
+<a class="jxr_linenumber" name="L2434" href="#L2434">2434</a>             <strong class="jxr_keyword">long</strong> lastAccessed = ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>.lastAccessed;
+<a class="jxr_linenumber" name="L2435" href="#L2435">2435</a>             <em class="jxr_comment">// if lastAccessed is -1 we will just return the creation time as the handshake was not started yet.</em>
+<a class="jxr_linenumber" name="L2436" href="#L2436">2436</a>             <strong class="jxr_keyword">return</strong> lastAccessed == -1 ? getCreationTime() : lastAccessed;
+<a class="jxr_linenumber" name="L2437" href="#L2437">2437</a>         }
+<a class="jxr_linenumber" name="L2438" href="#L2438">2438</a> 
+<a class="jxr_linenumber" name="L2439" href="#L2439">2439</a>         @Override
+<a class="jxr_linenumber" name="L2440" href="#L2440">2440</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> invalidate() {
+<a class="jxr_linenumber" name="L2441" href="#L2441">2441</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2442" href="#L2442">2442</a>                 valid = false;
+<a class="jxr_linenumber" name="L2443" href="#L2443">2443</a>                 sessionContext.removeFromCache(id);
+<a class="jxr_linenumber" name="L2444" href="#L2444">2444</a>             }
+<a class="jxr_linenumber" name="L2445" href="#L2445">2445</a>         }
+<a class="jxr_linenumber" name="L2446" href="#L2446">2446</a> 
+<a class="jxr_linenumber" name="L2447" href="#L2447">2447</a>         @Override
+<a class="jxr_linenumber" name="L2448" href="#L2448">2448</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isValid() {
+<a class="jxr_linenumber" name="L2449" href="#L2449">2449</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2450" href="#L2450">2450</a>                 <strong class="jxr_keyword">return</strong> valid || sessionContext.isInCache(id);
+<a class="jxr_linenumber" name="L2451" href="#L2451">2451</a>             }
+<a class="jxr_linenumber" name="L2452" href="#L2452">2452</a>         }
+<a class="jxr_linenumber" name="L2453" href="#L2453">2453</a> 
+<a class="jxr_linenumber" name="L2454" href="#L2454">2454</a>         @Override
+<a class="jxr_linenumber" name="L2455" href="#L2455">2455</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> putValue(String name, Object value) {
+<a class="jxr_linenumber" name="L2456" href="#L2456">2456</a>             checkNotNull(name, <span class="jxr_string">"name"</span>);
+<a class="jxr_linenumber" name="L2457" href="#L2457">2457</a>             checkNotNull(value, <span class="jxr_string">"value"</span>);
+<a class="jxr_linenumber" name="L2458" href="#L2458">2458</a> 
+<a class="jxr_linenumber" name="L2459" href="#L2459">2459</a>             <strong class="jxr_keyword">final</strong> Object old;
+<a class="jxr_linenumber" name="L2460" href="#L2460">2460</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2461" href="#L2461">2461</a>                 Map&lt;String, Object&gt; values = <strong class="jxr_keyword">this</strong>.values;
+<a class="jxr_linenumber" name="L2462" href="#L2462">2462</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2463" href="#L2463">2463</a>                     <em class="jxr_comment">// Use size of 2 to keep the memory overhead small</em>
+<a class="jxr_linenumber" name="L2464" href="#L2464">2464</a>                     values = <strong class="jxr_keyword">this</strong>.values = <strong class="jxr_keyword">new</strong> HashMap&lt;String, Object&gt;(2);
+<a class="jxr_linenumber" name="L2465" href="#L2465">2465</a>                 }
+<a class="jxr_linenumber" name="L2466" href="#L2466">2466</a>                 old = values.put(name, value);
+<a class="jxr_linenumber" name="L2467" href="#L2467">2467</a>             }
+<a class="jxr_linenumber" name="L2468" href="#L2468">2468</a> 
+<a class="jxr_linenumber" name="L2469" href="#L2469">2469</a>             <strong class="jxr_keyword">if</strong> (value instanceof SSLSessionBindingListener) {
+<a class="jxr_linenumber" name="L2470" href="#L2470">2470</a>                 <em class="jxr_comment">// Use newSSLSessionBindingEvent so we always use the wrapper if needed.</em>
+<a class="jxr_linenumber" name="L2471" href="#L2471">2471</a>                 ((SSLSessionBindingListener) value).valueBound(newSSLSessionBindingEvent(name));
+<a class="jxr_linenumber" name="L2472" href="#L2472">2472</a>             }
+<a class="jxr_linenumber" name="L2473" href="#L2473">2473</a>             notifyUnbound(old, name);
+<a class="jxr_linenumber" name="L2474" href="#L2474">2474</a>         }
+<a class="jxr_linenumber" name="L2475" href="#L2475">2475</a> 
+<a class="jxr_linenumber" name="L2476" href="#L2476">2476</a>         @Override
+<a class="jxr_linenumber" name="L2477" href="#L2477">2477</a>         <strong class="jxr_keyword">public</strong> Object getValue(String name) {
+<a class="jxr_linenumber" name="L2478" href="#L2478">2478</a>             checkNotNull(name, <span class="jxr_string">"name"</span>);
+<a class="jxr_linenumber" name="L2479" href="#L2479">2479</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2480" href="#L2480">2480</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2481" href="#L2481">2481</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L2482" href="#L2482">2482</a>                 }
+<a class="jxr_linenumber" name="L2483" href="#L2483">2483</a>                 <strong class="jxr_keyword">return</strong> values.get(name);
+<a class="jxr_linenumber" name="L2484" href="#L2484">2484</a>             }
+<a class="jxr_linenumber" name="L2485" href="#L2485">2485</a>         }
+<a class="jxr_linenumber" name="L2486" href="#L2486">2486</a> 
+<a class="jxr_linenumber" name="L2487" href="#L2487">2487</a>         @Override
+<a class="jxr_linenumber" name="L2488" href="#L2488">2488</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> removeValue(String name) {
+<a class="jxr_linenumber" name="L2489" href="#L2489">2489</a>             checkNotNull(name, <span class="jxr_string">"name"</span>);
+<a class="jxr_linenumber" name="L2490" href="#L2490">2490</a> 
+<a class="jxr_linenumber" name="L2491" href="#L2491">2491</a>             <strong class="jxr_keyword">final</strong> Object old;
+<a class="jxr_linenumber" name="L2492" href="#L2492">2492</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2493" href="#L2493">2493</a>                 Map&lt;String, Object&gt; values = <strong class="jxr_keyword">this</strong>.values;
+<a class="jxr_linenumber" name="L2494" href="#L2494">2494</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2495" href="#L2495">2495</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L2496" href="#L2496">2496</a>                 }
+<a class="jxr_linenumber" name="L2497" href="#L2497">2497</a>                 old = values.remove(name);
+<a class="jxr_linenumber" name="L2498" href="#L2498">2498</a>             }
+<a class="jxr_linenumber" name="L2499" href="#L2499">2499</a> 
+<a class="jxr_linenumber" name="L2500" href="#L2500">2500</a>             notifyUnbound(old, name);
+<a class="jxr_linenumber" name="L2501" href="#L2501">2501</a>         }
+<a class="jxr_linenumber" name="L2502" href="#L2502">2502</a> 
+<a class="jxr_linenumber" name="L2503" href="#L2503">2503</a>         @Override
+<a class="jxr_linenumber" name="L2504" href="#L2504">2504</a>         <strong class="jxr_keyword">public</strong> String[] getValueNames() {
+<a class="jxr_linenumber" name="L2505" href="#L2505">2505</a>             <strong class="jxr_keyword">synchronized</strong> (<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2506" href="#L2506">2506</a>                 Map&lt;String, Object&gt; values = <strong class="jxr_keyword">this</strong>.values;
+<a class="jxr_linenumber" name="L2507" href="#L2507">2507</a>                 <strong class="jxr_keyword">if</strong> (values == <strong class="jxr_keyword">null</strong> || values.isEmpty()) {
+<a class="jxr_linenumber" name="L2508" href="#L2508">2508</a>                     <strong class="jxr_keyword">return</strong> EMPTY_STRINGS;
+<a class="jxr_linenumber" name="L2509" href="#L2509">2509</a>                 }
+<a class="jxr_linenumber" name="L2510" href="#L2510">2510</a>                 <strong class="jxr_keyword">return</strong> values.keySet().toArray(EMPTY_STRINGS);
+<a class="jxr_linenumber" name="L2511" href="#L2511">2511</a>             }
+<a class="jxr_linenumber" name="L2512" href="#L2512">2512</a>         }
+<a class="jxr_linenumber" name="L2513" href="#L2513">2513</a> 
+<a class="jxr_linenumber" name="L2514" href="#L2514">2514</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> notifyUnbound(Object value, String name) {
+<a class="jxr_linenumber" name="L2515" href="#L2515">2515</a>             <strong class="jxr_keyword">if</strong> (value instanceof SSLSessionBindingListener) {
+<a class="jxr_linenumber" name="L2516" href="#L2516">2516</a>                 <em class="jxr_comment">// Use newSSLSessionBindingEvent so we always use the wrapper if needed.</em>
+<a class="jxr_linenumber" name="L2517" href="#L2517">2517</a>                 ((SSLSessionBindingListener) value).valueUnbound(newSSLSessionBindingEvent(name));
+<a class="jxr_linenumber" name="L2518" href="#L2518">2518</a>             }
+<a class="jxr_linenumber" name="L2519" href="#L2519">2519</a>         }
+<a class="jxr_linenumber" name="L2520" href="#L2520">2520</a> 
+<a class="jxr_linenumber" name="L2521" href="#L2521">2521</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L2522" href="#L2522">2522</a> <em class="jxr_javadoccomment">         * Finish the handshake and so init everything in the {@link OpenSslSession} that should be accessible by</em>
+<a class="jxr_linenumber" name="L2523" href="#L2523">2523</a> <em class="jxr_javadoccomment">         * the user.</em>
+<a class="jxr_linenumber" name="L2524" href="#L2524">2524</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L2525" href="#L2525">2525</a>         @Override
+<a class="jxr_linenumber" name="L2526" href="#L2526">2526</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handshakeFinished(byte[] id, String cipher, String protocol, byte[] peerCertificate,
+<a class="jxr_linenumber" name="L2527" href="#L2527">2527</a>                                       byte[][] peerCertificateChain, <strong class="jxr_keyword">long</strong> creationTime, <strong class="jxr_keyword">long</strong> timeout)
+<a class="jxr_linenumber" name="L2528" href="#L2528">2528</a>                 <strong class="jxr_keyword">throws</strong> SSLException {
+<a class="jxr_linenumber" name="L2529" href="#L2529">2529</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2530" href="#L2530">2530</a>                 <strong class="jxr_keyword">if</strong> (!isDestroyed()) {
+<a class="jxr_linenumber" name="L2531" href="#L2531">2531</a>                     <strong class="jxr_keyword">this</strong>.creationTime = creationTime;
+<a class="jxr_linenumber" name="L2532" href="#L2532">2532</a>                     <strong class="jxr_keyword">if</strong> (<strong class="jxr_keyword">this</strong>.id == OpenSslSessionId.NULL_ID) {
+<a class="jxr_linenumber" name="L2533" href="#L2533">2533</a>                         <strong class="jxr_keyword">this</strong>.id = id == <strong class="jxr_keyword">null</strong> ? OpenSslSessionId.NULL_ID : <strong class="jxr_keyword">new</strong> <a name="OpenSslSessionId" href="../../../../io/netty/handler/ssl/OpenSslSessionId.html#OpenSslSessionId">OpenSslSessionId</a>(id);
+<a class="jxr_linenumber" name="L2534" href="#L2534">2534</a>                     }
+<a class="jxr_linenumber" name="L2535" href="#L2535">2535</a>                     <strong class="jxr_keyword">this</strong>.cipher = toJavaCipherSuite(cipher);
+<a class="jxr_linenumber" name="L2536" href="#L2536">2536</a>                     <strong class="jxr_keyword">this</strong>.protocol = protocol;
+<a class="jxr_linenumber" name="L2537" href="#L2537">2537</a> 
+<a class="jxr_linenumber" name="L2538" href="#L2538">2538</a>                     <strong class="jxr_keyword">if</strong> (clientMode) {
+<a class="jxr_linenumber" name="L2539" href="#L2539">2539</a>                         <strong class="jxr_keyword">if</strong> (isEmpty(peerCertificateChain)) {
+<a class="jxr_linenumber" name="L2540" href="#L2540">2540</a>                             peerCerts = EmptyArrays.EMPTY_CERTIFICATES;
+<a class="jxr_linenumber" name="L2541" href="#L2541">2541</a>                             <strong class="jxr_keyword">if</strong> (OpenSsl.JAVAX_CERTIFICATE_CREATION_SUPPORTED) {
+<a class="jxr_linenumber" name="L2542" href="#L2542">2542</a>                                 x509PeerCerts = EmptyArrays.EMPTY_JAVAX_X509_CERTIFICATES;
+<a class="jxr_linenumber" name="L2543" href="#L2543">2543</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2544" href="#L2544">2544</a>                                 x509PeerCerts = JAVAX_CERTS_NOT_SUPPORTED;
+<a class="jxr_linenumber" name="L2545" href="#L2545">2545</a>                             }
+<a class="jxr_linenumber" name="L2546" href="#L2546">2546</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2547" href="#L2547">2547</a>                             peerCerts = <strong class="jxr_keyword">new</strong> Certificate[peerCertificateChain.length];
+<a class="jxr_linenumber" name="L2548" href="#L2548">2548</a>                             <strong class="jxr_keyword">if</strong> (OpenSsl.JAVAX_CERTIFICATE_CREATION_SUPPORTED) {
+<a class="jxr_linenumber" name="L2549" href="#L2549">2549</a>                                 x509PeerCerts = <strong class="jxr_keyword">new</strong> X509Certificate[peerCertificateChain.length];
+<a class="jxr_linenumber" name="L2550" href="#L2550">2550</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2551" href="#L2551">2551</a>                                 x509PeerCerts = JAVAX_CERTS_NOT_SUPPORTED;
+<a class="jxr_linenumber" name="L2552" href="#L2552">2552</a>                             }
+<a class="jxr_linenumber" name="L2553" href="#L2553">2553</a>                             initCerts(peerCertificateChain, 0);
+<a class="jxr_linenumber" name="L2554" href="#L2554">2554</a>                         }
+<a class="jxr_linenumber" name="L2555" href="#L2555">2555</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2556" href="#L2556">2556</a>                         <em class="jxr_comment">// if used on the server side SSL_get_peer_cert_chain(...) will not include the remote peer</em>
+<a class="jxr_linenumber" name="L2557" href="#L2557">2557</a>                         <em class="jxr_comment">// certificate. We use SSL_get_peer_certificate to get it in this case and add it to our</em>
+<a class="jxr_linenumber" name="L2558" href="#L2558">2558</a>                         <em class="jxr_comment">// array later.</em>
+<a class="jxr_linenumber" name="L2559" href="#L2559">2559</a>                         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L2560" href="#L2560">2560</a>                         <em class="jxr_comment">// See https://www.openssl.org/docs/ssl/SSL_get_peer_cert_chain.html</em>
+<a class="jxr_linenumber" name="L2561" href="#L2561">2561</a>                         <strong class="jxr_keyword">if</strong> (isEmpty(peerCertificate)) {
+<a class="jxr_linenumber" name="L2562" href="#L2562">2562</a>                             peerCerts = EmptyArrays.EMPTY_CERTIFICATES;
+<a class="jxr_linenumber" name="L2563" href="#L2563">2563</a>                             x509PeerCerts = EmptyArrays.EMPTY_JAVAX_X509_CERTIFICATES;
+<a class="jxr_linenumber" name="L2564" href="#L2564">2564</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2565" href="#L2565">2565</a>                             <strong class="jxr_keyword">if</strong> (isEmpty(peerCertificateChain)) {
+<a class="jxr_linenumber" name="L2566" href="#L2566">2566</a>                                 peerCerts = <strong class="jxr_keyword">new</strong> Certificate[] {<strong class="jxr_keyword">new</strong> <a name="LazyX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyX509Certificate.html#LazyX509Certificate">LazyX509Certificate</a>(peerCertificate)};
+<a class="jxr_linenumber" name="L2567" href="#L2567">2567</a>                                 <strong class="jxr_keyword">if</strong> (OpenSsl.JAVAX_CERTIFICATE_CREATION_SUPPORTED) {
+<a class="jxr_linenumber" name="L2568" href="#L2568">2568</a>                                     x509PeerCerts = <strong class="jxr_keyword">new</strong> X509Certificate[] {
+<a class="jxr_linenumber" name="L2569" href="#L2569">2569</a>                                             <strong class="jxr_keyword">new</strong> <a name="LazyJavaxX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyJavaxX509Certificate.html#LazyJavaxX509Certificate">LazyJavaxX509Certificate</a>(peerCertificate)
+<a class="jxr_linenumber" name="L2570" href="#L2570">2570</a>                                     };
+<a class="jxr_linenumber" name="L2571" href="#L2571">2571</a>                                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2572" href="#L2572">2572</a>                                     x509PeerCerts = JAVAX_CERTS_NOT_SUPPORTED;
+<a class="jxr_linenumber" name="L2573" href="#L2573">2573</a>                                 }
+<a class="jxr_linenumber" name="L2574" href="#L2574">2574</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2575" href="#L2575">2575</a>                                 peerCerts = <strong class="jxr_keyword">new</strong> Certificate[peerCertificateChain.length + 1];
+<a class="jxr_linenumber" name="L2576" href="#L2576">2576</a>                                 peerCerts[0] = <strong class="jxr_keyword">new</strong> <a name="LazyX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyX509Certificate.html#LazyX509Certificate">LazyX509Certificate</a>(peerCertificate);
+<a class="jxr_linenumber" name="L2577" href="#L2577">2577</a> 
+<a class="jxr_linenumber" name="L2578" href="#L2578">2578</a>                                 <strong class="jxr_keyword">if</strong> (OpenSsl.JAVAX_CERTIFICATE_CREATION_SUPPORTED) {
+<a class="jxr_linenumber" name="L2579" href="#L2579">2579</a>                                     x509PeerCerts = <strong class="jxr_keyword">new</strong> X509Certificate[peerCertificateChain.length + 1];
+<a class="jxr_linenumber" name="L2580" href="#L2580">2580</a>                                     x509PeerCerts[0] = <strong class="jxr_keyword">new</strong> <a name="LazyJavaxX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyJavaxX509Certificate.html#LazyJavaxX509Certificate">LazyJavaxX509Certificate</a>(peerCertificate);
+<a class="jxr_linenumber" name="L2581" href="#L2581">2581</a>                                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2582" href="#L2582">2582</a>                                     x509PeerCerts = JAVAX_CERTS_NOT_SUPPORTED;
+<a class="jxr_linenumber" name="L2583" href="#L2583">2583</a>                                 }
 <a class="jxr_linenumber" name="L2584" href="#L2584">2584</a> 
-<a class="jxr_linenumber" name="L2585" href="#L2585">2585</a>         @Override
-<a class="jxr_linenumber" name="L2586" href="#L2586">2586</a>         <strong class="jxr_keyword">public</strong> Certificate[] getPeerCertificates() <strong class="jxr_keyword">throws</strong> SSLPeerUnverifiedException {
-<a class="jxr_linenumber" name="L2587" href="#L2587">2587</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2588" href="#L2588">2588</a>                 <strong class="jxr_keyword">if</strong> (isEmpty(peerCerts)) {
-<a class="jxr_linenumber" name="L2589" href="#L2589">2589</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLPeerUnverifiedException(<span class="jxr_string">"peer not verified"</span>);
-<a class="jxr_linenumber" name="L2590" href="#L2590">2590</a>                 }
-<a class="jxr_linenumber" name="L2591" href="#L2591">2591</a>                 <strong class="jxr_keyword">return</strong> peerCerts.clone();
-<a class="jxr_linenumber" name="L2592" href="#L2592">2592</a>             }
-<a class="jxr_linenumber" name="L2593" href="#L2593">2593</a>         }
-<a class="jxr_linenumber" name="L2594" href="#L2594">2594</a> 
-<a class="jxr_linenumber" name="L2595" href="#L2595">2595</a>         @Override
-<a class="jxr_linenumber" name="L2596" href="#L2596">2596</a>         <strong class="jxr_keyword">public</strong> Certificate[] getLocalCertificates() {
-<a class="jxr_linenumber" name="L2597" href="#L2597">2597</a>             Certificate[] localCerts = <strong class="jxr_keyword">this</strong>.localCertificateChain;
-<a class="jxr_linenumber" name="L2598" href="#L2598">2598</a>             <strong class="jxr_keyword">if</strong> (localCerts == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2599" href="#L2599">2599</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L2600" href="#L2600">2600</a>             }
-<a class="jxr_linenumber" name="L2601" href="#L2601">2601</a>             <strong class="jxr_keyword">return</strong> localCerts.clone();
-<a class="jxr_linenumber" name="L2602" href="#L2602">2602</a>         }
-<a class="jxr_linenumber" name="L2603" href="#L2603">2603</a> 
-<a class="jxr_linenumber" name="L2604" href="#L2604">2604</a>         @Override
-<a class="jxr_linenumber" name="L2605" href="#L2605">2605</a>         <strong class="jxr_keyword">public</strong> X509Certificate[] getPeerCertificateChain() <strong class="jxr_keyword">throws</strong> SSLPeerUnverifiedException {
-<a class="jxr_linenumber" name="L2606" href="#L2606">2606</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2607" href="#L2607">2607</a>                 <strong class="jxr_keyword">if</strong> (isEmpty(x509PeerCerts)) {
-<a class="jxr_linenumber" name="L2608" href="#L2608">2608</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLPeerUnverifiedException(<span class="jxr_string">"peer not verified"</span>);
-<a class="jxr_linenumber" name="L2609" href="#L2609">2609</a>                 }
-<a class="jxr_linenumber" name="L2610" href="#L2610">2610</a>                 <strong class="jxr_keyword">return</strong> x509PeerCerts.clone();
-<a class="jxr_linenumber" name="L2611" href="#L2611">2611</a>             }
-<a class="jxr_linenumber" name="L2612" href="#L2612">2612</a>         }
-<a class="jxr_linenumber" name="L2613" href="#L2613">2613</a> 
-<a class="jxr_linenumber" name="L2614" href="#L2614">2614</a>         @Override
-<a class="jxr_linenumber" name="L2615" href="#L2615">2615</a>         <strong class="jxr_keyword">public</strong> Principal getPeerPrincipal() <strong class="jxr_keyword">throws</strong> SSLPeerUnverifiedException {
-<a class="jxr_linenumber" name="L2616" href="#L2616">2616</a>             Certificate[] peer = getPeerCertificates();
-<a class="jxr_linenumber" name="L2617" href="#L2617">2617</a>             <em class="jxr_comment">// No need for null or length &gt; 0 is needed as this is done in getPeerCertificates()</em>
-<a class="jxr_linenumber" name="L2618" href="#L2618">2618</a>             <em class="jxr_comment">// already.</em>
-<a class="jxr_linenumber" name="L2619" href="#L2619">2619</a>             <strong class="jxr_keyword">return</strong> ((java.security.cert.X509Certificate) peer[0]).getSubjectX500Principal();
-<a class="jxr_linenumber" name="L2620" href="#L2620">2620</a>         }
-<a class="jxr_linenumber" name="L2621" href="#L2621">2621</a> 
-<a class="jxr_linenumber" name="L2622" href="#L2622">2622</a>         @Override
-<a class="jxr_linenumber" name="L2623" href="#L2623">2623</a>         <strong class="jxr_keyword">public</strong> Principal getLocalPrincipal() {
-<a class="jxr_linenumber" name="L2624" href="#L2624">2624</a>             Certificate[] local = <strong class="jxr_keyword">this</strong>.localCertificateChain;
-<a class="jxr_linenumber" name="L2625" href="#L2625">2625</a>             <strong class="jxr_keyword">if</strong> (local == <strong class="jxr_keyword">null</strong> || local.length == 0) {
-<a class="jxr_linenumber" name="L2626" href="#L2626">2626</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L2627" href="#L2627">2627</a>             }
-<a class="jxr_linenumber" name="L2628" href="#L2628">2628</a>             <strong class="jxr_keyword">return</strong> ((java.security.cert.X509Certificate) local[0]).getSubjectX500Principal();
-<a class="jxr_linenumber" name="L2629" href="#L2629">2629</a>         }
-<a class="jxr_linenumber" name="L2630" href="#L2630">2630</a> 
-<a class="jxr_linenumber" name="L2631" href="#L2631">2631</a>         @Override
-<a class="jxr_linenumber" name="L2632" href="#L2632">2632</a>         <strong class="jxr_keyword">public</strong> String getCipherSuite() {
-<a class="jxr_linenumber" name="L2633" href="#L2633">2633</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2634" href="#L2634">2634</a>                 <strong class="jxr_keyword">if</strong> (cipher == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2635" href="#L2635">2635</a>                     <strong class="jxr_keyword">return</strong> SslUtils.INVALID_CIPHER;
-<a class="jxr_linenumber" name="L2636" href="#L2636">2636</a>                 }
-<a class="jxr_linenumber" name="L2637" href="#L2637">2637</a>                 <strong class="jxr_keyword">return</strong> cipher;
-<a class="jxr_linenumber" name="L2638" href="#L2638">2638</a>             }
-<a class="jxr_linenumber" name="L2639" href="#L2639">2639</a>         }
-<a class="jxr_linenumber" name="L2640" href="#L2640">2640</a> 
-<a class="jxr_linenumber" name="L2641" href="#L2641">2641</a>         @Override
-<a class="jxr_linenumber" name="L2642" href="#L2642">2642</a>         <strong class="jxr_keyword">public</strong> String getProtocol() {
-<a class="jxr_linenumber" name="L2643" href="#L2643">2643</a>             String protocol = <strong class="jxr_keyword">this</strong>.protocol;
-<a class="jxr_linenumber" name="L2644" href="#L2644">2644</a>             <strong class="jxr_keyword">if</strong> (protocol == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2645" href="#L2645">2645</a>                 <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
-<a class="jxr_linenumber" name="L2646" href="#L2646">2646</a>                     <strong class="jxr_keyword">if</strong> (!isDestroyed()) {
-<a class="jxr_linenumber" name="L2647" href="#L2647">2647</a>                         protocol = SSL.getVersion(ssl);
-<a class="jxr_linenumber" name="L2648" href="#L2648">2648</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2649" href="#L2649">2649</a>                         protocol = StringUtil.EMPTY_STRING;
-<a class="jxr_linenumber" name="L2650" href="#L2650">2650</a>                     }
-<a class="jxr_linenumber" name="L2651" href="#L2651">2651</a>                 }
-<a class="jxr_linenumber" name="L2652" href="#L2652">2652</a>             }
-<a class="jxr_linenumber" name="L2653" href="#L2653">2653</a>             <strong class="jxr_keyword">return</strong> protocol;
-<a class="jxr_linenumber" name="L2654" href="#L2654">2654</a>         }
-<a class="jxr_linenumber" name="L2655" href="#L2655">2655</a> 
-<a class="jxr_linenumber" name="L2656" href="#L2656">2656</a>         @Override
-<a class="jxr_linenumber" name="L2657" href="#L2657">2657</a>         <strong class="jxr_keyword">public</strong> String getPeerHost() {
-<a class="jxr_linenumber" name="L2658" href="#L2658">2658</a>             <strong class="jxr_keyword">return</strong> ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>.getPeerHost();
-<a class="jxr_linenumber" name="L2659" href="#L2659">2659</a>         }
-<a class="jxr_linenumber" name="L2660" href="#L2660">2660</a> 
-<a class="jxr_linenumber" name="L2661" href="#L2661">2661</a>         @Override
-<a class="jxr_linenumber" name="L2662" href="#L2662">2662</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getPeerPort() {
-<a class="jxr_linenumber" name="L2663" href="#L2663">2663</a>             <strong class="jxr_keyword">return</strong> ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>.getPeerPort();
-<a class="jxr_linenumber" name="L2664" href="#L2664">2664</a>         }
-<a class="jxr_linenumber" name="L2665" href="#L2665">2665</a> 
-<a class="jxr_linenumber" name="L2666" href="#L2666">2666</a>         @Override
-<a class="jxr_linenumber" name="L2667" href="#L2667">2667</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getPacketBufferSize() {
-<a class="jxr_linenumber" name="L2668" href="#L2668">2668</a>             <strong class="jxr_keyword">return</strong> SSL.SSL_MAX_ENCRYPTED_LENGTH;
-<a class="jxr_linenumber" name="L2669" href="#L2669">2669</a>         }
-<a class="jxr_linenumber" name="L2670" href="#L2670">2670</a> 
-<a class="jxr_linenumber" name="L2671" href="#L2671">2671</a>         @Override
-<a class="jxr_linenumber" name="L2672" href="#L2672">2672</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getApplicationBufferSize() {
-<a class="jxr_linenumber" name="L2673" href="#L2673">2673</a>             <strong class="jxr_keyword">return</strong> applicationBufferSize;
-<a class="jxr_linenumber" name="L2674" href="#L2674">2674</a>         }
-<a class="jxr_linenumber" name="L2675" href="#L2675">2675</a> 
-<a class="jxr_linenumber" name="L2676" href="#L2676">2676</a>         @Override
-<a class="jxr_linenumber" name="L2677" href="#L2677">2677</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> tryExpandApplicationBufferSize(<strong class="jxr_keyword">int</strong> packetLengthDataOnly) {
-<a class="jxr_linenumber" name="L2678" href="#L2678">2678</a>             <strong class="jxr_keyword">if</strong> (packetLengthDataOnly &gt; MAX_PLAINTEXT_LENGTH &amp;&amp; applicationBufferSize != MAX_RECORD_SIZE) {
-<a class="jxr_linenumber" name="L2679" href="#L2679">2679</a>                 applicationBufferSize = MAX_RECORD_SIZE;
-<a class="jxr_linenumber" name="L2680" href="#L2680">2680</a>             }
-<a class="jxr_linenumber" name="L2681" href="#L2681">2681</a>         }
-<a class="jxr_linenumber" name="L2682" href="#L2682">2682</a> 
-<a class="jxr_linenumber" name="L2683" href="#L2683">2683</a>         @Override
-<a class="jxr_linenumber" name="L2684" href="#L2684">2684</a>         <strong class="jxr_keyword">public</strong> String toString() {
-<a class="jxr_linenumber" name="L2685" href="#L2685">2685</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"DefaultOpenSslSession{"</span> +
-<a class="jxr_linenumber" name="L2686" href="#L2686">2686</a>                     <span class="jxr_string">"sessionContext="</span> + sessionContext +
-<a class="jxr_linenumber" name="L2687" href="#L2687">2687</a>                     <span class="jxr_string">", id="</span> + id +
-<a class="jxr_linenumber" name="L2688" href="#L2688">2688</a>                     '}';
-<a class="jxr_linenumber" name="L2689" href="#L2689">2689</a>         }
-<a class="jxr_linenumber" name="L2690" href="#L2690">2690</a>     }
-<a class="jxr_linenumber" name="L2691" href="#L2691">2691</a> 
-<a class="jxr_linenumber" name="L2692" href="#L2692">2692</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">interface</strong> NativeSslException {
-<a class="jxr_linenumber" name="L2693" href="#L2693">2693</a>         <strong class="jxr_keyword">int</strong> errorCode();
-<a class="jxr_linenumber" name="L2694" href="#L2694">2694</a>     }
-<a class="jxr_linenumber" name="L2695" href="#L2695">2695</a> 
-<a class="jxr_linenumber" name="L2696" href="#L2696">2696</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> OpenSslException <strong class="jxr_keyword">extends</strong> SSLException <strong class="jxr_keyword">implements</strong> NativeSslException {
-<a class="jxr_linenumber" name="L2697" href="#L2697">2697</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> errorCode;
-<a class="jxr_linenumber" name="L2698" href="#L2698">2698</a> 
-<a class="jxr_linenumber" name="L2699" href="#L2699">2699</a>         OpenSslException(String reason, <strong class="jxr_keyword">int</strong> errorCode) {
-<a class="jxr_linenumber" name="L2700" href="#L2700">2700</a>             <strong class="jxr_keyword">super</strong>(reason);
-<a class="jxr_linenumber" name="L2701" href="#L2701">2701</a>             <strong class="jxr_keyword">this</strong>.errorCode = errorCode;
-<a class="jxr_linenumber" name="L2702" href="#L2702">2702</a>         }
-<a class="jxr_linenumber" name="L2703" href="#L2703">2703</a> 
-<a class="jxr_linenumber" name="L2704" href="#L2704">2704</a>         @Override
-<a class="jxr_linenumber" name="L2705" href="#L2705">2705</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> errorCode() {
-<a class="jxr_linenumber" name="L2706" href="#L2706">2706</a>             <strong class="jxr_keyword">return</strong> errorCode;
-<a class="jxr_linenumber" name="L2707" href="#L2707">2707</a>         }
-<a class="jxr_linenumber" name="L2708" href="#L2708">2708</a>     }
-<a class="jxr_linenumber" name="L2709" href="#L2709">2709</a> 
-<a class="jxr_linenumber" name="L2710" href="#L2710">2710</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> OpenSslHandshakeException <strong class="jxr_keyword">extends</strong> SSLHandshakeException <strong class="jxr_keyword">implements</strong> NativeSslException {
-<a class="jxr_linenumber" name="L2711" href="#L2711">2711</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> errorCode;
-<a class="jxr_linenumber" name="L2712" href="#L2712">2712</a> 
-<a class="jxr_linenumber" name="L2713" href="#L2713">2713</a>         OpenSslHandshakeException(String reason, <strong class="jxr_keyword">int</strong> errorCode) {
-<a class="jxr_linenumber" name="L2714" href="#L2714">2714</a>             <strong class="jxr_keyword">super</strong>(reason);
-<a class="jxr_linenumber" name="L2715" href="#L2715">2715</a>             <strong class="jxr_keyword">this</strong>.errorCode = errorCode;
-<a class="jxr_linenumber" name="L2716" href="#L2716">2716</a>         }
-<a class="jxr_linenumber" name="L2717" href="#L2717">2717</a> 
-<a class="jxr_linenumber" name="L2718" href="#L2718">2718</a>         @Override
-<a class="jxr_linenumber" name="L2719" href="#L2719">2719</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> errorCode() {
-<a class="jxr_linenumber" name="L2720" href="#L2720">2720</a>             <strong class="jxr_keyword">return</strong> errorCode;
-<a class="jxr_linenumber" name="L2721" href="#L2721">2721</a>         }
-<a class="jxr_linenumber" name="L2722" href="#L2722">2722</a>     }
-<a class="jxr_linenumber" name="L2723" href="#L2723">2723</a> }
+<a class="jxr_linenumber" name="L2585" href="#L2585">2585</a>                                 initCerts(peerCertificateChain, 1);
+<a class="jxr_linenumber" name="L2586" href="#L2586">2586</a>                             }
+<a class="jxr_linenumber" name="L2587" href="#L2587">2587</a>                         }
+<a class="jxr_linenumber" name="L2588" href="#L2588">2588</a>                     }
+<a class="jxr_linenumber" name="L2589" href="#L2589">2589</a> 
+<a class="jxr_linenumber" name="L2590" href="#L2590">2590</a>                     calculateMaxWrapOverhead();
+<a class="jxr_linenumber" name="L2591" href="#L2591">2591</a> 
+<a class="jxr_linenumber" name="L2592" href="#L2592">2592</a>                     handshakeState = HandshakeState.FINISHED;
+<a class="jxr_linenumber" name="L2593" href="#L2593">2593</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2594" href="#L2594">2594</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLException(<span class="jxr_string">"Already closed"</span>);
+<a class="jxr_linenumber" name="L2595" href="#L2595">2595</a>                 }
+<a class="jxr_linenumber" name="L2596" href="#L2596">2596</a>             }
+<a class="jxr_linenumber" name="L2597" href="#L2597">2597</a>         }
+<a class="jxr_linenumber" name="L2598" href="#L2598">2598</a> 
+<a class="jxr_linenumber" name="L2599" href="#L2599">2599</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> initCerts(byte[][] chain, <strong class="jxr_keyword">int</strong> startPos) {
+<a class="jxr_linenumber" name="L2600" href="#L2600">2600</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; chain.length; i++) {
+<a class="jxr_linenumber" name="L2601" href="#L2601">2601</a>                 <strong class="jxr_keyword">int</strong> certPos = startPos + i;
+<a class="jxr_linenumber" name="L2602" href="#L2602">2602</a>                 peerCerts[certPos] = <strong class="jxr_keyword">new</strong> <a name="LazyX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyX509Certificate.html#LazyX509Certificate">LazyX509Certificate</a>(chain[i]);
+<a class="jxr_linenumber" name="L2603" href="#L2603">2603</a>                 <strong class="jxr_keyword">if</strong> (x509PeerCerts != JAVAX_CERTS_NOT_SUPPORTED) {
+<a class="jxr_linenumber" name="L2604" href="#L2604">2604</a>                     x509PeerCerts[certPos] = <strong class="jxr_keyword">new</strong> <a name="LazyJavaxX509Certificate" href="../../../../io/netty/handler/ssl/util/LazyJavaxX509Certificate.html#LazyJavaxX509Certificate">LazyJavaxX509Certificate</a>(chain[i]);
+<a class="jxr_linenumber" name="L2605" href="#L2605">2605</a>                 }
+<a class="jxr_linenumber" name="L2606" href="#L2606">2606</a>             }
+<a class="jxr_linenumber" name="L2607" href="#L2607">2607</a>         }
+<a class="jxr_linenumber" name="L2608" href="#L2608">2608</a> 
+<a class="jxr_linenumber" name="L2609" href="#L2609">2609</a>         @Override
+<a class="jxr_linenumber" name="L2610" href="#L2610">2610</a>         <strong class="jxr_keyword">public</strong> Certificate[] getPeerCertificates() <strong class="jxr_keyword">throws</strong> SSLPeerUnverifiedException {
+<a class="jxr_linenumber" name="L2611" href="#L2611">2611</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2612" href="#L2612">2612</a>                 <strong class="jxr_keyword">if</strong> (isEmpty(peerCerts)) {
+<a class="jxr_linenumber" name="L2613" href="#L2613">2613</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLPeerUnverifiedException(<span class="jxr_string">"peer not verified"</span>);
+<a class="jxr_linenumber" name="L2614" href="#L2614">2614</a>                 }
+<a class="jxr_linenumber" name="L2615" href="#L2615">2615</a>                 <strong class="jxr_keyword">return</strong> peerCerts.clone();
+<a class="jxr_linenumber" name="L2616" href="#L2616">2616</a>             }
+<a class="jxr_linenumber" name="L2617" href="#L2617">2617</a>         }
+<a class="jxr_linenumber" name="L2618" href="#L2618">2618</a> 
+<a class="jxr_linenumber" name="L2619" href="#L2619">2619</a>         @Override
+<a class="jxr_linenumber" name="L2620" href="#L2620">2620</a>         <strong class="jxr_keyword">public</strong> Certificate[] getLocalCertificates() {
+<a class="jxr_linenumber" name="L2621" href="#L2621">2621</a>             Certificate[] localCerts = <strong class="jxr_keyword">this</strong>.localCertificateChain;
+<a class="jxr_linenumber" name="L2622" href="#L2622">2622</a>             <strong class="jxr_keyword">if</strong> (localCerts == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2623" href="#L2623">2623</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L2624" href="#L2624">2624</a>             }
+<a class="jxr_linenumber" name="L2625" href="#L2625">2625</a>             <strong class="jxr_keyword">return</strong> localCerts.clone();
+<a class="jxr_linenumber" name="L2626" href="#L2626">2626</a>         }
+<a class="jxr_linenumber" name="L2627" href="#L2627">2627</a> 
+<a class="jxr_linenumber" name="L2628" href="#L2628">2628</a>         @Override
+<a class="jxr_linenumber" name="L2629" href="#L2629">2629</a>         <strong class="jxr_keyword">public</strong> X509Certificate[] getPeerCertificateChain() <strong class="jxr_keyword">throws</strong> SSLPeerUnverifiedException {
+<a class="jxr_linenumber" name="L2630" href="#L2630">2630</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2631" href="#L2631">2631</a>                 <strong class="jxr_keyword">if</strong> (x509PeerCerts == JAVAX_CERTS_NOT_SUPPORTED) {
+<a class="jxr_linenumber" name="L2632" href="#L2632">2632</a>                     <em class="jxr_comment">// Not supported by the underlying JDK, so just throw. This is fine in terms of the API</em>
+<a class="jxr_linenumber" name="L2633" href="#L2633">2633</a>                     <em class="jxr_comment">// contract. See SSLSession.html#getPeerCertificateChain().</em>
+<a class="jxr_linenumber" name="L2634" href="#L2634">2634</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException();
+<a class="jxr_linenumber" name="L2635" href="#L2635">2635</a>                 }
+<a class="jxr_linenumber" name="L2636" href="#L2636">2636</a>                 <strong class="jxr_keyword">if</strong> (isEmpty(x509PeerCerts)) {
+<a class="jxr_linenumber" name="L2637" href="#L2637">2637</a>                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> SSLPeerUnverifiedException(<span class="jxr_string">"peer not verified"</span>);
+<a class="jxr_linenumber" name="L2638" href="#L2638">2638</a>                 }
+<a class="jxr_linenumber" name="L2639" href="#L2639">2639</a>                 <strong class="jxr_keyword">return</strong> x509PeerCerts.clone();
+<a class="jxr_linenumber" name="L2640" href="#L2640">2640</a>             }
+<a class="jxr_linenumber" name="L2641" href="#L2641">2641</a>         }
+<a class="jxr_linenumber" name="L2642" href="#L2642">2642</a> 
+<a class="jxr_linenumber" name="L2643" href="#L2643">2643</a>         @Override
+<a class="jxr_linenumber" name="L2644" href="#L2644">2644</a>         <strong class="jxr_keyword">public</strong> Principal getPeerPrincipal() <strong class="jxr_keyword">throws</strong> SSLPeerUnverifiedException {
+<a class="jxr_linenumber" name="L2645" href="#L2645">2645</a>             Certificate[] peer = getPeerCertificates();
+<a class="jxr_linenumber" name="L2646" href="#L2646">2646</a>             <em class="jxr_comment">// No need for null or length &gt; 0 is needed as this is done in getPeerCertificates()</em>
+<a class="jxr_linenumber" name="L2647" href="#L2647">2647</a>             <em class="jxr_comment">// already.</em>
+<a class="jxr_linenumber" name="L2648" href="#L2648">2648</a>             <strong class="jxr_keyword">return</strong> ((java.security.cert.X509Certificate) peer[0]).getSubjectX500Principal();
+<a class="jxr_linenumber" name="L2649" href="#L2649">2649</a>         }
+<a class="jxr_linenumber" name="L2650" href="#L2650">2650</a> 
+<a class="jxr_linenumber" name="L2651" href="#L2651">2651</a>         @Override
+<a class="jxr_linenumber" name="L2652" href="#L2652">2652</a>         <strong class="jxr_keyword">public</strong> Principal getLocalPrincipal() {
+<a class="jxr_linenumber" name="L2653" href="#L2653">2653</a>             Certificate[] local = <strong class="jxr_keyword">this</strong>.localCertificateChain;
+<a class="jxr_linenumber" name="L2654" href="#L2654">2654</a>             <strong class="jxr_keyword">if</strong> (local == <strong class="jxr_keyword">null</strong> || local.length == 0) {
+<a class="jxr_linenumber" name="L2655" href="#L2655">2655</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L2656" href="#L2656">2656</a>             }
+<a class="jxr_linenumber" name="L2657" href="#L2657">2657</a>             <strong class="jxr_keyword">return</strong> ((java.security.cert.X509Certificate) local[0]).getSubjectX500Principal();
+<a class="jxr_linenumber" name="L2658" href="#L2658">2658</a>         }
+<a class="jxr_linenumber" name="L2659" href="#L2659">2659</a> 
+<a class="jxr_linenumber" name="L2660" href="#L2660">2660</a>         @Override
+<a class="jxr_linenumber" name="L2661" href="#L2661">2661</a>         <strong class="jxr_keyword">public</strong> String getCipherSuite() {
+<a class="jxr_linenumber" name="L2662" href="#L2662">2662</a>             <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2663" href="#L2663">2663</a>                 <strong class="jxr_keyword">if</strong> (cipher == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2664" href="#L2664">2664</a>                     <strong class="jxr_keyword">return</strong> SslUtils.INVALID_CIPHER;
+<a class="jxr_linenumber" name="L2665" href="#L2665">2665</a>                 }
+<a class="jxr_linenumber" name="L2666" href="#L2666">2666</a>                 <strong class="jxr_keyword">return</strong> cipher;
+<a class="jxr_linenumber" name="L2667" href="#L2667">2667</a>             }
+<a class="jxr_linenumber" name="L2668" href="#L2668">2668</a>         }
+<a class="jxr_linenumber" name="L2669" href="#L2669">2669</a> 
+<a class="jxr_linenumber" name="L2670" href="#L2670">2670</a>         @Override
+<a class="jxr_linenumber" name="L2671" href="#L2671">2671</a>         <strong class="jxr_keyword">public</strong> String getProtocol() {
+<a class="jxr_linenumber" name="L2672" href="#L2672">2672</a>             String protocol = <strong class="jxr_keyword">this</strong>.protocol;
+<a class="jxr_linenumber" name="L2673" href="#L2673">2673</a>             <strong class="jxr_keyword">if</strong> (protocol == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2674" href="#L2674">2674</a>                 <strong class="jxr_keyword">synchronized</strong> (ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>) {
+<a class="jxr_linenumber" name="L2675" href="#L2675">2675</a>                     <strong class="jxr_keyword">if</strong> (!isDestroyed()) {
+<a class="jxr_linenumber" name="L2676" href="#L2676">2676</a>                         protocol = SSL.getVersion(ssl);
+<a class="jxr_linenumber" name="L2677" href="#L2677">2677</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2678" href="#L2678">2678</a>                         protocol = StringUtil.EMPTY_STRING;
+<a class="jxr_linenumber" name="L2679" href="#L2679">2679</a>                     }
+<a class="jxr_linenumber" name="L2680" href="#L2680">2680</a>                 }
+<a class="jxr_linenumber" name="L2681" href="#L2681">2681</a>             }
+<a class="jxr_linenumber" name="L2682" href="#L2682">2682</a>             <strong class="jxr_keyword">return</strong> protocol;
+<a class="jxr_linenumber" name="L2683" href="#L2683">2683</a>         }
+<a class="jxr_linenumber" name="L2684" href="#L2684">2684</a> 
+<a class="jxr_linenumber" name="L2685" href="#L2685">2685</a>         @Override
+<a class="jxr_linenumber" name="L2686" href="#L2686">2686</a>         <strong class="jxr_keyword">public</strong> String getPeerHost() {
+<a class="jxr_linenumber" name="L2687" href="#L2687">2687</a>             <strong class="jxr_keyword">return</strong> ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>.getPeerHost();
+<a class="jxr_linenumber" name="L2688" href="#L2688">2688</a>         }
+<a class="jxr_linenumber" name="L2689" href="#L2689">2689</a> 
+<a class="jxr_linenumber" name="L2690" href="#L2690">2690</a>         @Override
+<a class="jxr_linenumber" name="L2691" href="#L2691">2691</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getPeerPort() {
+<a class="jxr_linenumber" name="L2692" href="#L2692">2692</a>             <strong class="jxr_keyword">return</strong> ReferenceCountedOpenSslEngine.<strong class="jxr_keyword">this</strong>.getPeerPort();
+<a class="jxr_linenumber" name="L2693" href="#L2693">2693</a>         }
+<a class="jxr_linenumber" name="L2694" href="#L2694">2694</a> 
+<a class="jxr_linenumber" name="L2695" href="#L2695">2695</a>         @Override
+<a class="jxr_linenumber" name="L2696" href="#L2696">2696</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getPacketBufferSize() {
+<a class="jxr_linenumber" name="L2697" href="#L2697">2697</a>             <strong class="jxr_keyword">return</strong> SSL.SSL_MAX_ENCRYPTED_LENGTH;
+<a class="jxr_linenumber" name="L2698" href="#L2698">2698</a>         }
+<a class="jxr_linenumber" name="L2699" href="#L2699">2699</a> 
+<a class="jxr_linenumber" name="L2700" href="#L2700">2700</a>         @Override
+<a class="jxr_linenumber" name="L2701" href="#L2701">2701</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getApplicationBufferSize() {
+<a class="jxr_linenumber" name="L2702" href="#L2702">2702</a>             <strong class="jxr_keyword">return</strong> applicationBufferSize;
+<a class="jxr_linenumber" name="L2703" href="#L2703">2703</a>         }
+<a class="jxr_linenumber" name="L2704" href="#L2704">2704</a> 
+<a class="jxr_linenumber" name="L2705" href="#L2705">2705</a>         @Override
+<a class="jxr_linenumber" name="L2706" href="#L2706">2706</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> tryExpandApplicationBufferSize(<strong class="jxr_keyword">int</strong> packetLengthDataOnly) {
+<a class="jxr_linenumber" name="L2707" href="#L2707">2707</a>             <strong class="jxr_keyword">if</strong> (packetLengthDataOnly &gt; MAX_PLAINTEXT_LENGTH &amp;&amp; applicationBufferSize != MAX_RECORD_SIZE) {
+<a class="jxr_linenumber" name="L2708" href="#L2708">2708</a>                 applicationBufferSize = MAX_RECORD_SIZE;
+<a class="jxr_linenumber" name="L2709" href="#L2709">2709</a>             }
+<a class="jxr_linenumber" name="L2710" href="#L2710">2710</a>         }
+<a class="jxr_linenumber" name="L2711" href="#L2711">2711</a> 
+<a class="jxr_linenumber" name="L2712" href="#L2712">2712</a>         @Override
+<a class="jxr_linenumber" name="L2713" href="#L2713">2713</a>         <strong class="jxr_keyword">public</strong> String toString() {
+<a class="jxr_linenumber" name="L2714" href="#L2714">2714</a>             <strong class="jxr_keyword">return</strong> <span class="jxr_string">"DefaultOpenSslSession{"</span> +
+<a class="jxr_linenumber" name="L2715" href="#L2715">2715</a>                     <span class="jxr_string">"sessionContext="</span> + sessionContext +
+<a class="jxr_linenumber" name="L2716" href="#L2716">2716</a>                     <span class="jxr_string">", id="</span> + id +
+<a class="jxr_linenumber" name="L2717" href="#L2717">2717</a>                     '}';
+<a class="jxr_linenumber" name="L2718" href="#L2718">2718</a>         }
+<a class="jxr_linenumber" name="L2719" href="#L2719">2719</a>     }
+<a class="jxr_linenumber" name="L2720" href="#L2720">2720</a> 
+<a class="jxr_linenumber" name="L2721" href="#L2721">2721</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">interface</strong> NativeSslException {
+<a class="jxr_linenumber" name="L2722" href="#L2722">2722</a>         <strong class="jxr_keyword">int</strong> errorCode();
+<a class="jxr_linenumber" name="L2723" href="#L2723">2723</a>     }
+<a class="jxr_linenumber" name="L2724" href="#L2724">2724</a> 
+<a class="jxr_linenumber" name="L2725" href="#L2725">2725</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> OpenSslException <strong class="jxr_keyword">extends</strong> SSLException <strong class="jxr_keyword">implements</strong> NativeSslException {
+<a class="jxr_linenumber" name="L2726" href="#L2726">2726</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> errorCode;
+<a class="jxr_linenumber" name="L2727" href="#L2727">2727</a> 
+<a class="jxr_linenumber" name="L2728" href="#L2728">2728</a>         OpenSslException(String reason, <strong class="jxr_keyword">int</strong> errorCode) {
+<a class="jxr_linenumber" name="L2729" href="#L2729">2729</a>             <strong class="jxr_keyword">super</strong>(reason);
+<a class="jxr_linenumber" name="L2730" href="#L2730">2730</a>             <strong class="jxr_keyword">this</strong>.errorCode = errorCode;
+<a class="jxr_linenumber" name="L2731" href="#L2731">2731</a>         }
+<a class="jxr_linenumber" name="L2732" href="#L2732">2732</a> 
+<a class="jxr_linenumber" name="L2733" href="#L2733">2733</a>         @Override
+<a class="jxr_linenumber" name="L2734" href="#L2734">2734</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> errorCode() {
+<a class="jxr_linenumber" name="L2735" href="#L2735">2735</a>             <strong class="jxr_keyword">return</strong> errorCode;
+<a class="jxr_linenumber" name="L2736" href="#L2736">2736</a>         }
+<a class="jxr_linenumber" name="L2737" href="#L2737">2737</a>     }
+<a class="jxr_linenumber" name="L2738" href="#L2738">2738</a> 
+<a class="jxr_linenumber" name="L2739" href="#L2739">2739</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> OpenSslHandshakeException <strong class="jxr_keyword">extends</strong> SSLHandshakeException <strong class="jxr_keyword">implements</strong> NativeSslException {
+<a class="jxr_linenumber" name="L2740" href="#L2740">2740</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> errorCode;
+<a class="jxr_linenumber" name="L2741" href="#L2741">2741</a> 
+<a class="jxr_linenumber" name="L2742" href="#L2742">2742</a>         OpenSslHandshakeException(String reason, <strong class="jxr_keyword">int</strong> errorCode) {
+<a class="jxr_linenumber" name="L2743" href="#L2743">2743</a>             <strong class="jxr_keyword">super</strong>(reason);
+<a class="jxr_linenumber" name="L2744" href="#L2744">2744</a>             <strong class="jxr_keyword">this</strong>.errorCode = errorCode;
+<a class="jxr_linenumber" name="L2745" href="#L2745">2745</a>         }
+<a class="jxr_linenumber" name="L2746" href="#L2746">2746</a> 
+<a class="jxr_linenumber" name="L2747" href="#L2747">2747</a>         @Override
+<a class="jxr_linenumber" name="L2748" href="#L2748">2748</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> errorCode() {
+<a class="jxr_linenumber" name="L2749" href="#L2749">2749</a>             <strong class="jxr_keyword">return</strong> errorCode;
+<a class="jxr_linenumber" name="L2750" href="#L2750">2750</a>         }
+<a class="jxr_linenumber" name="L2751" href="#L2751">2751</a>     }
+<a class="jxr_linenumber" name="L2752" href="#L2752">2752</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2023 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
