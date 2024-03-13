@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'awestruct', '~> 0.6.7'
-gem 'haml', '~> 6.3'
+gem 'haml', '>= 4.0.5', '< 6.0'
 gem 'rdiscount', '~> 2.2', '>= 2.2.7.3'
 gem 'htmlcompressor', '~> 0.4.0'
 gem 'uglifier', '~> 4.2'
