@@ -581,275 +581,154 @@
 <a class="jxr_linenumber" name="L573" href="#L573">573</a>         <strong class="jxr_keyword">if</strong> (undecodedChunk == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L574" href="#L574">574</a>             <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L575" href="#L575">575</a>         }
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>         <strong class="jxr_keyword">if</strong> (!undecodedChunk.hasArray()) {
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>             parseBodyAttributesStandard();
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L579" href="#L579">579</a>         }
-<a class="jxr_linenumber" name="L580" href="#L580">580</a>         SeekAheadOptimize sao = <strong class="jxr_keyword">new</strong> SeekAheadOptimize(undecodedChunk);
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>         <strong class="jxr_keyword">int</strong> firstpos = undecodedChunk.readerIndex();
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>         <strong class="jxr_keyword">int</strong> currentpos = firstpos;
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>         <strong class="jxr_keyword">int</strong> equalpos;
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>         <strong class="jxr_keyword">int</strong> ampersandpos;
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>         <strong class="jxr_keyword">if</strong> (currentStatus == MultiPartStatus.NOTSTARTED) {
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>             currentStatus = MultiPartStatus.DISPOSITION;
-<a class="jxr_linenumber" name="L587" href="#L587">587</a>         }
-<a class="jxr_linenumber" name="L588" href="#L588">588</a>         <strong class="jxr_keyword">boolean</strong> contRead = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L589" href="#L589">589</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L590" href="#L590">590</a>             loop: <strong class="jxr_keyword">while</strong> (sao.pos &lt; sao.limit) {
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>                 <strong class="jxr_keyword">char</strong> read = (<strong class="jxr_keyword">char</strong>) (sao.bytes[sao.pos++] &amp; 0xFF);
-<a class="jxr_linenumber" name="L592" href="#L592">592</a>                 currentpos++;
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>                 <strong class="jxr_keyword">switch</strong> (currentStatus) {
-<a class="jxr_linenumber" name="L594" href="#L594">594</a>                 <strong class="jxr_keyword">case</strong> DISPOSITION:<em class="jxr_comment">// search '='</em>
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>                     <strong class="jxr_keyword">if</strong> (read == '=') {
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>                         currentStatus = MultiPartStatus.FIELD;
-<a class="jxr_linenumber" name="L597" href="#L597">597</a>                         equalpos = currentpos - 1;
-<a class="jxr_linenumber" name="L598" href="#L598">598</a>                         String key = decodeAttribute(undecodedChunk.toString(firstpos, equalpos - firstpos, charset),
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>                                 charset);
-<a class="jxr_linenumber" name="L600" href="#L600">600</a>                         currentAttribute = factory.createAttribute(request, key);
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>                         firstpos = currentpos;
-<a class="jxr_linenumber" name="L602" href="#L602">602</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (read == '&amp;' ||
-<a class="jxr_linenumber" name="L603" href="#L603">603</a>                             (isLastChunk &amp;&amp; !undecodedChunk.isReadable() &amp;&amp; hasFormBody())) { <em class="jxr_comment">// special empty FIELD</em>
-<a class="jxr_linenumber" name="L604" href="#L604">604</a>                         currentStatus = MultiPartStatus.DISPOSITION;
-<a class="jxr_linenumber" name="L605" href="#L605">605</a>                         ampersandpos = read == '&amp;' ? currentpos - 1 : currentpos;
-<a class="jxr_linenumber" name="L606" href="#L606">606</a>                         String key = decodeAttribute(
-<a class="jxr_linenumber" name="L607" href="#L607">607</a>                                 undecodedChunk.toString(firstpos, ampersandpos - firstpos, charset), charset);
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>                         <em class="jxr_comment">// Some weird request bodies start with an '&amp;' char, eg: &amp;name=J&amp;age=17.</em>
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>                         <em class="jxr_comment">// In that case, key would be "", will get exception:</em>
-<a class="jxr_linenumber" name="L610" href="#L610">610</a>                         <em class="jxr_comment">// java.lang.IllegalArgumentException: Param 'name' must not be empty;</em>
-<a class="jxr_linenumber" name="L611" href="#L611">611</a>                         <em class="jxr_comment">// Just check and skip empty key.</em>
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>                         <strong class="jxr_keyword">if</strong> (!key.isEmpty()) {
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>                             currentAttribute = factory.createAttribute(request, key);
-<a class="jxr_linenumber" name="L614" href="#L614">614</a>                             currentAttribute.setValue(<span class="jxr_string">""</span>); <em class="jxr_comment">// empty</em>
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>                             addHttpData(currentAttribute);
-<a class="jxr_linenumber" name="L616" href="#L616">616</a>                         }
-<a class="jxr_linenumber" name="L617" href="#L617">617</a>                         currentAttribute = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L618" href="#L618">618</a>                         firstpos = currentpos;
-<a class="jxr_linenumber" name="L619" href="#L619">619</a>                         contRead = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L620" href="#L620">620</a>                     }
-<a class="jxr_linenumber" name="L621" href="#L621">621</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L622" href="#L622">622</a>                 <strong class="jxr_keyword">case</strong> FIELD:<em class="jxr_comment">// search '&amp;' or end of line</em>
-<a class="jxr_linenumber" name="L623" href="#L623">623</a>                     <strong class="jxr_keyword">if</strong> (read == '&amp;') {
-<a class="jxr_linenumber" name="L624" href="#L624">624</a>                         currentStatus = MultiPartStatus.DISPOSITION;
-<a class="jxr_linenumber" name="L625" href="#L625">625</a>                         ampersandpos = currentpos - 1;
-<a class="jxr_linenumber" name="L626" href="#L626">626</a>                         setFinalBuffer(undecodedChunk.retainedSlice(firstpos, ampersandpos - firstpos));
-<a class="jxr_linenumber" name="L627" href="#L627">627</a>                         firstpos = currentpos;
-<a class="jxr_linenumber" name="L628" href="#L628">628</a>                         contRead = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L629" href="#L629">629</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (read == HttpConstants.CR) {
-<a class="jxr_linenumber" name="L630" href="#L630">630</a>                         <strong class="jxr_keyword">if</strong> (sao.pos &lt; sao.limit) {
-<a class="jxr_linenumber" name="L631" href="#L631">631</a>                             read = (<strong class="jxr_keyword">char</strong>) (sao.bytes[sao.pos++] &amp; 0xFF);
-<a class="jxr_linenumber" name="L632" href="#L632">632</a>                             currentpos++;
-<a class="jxr_linenumber" name="L633" href="#L633">633</a>                             <strong class="jxr_keyword">if</strong> (read == HttpConstants.LF) {
-<a class="jxr_linenumber" name="L634" href="#L634">634</a>                                 currentStatus = MultiPartStatus.PREEPILOGUE;
-<a class="jxr_linenumber" name="L635" href="#L635">635</a>                                 ampersandpos = currentpos - 2;
-<a class="jxr_linenumber" name="L636" href="#L636">636</a>                                 sao.setReadPosition(0);
-<a class="jxr_linenumber" name="L637" href="#L637">637</a>                                 setFinalBuffer(undecodedChunk.retainedSlice(firstpos, ampersandpos - firstpos));
-<a class="jxr_linenumber" name="L638" href="#L638">638</a>                                 firstpos = currentpos;
-<a class="jxr_linenumber" name="L639" href="#L639">639</a>                                 contRead = false;
-<a class="jxr_linenumber" name="L640" href="#L640">640</a>                                 <strong class="jxr_keyword">break</strong> loop;
-<a class="jxr_linenumber" name="L641" href="#L641">641</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L642" href="#L642">642</a>                                 <em class="jxr_comment">// Error</em>
-<a class="jxr_linenumber" name="L643" href="#L643">643</a>                                 sao.setReadPosition(0);
-<a class="jxr_linenumber" name="L644" href="#L644">644</a>                                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(<span class="jxr_string">"Bad end of line"</span>);
-<a class="jxr_linenumber" name="L645" href="#L645">645</a>                             }
-<a class="jxr_linenumber" name="L646" href="#L646">646</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L647" href="#L647">647</a>                             <strong class="jxr_keyword">if</strong> (sao.limit &gt; 0) {
-<a class="jxr_linenumber" name="L648" href="#L648">648</a>                                 currentpos--;
-<a class="jxr_linenumber" name="L649" href="#L649">649</a>                             }
-<a class="jxr_linenumber" name="L650" href="#L650">650</a>                         }
-<a class="jxr_linenumber" name="L651" href="#L651">651</a>                     } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (read == HttpConstants.LF) {
-<a class="jxr_linenumber" name="L652" href="#L652">652</a>                         currentStatus = MultiPartStatus.PREEPILOGUE;
-<a class="jxr_linenumber" name="L653" href="#L653">653</a>                         ampersandpos = currentpos - 1;
-<a class="jxr_linenumber" name="L654" href="#L654">654</a>                         sao.setReadPosition(0);
-<a class="jxr_linenumber" name="L655" href="#L655">655</a>                         setFinalBuffer(undecodedChunk.retainedSlice(firstpos, ampersandpos - firstpos));
-<a class="jxr_linenumber" name="L656" href="#L656">656</a>                         firstpos = currentpos;
-<a class="jxr_linenumber" name="L657" href="#L657">657</a>                         contRead = false;
-<a class="jxr_linenumber" name="L658" href="#L658">658</a>                         <strong class="jxr_keyword">break</strong> loop;
-<a class="jxr_linenumber" name="L659" href="#L659">659</a>                     }
-<a class="jxr_linenumber" name="L660" href="#L660">660</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L661" href="#L661">661</a>                 <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="L662" href="#L662">662</a>                     <em class="jxr_comment">// just stop</em>
-<a class="jxr_linenumber" name="L663" href="#L663">663</a>                     sao.setReadPosition(0);
-<a class="jxr_linenumber" name="L664" href="#L664">664</a>                     contRead = false;
-<a class="jxr_linenumber" name="L665" href="#L665">665</a>                     <strong class="jxr_keyword">break</strong> loop;
-<a class="jxr_linenumber" name="L666" href="#L666">666</a>                 }
-<a class="jxr_linenumber" name="L667" href="#L667">667</a>             }
-<a class="jxr_linenumber" name="L668" href="#L668">668</a>             <strong class="jxr_keyword">if</strong> (isLastChunk &amp;&amp; currentAttribute != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L669" href="#L669">669</a>                 <em class="jxr_comment">// special case</em>
-<a class="jxr_linenumber" name="L670" href="#L670">670</a>                 ampersandpos = currentpos;
-<a class="jxr_linenumber" name="L671" href="#L671">671</a>                 <strong class="jxr_keyword">if</strong> (ampersandpos &gt; firstpos) {
-<a class="jxr_linenumber" name="L672" href="#L672">672</a>                     setFinalBuffer(undecodedChunk.retainedSlice(firstpos, ampersandpos - firstpos));
-<a class="jxr_linenumber" name="L673" href="#L673">673</a>                 } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!currentAttribute.isCompleted()) {
-<a class="jxr_linenumber" name="L674" href="#L674">674</a>                     setFinalBuffer(Unpooled.EMPTY_BUFFER);
-<a class="jxr_linenumber" name="L675" href="#L675">675</a>                 }
-<a class="jxr_linenumber" name="L676" href="#L676">676</a>                 firstpos = currentpos;
-<a class="jxr_linenumber" name="L677" href="#L677">677</a>                 currentStatus = MultiPartStatus.EPILOGUE;
-<a class="jxr_linenumber" name="L678" href="#L678">678</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (contRead &amp;&amp; currentAttribute != <strong class="jxr_keyword">null</strong> &amp;&amp; currentStatus == MultiPartStatus.FIELD) {
-<a class="jxr_linenumber" name="L679" href="#L679">679</a>                 <em class="jxr_comment">// reset index except if to continue in case of FIELD getStatus</em>
-<a class="jxr_linenumber" name="L680" href="#L680">680</a>                 currentAttribute.addContent(undecodedChunk.retainedSlice(firstpos, currentpos - firstpos),
-<a class="jxr_linenumber" name="L681" href="#L681">681</a>                                             false);
-<a class="jxr_linenumber" name="L682" href="#L682">682</a>                 firstpos = currentpos;
-<a class="jxr_linenumber" name="L683" href="#L683">683</a>             }
-<a class="jxr_linenumber" name="L684" href="#L684">684</a>             undecodedChunk.readerIndex(firstpos);
-<a class="jxr_linenumber" name="L685" href="#L685">685</a>         } <strong class="jxr_keyword">catch</strong> (ErrorDataDecoderException e) {
-<a class="jxr_linenumber" name="L686" href="#L686">686</a>             <em class="jxr_comment">// error while decoding</em>
-<a class="jxr_linenumber" name="L687" href="#L687">687</a>             undecodedChunk.readerIndex(firstpos);
-<a class="jxr_linenumber" name="L688" href="#L688">688</a>             <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="L689" href="#L689">689</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="L690" href="#L690">690</a>             <em class="jxr_comment">// error while decoding</em>
-<a class="jxr_linenumber" name="L691" href="#L691">691</a>             undecodedChunk.readerIndex(firstpos);
-<a class="jxr_linenumber" name="L692" href="#L692">692</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
-<a class="jxr_linenumber" name="L693" href="#L693">693</a>         } <strong class="jxr_keyword">catch</strong> (IllegalArgumentException e) {
-<a class="jxr_linenumber" name="L694" href="#L694">694</a>             <em class="jxr_comment">// error while decoding</em>
-<a class="jxr_linenumber" name="L695" href="#L695">695</a>             undecodedChunk.readerIndex(firstpos);
-<a class="jxr_linenumber" name="L696" href="#L696">696</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(e);
-<a class="jxr_linenumber" name="L697" href="#L697">697</a>         }
-<a class="jxr_linenumber" name="L698" href="#L698">698</a>     }
-<a class="jxr_linenumber" name="L699" href="#L699">699</a> 
-<a class="jxr_linenumber" name="L700" href="#L700">700</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setFinalBuffer(<a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L701" href="#L701">701</a>         currentAttribute.addContent(buffer, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L702" href="#L702">702</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> decodedBuf = decodeAttribute(currentAttribute.getByteBuf(), charset);
-<a class="jxr_linenumber" name="L703" href="#L703">703</a>         <strong class="jxr_keyword">if</strong> (decodedBuf != <strong class="jxr_keyword">null</strong>) { <em class="jxr_comment">// override content only when ByteBuf needed decoding</em>
-<a class="jxr_linenumber" name="L704" href="#L704">704</a>             currentAttribute.setContent(decodedBuf);
-<a class="jxr_linenumber" name="L705" href="#L705">705</a>         }
-<a class="jxr_linenumber" name="L706" href="#L706">706</a>         addHttpData(currentAttribute);
-<a class="jxr_linenumber" name="L707" href="#L707">707</a>         currentAttribute = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L708" href="#L708">708</a>     }
-<a class="jxr_linenumber" name="L709" href="#L709">709</a> 
-<a class="jxr_linenumber" name="L710" href="#L710">710</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L711" href="#L711">711</a> <em class="jxr_javadoccomment">     * Decode component</em>
-<a class="jxr_linenumber" name="L712" href="#L712">712</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L713" href="#L713">713</a> <em class="jxr_javadoccomment">     * @return the decoded component</em>
-<a class="jxr_linenumber" name="L714" href="#L714">714</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L715" href="#L715">715</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String decodeAttribute(String s, Charset charset) {
-<a class="jxr_linenumber" name="L716" href="#L716">716</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L717" href="#L717">717</a>             <strong class="jxr_keyword">return</strong> QueryStringDecoder.decodeComponent(s, charset);
-<a class="jxr_linenumber" name="L718" href="#L718">718</a>         } <strong class="jxr_keyword">catch</strong> (IllegalArgumentException e) {
-<a class="jxr_linenumber" name="L719" href="#L719">719</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(<span class="jxr_string">"Bad string: '"</span> + s + '\'', e);
-<a class="jxr_linenumber" name="L720" href="#L720">720</a>         }
-<a class="jxr_linenumber" name="L721" href="#L721">721</a>     }
-<a class="jxr_linenumber" name="L722" href="#L722">722</a> 
-<a class="jxr_linenumber" name="L723" href="#L723">723</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> decodeAttribute(<a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> b, Charset charset) {
-<a class="jxr_linenumber" name="L724" href="#L724">724</a>         <strong class="jxr_keyword">int</strong> firstEscaped = b.forEachByte(<strong class="jxr_keyword">new</strong> UrlEncodedDetector());
-<a class="jxr_linenumber" name="L725" href="#L725">725</a>         <strong class="jxr_keyword">if</strong> (firstEscaped == -1) {
-<a class="jxr_linenumber" name="L726" href="#L726">726</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>; <em class="jxr_comment">// nothing to decode</em>
-<a class="jxr_linenumber" name="L727" href="#L727">727</a>         }
-<a class="jxr_linenumber" name="L728" href="#L728">728</a> 
-<a class="jxr_linenumber" name="L729" href="#L729">729</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = b.alloc().buffer(b.readableBytes());
-<a class="jxr_linenumber" name="L730" href="#L730">730</a>         UrlDecoder urlDecode = <strong class="jxr_keyword">new</strong> UrlDecoder(buf);
-<a class="jxr_linenumber" name="L731" href="#L731">731</a>         <strong class="jxr_keyword">int</strong> idx = b.forEachByte(urlDecode);
-<a class="jxr_linenumber" name="L732" href="#L732">732</a>         <strong class="jxr_keyword">if</strong> (urlDecode.nextEscapedIdx != 0) { <em class="jxr_comment">// incomplete hex byte</em>
-<a class="jxr_linenumber" name="L733" href="#L733">733</a>             <strong class="jxr_keyword">if</strong> (idx == -1) {
-<a class="jxr_linenumber" name="L734" href="#L734">734</a>                 idx = b.readableBytes() - 1;
-<a class="jxr_linenumber" name="L735" href="#L735">735</a>             }
-<a class="jxr_linenumber" name="L736" href="#L736">736</a>             idx -= urlDecode.nextEscapedIdx - 1;
-<a class="jxr_linenumber" name="L737" href="#L737">737</a>             buf.release();
-<a class="jxr_linenumber" name="L738" href="#L738">738</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(
-<a class="jxr_linenumber" name="L739" href="#L739">739</a>                 String.format(<span class="jxr_string">"Invalid hex byte at index '%d' in string: '%s'"</span>, idx, b.toString(charset)));
-<a class="jxr_linenumber" name="L740" href="#L740">740</a>         }
-<a class="jxr_linenumber" name="L741" href="#L741">741</a> 
-<a class="jxr_linenumber" name="L742" href="#L742">742</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="L743" href="#L743">743</a>     }
-<a class="jxr_linenumber" name="L744" href="#L744">744</a> 
-<a class="jxr_linenumber" name="L745" href="#L745">745</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L746" href="#L746">746</a> <em class="jxr_javadoccomment">     * Destroy the {@link HttpPostStandardRequestDecoder} and release all it resources. After this method</em>
-<a class="jxr_linenumber" name="L747" href="#L747">747</a> <em class="jxr_javadoccomment">     * was called it is not possible to operate on it anymore.</em>
-<a class="jxr_linenumber" name="L748" href="#L748">748</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L749" href="#L749">749</a>     @Override
-<a class="jxr_linenumber" name="L750" href="#L750">750</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> destroy() {
-<a class="jxr_linenumber" name="L751" href="#L751">751</a>         <em class="jxr_comment">// Release all data items, including those not yet pulled, only file based items</em>
-<a class="jxr_linenumber" name="L752" href="#L752">752</a>         cleanFiles();
-<a class="jxr_linenumber" name="L753" href="#L753">753</a>         <em class="jxr_comment">// Clean Memory based data</em>
-<a class="jxr_linenumber" name="L754" href="#L754">754</a>         <strong class="jxr_keyword">for</strong> (<a name="InterfaceHttpData" href="../../../../../../io/netty/handler/codec/http/multipart/InterfaceHttpData.html#InterfaceHttpData">InterfaceHttpData</a> httpData : bodyListHttpData) {
-<a class="jxr_linenumber" name="L755" href="#L755">755</a>             <em class="jxr_comment">// Might have been already released by the user</em>
-<a class="jxr_linenumber" name="L756" href="#L756">756</a>             <strong class="jxr_keyword">if</strong> (httpData.refCnt() &gt; 0) {
-<a class="jxr_linenumber" name="L757" href="#L757">757</a>                 httpData.release();
-<a class="jxr_linenumber" name="L758" href="#L758">758</a>             }
-<a class="jxr_linenumber" name="L759" href="#L759">759</a>         }
-<a class="jxr_linenumber" name="L760" href="#L760">760</a> 
-<a class="jxr_linenumber" name="L761" href="#L761">761</a>         destroyed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L762" href="#L762">762</a> 
-<a class="jxr_linenumber" name="L763" href="#L763">763</a>         <strong class="jxr_keyword">if</strong> (undecodedChunk != <strong class="jxr_keyword">null</strong> &amp;&amp; undecodedChunk.refCnt() &gt; 0) {
-<a class="jxr_linenumber" name="L764" href="#L764">764</a>             undecodedChunk.release();
-<a class="jxr_linenumber" name="L765" href="#L765">765</a>             undecodedChunk = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L766" href="#L766">766</a>         }
-<a class="jxr_linenumber" name="L767" href="#L767">767</a>     }
-<a class="jxr_linenumber" name="L768" href="#L768">768</a> 
-<a class="jxr_linenumber" name="L769" href="#L769">769</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L770" href="#L770">770</a> <em class="jxr_javadoccomment">     * Clean all {@link HttpData}s for the current request.</em>
-<a class="jxr_linenumber" name="L771" href="#L771">771</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L772" href="#L772">772</a>     @Override
-<a class="jxr_linenumber" name="L773" href="#L773">773</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> cleanFiles() {
-<a class="jxr_linenumber" name="L774" href="#L774">774</a>         checkDestroyed();
-<a class="jxr_linenumber" name="L775" href="#L775">775</a> 
-<a class="jxr_linenumber" name="L776" href="#L776">776</a>         factory.cleanRequestHttpData(request);
-<a class="jxr_linenumber" name="L777" href="#L777">777</a>     }
-<a class="jxr_linenumber" name="L778" href="#L778">778</a> 
-<a class="jxr_linenumber" name="L779" href="#L779">779</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L780" href="#L780">780</a> <em class="jxr_javadoccomment">     * Remove the given FileUpload from the list of FileUploads to clean</em>
-<a class="jxr_linenumber" name="L781" href="#L781">781</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L782" href="#L782">782</a>     @Override
-<a class="jxr_linenumber" name="L783" href="#L783">783</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> removeHttpDataFromClean(<a name="InterfaceHttpData" href="../../../../../../io/netty/handler/codec/http/multipart/InterfaceHttpData.html#InterfaceHttpData">InterfaceHttpData</a> data) {
-<a class="jxr_linenumber" name="L784" href="#L784">784</a>         checkDestroyed();
-<a class="jxr_linenumber" name="L785" href="#L785">785</a> 
-<a class="jxr_linenumber" name="L786" href="#L786">786</a>         factory.removeHttpDataFromClean(request, data);
-<a class="jxr_linenumber" name="L787" href="#L787">787</a>     }
-<a class="jxr_linenumber" name="L788" href="#L788">788</a> 
-<a class="jxr_linenumber" name="L789" href="#L789">789</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L790" href="#L790">790</a> <em class="jxr_javadoccomment">     * Check if request has headers indicating that it contains form body</em>
-<a class="jxr_linenumber" name="L791" href="#L791">791</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L792" href="#L792">792</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> hasFormBody() {
-<a class="jxr_linenumber" name="L793" href="#L793">793</a>         String contentHeaderValue = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
-<a class="jxr_linenumber" name="L794" href="#L794">794</a>         <strong class="jxr_keyword">if</strong> (contentHeaderValue == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L795" href="#L795">795</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L796" href="#L796">796</a>         }
-<a class="jxr_linenumber" name="L797" href="#L797">797</a>         <strong class="jxr_keyword">return</strong> HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.contentEquals(contentHeaderValue)
-<a class="jxr_linenumber" name="L798" href="#L798">798</a>                 || HttpHeaderValues.MULTIPART_FORM_DATA.contentEquals(contentHeaderValue);
-<a class="jxr_linenumber" name="L799" href="#L799">799</a>     }
-<a class="jxr_linenumber" name="L800" href="#L800">800</a> 
-<a class="jxr_linenumber" name="L801" href="#L801">801</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> UrlEncodedDetector <strong class="jxr_keyword">implements</strong> <a name="ByteProcessor" href="../../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> {
-<a class="jxr_linenumber" name="L802" href="#L802">802</a>         @Override
-<a class="jxr_linenumber" name="L803" href="#L803">803</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte value) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L804" href="#L804">804</a>             <strong class="jxr_keyword">return</strong> value != '%' &amp;&amp; value != '+';
-<a class="jxr_linenumber" name="L805" href="#L805">805</a>         }
-<a class="jxr_linenumber" name="L806" href="#L806">806</a>     }
-<a class="jxr_linenumber" name="L807" href="#L807">807</a> 
-<a class="jxr_linenumber" name="L808" href="#L808">808</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> UrlDecoder <strong class="jxr_keyword">implements</strong> <a name="ByteProcessor" href="../../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> {
-<a class="jxr_linenumber" name="L809" href="#L809">809</a> 
-<a class="jxr_linenumber" name="L810" href="#L810">810</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> output;
-<a class="jxr_linenumber" name="L811" href="#L811">811</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> nextEscapedIdx;
-<a class="jxr_linenumber" name="L812" href="#L812">812</a>         <strong class="jxr_keyword">private</strong> byte hiByte;
-<a class="jxr_linenumber" name="L813" href="#L813">813</a> 
-<a class="jxr_linenumber" name="L814" href="#L814">814</a>         UrlDecoder(<a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> output) {
-<a class="jxr_linenumber" name="L815" href="#L815">815</a>             <strong class="jxr_keyword">this</strong>.output = output;
-<a class="jxr_linenumber" name="L816" href="#L816">816</a>         }
-<a class="jxr_linenumber" name="L817" href="#L817">817</a> 
-<a class="jxr_linenumber" name="L818" href="#L818">818</a>         @Override
-<a class="jxr_linenumber" name="L819" href="#L819">819</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte value) {
-<a class="jxr_linenumber" name="L820" href="#L820">820</a>             <strong class="jxr_keyword">if</strong> (nextEscapedIdx != 0) {
-<a class="jxr_linenumber" name="L821" href="#L821">821</a>                 <strong class="jxr_keyword">if</strong> (nextEscapedIdx == 1) {
-<a class="jxr_linenumber" name="L822" href="#L822">822</a>                     hiByte = value;
-<a class="jxr_linenumber" name="L823" href="#L823">823</a>                     ++nextEscapedIdx;
-<a class="jxr_linenumber" name="L824" href="#L824">824</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L825" href="#L825">825</a>                     <strong class="jxr_keyword">int</strong> hi = StringUtil.decodeHexNibble((<strong class="jxr_keyword">char</strong>) hiByte);
-<a class="jxr_linenumber" name="L826" href="#L826">826</a>                     <strong class="jxr_keyword">int</strong> lo = StringUtil.decodeHexNibble((<strong class="jxr_keyword">char</strong>) value);
-<a class="jxr_linenumber" name="L827" href="#L827">827</a>                     <strong class="jxr_keyword">if</strong> (hi == -1 || lo == -1) {
-<a class="jxr_linenumber" name="L828" href="#L828">828</a>                         ++nextEscapedIdx;
-<a class="jxr_linenumber" name="L829" href="#L829">829</a>                         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L830" href="#L830">830</a>                     }
-<a class="jxr_linenumber" name="L831" href="#L831">831</a>                     output.writeByte((hi &lt;&lt; 4) + lo);
-<a class="jxr_linenumber" name="L832" href="#L832">832</a>                     nextEscapedIdx = 0;
-<a class="jxr_linenumber" name="L833" href="#L833">833</a>                 }
-<a class="jxr_linenumber" name="L834" href="#L834">834</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (value == '%') {
-<a class="jxr_linenumber" name="L835" href="#L835">835</a>                 nextEscapedIdx = 1;
-<a class="jxr_linenumber" name="L836" href="#L836">836</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (value == '+') {
-<a class="jxr_linenumber" name="L837" href="#L837">837</a>                 output.writeByte(' ');
-<a class="jxr_linenumber" name="L838" href="#L838">838</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L839" href="#L839">839</a>                 output.writeByte(value);
-<a class="jxr_linenumber" name="L840" href="#L840">840</a>             }
-<a class="jxr_linenumber" name="L841" href="#L841">841</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L842" href="#L842">842</a>         }
-<a class="jxr_linenumber" name="L843" href="#L843">843</a>     }
-<a class="jxr_linenumber" name="L844" href="#L844">844</a> }
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>         parseBodyAttributesStandard();
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>     }
+<a class="jxr_linenumber" name="L578" href="#L578">578</a> 
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> setFinalBuffer(<a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>         currentAttribute.addContent(buffer, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> decodedBuf = decodeAttribute(currentAttribute.getByteBuf(), charset);
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>         <strong class="jxr_keyword">if</strong> (decodedBuf != <strong class="jxr_keyword">null</strong>) { <em class="jxr_comment">// override content only when ByteBuf needed decoding</em>
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>             currentAttribute.setContent(decodedBuf);
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>         }
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>         addHttpData(currentAttribute);
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>         currentAttribute = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>     }
+<a class="jxr_linenumber" name="L588" href="#L588">588</a> 
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L590" href="#L590">590</a> <em class="jxr_javadoccomment">     * Decode component</em>
+<a class="jxr_linenumber" name="L591" href="#L591">591</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L592" href="#L592">592</a> <em class="jxr_javadoccomment">     * @return the decoded component</em>
+<a class="jxr_linenumber" name="L593" href="#L593">593</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L594" href="#L594">594</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String decodeAttribute(String s, Charset charset) {
+<a class="jxr_linenumber" name="L595" href="#L595">595</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L596" href="#L596">596</a>             <strong class="jxr_keyword">return</strong> QueryStringDecoder.decodeComponent(s, charset);
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>         } <strong class="jxr_keyword">catch</strong> (IllegalArgumentException e) {
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(<span class="jxr_string">"Bad string: '"</span> + s + '\'', e);
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>         }
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>     }
+<a class="jxr_linenumber" name="L601" href="#L601">601</a> 
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> decodeAttribute(<a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> b, Charset charset) {
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>         <strong class="jxr_keyword">int</strong> firstEscaped = b.forEachByte(<strong class="jxr_keyword">new</strong> UrlEncodedDetector());
+<a class="jxr_linenumber" name="L604" href="#L604">604</a>         <strong class="jxr_keyword">if</strong> (firstEscaped == -1) {
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>; <em class="jxr_comment">// nothing to decode</em>
+<a class="jxr_linenumber" name="L606" href="#L606">606</a>         }
+<a class="jxr_linenumber" name="L607" href="#L607">607</a> 
+<a class="jxr_linenumber" name="L608" href="#L608">608</a>         <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = b.alloc().buffer(b.readableBytes());
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>         UrlDecoder urlDecode = <strong class="jxr_keyword">new</strong> UrlDecoder(buf);
+<a class="jxr_linenumber" name="L610" href="#L610">610</a>         <strong class="jxr_keyword">int</strong> idx = b.forEachByte(urlDecode);
+<a class="jxr_linenumber" name="L611" href="#L611">611</a>         <strong class="jxr_keyword">if</strong> (urlDecode.nextEscapedIdx != 0) { <em class="jxr_comment">// incomplete hex byte</em>
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>             <strong class="jxr_keyword">if</strong> (idx == -1) {
+<a class="jxr_linenumber" name="L613" href="#L613">613</a>                 idx = b.readableBytes() - 1;
+<a class="jxr_linenumber" name="L614" href="#L614">614</a>             }
+<a class="jxr_linenumber" name="L615" href="#L615">615</a>             idx -= urlDecode.nextEscapedIdx - 1;
+<a class="jxr_linenumber" name="L616" href="#L616">616</a>             buf.release();
+<a class="jxr_linenumber" name="L617" href="#L617">617</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> ErrorDataDecoderException(
+<a class="jxr_linenumber" name="L618" href="#L618">618</a>                 String.format(<span class="jxr_string">"Invalid hex byte at index '%d' in string: '%s'"</span>, idx, b.toString(charset)));
+<a class="jxr_linenumber" name="L619" href="#L619">619</a>         }
+<a class="jxr_linenumber" name="L620" href="#L620">620</a> 
+<a class="jxr_linenumber" name="L621" href="#L621">621</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="L622" href="#L622">622</a>     }
+<a class="jxr_linenumber" name="L623" href="#L623">623</a> 
+<a class="jxr_linenumber" name="L624" href="#L624">624</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L625" href="#L625">625</a> <em class="jxr_javadoccomment">     * Destroy the {@link HttpPostStandardRequestDecoder} and release all it resources. After this method</em>
+<a class="jxr_linenumber" name="L626" href="#L626">626</a> <em class="jxr_javadoccomment">     * was called it is not possible to operate on it anymore.</em>
+<a class="jxr_linenumber" name="L627" href="#L627">627</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L628" href="#L628">628</a>     @Override
+<a class="jxr_linenumber" name="L629" href="#L629">629</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> destroy() {
+<a class="jxr_linenumber" name="L630" href="#L630">630</a>         <em class="jxr_comment">// Release all data items, including those not yet pulled, only file based items</em>
+<a class="jxr_linenumber" name="L631" href="#L631">631</a>         cleanFiles();
+<a class="jxr_linenumber" name="L632" href="#L632">632</a>         <em class="jxr_comment">// Clean Memory based data</em>
+<a class="jxr_linenumber" name="L633" href="#L633">633</a>         <strong class="jxr_keyword">for</strong> (<a name="InterfaceHttpData" href="../../../../../../io/netty/handler/codec/http/multipart/InterfaceHttpData.html#InterfaceHttpData">InterfaceHttpData</a> httpData : bodyListHttpData) {
+<a class="jxr_linenumber" name="L634" href="#L634">634</a>             <em class="jxr_comment">// Might have been already released by the user</em>
+<a class="jxr_linenumber" name="L635" href="#L635">635</a>             <strong class="jxr_keyword">if</strong> (httpData.refCnt() &gt; 0) {
+<a class="jxr_linenumber" name="L636" href="#L636">636</a>                 httpData.release();
+<a class="jxr_linenumber" name="L637" href="#L637">637</a>             }
+<a class="jxr_linenumber" name="L638" href="#L638">638</a>         }
+<a class="jxr_linenumber" name="L639" href="#L639">639</a> 
+<a class="jxr_linenumber" name="L640" href="#L640">640</a>         destroyed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L641" href="#L641">641</a> 
+<a class="jxr_linenumber" name="L642" href="#L642">642</a>         <strong class="jxr_keyword">if</strong> (undecodedChunk != <strong class="jxr_keyword">null</strong> &amp;&amp; undecodedChunk.refCnt() &gt; 0) {
+<a class="jxr_linenumber" name="L643" href="#L643">643</a>             undecodedChunk.release();
+<a class="jxr_linenumber" name="L644" href="#L644">644</a>             undecodedChunk = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L645" href="#L645">645</a>         }
+<a class="jxr_linenumber" name="L646" href="#L646">646</a>     }
+<a class="jxr_linenumber" name="L647" href="#L647">647</a> 
+<a class="jxr_linenumber" name="L648" href="#L648">648</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L649" href="#L649">649</a> <em class="jxr_javadoccomment">     * Clean all {@link HttpData}s for the current request.</em>
+<a class="jxr_linenumber" name="L650" href="#L650">650</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L651" href="#L651">651</a>     @Override
+<a class="jxr_linenumber" name="L652" href="#L652">652</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> cleanFiles() {
+<a class="jxr_linenumber" name="L653" href="#L653">653</a>         checkDestroyed();
+<a class="jxr_linenumber" name="L654" href="#L654">654</a> 
+<a class="jxr_linenumber" name="L655" href="#L655">655</a>         factory.cleanRequestHttpData(request);
+<a class="jxr_linenumber" name="L656" href="#L656">656</a>     }
+<a class="jxr_linenumber" name="L657" href="#L657">657</a> 
+<a class="jxr_linenumber" name="L658" href="#L658">658</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L659" href="#L659">659</a> <em class="jxr_javadoccomment">     * Remove the given FileUpload from the list of FileUploads to clean</em>
+<a class="jxr_linenumber" name="L660" href="#L660">660</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L661" href="#L661">661</a>     @Override
+<a class="jxr_linenumber" name="L662" href="#L662">662</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> removeHttpDataFromClean(<a name="InterfaceHttpData" href="../../../../../../io/netty/handler/codec/http/multipart/InterfaceHttpData.html#InterfaceHttpData">InterfaceHttpData</a> data) {
+<a class="jxr_linenumber" name="L663" href="#L663">663</a>         checkDestroyed();
+<a class="jxr_linenumber" name="L664" href="#L664">664</a> 
+<a class="jxr_linenumber" name="L665" href="#L665">665</a>         factory.removeHttpDataFromClean(request, data);
+<a class="jxr_linenumber" name="L666" href="#L666">666</a>     }
+<a class="jxr_linenumber" name="L667" href="#L667">667</a> 
+<a class="jxr_linenumber" name="L668" href="#L668">668</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L669" href="#L669">669</a> <em class="jxr_javadoccomment">     * Check if request has headers indicating that it contains form body</em>
+<a class="jxr_linenumber" name="L670" href="#L670">670</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L671" href="#L671">671</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> hasFormBody() {
+<a class="jxr_linenumber" name="L672" href="#L672">672</a>         String contentHeaderValue = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
+<a class="jxr_linenumber" name="L673" href="#L673">673</a>         <strong class="jxr_keyword">if</strong> (contentHeaderValue == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L674" href="#L674">674</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L675" href="#L675">675</a>         }
+<a class="jxr_linenumber" name="L676" href="#L676">676</a>         <strong class="jxr_keyword">return</strong> HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.contentEquals(contentHeaderValue)
+<a class="jxr_linenumber" name="L677" href="#L677">677</a>                 || HttpHeaderValues.MULTIPART_FORM_DATA.contentEquals(contentHeaderValue);
+<a class="jxr_linenumber" name="L678" href="#L678">678</a>     }
+<a class="jxr_linenumber" name="L679" href="#L679">679</a> 
+<a class="jxr_linenumber" name="L680" href="#L680">680</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> UrlEncodedDetector <strong class="jxr_keyword">implements</strong> <a name="ByteProcessor" href="../../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> {
+<a class="jxr_linenumber" name="L681" href="#L681">681</a>         @Override
+<a class="jxr_linenumber" name="L682" href="#L682">682</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte value) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L683" href="#L683">683</a>             <strong class="jxr_keyword">return</strong> value != '%' &amp;&amp; value != '+';
+<a class="jxr_linenumber" name="L684" href="#L684">684</a>         }
+<a class="jxr_linenumber" name="L685" href="#L685">685</a>     }
+<a class="jxr_linenumber" name="L686" href="#L686">686</a> 
+<a class="jxr_linenumber" name="L687" href="#L687">687</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> UrlDecoder <strong class="jxr_keyword">implements</strong> <a name="ByteProcessor" href="../../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> {
+<a class="jxr_linenumber" name="L688" href="#L688">688</a> 
+<a class="jxr_linenumber" name="L689" href="#L689">689</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> output;
+<a class="jxr_linenumber" name="L690" href="#L690">690</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> nextEscapedIdx;
+<a class="jxr_linenumber" name="L691" href="#L691">691</a>         <strong class="jxr_keyword">private</strong> byte hiByte;
+<a class="jxr_linenumber" name="L692" href="#L692">692</a> 
+<a class="jxr_linenumber" name="L693" href="#L693">693</a>         UrlDecoder(<a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> output) {
+<a class="jxr_linenumber" name="L694" href="#L694">694</a>             <strong class="jxr_keyword">this</strong>.output = output;
+<a class="jxr_linenumber" name="L695" href="#L695">695</a>         }
+<a class="jxr_linenumber" name="L696" href="#L696">696</a> 
+<a class="jxr_linenumber" name="L697" href="#L697">697</a>         @Override
+<a class="jxr_linenumber" name="L698" href="#L698">698</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte value) {
+<a class="jxr_linenumber" name="L699" href="#L699">699</a>             <strong class="jxr_keyword">if</strong> (nextEscapedIdx != 0) {
+<a class="jxr_linenumber" name="L700" href="#L700">700</a>                 <strong class="jxr_keyword">if</strong> (nextEscapedIdx == 1) {
+<a class="jxr_linenumber" name="L701" href="#L701">701</a>                     hiByte = value;
+<a class="jxr_linenumber" name="L702" href="#L702">702</a>                     ++nextEscapedIdx;
+<a class="jxr_linenumber" name="L703" href="#L703">703</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L704" href="#L704">704</a>                     <strong class="jxr_keyword">int</strong> hi = StringUtil.decodeHexNibble((<strong class="jxr_keyword">char</strong>) hiByte);
+<a class="jxr_linenumber" name="L705" href="#L705">705</a>                     <strong class="jxr_keyword">int</strong> lo = StringUtil.decodeHexNibble((<strong class="jxr_keyword">char</strong>) value);
+<a class="jxr_linenumber" name="L706" href="#L706">706</a>                     <strong class="jxr_keyword">if</strong> (hi == -1 || lo == -1) {
+<a class="jxr_linenumber" name="L707" href="#L707">707</a>                         ++nextEscapedIdx;
+<a class="jxr_linenumber" name="L708" href="#L708">708</a>                         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L709" href="#L709">709</a>                     }
+<a class="jxr_linenumber" name="L710" href="#L710">710</a>                     output.writeByte((hi &lt;&lt; 4) + lo);
+<a class="jxr_linenumber" name="L711" href="#L711">711</a>                     nextEscapedIdx = 0;
+<a class="jxr_linenumber" name="L712" href="#L712">712</a>                 }
+<a class="jxr_linenumber" name="L713" href="#L713">713</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (value == '%') {
+<a class="jxr_linenumber" name="L714" href="#L714">714</a>                 nextEscapedIdx = 1;
+<a class="jxr_linenumber" name="L715" href="#L715">715</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (value == '+') {
+<a class="jxr_linenumber" name="L716" href="#L716">716</a>                 output.writeByte(' ');
+<a class="jxr_linenumber" name="L717" href="#L717">717</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L718" href="#L718">718</a>                 output.writeByte(value);
+<a class="jxr_linenumber" name="L719" href="#L719">719</a>             }
+<a class="jxr_linenumber" name="L720" href="#L720">720</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L721" href="#L721">721</a>         }
+<a class="jxr_linenumber" name="L722" href="#L722">722</a>     }
+<a class="jxr_linenumber" name="L723" href="#L723">723</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
