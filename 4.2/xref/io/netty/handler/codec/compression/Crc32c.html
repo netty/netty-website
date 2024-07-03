@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en_US" lang="en_US">
+<head><meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>Crc32c xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../../apidocs/io/netty/handler/codec/compression/Crc32c.html">View Javadoc</a></div><pre>
+<a class="jxr_linenumber" name="L1" href="#L1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L2" href="#L2">2</a>   <em class="jxr_comment"> * Copyright 2013 The Netty Project</em>
+<a class="jxr_linenumber" name="L3" href="#L3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="L5" href="#L5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="L6" href="#L6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <em class="jxr_comment"> *   <a href="https://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">https://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="L11" href="#L11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="L12" href="#L12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="L13" href="#L13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="L14" href="#L14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.codec.compression;
+<a class="jxr_linenumber" name="L17" href="#L17">17</a>  
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <em class="jxr_javadoccomment"> * Implements CRC32-C as defined in:</em>
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <em class="jxr_javadoccomment"> * "Optimization of Cyclic Redundancy-CHeck Codes with 24 and 32 Parity Bits",</em>
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <em class="jxr_javadoccomment"> * IEEE Transactions on Communications 41(6): 883-892 (1993).</em>
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <em class="jxr_javadoccomment"> *</em>
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <em class="jxr_javadoccomment"> * The implementation of this class has been sourced from the Appendix of RFC 3309,</em>
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <em class="jxr_javadoccomment"> * but with masking due to Java not being able to support unsigned types.</em>
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">class</strong> <a name="Crc32c" href="../../../../../io/netty/handler/codec/compression/Crc32c.html#Crc32c">Crc32c</a> <strong class="jxr_keyword">extends</strong> <a name="ByteBufChecksum" href="../../../../../io/netty/handler/codec/compression/ByteBufChecksum.html#ByteBufChecksum">ByteBufChecksum</a> {
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong>[] CRC_TABLE = {
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>              0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>              0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>              0x8AD958CF, 0x78B2DBCC, 0x6BE22838, 0x9989AB3B,
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>              0x4D43CFD0, 0xBF284CD3, 0xAC78BF27, 0x5E133C24,
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>              0x105EC76F, 0xE235446C, 0xF165B798, 0x030E349B,
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>              0xD7C45070, 0x25AFD373, 0x36FF2087, 0xC494A384,
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>              0x9A879FA0, 0x68EC1CA3, 0x7BBCEF57, 0x89D76C54,
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>              0x5D1D08BF, 0xAF768BBC, 0xBC267848, 0x4E4DFB4B,
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>              0x20BD8EDE, 0xD2D60DDD, 0xC186FE29, 0x33ED7D2A,
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>              0xE72719C1, 0x154C9AC2, 0x061C6936, 0xF477EA35,
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>              0xAA64D611, 0x580F5512, 0x4B5FA6E6, 0xB93425E5,
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>              0x6DFE410E, 0x9F95C20D, 0x8CC531F9, 0x7EAEB2FA,
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>              0x30E349B1, 0xC288CAB2, 0xD1D83946, 0x23B3BA45,
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>              0xF779DEAE, 0x05125DAD, 0x1642AE59, 0xE4292D5A,
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>              0xBA3A117E, 0x4851927D, 0x5B016189, 0xA96AE28A,
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>              0x7DA08661, 0x8FCB0562, 0x9C9BF696, 0x6EF07595,
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>              0x417B1DBC, 0xB3109EBF, 0xA0406D4B, 0x522BEE48,
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>              0x86E18AA3, 0x748A09A0, 0x67DAFA54, 0x95B17957,
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>              0xCBA24573, 0x39C9C670, 0x2A993584, 0xD8F2B687,
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>              0x0C38D26C, 0xFE53516F, 0xED03A29B, 0x1F682198,
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>              0x5125DAD3, 0xA34E59D0, 0xB01EAA24, 0x42752927,
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>              0x96BF4DCC, 0x64D4CECF, 0x77843D3B, 0x85EFBE38,
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>              0xDBFC821C, 0x2997011F, 0x3AC7F2EB, 0xC8AC71E8,
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>              0x1C661503, 0xEE0D9600, 0xFD5D65F4, 0x0F36E6F7,
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>              0x61C69362, 0x93AD1061, 0x80FDE395, 0x72966096,
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>              0xA65C047D, 0x5437877E, 0x4767748A, 0xB50CF789,
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>              0xEB1FCBAD, 0x197448AE, 0x0A24BB5A, 0xF84F3859,
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>              0x2C855CB2, 0xDEEEDFB1, 0xCDBE2C45, 0x3FD5AF46,
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>              0x7198540D, 0x83F3D70E, 0x90A324FA, 0x62C8A7F9,
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>              0xB602C312, 0x44694011, 0x5739B3E5, 0xA55230E6,
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>              0xFB410CC2, 0x092A8FC1, 0x1A7A7C35, 0xE811FF36,
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>              0x3CDB9BDD, 0xCEB018DE, 0xDDE0EB2A, 0x2F8B6829,
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>              0x82F63B78, 0x709DB87B, 0x63CD4B8F, 0x91A6C88C,
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>              0x456CAC67, 0xB7072F64, 0xA457DC90, 0x563C5F93,
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>              0x082F63B7, 0xFA44E0B4, 0xE9141340, 0x1B7F9043,
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>              0xCFB5F4A8, 0x3DDE77AB, 0x2E8E845F, 0xDCE5075C,
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>              0x92A8FC17, 0x60C37F14, 0x73938CE0, 0x81F80FE3,
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>              0x55326B08, 0xA759E80B, 0xB4091BFF, 0x466298FC,
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>              0x1871A4D8, 0xEA1A27DB, 0xF94AD42F, 0x0B21572C,
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>              0xDFEB33C7, 0x2D80B0C4, 0x3ED04330, 0xCCBBC033,
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>              0xA24BB5A6, 0x502036A5, 0x4370C551, 0xB11B4652,
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>              0x65D122B9, 0x97BAA1BA, 0x84EA524E, 0x7681D14D,
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>              0x2892ED69, 0xDAF96E6A, 0xC9A99D9E, 0x3BC21E9D,
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>              0xEF087A76, 0x1D63F975, 0x0E330A81, 0xFC588982,
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>              0xB21572C9, 0x407EF1CA, 0x532E023E, 0xA145813D,
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>              0x758FE5D6, 0x87E466D5, 0x94B49521, 0x66DF1622,
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>              0x38CC2A06, 0xCAA7A905, 0xD9F75AF1, 0x2B9CD9F2,
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>              0xFF56BD19, 0x0D3D3E1A, 0x1E6DCDEE, 0xEC064EED,
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>              0xC38D26C4, 0x31E6A5C7, 0x22B65633, 0xD0DDD530,
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>              0x0417B1DB, 0xF67C32D8, 0xE52CC12C, 0x1747422F,
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>              0x49547E0B, 0xBB3FFD08, 0xA86F0EFC, 0x5A048DFF,
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>              0x8ECEE914, 0x7CA56A17, 0x6FF599E3, 0x9D9E1AE0,
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>              0xD3D3E1AB, 0x21B862A8, 0x32E8915C, 0xC083125F,
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>              0x144976B4, 0xE622F5B7, 0xF5720643, 0x07198540,
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>              0x590AB964, 0xAB613A67, 0xB831C993, 0x4A5A4A90,
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>              0x9E902E7B, 0x6CFBAD78, 0x7FAB5E8C, 0x8DC0DD8F,
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>              0xE330A81A, 0x115B2B19, 0x020BD8ED, 0xF0605BEE,
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>              0x24AA3F05, 0xD6C1BC06, 0xC5914FF2, 0x37FACCF1,
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>              0x69E9F0D5, 0x9B8273D6, 0x88D28022, 0x7AB90321,
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>              0xAE7367CA, 0x5C18E4C9, 0x4F48173D, 0xBD23943E,
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>              0xF36E6F75, 0x0105EC76, 0x12551F82, 0xE03E9C81,
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>              0x34F4F86A, 0xC69F7B69, 0xD5CF889D, 0x27A40B9E,
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>              0x79B737BA, 0x8BDCB4B9, 0x988C474D, 0x6AE7C44E,
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>              0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351,
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>      };
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>  
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> LONG_MASK = 0xFFFFFFFFL;
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BYTE_MASK = 0xFF;
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>  
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> crc = ~0;
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>  
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>      @Override
+<a class="jxr_linenumber" name="L100" href="#L100">100</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> update(<strong class="jxr_keyword">int</strong> b) {
+<a class="jxr_linenumber" name="L101" href="#L101">101</a>         crc = crc32c(crc, b);
+<a class="jxr_linenumber" name="L102" href="#L102">102</a>     }
+<a class="jxr_linenumber" name="L103" href="#L103">103</a> 
+<a class="jxr_linenumber" name="L104" href="#L104">104</a>     @Override
+<a class="jxr_linenumber" name="L105" href="#L105">105</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> update(byte[] buffer, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L106" href="#L106">106</a>         <strong class="jxr_keyword">int</strong> end = offset + length;
+<a class="jxr_linenumber" name="L107" href="#L107">107</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = offset; i &lt; end; i++) {
+<a class="jxr_linenumber" name="L108" href="#L108">108</a>             update(buffer[i]);
+<a class="jxr_linenumber" name="L109" href="#L109">109</a>         }
+<a class="jxr_linenumber" name="L110" href="#L110">110</a>     }
+<a class="jxr_linenumber" name="L111" href="#L111">111</a> 
+<a class="jxr_linenumber" name="L112" href="#L112">112</a>     @Override
+<a class="jxr_linenumber" name="L113" href="#L113">113</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> getValue() {
+<a class="jxr_linenumber" name="L114" href="#L114">114</a>         <strong class="jxr_keyword">return</strong> (crc ^ LONG_MASK) &amp; LONG_MASK;
+<a class="jxr_linenumber" name="L115" href="#L115">115</a>     }
+<a class="jxr_linenumber" name="L116" href="#L116">116</a> 
+<a class="jxr_linenumber" name="L117" href="#L117">117</a>     @Override
+<a class="jxr_linenumber" name="L118" href="#L118">118</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> reset() {
+<a class="jxr_linenumber" name="L119" href="#L119">119</a>         crc = ~0;
+<a class="jxr_linenumber" name="L120" href="#L120">120</a>     }
+<a class="jxr_linenumber" name="L121" href="#L121">121</a> 
+<a class="jxr_linenumber" name="L122" href="#L122">122</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> crc32c(<strong class="jxr_keyword">int</strong> crc, <strong class="jxr_keyword">int</strong> b) {
+<a class="jxr_linenumber" name="L123" href="#L123">123</a>         <strong class="jxr_keyword">return</strong> crc &gt;&gt;&gt; 8 ^ CRC_TABLE[(crc ^ b &amp; BYTE_MASK) &amp; BYTE_MASK];
+<a class="jxr_linenumber" name="L124" href="#L124">124</a>     }
+<a class="jxr_linenumber" name="L125" href="#L125">125</a> }
+</pre>
+<hr/>
+<div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+</body>
+</html>
