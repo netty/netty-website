@@ -555,87 +555,91 @@
 <a class="jxr_linenumber" name="L547" href="#L547">547</a>         <strong class="jxr_keyword">if</strong> (NetUtil.isValidIpV6Address(hostString)) {
 <a class="jxr_linenumber" name="L548" href="#L548">548</a>             <strong class="jxr_keyword">if</strong> (!addr.isUnresolved()) {
 <a class="jxr_linenumber" name="L549" href="#L549">549</a>                 hostString = NetUtil.toAddressString(addr.getAddress());
-<a class="jxr_linenumber" name="L550" href="#L550">550</a>             }
-<a class="jxr_linenumber" name="L551" href="#L551">551</a>             <strong class="jxr_keyword">return</strong> '[' + hostString + ']';
-<a class="jxr_linenumber" name="L552" href="#L552">552</a>         }
-<a class="jxr_linenumber" name="L553" href="#L553">553</a>         <strong class="jxr_keyword">return</strong> hostString;
-<a class="jxr_linenumber" name="L554" href="#L554">554</a>     }
-<a class="jxr_linenumber" name="L555" href="#L555">555</a> 
-<a class="jxr_linenumber" name="L556" href="#L556">556</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L557" href="#L557">557</a> <em class="jxr_javadoccomment">     * Validates, and optionally extracts the content length from headers. This method is not intended for</em>
-<a class="jxr_linenumber" name="L558" href="#L558">558</a> <em class="jxr_javadoccomment">     * general use, but is here to be shared between HTTP/1 and HTTP/2 parsing.</em>
-<a class="jxr_linenumber" name="L559" href="#L559">559</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L560" href="#L560">560</a> <em class="jxr_javadoccomment">     * @param contentLengthFields the content-length header fields.</em>
-<a class="jxr_linenumber" name="L561" href="#L561">561</a> <em class="jxr_javadoccomment">     * @param isHttp10OrEarlier {@code true} if we are handling HTTP/1.0 or earlier</em>
-<a class="jxr_linenumber" name="L562" href="#L562">562</a> <em class="jxr_javadoccomment">     * @param allowDuplicateContentLengths {@code true}  if multiple, identical-value content lengths should be allowed.</em>
-<a class="jxr_linenumber" name="L563" href="#L563">563</a> <em class="jxr_javadoccomment">     * @return the normalized content length from the headers or {@code -1} if the fields were empty.</em>
-<a class="jxr_linenumber" name="L564" href="#L564">564</a> <em class="jxr_javadoccomment">     * @throws IllegalArgumentException if the content-length fields are not valid</em>
-<a class="jxr_linenumber" name="L565" href="#L565">565</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> normalizeAndGetContentLength(
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>             List&lt;? <strong class="jxr_keyword">extends</strong> CharSequence&gt; contentLengthFields, <strong class="jxr_keyword">boolean</strong> isHttp10OrEarlier,
-<a class="jxr_linenumber" name="L568" href="#L568">568</a>             <strong class="jxr_keyword">boolean</strong> allowDuplicateContentLengths) {
-<a class="jxr_linenumber" name="L569" href="#L569">569</a>         <strong class="jxr_keyword">if</strong> (contentLengthFields.isEmpty()) {
-<a class="jxr_linenumber" name="L570" href="#L570">570</a>             <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>         }
-<a class="jxr_linenumber" name="L572" href="#L572">572</a> 
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>         <em class="jxr_comment">// Guard against multiple Content-Length headers as stated in</em>
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>         <em class="jxr_comment">// https://tools.ietf.org/html/rfc7230#section-3.3.2:</em>
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>         <em class="jxr_comment">// If a message is received that has multiple Content-Length header</em>
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>         <em class="jxr_comment">//   fields with field-values consisting of the same decimal value, or a</em>
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>         <em class="jxr_comment">//   single Content-Length header field with a field value containing a</em>
-<a class="jxr_linenumber" name="L579" href="#L579">579</a>         <em class="jxr_comment">//   list of identical decimal values (e.g., "Content-Length: 42, 42"),</em>
-<a class="jxr_linenumber" name="L580" href="#L580">580</a>         <em class="jxr_comment">//   indicating that duplicate Content-Length header fields have been</em>
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>         <em class="jxr_comment">//   generated or combined by an upstream message processor, then the</em>
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>         <em class="jxr_comment">//   recipient MUST either reject the message as invalid or replace the</em>
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>         <em class="jxr_comment">//   duplicated field-values with a single valid Content-Length field</em>
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>         <em class="jxr_comment">//   containing that decimal value prior to determining the message body</em>
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>         <em class="jxr_comment">//   length or forwarding the message.</em>
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>         String firstField = contentLengthFields.get(0).toString();
-<a class="jxr_linenumber" name="L587" href="#L587">587</a>         <strong class="jxr_keyword">boolean</strong> multipleContentLengths =
-<a class="jxr_linenumber" name="L588" href="#L588">588</a>                 contentLengthFields.size() &gt; 1 || firstField.indexOf(COMMA) &gt;= 0;
-<a class="jxr_linenumber" name="L589" href="#L589">589</a> 
-<a class="jxr_linenumber" name="L590" href="#L590">590</a>         <strong class="jxr_keyword">if</strong> (multipleContentLengths &amp;&amp; !isHttp10OrEarlier) {
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>             <strong class="jxr_keyword">if</strong> (allowDuplicateContentLengths) {
-<a class="jxr_linenumber" name="L592" href="#L592">592</a>                 <em class="jxr_comment">// Find and enforce that all Content-Length values are the same</em>
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>                 String firstValue = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L594" href="#L594">594</a>                 <strong class="jxr_keyword">for</strong> (CharSequence field : contentLengthFields) {
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>                     String[] tokens = field.toString().split(COMMA_STRING, -1);
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>                     <strong class="jxr_keyword">for</strong> (String token : tokens) {
-<a class="jxr_linenumber" name="L597" href="#L597">597</a>                         String trimmed = token.trim();
-<a class="jxr_linenumber" name="L598" href="#L598">598</a>                         <strong class="jxr_keyword">if</strong> (firstValue == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>                             firstValue = trimmed;
-<a class="jxr_linenumber" name="L600" href="#L600">600</a>                         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!trimmed.equals(firstValue)) {
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="L602" href="#L602">602</a>                                     <span class="jxr_string">"Multiple Content-Length values found: "</span> + contentLengthFields);
-<a class="jxr_linenumber" name="L603" href="#L603">603</a>                         }
-<a class="jxr_linenumber" name="L604" href="#L604">604</a>                     }
-<a class="jxr_linenumber" name="L605" href="#L605">605</a>                 }
-<a class="jxr_linenumber" name="L606" href="#L606">606</a>                 <em class="jxr_comment">// Replace the duplicated field-values with a single valid Content-Length field</em>
-<a class="jxr_linenumber" name="L607" href="#L607">607</a>                 firstField = firstValue;
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>                 <em class="jxr_comment">// Reject the message as invalid</em>
-<a class="jxr_linenumber" name="L610" href="#L610">610</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="L611" href="#L611">611</a>                         <span class="jxr_string">"Multiple Content-Length values found: "</span> + contentLengthFields);
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>             }
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>         }
-<a class="jxr_linenumber" name="L614" href="#L614">614</a>         <em class="jxr_comment">// Ensure we not allow sign as part of the content-length:</em>
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>         <em class="jxr_comment">// See https://github.com/squid-cache/squid/security/advisories/GHSA-qf3v-rc95-96j5</em>
-<a class="jxr_linenumber" name="L616" href="#L616">616</a>         <strong class="jxr_keyword">if</strong> (firstField.isEmpty() || !Character.isDigit(firstField.charAt(0))) {
-<a class="jxr_linenumber" name="L617" href="#L617">617</a>             <em class="jxr_comment">// Reject the message as invalid</em>
-<a class="jxr_linenumber" name="L618" href="#L618">618</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="L619" href="#L619">619</a>                     <span class="jxr_string">"Content-Length value is not a number: "</span> + firstField);
-<a class="jxr_linenumber" name="L620" href="#L620">620</a>         }
-<a class="jxr_linenumber" name="L621" href="#L621">621</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L622" href="#L622">622</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> value = Long.parseLong(firstField);
-<a class="jxr_linenumber" name="L623" href="#L623">623</a>             <strong class="jxr_keyword">return</strong> checkPositiveOrZero(value, <span class="jxr_string">"Content-Length value"</span>);
-<a class="jxr_linenumber" name="L624" href="#L624">624</a>         } <strong class="jxr_keyword">catch</strong> (NumberFormatException e) {
-<a class="jxr_linenumber" name="L625" href="#L625">625</a>             <em class="jxr_comment">// Reject the message as invalid</em>
-<a class="jxr_linenumber" name="L626" href="#L626">626</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
-<a class="jxr_linenumber" name="L627" href="#L627">627</a>                     <span class="jxr_string">"Content-Length value is not a number: "</span> + firstField, e);
-<a class="jxr_linenumber" name="L628" href="#L628">628</a>         }
-<a class="jxr_linenumber" name="L629" href="#L629">629</a>     }
-<a class="jxr_linenumber" name="L630" href="#L630">630</a> }
+<a class="jxr_linenumber" name="L550" href="#L550">550</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (hostString.charAt(0) == '[' &amp;&amp; hostString.charAt(hostString.length() - 1) == ']') {
+<a class="jxr_linenumber" name="L551" href="#L551">551</a>                 <em class="jxr_comment">// If IPv6 address already contains brackets, let's return as is.</em>
+<a class="jxr_linenumber" name="L552" href="#L552">552</a>                 <strong class="jxr_keyword">return</strong> hostString;
+<a class="jxr_linenumber" name="L553" href="#L553">553</a>             }
+<a class="jxr_linenumber" name="L554" href="#L554">554</a> 
+<a class="jxr_linenumber" name="L555" href="#L555">555</a>             <strong class="jxr_keyword">return</strong> '[' + hostString + ']';
+<a class="jxr_linenumber" name="L556" href="#L556">556</a>         }
+<a class="jxr_linenumber" name="L557" href="#L557">557</a>         <strong class="jxr_keyword">return</strong> hostString;
+<a class="jxr_linenumber" name="L558" href="#L558">558</a>     }
+<a class="jxr_linenumber" name="L559" href="#L559">559</a> 
+<a class="jxr_linenumber" name="L560" href="#L560">560</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L561" href="#L561">561</a> <em class="jxr_javadoccomment">     * Validates, and optionally extracts the content length from headers. This method is not intended for</em>
+<a class="jxr_linenumber" name="L562" href="#L562">562</a> <em class="jxr_javadoccomment">     * general use, but is here to be shared between HTTP/1 and HTTP/2 parsing.</em>
+<a class="jxr_linenumber" name="L563" href="#L563">563</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L564" href="#L564">564</a> <em class="jxr_javadoccomment">     * @param contentLengthFields the content-length header fields.</em>
+<a class="jxr_linenumber" name="L565" href="#L565">565</a> <em class="jxr_javadoccomment">     * @param isHttp10OrEarlier {@code true} if we are handling HTTP/1.0 or earlier</em>
+<a class="jxr_linenumber" name="L566" href="#L566">566</a> <em class="jxr_javadoccomment">     * @param allowDuplicateContentLengths {@code true}  if multiple, identical-value content lengths should be allowed.</em>
+<a class="jxr_linenumber" name="L567" href="#L567">567</a> <em class="jxr_javadoccomment">     * @return the normalized content length from the headers or {@code -1} if the fields were empty.</em>
+<a class="jxr_linenumber" name="L568" href="#L568">568</a> <em class="jxr_javadoccomment">     * @throws IllegalArgumentException if the content-length fields are not valid</em>
+<a class="jxr_linenumber" name="L569" href="#L569">569</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> normalizeAndGetContentLength(
+<a class="jxr_linenumber" name="L571" href="#L571">571</a>             List&lt;? <strong class="jxr_keyword">extends</strong> CharSequence&gt; contentLengthFields, <strong class="jxr_keyword">boolean</strong> isHttp10OrEarlier,
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>             <strong class="jxr_keyword">boolean</strong> allowDuplicateContentLengths) {
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>         <strong class="jxr_keyword">if</strong> (contentLengthFields.isEmpty()) {
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>             <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>         }
+<a class="jxr_linenumber" name="L576" href="#L576">576</a> 
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>         <em class="jxr_comment">// Guard against multiple Content-Length headers as stated in</em>
+<a class="jxr_linenumber" name="L578" href="#L578">578</a>         <em class="jxr_comment">// https://tools.ietf.org/html/rfc7230#section-3.3.2:</em>
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>         <em class="jxr_comment">// If a message is received that has multiple Content-Length header</em>
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>         <em class="jxr_comment">//   fields with field-values consisting of the same decimal value, or a</em>
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>         <em class="jxr_comment">//   single Content-Length header field with a field value containing a</em>
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>         <em class="jxr_comment">//   list of identical decimal values (e.g., "Content-Length: 42, 42"),</em>
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>         <em class="jxr_comment">//   indicating that duplicate Content-Length header fields have been</em>
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>         <em class="jxr_comment">//   generated or combined by an upstream message processor, then the</em>
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>         <em class="jxr_comment">//   recipient MUST either reject the message as invalid or replace the</em>
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>         <em class="jxr_comment">//   duplicated field-values with a single valid Content-Length field</em>
+<a class="jxr_linenumber" name="L588" href="#L588">588</a>         <em class="jxr_comment">//   containing that decimal value prior to determining the message body</em>
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>         <em class="jxr_comment">//   length or forwarding the message.</em>
+<a class="jxr_linenumber" name="L590" href="#L590">590</a>         String firstField = contentLengthFields.get(0).toString();
+<a class="jxr_linenumber" name="L591" href="#L591">591</a>         <strong class="jxr_keyword">boolean</strong> multipleContentLengths =
+<a class="jxr_linenumber" name="L592" href="#L592">592</a>                 contentLengthFields.size() &gt; 1 || firstField.indexOf(COMMA) &gt;= 0;
+<a class="jxr_linenumber" name="L593" href="#L593">593</a> 
+<a class="jxr_linenumber" name="L594" href="#L594">594</a>         <strong class="jxr_keyword">if</strong> (multipleContentLengths &amp;&amp; !isHttp10OrEarlier) {
+<a class="jxr_linenumber" name="L595" href="#L595">595</a>             <strong class="jxr_keyword">if</strong> (allowDuplicateContentLengths) {
+<a class="jxr_linenumber" name="L596" href="#L596">596</a>                 <em class="jxr_comment">// Find and enforce that all Content-Length values are the same</em>
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>                 String firstValue = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>                 <strong class="jxr_keyword">for</strong> (CharSequence field : contentLengthFields) {
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>                     String[] tokens = field.toString().split(COMMA_STRING, -1);
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>                     <strong class="jxr_keyword">for</strong> (String token : tokens) {
+<a class="jxr_linenumber" name="L601" href="#L601">601</a>                         String trimmed = token.trim();
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>                         <strong class="jxr_keyword">if</strong> (firstValue == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>                             firstValue = trimmed;
+<a class="jxr_linenumber" name="L604" href="#L604">604</a>                         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!trimmed.equals(firstValue)) {
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>                             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="L606" href="#L606">606</a>                                     <span class="jxr_string">"Multiple Content-Length values found: "</span> + contentLengthFields);
+<a class="jxr_linenumber" name="L607" href="#L607">607</a>                         }
+<a class="jxr_linenumber" name="L608" href="#L608">608</a>                     }
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>                 }
+<a class="jxr_linenumber" name="L610" href="#L610">610</a>                 <em class="jxr_comment">// Replace the duplicated field-values with a single valid Content-Length field</em>
+<a class="jxr_linenumber" name="L611" href="#L611">611</a>                 firstField = firstValue;
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L613" href="#L613">613</a>                 <em class="jxr_comment">// Reject the message as invalid</em>
+<a class="jxr_linenumber" name="L614" href="#L614">614</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="L615" href="#L615">615</a>                         <span class="jxr_string">"Multiple Content-Length values found: "</span> + contentLengthFields);
+<a class="jxr_linenumber" name="L616" href="#L616">616</a>             }
+<a class="jxr_linenumber" name="L617" href="#L617">617</a>         }
+<a class="jxr_linenumber" name="L618" href="#L618">618</a>         <em class="jxr_comment">// Ensure we not allow sign as part of the content-length:</em>
+<a class="jxr_linenumber" name="L619" href="#L619">619</a>         <em class="jxr_comment">// See https://github.com/squid-cache/squid/security/advisories/GHSA-qf3v-rc95-96j5</em>
+<a class="jxr_linenumber" name="L620" href="#L620">620</a>         <strong class="jxr_keyword">if</strong> (firstField.isEmpty() || !Character.isDigit(firstField.charAt(0))) {
+<a class="jxr_linenumber" name="L621" href="#L621">621</a>             <em class="jxr_comment">// Reject the message as invalid</em>
+<a class="jxr_linenumber" name="L622" href="#L622">622</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="L623" href="#L623">623</a>                     <span class="jxr_string">"Content-Length value is not a number: "</span> + firstField);
+<a class="jxr_linenumber" name="L624" href="#L624">624</a>         }
+<a class="jxr_linenumber" name="L625" href="#L625">625</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L626" href="#L626">626</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> value = Long.parseLong(firstField);
+<a class="jxr_linenumber" name="L627" href="#L627">627</a>             <strong class="jxr_keyword">return</strong> checkPositiveOrZero(value, <span class="jxr_string">"Content-Length value"</span>);
+<a class="jxr_linenumber" name="L628" href="#L628">628</a>         } <strong class="jxr_keyword">catch</strong> (NumberFormatException e) {
+<a class="jxr_linenumber" name="L629" href="#L629">629</a>             <em class="jxr_comment">// Reject the message as invalid</em>
+<a class="jxr_linenumber" name="L630" href="#L630">630</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="L631" href="#L631">631</a>                     <span class="jxr_string">"Content-Length value is not a number: "</span> + firstField, e);
+<a class="jxr_linenumber" name="L632" href="#L632">632</a>         }
+<a class="jxr_linenumber" name="L633" href="#L633">633</a>     }
+<a class="jxr_linenumber" name="L634" href="#L634">634</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
