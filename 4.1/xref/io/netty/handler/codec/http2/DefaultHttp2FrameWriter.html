@@ -576,74 +576,78 @@
 <a class="jxr_linenumber" name="L568" href="#L568">568</a>         <a name="Http2Flags" href="../../../../../io/netty/handler/codec/http2/Http2Flags.html#Http2Flags">Http2Flags</a> flags = <strong class="jxr_keyword">new</strong> <a name="Http2Flags" href="../../../../../io/netty/handler/codec/http2/Http2Flags.html#Http2Flags">Http2Flags</a>();
 <a class="jxr_linenumber" name="L569" href="#L569">569</a> 
 <a class="jxr_linenumber" name="L570" href="#L570">570</a>         <strong class="jxr_keyword">if</strong> (headerBlock.isReadable()) {
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>             <em class="jxr_comment">// The frame header (and padding) only changes on the last frame, so allocate it once and re-use</em>
-<a class="jxr_linenumber" name="L572" href="#L572">572</a>             <strong class="jxr_keyword">int</strong> fragmentReadableBytes = min(headerBlock.readableBytes(), maxFrameSize);
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>             <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = ctx.alloc().buffer(CONTINUATION_FRAME_HEADER_LENGTH);
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>             writeFrameHeaderInternal(buf, fragmentReadableBytes, CONTINUATION, flags, streamId);
-<a class="jxr_linenumber" name="L575" href="#L575">575</a> 
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>             <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>                 fragmentReadableBytes = min(headerBlock.readableBytes(), maxFrameSize);
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>                 <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> fragment = headerBlock.readRetainedSlice(fragmentReadableBytes);
-<a class="jxr_linenumber" name="L579" href="#L579">579</a> 
-<a class="jxr_linenumber" name="L580" href="#L580">580</a>                 <strong class="jxr_keyword">if</strong> (headerBlock.isReadable()) {
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>                     ctx.write(buf.retainedSlice(), promiseAggregator.newPromise());
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>                     <em class="jxr_comment">// The frame header is different for the last frame, so re-allocate and release the old buffer</em>
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>                     flags = flags.endOfHeaders(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>                     buf.release();
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>                     buf = ctx.alloc().buffer(CONTINUATION_FRAME_HEADER_LENGTH);
-<a class="jxr_linenumber" name="L587" href="#L587">587</a>                     writeFrameHeaderInternal(buf, fragmentReadableBytes, CONTINUATION, flags, streamId);
-<a class="jxr_linenumber" name="L588" href="#L588">588</a>                     ctx.write(buf, promiseAggregator.newPromise());
-<a class="jxr_linenumber" name="L589" href="#L589">589</a>                 }
-<a class="jxr_linenumber" name="L590" href="#L590">590</a> 
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>                 ctx.write(fragment, promiseAggregator.newPromise());
-<a class="jxr_linenumber" name="L592" href="#L592">592</a> 
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>             } <strong class="jxr_keyword">while</strong> (headerBlock.isReadable());
-<a class="jxr_linenumber" name="L594" href="#L594">594</a>         }
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>         <strong class="jxr_keyword">return</strong> promiseAggregator;
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>     }
-<a class="jxr_linenumber" name="L597" href="#L597">597</a> 
-<a class="jxr_linenumber" name="L598" href="#L598">598</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L599" href="#L599">599</a> <em class="jxr_javadoccomment">     * Returns the number of padding bytes that should be appended to the end of a frame.</em>
-<a class="jxr_linenumber" name="L600" href="#L600">600</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> paddingBytes(<strong class="jxr_keyword">int</strong> padding) {
-<a class="jxr_linenumber" name="L602" href="#L602">602</a>         <em class="jxr_comment">// The padding parameter contains the 1 byte pad length field as well as the trailing padding bytes.</em>
-<a class="jxr_linenumber" name="L603" href="#L603">603</a>         <em class="jxr_comment">// Subtract 1, so to only get the number of padding bytes that need to be appended to the end of a frame.</em>
-<a class="jxr_linenumber" name="L604" href="#L604">604</a>         <strong class="jxr_keyword">return</strong> padding - 1;
-<a class="jxr_linenumber" name="L605" href="#L605">605</a>     }
-<a class="jxr_linenumber" name="L606" href="#L606">606</a> 
-<a class="jxr_linenumber" name="L607" href="#L607">607</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writePaddingLength(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> padding) {
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>         <strong class="jxr_keyword">if</strong> (padding &gt; 0) {
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>             <em class="jxr_comment">// It is assumed that the padding length has been bounds checked before this</em>
-<a class="jxr_linenumber" name="L610" href="#L610">610</a>             <em class="jxr_comment">// Minus 1, as the pad length field is included in the padding parameter and is 1 byte wide.</em>
-<a class="jxr_linenumber" name="L611" href="#L611">611</a>             buf.writeByte(padding - 1);
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>         }
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>     }
-<a class="jxr_linenumber" name="L614" href="#L614">614</a> 
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyStreamId(<strong class="jxr_keyword">int</strong> streamId, String argumentName) {
-<a class="jxr_linenumber" name="L616" href="#L616">616</a>         checkPositive(streamId, argumentName);
+<a class="jxr_linenumber" name="L571" href="#L571">571</a> 
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>             <strong class="jxr_keyword">int</strong> fragmentReadableBytes;
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>             <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L574" href="#L574">574</a> 
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>             <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>                 fragmentReadableBytes = min(headerBlock.readableBytes(), maxFrameSize);
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>                 <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> fragment = headerBlock.readRetainedSlice(fragmentReadableBytes);
+<a class="jxr_linenumber" name="L578" href="#L578">578</a> 
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>                 <strong class="jxr_keyword">if</strong> (headerBlock.isReadable()) {
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>                     <strong class="jxr_keyword">if</strong> (buf == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>                         buf = ctx.alloc().buffer(CONTINUATION_FRAME_HEADER_LENGTH);
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>                         writeFrameHeaderInternal(buf, fragmentReadableBytes, CONTINUATION, flags, streamId);
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>                     }
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>                     ctx.write(buf.retainedSlice(), promiseAggregator.newPromise());
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>                     <em class="jxr_comment">// The frame header is different for the last frame, so re-allocate and release the old buffer</em>
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>                     <strong class="jxr_keyword">if</strong> (buf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L588" href="#L588">588</a>                        buf.release();
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>                     }
+<a class="jxr_linenumber" name="L590" href="#L590">590</a>                     flags = flags.endOfHeaders(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L591" href="#L591">591</a>                     buf = ctx.alloc().buffer(CONTINUATION_FRAME_HEADER_LENGTH);
+<a class="jxr_linenumber" name="L592" href="#L592">592</a>                     writeFrameHeaderInternal(buf, fragmentReadableBytes, CONTINUATION, flags, streamId);
+<a class="jxr_linenumber" name="L593" href="#L593">593</a>                     ctx.write(buf, promiseAggregator.newPromise());
+<a class="jxr_linenumber" name="L594" href="#L594">594</a>                 }
+<a class="jxr_linenumber" name="L595" href="#L595">595</a>                 ctx.write(fragment, promiseAggregator.newPromise());
+<a class="jxr_linenumber" name="L596" href="#L596">596</a> 
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>             } <strong class="jxr_keyword">while</strong> (headerBlock.isReadable());
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>         }
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>         <strong class="jxr_keyword">return</strong> promiseAggregator;
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>     }
+<a class="jxr_linenumber" name="L601" href="#L601">601</a> 
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L603" href="#L603">603</a> <em class="jxr_javadoccomment">     * Returns the number of padding bytes that should be appended to the end of a frame.</em>
+<a class="jxr_linenumber" name="L604" href="#L604">604</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> paddingBytes(<strong class="jxr_keyword">int</strong> padding) {
+<a class="jxr_linenumber" name="L606" href="#L606">606</a>         <em class="jxr_comment">// The padding parameter contains the 1 byte pad length field as well as the trailing padding bytes.</em>
+<a class="jxr_linenumber" name="L607" href="#L607">607</a>         <em class="jxr_comment">// Subtract 1, so to only get the number of padding bytes that need to be appended to the end of a frame.</em>
+<a class="jxr_linenumber" name="L608" href="#L608">608</a>         <strong class="jxr_keyword">return</strong> padding - 1;
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>     }
+<a class="jxr_linenumber" name="L610" href="#L610">610</a> 
+<a class="jxr_linenumber" name="L611" href="#L611">611</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writePaddingLength(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> padding) {
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>         <strong class="jxr_keyword">if</strong> (padding &gt; 0) {
+<a class="jxr_linenumber" name="L613" href="#L613">613</a>             <em class="jxr_comment">// It is assumed that the padding length has been bounds checked before this</em>
+<a class="jxr_linenumber" name="L614" href="#L614">614</a>             <em class="jxr_comment">// Minus 1, as the pad length field is included in the padding parameter and is 1 byte wide.</em>
+<a class="jxr_linenumber" name="L615" href="#L615">615</a>             buf.writeByte(padding - 1);
+<a class="jxr_linenumber" name="L616" href="#L616">616</a>         }
 <a class="jxr_linenumber" name="L617" href="#L617">617</a>     }
 <a class="jxr_linenumber" name="L618" href="#L618">618</a> 
-<a class="jxr_linenumber" name="L619" href="#L619">619</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyStreamOrConnectionId(<strong class="jxr_keyword">int</strong> streamId, String argumentName) {
-<a class="jxr_linenumber" name="L620" href="#L620">620</a>         checkPositiveOrZero(streamId, argumentName);
+<a class="jxr_linenumber" name="L619" href="#L619">619</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyStreamId(<strong class="jxr_keyword">int</strong> streamId, String argumentName) {
+<a class="jxr_linenumber" name="L620" href="#L620">620</a>         checkPositive(streamId, argumentName);
 <a class="jxr_linenumber" name="L621" href="#L621">621</a>     }
 <a class="jxr_linenumber" name="L622" href="#L622">622</a> 
-<a class="jxr_linenumber" name="L623" href="#L623">623</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyWeight(<strong class="jxr_keyword">short</strong> weight) {
-<a class="jxr_linenumber" name="L624" href="#L624">624</a>         <strong class="jxr_keyword">if</strong> (weight &lt; MIN_WEIGHT || weight &gt; MAX_WEIGHT) {
-<a class="jxr_linenumber" name="L625" href="#L625">625</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid weight: "</span> + weight);
-<a class="jxr_linenumber" name="L626" href="#L626">626</a>         }
-<a class="jxr_linenumber" name="L627" href="#L627">627</a>     }
-<a class="jxr_linenumber" name="L628" href="#L628">628</a> 
-<a class="jxr_linenumber" name="L629" href="#L629">629</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyErrorCode(<strong class="jxr_keyword">long</strong> errorCode) {
-<a class="jxr_linenumber" name="L630" href="#L630">630</a>         <strong class="jxr_keyword">if</strong> (errorCode &lt; 0 || errorCode &gt; MAX_UNSIGNED_INT) {
-<a class="jxr_linenumber" name="L631" href="#L631">631</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid errorCode: "</span> + errorCode);
-<a class="jxr_linenumber" name="L632" href="#L632">632</a>         }
-<a class="jxr_linenumber" name="L633" href="#L633">633</a>     }
-<a class="jxr_linenumber" name="L634" href="#L634">634</a> 
-<a class="jxr_linenumber" name="L635" href="#L635">635</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyWindowSizeIncrement(<strong class="jxr_keyword">int</strong> windowSizeIncrement) {
-<a class="jxr_linenumber" name="L636" href="#L636">636</a>         checkPositiveOrZero(windowSizeIncrement, <span class="jxr_string">"windowSizeIncrement"</span>);
+<a class="jxr_linenumber" name="L623" href="#L623">623</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyStreamOrConnectionId(<strong class="jxr_keyword">int</strong> streamId, String argumentName) {
+<a class="jxr_linenumber" name="L624" href="#L624">624</a>         checkPositiveOrZero(streamId, argumentName);
+<a class="jxr_linenumber" name="L625" href="#L625">625</a>     }
+<a class="jxr_linenumber" name="L626" href="#L626">626</a> 
+<a class="jxr_linenumber" name="L627" href="#L627">627</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyWeight(<strong class="jxr_keyword">short</strong> weight) {
+<a class="jxr_linenumber" name="L628" href="#L628">628</a>         <strong class="jxr_keyword">if</strong> (weight &lt; MIN_WEIGHT || weight &gt; MAX_WEIGHT) {
+<a class="jxr_linenumber" name="L629" href="#L629">629</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid weight: "</span> + weight);
+<a class="jxr_linenumber" name="L630" href="#L630">630</a>         }
+<a class="jxr_linenumber" name="L631" href="#L631">631</a>     }
+<a class="jxr_linenumber" name="L632" href="#L632">632</a> 
+<a class="jxr_linenumber" name="L633" href="#L633">633</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyErrorCode(<strong class="jxr_keyword">long</strong> errorCode) {
+<a class="jxr_linenumber" name="L634" href="#L634">634</a>         <strong class="jxr_keyword">if</strong> (errorCode &lt; 0 || errorCode &gt; MAX_UNSIGNED_INT) {
+<a class="jxr_linenumber" name="L635" href="#L635">635</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid errorCode: "</span> + errorCode);
+<a class="jxr_linenumber" name="L636" href="#L636">636</a>         }
 <a class="jxr_linenumber" name="L637" href="#L637">637</a>     }
-<a class="jxr_linenumber" name="L638" href="#L638">638</a> }
+<a class="jxr_linenumber" name="L638" href="#L638">638</a> 
+<a class="jxr_linenumber" name="L639" href="#L639">639</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> verifyWindowSizeIncrement(<strong class="jxr_keyword">int</strong> windowSizeIncrement) {
+<a class="jxr_linenumber" name="L640" href="#L640">640</a>         checkPositiveOrZero(windowSizeIncrement, <span class="jxr_string">"windowSizeIncrement"</span>);
+<a class="jxr_linenumber" name="L641" href="#L641">641</a>     }
+<a class="jxr_linenumber" name="L642" href="#L642">642</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
