@@ -956,312 +956,325 @@
 <a class="jxr_linenumber" name="L948" href="#L948">948</a> 
 <a class="jxr_linenumber" name="L949" href="#L949">949</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = startContent + asciiBuffer.readableBytes();
 <a class="jxr_linenumber" name="L950" href="#L950">950</a> 
-<a class="jxr_linenumber" name="L951" href="#L951">951</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> aStart = findNonSPLenient(asciiBytes, startContent, end);
-<a class="jxr_linenumber" name="L952" href="#L952">952</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> aEnd = findSPLenient(asciiBytes, aStart, end);
-<a class="jxr_linenumber" name="L953" href="#L953">953</a> 
-<a class="jxr_linenumber" name="L954" href="#L954">954</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> bStart = findNonSPLenient(asciiBytes, aEnd, end);
-<a class="jxr_linenumber" name="L955" href="#L955">955</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> bEnd = findSPLenient(asciiBytes, bStart, end);
-<a class="jxr_linenumber" name="L956" href="#L956">956</a> 
-<a class="jxr_linenumber" name="L957" href="#L957">957</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> cStart = findNonSPLenient(asciiBytes, bEnd, end);
-<a class="jxr_linenumber" name="L958" href="#L958">958</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> cEnd = findEndOfString(asciiBytes, Math.max(cStart - 1, startContent), end);
-<a class="jxr_linenumber" name="L959" href="#L959">959</a> 
-<a class="jxr_linenumber" name="L960" href="#L960">960</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String[]{
-<a class="jxr_linenumber" name="L961" href="#L961">961</a>                 splitFirstWordInitialLine(asciiBytes, aStart, aEnd - aStart),
-<a class="jxr_linenumber" name="L962" href="#L962">962</a>                 splitSecondWordInitialLine(asciiBytes, bStart, bEnd - bStart),
-<a class="jxr_linenumber" name="L963" href="#L963">963</a>                 cStart &lt; cEnd ? splitThirdWordInitialLine(asciiBytes, cStart, cEnd - cStart) : StringUtil.EMPTY_STRING};
-<a class="jxr_linenumber" name="L964" href="#L964">964</a>     }
-<a class="jxr_linenumber" name="L965" href="#L965">965</a> 
-<a class="jxr_linenumber" name="L966" href="#L966">966</a>     <strong class="jxr_keyword">protected</strong> String splitFirstWordInitialLine(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L967" href="#L967">967</a>         <strong class="jxr_keyword">return</strong> langAsciiString(asciiContent, start, length);
-<a class="jxr_linenumber" name="L968" href="#L968">968</a>     }
+<a class="jxr_linenumber" name="L951" href="#L951">951</a>         byte lastByte = asciiBytes[end - 1];
+<a class="jxr_linenumber" name="L952" href="#L952">952</a>         <strong class="jxr_keyword">if</strong> (isControlOrWhitespaceAsciiChar(lastByte)) {
+<a class="jxr_linenumber" name="L953" href="#L953">953</a>             <strong class="jxr_keyword">if</strong> (isDecodingRequest() || !isOWS(lastByte)) {
+<a class="jxr_linenumber" name="L954" href="#L954">954</a>                 <em class="jxr_comment">// There should no extra control or whitespace char in case of a request.</em>
+<a class="jxr_linenumber" name="L955" href="#L955">955</a>                 <em class="jxr_comment">// In case of a response there might be a SP if there is no reason-phrase given.</em>
+<a class="jxr_linenumber" name="L956" href="#L956">956</a>                 <em class="jxr_comment">// See</em>
+<a class="jxr_linenumber" name="L957" href="#L957">957</a>                 <em class="jxr_comment">//  - https://datatracker.ietf.org/doc/html/rfc2616#section-5.1</em>
+<a class="jxr_linenumber" name="L958" href="#L958">958</a>                 <em class="jxr_comment">//  - https://datatracker.ietf.org/doc/html/rfc9112#name-status-line</em>
+<a class="jxr_linenumber" name="L959" href="#L959">959</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(
+<a class="jxr_linenumber" name="L960" href="#L960">960</a>                         <span class="jxr_string">"Illegal character in request line: 0x"</span> + Integer.toHexString(lastByte));
+<a class="jxr_linenumber" name="L961" href="#L961">961</a>             }
+<a class="jxr_linenumber" name="L962" href="#L962">962</a>         }
+<a class="jxr_linenumber" name="L963" href="#L963">963</a> 
+<a class="jxr_linenumber" name="L964" href="#L964">964</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> aStart = findNonSPLenient(asciiBytes, startContent, end);
+<a class="jxr_linenumber" name="L965" href="#L965">965</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> aEnd = findSPLenient(asciiBytes, aStart, end);
+<a class="jxr_linenumber" name="L966" href="#L966">966</a> 
+<a class="jxr_linenumber" name="L967" href="#L967">967</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> bStart = findNonSPLenient(asciiBytes, aEnd, end);
+<a class="jxr_linenumber" name="L968" href="#L968">968</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> bEnd = findSPLenient(asciiBytes, bStart, end);
 <a class="jxr_linenumber" name="L969" href="#L969">969</a> 
-<a class="jxr_linenumber" name="L970" href="#L970">970</a>     <strong class="jxr_keyword">protected</strong> String splitSecondWordInitialLine(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L971" href="#L971">971</a>         <strong class="jxr_keyword">return</strong> langAsciiString(asciiContent, start, length);
-<a class="jxr_linenumber" name="L972" href="#L972">972</a>     }
-<a class="jxr_linenumber" name="L973" href="#L973">973</a> 
-<a class="jxr_linenumber" name="L974" href="#L974">974</a>     <strong class="jxr_keyword">protected</strong> String splitThirdWordInitialLine(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L975" href="#L975">975</a>         <strong class="jxr_keyword">return</strong> langAsciiString(asciiContent, start, length);
-<a class="jxr_linenumber" name="L976" href="#L976">976</a>     }
-<a class="jxr_linenumber" name="L977" href="#L977">977</a> 
-<a class="jxr_linenumber" name="L978" href="#L978">978</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L979" href="#L979">979</a> <em class="jxr_javadoccomment">     * This method shouldn't exist: look at <a href="https://bugs.openjdk.org/browse/JDK-8295496" target="alexandria_uri">https://bugs.openjdk.org/browse/JDK-8295496</a> for more context</em>
-<a class="jxr_linenumber" name="L980" href="#L980">980</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L981" href="#L981">981</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String langAsciiString(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L982" href="#L982">982</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
-<a class="jxr_linenumber" name="L983" href="#L983">983</a>             <strong class="jxr_keyword">return</strong> StringUtil.EMPTY_STRING;
-<a class="jxr_linenumber" name="L984" href="#L984">984</a>         }
-<a class="jxr_linenumber" name="L985" href="#L985">985</a>         <em class="jxr_comment">// DON'T REMOVE: it helps JIT to use a simpler intrinsic stub for System::arrayCopy based on the call-site</em>
-<a class="jxr_linenumber" name="L986" href="#L986">986</a>         <strong class="jxr_keyword">if</strong> (start == 0) {
-<a class="jxr_linenumber" name="L987" href="#L987">987</a>             <strong class="jxr_keyword">if</strong> (length == asciiContent.length) {
-<a class="jxr_linenumber" name="L988" href="#L988">988</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String(asciiContent, 0, 0, asciiContent.length);
-<a class="jxr_linenumber" name="L989" href="#L989">989</a>             }
-<a class="jxr_linenumber" name="L990" href="#L990">990</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String(asciiContent, 0, 0, length);
-<a class="jxr_linenumber" name="L991" href="#L991">991</a>         }
-<a class="jxr_linenumber" name="L992" href="#L992">992</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String(asciiContent, 0, start, length);
-<a class="jxr_linenumber" name="L993" href="#L993">993</a>     }
-<a class="jxr_linenumber" name="L994" href="#L994">994</a> 
-<a class="jxr_linenumber" name="L995" href="#L995">995</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> splitHeader(byte[] line, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L996" href="#L996">996</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = start + length;
-<a class="jxr_linenumber" name="L997" href="#L997">997</a>         <strong class="jxr_keyword">int</strong> nameEnd;
-<a class="jxr_linenumber" name="L998" href="#L998">998</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> nameStart = findNonWhitespace(line, start, end);
-<a class="jxr_linenumber" name="L999" href="#L999">999</a>         <em class="jxr_comment">// hoist this load out of the loop, because it won't change!</em>
-<a class="jxr_linenumber" name="L1000" href="#L1000">1000</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> isDecodingRequest = isDecodingRequest();
-<a class="jxr_linenumber" name="L1001" href="#L1001">1001</a>         <strong class="jxr_keyword">for</strong> (nameEnd = nameStart; nameEnd &lt; end; nameEnd ++) {
-<a class="jxr_linenumber" name="L1002" href="#L1002">1002</a>             byte ch = line[nameEnd];
-<a class="jxr_linenumber" name="L1003" href="#L1003">1003</a>             <em class="jxr_comment">// https://tools.ietf.org/html/rfc7230#section-3.2.4</em>
-<a class="jxr_linenumber" name="L1004" href="#L1004">1004</a>             <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L1005" href="#L1005">1005</a>             <em class="jxr_comment">// No whitespace is allowed between the header field-name and colon. In</em>
-<a class="jxr_linenumber" name="L1006" href="#L1006">1006</a>             <em class="jxr_comment">// the past, differences in the handling of such whitespace have led to</em>
-<a class="jxr_linenumber" name="L1007" href="#L1007">1007</a>             <em class="jxr_comment">// security vulnerabilities in request routing and response handling. A</em>
-<a class="jxr_linenumber" name="L1008" href="#L1008">1008</a>             <em class="jxr_comment">// server MUST reject any received request message that contains</em>
-<a class="jxr_linenumber" name="L1009" href="#L1009">1009</a>             <em class="jxr_comment">// whitespace between a header field-name and colon with a response code</em>
-<a class="jxr_linenumber" name="L1010" href="#L1010">1010</a>             <em class="jxr_comment">// of 400 (Bad Request). A proxy MUST remove any such whitespace from a</em>
-<a class="jxr_linenumber" name="L1011" href="#L1011">1011</a>             <em class="jxr_comment">// response message before forwarding the message downstream.</em>
-<a class="jxr_linenumber" name="L1012" href="#L1012">1012</a>             <strong class="jxr_keyword">if</strong> (ch == ':' ||
-<a class="jxr_linenumber" name="L1013" href="#L1013">1013</a>                     <em class="jxr_comment">// In case of decoding a request we will just continue processing and header validation</em>
-<a class="jxr_linenumber" name="L1014" href="#L1014">1014</a>                     <em class="jxr_comment">// is done in the DefaultHttpHeaders implementation.</em>
-<a class="jxr_linenumber" name="L1015" href="#L1015">1015</a>                     <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L1016" href="#L1016">1016</a>                     <em class="jxr_comment">// In the case of decoding a response we will "skip" the whitespace.</em>
-<a class="jxr_linenumber" name="L1017" href="#L1017">1017</a>                     (!isDecodingRequest &amp;&amp; isOWS(ch))) {
-<a class="jxr_linenumber" name="L1018" href="#L1018">1018</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1019" href="#L1019">1019</a>             }
-<a class="jxr_linenumber" name="L1020" href="#L1020">1020</a>         }
-<a class="jxr_linenumber" name="L1021" href="#L1021">1021</a> 
-<a class="jxr_linenumber" name="L1022" href="#L1022">1022</a>         <strong class="jxr_keyword">if</strong> (nameEnd == end) {
-<a class="jxr_linenumber" name="L1023" href="#L1023">1023</a>             <em class="jxr_comment">// There was no colon present at all.</em>
-<a class="jxr_linenumber" name="L1024" href="#L1024">1024</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"No colon found"</span>);
-<a class="jxr_linenumber" name="L1025" href="#L1025">1025</a>         }
-<a class="jxr_linenumber" name="L1026" href="#L1026">1026</a>         <strong class="jxr_keyword">int</strong> colonEnd;
-<a class="jxr_linenumber" name="L1027" href="#L1027">1027</a>         <strong class="jxr_keyword">for</strong> (colonEnd = nameEnd; colonEnd &lt; end; colonEnd ++) {
-<a class="jxr_linenumber" name="L1028" href="#L1028">1028</a>             <strong class="jxr_keyword">if</strong> (line[colonEnd] == ':') {
-<a class="jxr_linenumber" name="L1029" href="#L1029">1029</a>                 colonEnd ++;
-<a class="jxr_linenumber" name="L1030" href="#L1030">1030</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1031" href="#L1031">1031</a>             }
-<a class="jxr_linenumber" name="L1032" href="#L1032">1032</a>         }
-<a class="jxr_linenumber" name="L1033" href="#L1033">1033</a>         name = splitHeaderName(line, nameStart, nameEnd - nameStart);
-<a class="jxr_linenumber" name="L1034" href="#L1034">1034</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> valueStart = findNonWhitespace(line, colonEnd, end);
-<a class="jxr_linenumber" name="L1035" href="#L1035">1035</a>         <strong class="jxr_keyword">if</strong> (valueStart == end) {
-<a class="jxr_linenumber" name="L1036" href="#L1036">1036</a>             value = StringUtil.EMPTY_STRING;
-<a class="jxr_linenumber" name="L1037" href="#L1037">1037</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1038" href="#L1038">1038</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> valueEnd = findEndOfString(line, start, end);
-<a class="jxr_linenumber" name="L1039" href="#L1039">1039</a>             <em class="jxr_comment">// no need to make uses of the ByteBuf's toString ASCII method here, and risk to get JIT confused</em>
-<a class="jxr_linenumber" name="L1040" href="#L1040">1040</a>             value = langAsciiString(line, valueStart, valueEnd - valueStart);
-<a class="jxr_linenumber" name="L1041" href="#L1041">1041</a>         }
-<a class="jxr_linenumber" name="L1042" href="#L1042">1042</a>     }
-<a class="jxr_linenumber" name="L1043" href="#L1043">1043</a> 
-<a class="jxr_linenumber" name="L1044" href="#L1044">1044</a>     <strong class="jxr_keyword">protected</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a> splitHeaderName(byte[] sb, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L1045" href="#L1045">1045</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a>(sb, start, length, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L1046" href="#L1046">1046</a>     }
-<a class="jxr_linenumber" name="L1047" href="#L1047">1047</a> 
-<a class="jxr_linenumber" name="L1048" href="#L1048">1048</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findNonSPLenient(byte[] sb, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> end) {
-<a class="jxr_linenumber" name="L1049" href="#L1049">1049</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = offset; result &lt; end; ++result) {
-<a class="jxr_linenumber" name="L1050" href="#L1050">1050</a>             byte c = sb[result];
-<a class="jxr_linenumber" name="L1051" href="#L1051">1051</a>             <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7230#section-3.5</em>
-<a class="jxr_linenumber" name="L1052" href="#L1052">1052</a>             <strong class="jxr_keyword">if</strong> (isSPLenient(c)) {
-<a class="jxr_linenumber" name="L1053" href="#L1053">1053</a>                 <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="L1054" href="#L1054">1054</a>             }
-<a class="jxr_linenumber" name="L1055" href="#L1055">1055</a>             <strong class="jxr_keyword">if</strong> (isWhitespace(c)) {
-<a class="jxr_linenumber" name="L1056" href="#L1056">1056</a>                 <em class="jxr_comment">// Any other whitespace delimiter is invalid</em>
-<a class="jxr_linenumber" name="L1057" href="#L1057">1057</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid separator"</span>);
-<a class="jxr_linenumber" name="L1058" href="#L1058">1058</a>             }
-<a class="jxr_linenumber" name="L1059" href="#L1059">1059</a>             <strong class="jxr_keyword">return</strong> result;
-<a class="jxr_linenumber" name="L1060" href="#L1060">1060</a>         }
-<a class="jxr_linenumber" name="L1061" href="#L1061">1061</a>         <strong class="jxr_keyword">return</strong> end;
-<a class="jxr_linenumber" name="L1062" href="#L1062">1062</a>     }
-<a class="jxr_linenumber" name="L1063" href="#L1063">1063</a> 
-<a class="jxr_linenumber" name="L1064" href="#L1064">1064</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findSPLenient(byte[] sb, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> end) {
-<a class="jxr_linenumber" name="L1065" href="#L1065">1065</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = offset; result &lt; end; ++result) {
-<a class="jxr_linenumber" name="L1066" href="#L1066">1066</a>             <strong class="jxr_keyword">if</strong> (isSPLenient(sb[result])) {
-<a class="jxr_linenumber" name="L1067" href="#L1067">1067</a>                 <strong class="jxr_keyword">return</strong> result;
-<a class="jxr_linenumber" name="L1068" href="#L1068">1068</a>             }
-<a class="jxr_linenumber" name="L1069" href="#L1069">1069</a>         }
-<a class="jxr_linenumber" name="L1070" href="#L1070">1070</a>         <strong class="jxr_keyword">return</strong> end;
-<a class="jxr_linenumber" name="L1071" href="#L1071">1071</a>     }
-<a class="jxr_linenumber" name="L1072" href="#L1072">1072</a> 
-<a class="jxr_linenumber" name="L1073" href="#L1073">1073</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong>[] SP_LENIENT_BYTES;
-<a class="jxr_linenumber" name="L1074" href="#L1074">1074</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong>[] LATIN_WHITESPACE;
-<a class="jxr_linenumber" name="L1075" href="#L1075">1075</a> 
-<a class="jxr_linenumber" name="L1076" href="#L1076">1076</a>     <strong class="jxr_keyword">static</strong> {
-<a class="jxr_linenumber" name="L1077" href="#L1077">1077</a>         <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7230#section-3.5</em>
-<a class="jxr_linenumber" name="L1078" href="#L1078">1078</a>         SP_LENIENT_BYTES = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">boolean</strong>[256];
-<a class="jxr_linenumber" name="L1079" href="#L1079">1079</a>         SP_LENIENT_BYTES[128 + ' '] = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1080" href="#L1080">1080</a>         SP_LENIENT_BYTES[128 + 0x09] = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1081" href="#L1081">1081</a>         SP_LENIENT_BYTES[128 + 0x0B] = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1082" href="#L1082">1082</a>         SP_LENIENT_BYTES[128 + 0x0C] = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1083" href="#L1083">1083</a>         SP_LENIENT_BYTES[128 + 0x0D] = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1084" href="#L1084">1084</a>         <em class="jxr_comment">// TO SAVE PERFORMING Character::isWhitespace ceremony</em>
-<a class="jxr_linenumber" name="L1085" href="#L1085">1085</a>         LATIN_WHITESPACE = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">boolean</strong>[256];
-<a class="jxr_linenumber" name="L1086" href="#L1086">1086</a>         <strong class="jxr_keyword">for</strong> (byte b = Byte.MIN_VALUE; b &lt; Byte.MAX_VALUE; b++) {
-<a class="jxr_linenumber" name="L1087" href="#L1087">1087</a>             LATIN_WHITESPACE[128 + b] = Character.isWhitespace(b);
-<a class="jxr_linenumber" name="L1088" href="#L1088">1088</a>         }
-<a class="jxr_linenumber" name="L1089" href="#L1089">1089</a>     }
-<a class="jxr_linenumber" name="L1090" href="#L1090">1090</a> 
-<a class="jxr_linenumber" name="L1091" href="#L1091">1091</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isSPLenient(byte c) {
-<a class="jxr_linenumber" name="L1092" href="#L1092">1092</a>         <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7230#section-3.5</em>
-<a class="jxr_linenumber" name="L1093" href="#L1093">1093</a>         <strong class="jxr_keyword">return</strong> SP_LENIENT_BYTES[c + 128];
-<a class="jxr_linenumber" name="L1094" href="#L1094">1094</a>     }
-<a class="jxr_linenumber" name="L1095" href="#L1095">1095</a> 
-<a class="jxr_linenumber" name="L1096" href="#L1096">1096</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isWhitespace(byte b) {
-<a class="jxr_linenumber" name="L1097" href="#L1097">1097</a>         <strong class="jxr_keyword">return</strong> LATIN_WHITESPACE[b + 128];
-<a class="jxr_linenumber" name="L1098" href="#L1098">1098</a>     }
-<a class="jxr_linenumber" name="L1099" href="#L1099">1099</a> 
-<a class="jxr_linenumber" name="L1100" href="#L1100">1100</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findNonWhitespace(byte[] sb, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> end) {
-<a class="jxr_linenumber" name="L1101" href="#L1101">1101</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = offset; result &lt; end; ++result) {
-<a class="jxr_linenumber" name="L1102" href="#L1102">1102</a>             byte c = sb[result];
-<a class="jxr_linenumber" name="L1103" href="#L1103">1103</a>             <strong class="jxr_keyword">if</strong> (!isWhitespace(c)) {
-<a class="jxr_linenumber" name="L1104" href="#L1104">1104</a>                 <strong class="jxr_keyword">return</strong> result;
-<a class="jxr_linenumber" name="L1105" href="#L1105">1105</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!isOWS(c)) {
-<a class="jxr_linenumber" name="L1106" href="#L1106">1106</a>                 <em class="jxr_comment">// Only OWS is supported for whitespace</em>
-<a class="jxr_linenumber" name="L1107" href="#L1107">1107</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid separator, only a single space or horizontal tab allowed,"</span> +
-<a class="jxr_linenumber" name="L1108" href="#L1108">1108</a>                         <span class="jxr_string">" but received a '"</span> + c + <span class="jxr_string">"' (0x"</span> + Integer.toHexString(c) + <span class="jxr_string">")"</span>);
-<a class="jxr_linenumber" name="L1109" href="#L1109">1109</a>             }
-<a class="jxr_linenumber" name="L1110" href="#L1110">1110</a>         }
-<a class="jxr_linenumber" name="L1111" href="#L1111">1111</a>         <strong class="jxr_keyword">return</strong> end;
-<a class="jxr_linenumber" name="L1112" href="#L1112">1112</a>     }
-<a class="jxr_linenumber" name="L1113" href="#L1113">1113</a> 
-<a class="jxr_linenumber" name="L1114" href="#L1114">1114</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findEndOfString(byte[] sb, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> end) {
-<a class="jxr_linenumber" name="L1115" href="#L1115">1115</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = end - 1; result &gt; start; --result) {
-<a class="jxr_linenumber" name="L1116" href="#L1116">1116</a>             <strong class="jxr_keyword">if</strong> (!isWhitespace(sb[result])) {
-<a class="jxr_linenumber" name="L1117" href="#L1117">1117</a>                 <strong class="jxr_keyword">return</strong> result + 1;
-<a class="jxr_linenumber" name="L1118" href="#L1118">1118</a>             }
-<a class="jxr_linenumber" name="L1119" href="#L1119">1119</a>         }
-<a class="jxr_linenumber" name="L1120" href="#L1120">1120</a>         <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="L1121" href="#L1121">1121</a>     }
-<a class="jxr_linenumber" name="L1122" href="#L1122">1122</a> 
-<a class="jxr_linenumber" name="L1123" href="#L1123">1123</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isOWS(byte ch) {
-<a class="jxr_linenumber" name="L1124" href="#L1124">1124</a>         <strong class="jxr_keyword">return</strong> ch == ' ' || ch == 0x09;
+<a class="jxr_linenumber" name="L970" href="#L970">970</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> cStart = findNonSPLenient(asciiBytes, bEnd, end);
+<a class="jxr_linenumber" name="L971" href="#L971">971</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> cEnd = findEndOfString(asciiBytes, Math.max(cStart - 1, startContent), end);
+<a class="jxr_linenumber" name="L972" href="#L972">972</a> 
+<a class="jxr_linenumber" name="L973" href="#L973">973</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String[]{
+<a class="jxr_linenumber" name="L974" href="#L974">974</a>                 splitFirstWordInitialLine(asciiBytes, aStart, aEnd - aStart),
+<a class="jxr_linenumber" name="L975" href="#L975">975</a>                 splitSecondWordInitialLine(asciiBytes, bStart, bEnd - bStart),
+<a class="jxr_linenumber" name="L976" href="#L976">976</a>                 cStart &lt; cEnd ? splitThirdWordInitialLine(asciiBytes, cStart, cEnd - cStart) : StringUtil.EMPTY_STRING};
+<a class="jxr_linenumber" name="L977" href="#L977">977</a>     }
+<a class="jxr_linenumber" name="L978" href="#L978">978</a> 
+<a class="jxr_linenumber" name="L979" href="#L979">979</a>     <strong class="jxr_keyword">protected</strong> String splitFirstWordInitialLine(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L980" href="#L980">980</a>         <strong class="jxr_keyword">return</strong> langAsciiString(asciiContent, start, length);
+<a class="jxr_linenumber" name="L981" href="#L981">981</a>     }
+<a class="jxr_linenumber" name="L982" href="#L982">982</a> 
+<a class="jxr_linenumber" name="L983" href="#L983">983</a>     <strong class="jxr_keyword">protected</strong> String splitSecondWordInitialLine(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L984" href="#L984">984</a>         <strong class="jxr_keyword">return</strong> langAsciiString(asciiContent, start, length);
+<a class="jxr_linenumber" name="L985" href="#L985">985</a>     }
+<a class="jxr_linenumber" name="L986" href="#L986">986</a> 
+<a class="jxr_linenumber" name="L987" href="#L987">987</a>     <strong class="jxr_keyword">protected</strong> String splitThirdWordInitialLine(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L988" href="#L988">988</a>         <strong class="jxr_keyword">return</strong> langAsciiString(asciiContent, start, length);
+<a class="jxr_linenumber" name="L989" href="#L989">989</a>     }
+<a class="jxr_linenumber" name="L990" href="#L990">990</a> 
+<a class="jxr_linenumber" name="L991" href="#L991">991</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L992" href="#L992">992</a> <em class="jxr_javadoccomment">     * This method shouldn't exist: look at <a href="https://bugs.openjdk.org/browse/JDK-8295496" target="alexandria_uri">https://bugs.openjdk.org/browse/JDK-8295496</a> for more context</em>
+<a class="jxr_linenumber" name="L993" href="#L993">993</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L994" href="#L994">994</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> String langAsciiString(<strong class="jxr_keyword">final</strong> byte[] asciiContent, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L995" href="#L995">995</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
+<a class="jxr_linenumber" name="L996" href="#L996">996</a>             <strong class="jxr_keyword">return</strong> StringUtil.EMPTY_STRING;
+<a class="jxr_linenumber" name="L997" href="#L997">997</a>         }
+<a class="jxr_linenumber" name="L998" href="#L998">998</a>         <em class="jxr_comment">// DON'T REMOVE: it helps JIT to use a simpler intrinsic stub for System::arrayCopy based on the call-site</em>
+<a class="jxr_linenumber" name="L999" href="#L999">999</a>         <strong class="jxr_keyword">if</strong> (start == 0) {
+<a class="jxr_linenumber" name="L1000" href="#L1000">1000</a>             <strong class="jxr_keyword">if</strong> (length == asciiContent.length) {
+<a class="jxr_linenumber" name="L1001" href="#L1001">1001</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String(asciiContent, 0, 0, asciiContent.length);
+<a class="jxr_linenumber" name="L1002" href="#L1002">1002</a>             }
+<a class="jxr_linenumber" name="L1003" href="#L1003">1003</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String(asciiContent, 0, 0, length);
+<a class="jxr_linenumber" name="L1004" href="#L1004">1004</a>         }
+<a class="jxr_linenumber" name="L1005" href="#L1005">1005</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> String(asciiContent, 0, start, length);
+<a class="jxr_linenumber" name="L1006" href="#L1006">1006</a>     }
+<a class="jxr_linenumber" name="L1007" href="#L1007">1007</a> 
+<a class="jxr_linenumber" name="L1008" href="#L1008">1008</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> splitHeader(byte[] line, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L1009" href="#L1009">1009</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> end = start + length;
+<a class="jxr_linenumber" name="L1010" href="#L1010">1010</a>         <strong class="jxr_keyword">int</strong> nameEnd;
+<a class="jxr_linenumber" name="L1011" href="#L1011">1011</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> nameStart = start;
+<a class="jxr_linenumber" name="L1012" href="#L1012">1012</a>         <em class="jxr_comment">// hoist this load out of the loop, because it won't change!</em>
+<a class="jxr_linenumber" name="L1013" href="#L1013">1013</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> isDecodingRequest = isDecodingRequest();
+<a class="jxr_linenumber" name="L1014" href="#L1014">1014</a>         <strong class="jxr_keyword">for</strong> (nameEnd = nameStart; nameEnd &lt; end; nameEnd ++) {
+<a class="jxr_linenumber" name="L1015" href="#L1015">1015</a>             byte ch = line[nameEnd];
+<a class="jxr_linenumber" name="L1016" href="#L1016">1016</a>             <em class="jxr_comment">// https://tools.ietf.org/html/rfc7230#section-3.2.4</em>
+<a class="jxr_linenumber" name="L1017" href="#L1017">1017</a>             <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L1018" href="#L1018">1018</a>             <em class="jxr_comment">// No whitespace is allowed between the header field-name and colon. In</em>
+<a class="jxr_linenumber" name="L1019" href="#L1019">1019</a>             <em class="jxr_comment">// the past, differences in the handling of such whitespace have led to</em>
+<a class="jxr_linenumber" name="L1020" href="#L1020">1020</a>             <em class="jxr_comment">// security vulnerabilities in request routing and response handling. A</em>
+<a class="jxr_linenumber" name="L1021" href="#L1021">1021</a>             <em class="jxr_comment">// server MUST reject any received request message that contains</em>
+<a class="jxr_linenumber" name="L1022" href="#L1022">1022</a>             <em class="jxr_comment">// whitespace between a header field-name and colon with a response code</em>
+<a class="jxr_linenumber" name="L1023" href="#L1023">1023</a>             <em class="jxr_comment">// of 400 (Bad Request). A proxy MUST remove any such whitespace from a</em>
+<a class="jxr_linenumber" name="L1024" href="#L1024">1024</a>             <em class="jxr_comment">// response message before forwarding the message downstream.</em>
+<a class="jxr_linenumber" name="L1025" href="#L1025">1025</a>             <strong class="jxr_keyword">if</strong> (ch == ':' ||
+<a class="jxr_linenumber" name="L1026" href="#L1026">1026</a>                     <em class="jxr_comment">// In case of decoding a request we will just continue processing and header validation</em>
+<a class="jxr_linenumber" name="L1027" href="#L1027">1027</a>                     <em class="jxr_comment">// is done in the DefaultHttpHeaders implementation.</em>
+<a class="jxr_linenumber" name="L1028" href="#L1028">1028</a>                     <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L1029" href="#L1029">1029</a>                     <em class="jxr_comment">// In the case of decoding a response we will "skip" the whitespace.</em>
+<a class="jxr_linenumber" name="L1030" href="#L1030">1030</a>                     (!isDecodingRequest &amp;&amp; isOWS(ch))) {
+<a class="jxr_linenumber" name="L1031" href="#L1031">1031</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1032" href="#L1032">1032</a>             }
+<a class="jxr_linenumber" name="L1033" href="#L1033">1033</a>         }
+<a class="jxr_linenumber" name="L1034" href="#L1034">1034</a> 
+<a class="jxr_linenumber" name="L1035" href="#L1035">1035</a>         <strong class="jxr_keyword">if</strong> (nameEnd == end) {
+<a class="jxr_linenumber" name="L1036" href="#L1036">1036</a>             <em class="jxr_comment">// There was no colon present at all.</em>
+<a class="jxr_linenumber" name="L1037" href="#L1037">1037</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"No colon found"</span>);
+<a class="jxr_linenumber" name="L1038" href="#L1038">1038</a>         }
+<a class="jxr_linenumber" name="L1039" href="#L1039">1039</a>         <strong class="jxr_keyword">int</strong> colonEnd;
+<a class="jxr_linenumber" name="L1040" href="#L1040">1040</a>         <strong class="jxr_keyword">for</strong> (colonEnd = nameEnd; colonEnd &lt; end; colonEnd ++) {
+<a class="jxr_linenumber" name="L1041" href="#L1041">1041</a>             <strong class="jxr_keyword">if</strong> (line[colonEnd] == ':') {
+<a class="jxr_linenumber" name="L1042" href="#L1042">1042</a>                 colonEnd ++;
+<a class="jxr_linenumber" name="L1043" href="#L1043">1043</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1044" href="#L1044">1044</a>             }
+<a class="jxr_linenumber" name="L1045" href="#L1045">1045</a>         }
+<a class="jxr_linenumber" name="L1046" href="#L1046">1046</a>         name = splitHeaderName(line, nameStart, nameEnd - nameStart);
+<a class="jxr_linenumber" name="L1047" href="#L1047">1047</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> valueStart = findNonWhitespace(line, colonEnd, end);
+<a class="jxr_linenumber" name="L1048" href="#L1048">1048</a>         <strong class="jxr_keyword">if</strong> (valueStart == end) {
+<a class="jxr_linenumber" name="L1049" href="#L1049">1049</a>             value = StringUtil.EMPTY_STRING;
+<a class="jxr_linenumber" name="L1050" href="#L1050">1050</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1051" href="#L1051">1051</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> valueEnd = findEndOfString(line, start, end);
+<a class="jxr_linenumber" name="L1052" href="#L1052">1052</a>             <em class="jxr_comment">// no need to make uses of the ByteBuf's toString ASCII method here, and risk to get JIT confused</em>
+<a class="jxr_linenumber" name="L1053" href="#L1053">1053</a>             value = langAsciiString(line, valueStart, valueEnd - valueStart);
+<a class="jxr_linenumber" name="L1054" href="#L1054">1054</a>         }
+<a class="jxr_linenumber" name="L1055" href="#L1055">1055</a>     }
+<a class="jxr_linenumber" name="L1056" href="#L1056">1056</a> 
+<a class="jxr_linenumber" name="L1057" href="#L1057">1057</a>     <strong class="jxr_keyword">protected</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a> splitHeaderName(byte[] sb, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L1058" href="#L1058">1058</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a>(sb, start, length, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L1059" href="#L1059">1059</a>     }
+<a class="jxr_linenumber" name="L1060" href="#L1060">1060</a> 
+<a class="jxr_linenumber" name="L1061" href="#L1061">1061</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findNonSPLenient(byte[] sb, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> end) {
+<a class="jxr_linenumber" name="L1062" href="#L1062">1062</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = offset; result &lt; end; ++result) {
+<a class="jxr_linenumber" name="L1063" href="#L1063">1063</a>             byte c = sb[result];
+<a class="jxr_linenumber" name="L1064" href="#L1064">1064</a>             <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7230#section-3.5</em>
+<a class="jxr_linenumber" name="L1065" href="#L1065">1065</a>             <strong class="jxr_keyword">if</strong> (isSPLenient(c)) {
+<a class="jxr_linenumber" name="L1066" href="#L1066">1066</a>                 <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="L1067" href="#L1067">1067</a>             }
+<a class="jxr_linenumber" name="L1068" href="#L1068">1068</a>             <strong class="jxr_keyword">if</strong> (isWhitespace(c)) {
+<a class="jxr_linenumber" name="L1069" href="#L1069">1069</a>                 <em class="jxr_comment">// Any other whitespace delimiter is invalid</em>
+<a class="jxr_linenumber" name="L1070" href="#L1070">1070</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid separator"</span>);
+<a class="jxr_linenumber" name="L1071" href="#L1071">1071</a>             }
+<a class="jxr_linenumber" name="L1072" href="#L1072">1072</a>             <strong class="jxr_keyword">return</strong> result;
+<a class="jxr_linenumber" name="L1073" href="#L1073">1073</a>         }
+<a class="jxr_linenumber" name="L1074" href="#L1074">1074</a>         <strong class="jxr_keyword">return</strong> end;
+<a class="jxr_linenumber" name="L1075" href="#L1075">1075</a>     }
+<a class="jxr_linenumber" name="L1076" href="#L1076">1076</a> 
+<a class="jxr_linenumber" name="L1077" href="#L1077">1077</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findSPLenient(byte[] sb, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> end) {
+<a class="jxr_linenumber" name="L1078" href="#L1078">1078</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = offset; result &lt; end; ++result) {
+<a class="jxr_linenumber" name="L1079" href="#L1079">1079</a>             <strong class="jxr_keyword">if</strong> (isSPLenient(sb[result])) {
+<a class="jxr_linenumber" name="L1080" href="#L1080">1080</a>                 <strong class="jxr_keyword">return</strong> result;
+<a class="jxr_linenumber" name="L1081" href="#L1081">1081</a>             }
+<a class="jxr_linenumber" name="L1082" href="#L1082">1082</a>         }
+<a class="jxr_linenumber" name="L1083" href="#L1083">1083</a>         <strong class="jxr_keyword">return</strong> end;
+<a class="jxr_linenumber" name="L1084" href="#L1084">1084</a>     }
+<a class="jxr_linenumber" name="L1085" href="#L1085">1085</a> 
+<a class="jxr_linenumber" name="L1086" href="#L1086">1086</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong>[] SP_LENIENT_BYTES;
+<a class="jxr_linenumber" name="L1087" href="#L1087">1087</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong>[] LATIN_WHITESPACE;
+<a class="jxr_linenumber" name="L1088" href="#L1088">1088</a> 
+<a class="jxr_linenumber" name="L1089" href="#L1089">1089</a>     <strong class="jxr_keyword">static</strong> {
+<a class="jxr_linenumber" name="L1090" href="#L1090">1090</a>         <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7230#section-3.5</em>
+<a class="jxr_linenumber" name="L1091" href="#L1091">1091</a>         SP_LENIENT_BYTES = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">boolean</strong>[256];
+<a class="jxr_linenumber" name="L1092" href="#L1092">1092</a>         SP_LENIENT_BYTES[128 + ' '] = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1093" href="#L1093">1093</a>         SP_LENIENT_BYTES[128 + 0x09] = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1094" href="#L1094">1094</a>         SP_LENIENT_BYTES[128 + 0x0B] = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1095" href="#L1095">1095</a>         SP_LENIENT_BYTES[128 + 0x0C] = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1096" href="#L1096">1096</a>         SP_LENIENT_BYTES[128 + 0x0D] = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1097" href="#L1097">1097</a>         <em class="jxr_comment">// TO SAVE PERFORMING Character::isWhitespace ceremony</em>
+<a class="jxr_linenumber" name="L1098" href="#L1098">1098</a>         LATIN_WHITESPACE = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">boolean</strong>[256];
+<a class="jxr_linenumber" name="L1099" href="#L1099">1099</a>         <strong class="jxr_keyword">for</strong> (byte b = Byte.MIN_VALUE; b &lt; Byte.MAX_VALUE; b++) {
+<a class="jxr_linenumber" name="L1100" href="#L1100">1100</a>             LATIN_WHITESPACE[128 + b] = Character.isWhitespace(b);
+<a class="jxr_linenumber" name="L1101" href="#L1101">1101</a>         }
+<a class="jxr_linenumber" name="L1102" href="#L1102">1102</a>     }
+<a class="jxr_linenumber" name="L1103" href="#L1103">1103</a> 
+<a class="jxr_linenumber" name="L1104" href="#L1104">1104</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isSPLenient(byte c) {
+<a class="jxr_linenumber" name="L1105" href="#L1105">1105</a>         <em class="jxr_comment">// See https://tools.ietf.org/html/rfc7230#section-3.5</em>
+<a class="jxr_linenumber" name="L1106" href="#L1106">1106</a>         <strong class="jxr_keyword">return</strong> SP_LENIENT_BYTES[c + 128];
+<a class="jxr_linenumber" name="L1107" href="#L1107">1107</a>     }
+<a class="jxr_linenumber" name="L1108" href="#L1108">1108</a> 
+<a class="jxr_linenumber" name="L1109" href="#L1109">1109</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isWhitespace(byte b) {
+<a class="jxr_linenumber" name="L1110" href="#L1110">1110</a>         <strong class="jxr_keyword">return</strong> LATIN_WHITESPACE[b + 128];
+<a class="jxr_linenumber" name="L1111" href="#L1111">1111</a>     }
+<a class="jxr_linenumber" name="L1112" href="#L1112">1112</a> 
+<a class="jxr_linenumber" name="L1113" href="#L1113">1113</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findNonWhitespace(byte[] sb, <strong class="jxr_keyword">int</strong> offset, <strong class="jxr_keyword">int</strong> end) {
+<a class="jxr_linenumber" name="L1114" href="#L1114">1114</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = offset; result &lt; end; ++result) {
+<a class="jxr_linenumber" name="L1115" href="#L1115">1115</a>             byte c = sb[result];
+<a class="jxr_linenumber" name="L1116" href="#L1116">1116</a>             <strong class="jxr_keyword">if</strong> (!isWhitespace(c)) {
+<a class="jxr_linenumber" name="L1117" href="#L1117">1117</a>                 <strong class="jxr_keyword">return</strong> result;
+<a class="jxr_linenumber" name="L1118" href="#L1118">1118</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!isOWS(c)) {
+<a class="jxr_linenumber" name="L1119" href="#L1119">1119</a>                 <em class="jxr_comment">// Only OWS is supported for whitespace</em>
+<a class="jxr_linenumber" name="L1120" href="#L1120">1120</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"Invalid separator, only a single space or horizontal tab allowed,"</span> +
+<a class="jxr_linenumber" name="L1121" href="#L1121">1121</a>                         <span class="jxr_string">" but received a '"</span> + c + <span class="jxr_string">"' (0x"</span> + Integer.toHexString(c) + <span class="jxr_string">")"</span>);
+<a class="jxr_linenumber" name="L1122" href="#L1122">1122</a>             }
+<a class="jxr_linenumber" name="L1123" href="#L1123">1123</a>         }
+<a class="jxr_linenumber" name="L1124" href="#L1124">1124</a>         <strong class="jxr_keyword">return</strong> end;
 <a class="jxr_linenumber" name="L1125" href="#L1125">1125</a>     }
 <a class="jxr_linenumber" name="L1126" href="#L1126">1126</a> 
-<a class="jxr_linenumber" name="L1127" href="#L1127">1127</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> HeaderParser {
-<a class="jxr_linenumber" name="L1128" href="#L1128">1128</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> seq;
-<a class="jxr_linenumber" name="L1129" href="#L1129">1129</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxLength;
-<a class="jxr_linenumber" name="L1130" href="#L1130">1130</a>         <strong class="jxr_keyword">int</strong> size;
-<a class="jxr_linenumber" name="L1131" href="#L1131">1131</a> 
-<a class="jxr_linenumber" name="L1132" href="#L1132">1132</a>         HeaderParser(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> seq, <strong class="jxr_keyword">int</strong> maxLength) {
-<a class="jxr_linenumber" name="L1133" href="#L1133">1133</a>             <strong class="jxr_keyword">this</strong>.seq = seq;
-<a class="jxr_linenumber" name="L1134" href="#L1134">1134</a>             <strong class="jxr_keyword">this</strong>.maxLength = maxLength;
-<a class="jxr_linenumber" name="L1135" href="#L1135">1135</a>         }
-<a class="jxr_linenumber" name="L1136" href="#L1136">1136</a> 
-<a class="jxr_linenumber" name="L1137" href="#L1137">1137</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> parse(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
-<a class="jxr_linenumber" name="L1138" href="#L1138">1138</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buffer.readableBytes();
-<a class="jxr_linenumber" name="L1139" href="#L1139">1139</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readerIndex = buffer.readerIndex();
-<a class="jxr_linenumber" name="L1140" href="#L1140">1140</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxBodySize = maxLength - size;
-<a class="jxr_linenumber" name="L1141" href="#L1141">1141</a>             assert maxBodySize &gt;= 0;
-<a class="jxr_linenumber" name="L1142" href="#L1142">1142</a>             <em class="jxr_comment">// adding 2 to account for both CR (if present) and LF</em>
-<a class="jxr_linenumber" name="L1143" href="#L1143">1143</a>             <em class="jxr_comment">// don't remove 2L: it's key to cover maxLength = Integer.MAX_VALUE</em>
-<a class="jxr_linenumber" name="L1144" href="#L1144">1144</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> maxBodySizeWithCRLF = maxBodySize + 2L;
-<a class="jxr_linenumber" name="L1145" href="#L1145">1145</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> toProcess = (<strong class="jxr_keyword">int</strong>) Math.min(maxBodySizeWithCRLF, readableBytes);
-<a class="jxr_linenumber" name="L1146" href="#L1146">1146</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> toIndexExclusive = readerIndex + toProcess;
-<a class="jxr_linenumber" name="L1147" href="#L1147">1147</a>             assert toIndexExclusive &gt;= readerIndex;
-<a class="jxr_linenumber" name="L1148" href="#L1148">1148</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> indexOfLf = buffer.indexOf(readerIndex, toIndexExclusive, HttpConstants.LF);
-<a class="jxr_linenumber" name="L1149" href="#L1149">1149</a>             <strong class="jxr_keyword">if</strong> (indexOfLf == -1) {
-<a class="jxr_linenumber" name="L1150" href="#L1150">1150</a>                 <strong class="jxr_keyword">if</strong> (readableBytes &gt; maxBodySize) {
-<a class="jxr_linenumber" name="L1151" href="#L1151">1151</a>                     <em class="jxr_comment">// TODO: Respond with Bad Request and discard the traffic</em>
-<a class="jxr_linenumber" name="L1152" href="#L1152">1152</a>                     <em class="jxr_comment">//    or close the connection.</em>
-<a class="jxr_linenumber" name="L1153" href="#L1153">1153</a>                     <em class="jxr_comment">//       No need to notify the upstream handlers - just log.</em>
-<a class="jxr_linenumber" name="L1154" href="#L1154">1154</a>                     <em class="jxr_comment">//       If decoding a response, just throw an exception.</em>
-<a class="jxr_linenumber" name="L1155" href="#L1155">1155</a>                     <strong class="jxr_keyword">throw</strong> newException(maxLength);
-<a class="jxr_linenumber" name="L1156" href="#L1156">1156</a>                 }
-<a class="jxr_linenumber" name="L1157" href="#L1157">1157</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L1158" href="#L1158">1158</a>             }
-<a class="jxr_linenumber" name="L1159" href="#L1159">1159</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> endOfSeqIncluded;
-<a class="jxr_linenumber" name="L1160" href="#L1160">1160</a>             <strong class="jxr_keyword">if</strong> (indexOfLf &gt; readerIndex &amp;&amp; buffer.getByte(indexOfLf - 1) == HttpConstants.CR) {
-<a class="jxr_linenumber" name="L1161" href="#L1161">1161</a>                 <em class="jxr_comment">// Drop CR if we had a CRLF pair</em>
-<a class="jxr_linenumber" name="L1162" href="#L1162">1162</a>                 endOfSeqIncluded = indexOfLf - 1;
-<a class="jxr_linenumber" name="L1163" href="#L1163">1163</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1164" href="#L1164">1164</a>                 endOfSeqIncluded = indexOfLf;
-<a class="jxr_linenumber" name="L1165" href="#L1165">1165</a>             }
-<a class="jxr_linenumber" name="L1166" href="#L1166">1166</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> newSize = endOfSeqIncluded - readerIndex;
-<a class="jxr_linenumber" name="L1167" href="#L1167">1167</a>             <strong class="jxr_keyword">if</strong> (newSize == 0) {
-<a class="jxr_linenumber" name="L1168" href="#L1168">1168</a>                 seq.clear();
-<a class="jxr_linenumber" name="L1169" href="#L1169">1169</a>                 buffer.readerIndex(indexOfLf + 1);
-<a class="jxr_linenumber" name="L1170" href="#L1170">1170</a>                 <strong class="jxr_keyword">return</strong> seq;
+<a class="jxr_linenumber" name="L1127" href="#L1127">1127</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> findEndOfString(byte[] sb, <strong class="jxr_keyword">int</strong> start, <strong class="jxr_keyword">int</strong> end) {
+<a class="jxr_linenumber" name="L1128" href="#L1128">1128</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> result = end - 1; result &gt; start; --result) {
+<a class="jxr_linenumber" name="L1129" href="#L1129">1129</a>             <strong class="jxr_keyword">if</strong> (!isOWS(sb[result])) {
+<a class="jxr_linenumber" name="L1130" href="#L1130">1130</a>                 <strong class="jxr_keyword">return</strong> result + 1;
+<a class="jxr_linenumber" name="L1131" href="#L1131">1131</a>             }
+<a class="jxr_linenumber" name="L1132" href="#L1132">1132</a>         }
+<a class="jxr_linenumber" name="L1133" href="#L1133">1133</a>         <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="L1134" href="#L1134">1134</a>     }
+<a class="jxr_linenumber" name="L1135" href="#L1135">1135</a> 
+<a class="jxr_linenumber" name="L1136" href="#L1136">1136</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isOWS(byte ch) {
+<a class="jxr_linenumber" name="L1137" href="#L1137">1137</a>         <strong class="jxr_keyword">return</strong> ch == ' ' || ch == 0x09;
+<a class="jxr_linenumber" name="L1138" href="#L1138">1138</a>     }
+<a class="jxr_linenumber" name="L1139" href="#L1139">1139</a> 
+<a class="jxr_linenumber" name="L1140" href="#L1140">1140</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">class</strong> HeaderParser {
+<a class="jxr_linenumber" name="L1141" href="#L1141">1141</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> seq;
+<a class="jxr_linenumber" name="L1142" href="#L1142">1142</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxLength;
+<a class="jxr_linenumber" name="L1143" href="#L1143">1143</a>         <strong class="jxr_keyword">int</strong> size;
+<a class="jxr_linenumber" name="L1144" href="#L1144">1144</a> 
+<a class="jxr_linenumber" name="L1145" href="#L1145">1145</a>         HeaderParser(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> seq, <strong class="jxr_keyword">int</strong> maxLength) {
+<a class="jxr_linenumber" name="L1146" href="#L1146">1146</a>             <strong class="jxr_keyword">this</strong>.seq = seq;
+<a class="jxr_linenumber" name="L1147" href="#L1147">1147</a>             <strong class="jxr_keyword">this</strong>.maxLength = maxLength;
+<a class="jxr_linenumber" name="L1148" href="#L1148">1148</a>         }
+<a class="jxr_linenumber" name="L1149" href="#L1149">1149</a> 
+<a class="jxr_linenumber" name="L1150" href="#L1150">1150</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> parse(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
+<a class="jxr_linenumber" name="L1151" href="#L1151">1151</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buffer.readableBytes();
+<a class="jxr_linenumber" name="L1152" href="#L1152">1152</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readerIndex = buffer.readerIndex();
+<a class="jxr_linenumber" name="L1153" href="#L1153">1153</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxBodySize = maxLength - size;
+<a class="jxr_linenumber" name="L1154" href="#L1154">1154</a>             assert maxBodySize &gt;= 0;
+<a class="jxr_linenumber" name="L1155" href="#L1155">1155</a>             <em class="jxr_comment">// adding 2 to account for both CR (if present) and LF</em>
+<a class="jxr_linenumber" name="L1156" href="#L1156">1156</a>             <em class="jxr_comment">// don't remove 2L: it's key to cover maxLength = Integer.MAX_VALUE</em>
+<a class="jxr_linenumber" name="L1157" href="#L1157">1157</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> maxBodySizeWithCRLF = maxBodySize + 2L;
+<a class="jxr_linenumber" name="L1158" href="#L1158">1158</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> toProcess = (<strong class="jxr_keyword">int</strong>) Math.min(maxBodySizeWithCRLF, readableBytes);
+<a class="jxr_linenumber" name="L1159" href="#L1159">1159</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> toIndexExclusive = readerIndex + toProcess;
+<a class="jxr_linenumber" name="L1160" href="#L1160">1160</a>             assert toIndexExclusive &gt;= readerIndex;
+<a class="jxr_linenumber" name="L1161" href="#L1161">1161</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> indexOfLf = buffer.indexOf(readerIndex, toIndexExclusive, HttpConstants.LF);
+<a class="jxr_linenumber" name="L1162" href="#L1162">1162</a>             <strong class="jxr_keyword">if</strong> (indexOfLf == -1) {
+<a class="jxr_linenumber" name="L1163" href="#L1163">1163</a>                 <strong class="jxr_keyword">if</strong> (readableBytes &gt; maxBodySize) {
+<a class="jxr_linenumber" name="L1164" href="#L1164">1164</a>                     <em class="jxr_comment">// TODO: Respond with Bad Request and discard the traffic</em>
+<a class="jxr_linenumber" name="L1165" href="#L1165">1165</a>                     <em class="jxr_comment">//    or close the connection.</em>
+<a class="jxr_linenumber" name="L1166" href="#L1166">1166</a>                     <em class="jxr_comment">//       No need to notify the upstream handlers - just log.</em>
+<a class="jxr_linenumber" name="L1167" href="#L1167">1167</a>                     <em class="jxr_comment">//       If decoding a response, just throw an exception.</em>
+<a class="jxr_linenumber" name="L1168" href="#L1168">1168</a>                     <strong class="jxr_keyword">throw</strong> newException(maxLength);
+<a class="jxr_linenumber" name="L1169" href="#L1169">1169</a>                 }
+<a class="jxr_linenumber" name="L1170" href="#L1170">1170</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="L1171" href="#L1171">1171</a>             }
-<a class="jxr_linenumber" name="L1172" href="#L1172">1172</a>             <strong class="jxr_keyword">int</strong> size = <strong class="jxr_keyword">this</strong>.size + newSize;
-<a class="jxr_linenumber" name="L1173" href="#L1173">1173</a>             <strong class="jxr_keyword">if</strong> (size &gt; maxLength) {
-<a class="jxr_linenumber" name="L1174" href="#L1174">1174</a>                 <strong class="jxr_keyword">throw</strong> newException(maxLength);
-<a class="jxr_linenumber" name="L1175" href="#L1175">1175</a>             }
-<a class="jxr_linenumber" name="L1176" href="#L1176">1176</a>             <strong class="jxr_keyword">this</strong>.size = size;
-<a class="jxr_linenumber" name="L1177" href="#L1177">1177</a>             seq.clear();
-<a class="jxr_linenumber" name="L1178" href="#L1178">1178</a>             seq.writeBytes(buffer, readerIndex, newSize);
-<a class="jxr_linenumber" name="L1179" href="#L1179">1179</a>             buffer.readerIndex(indexOfLf + 1);
-<a class="jxr_linenumber" name="L1180" href="#L1180">1180</a>             <strong class="jxr_keyword">return</strong> seq;
-<a class="jxr_linenumber" name="L1181" href="#L1181">1181</a>         }
-<a class="jxr_linenumber" name="L1182" href="#L1182">1182</a> 
-<a class="jxr_linenumber" name="L1183" href="#L1183">1183</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> reset() {
-<a class="jxr_linenumber" name="L1184" href="#L1184">1184</a>             size = 0;
-<a class="jxr_linenumber" name="L1185" href="#L1185">1185</a>         }
-<a class="jxr_linenumber" name="L1186" href="#L1186">1186</a> 
-<a class="jxr_linenumber" name="L1187" href="#L1187">1187</a>         <strong class="jxr_keyword">protected</strong> <a name="TooLongFrameException" href="../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a> newException(<strong class="jxr_keyword">int</strong> maxLength) {
-<a class="jxr_linenumber" name="L1188" href="#L1188">1188</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongHttpHeaderException" href="../../../../../io/netty/handler/codec/http/TooLongHttpHeaderException.html#TooLongHttpHeaderException">TooLongHttpHeaderException</a>(<span class="jxr_string">"HTTP header is larger than "</span> + maxLength + <span class="jxr_string">" bytes."</span>);
-<a class="jxr_linenumber" name="L1189" href="#L1189">1189</a>         }
-<a class="jxr_linenumber" name="L1190" href="#L1190">1190</a>     }
-<a class="jxr_linenumber" name="L1191" href="#L1191">1191</a> 
-<a class="jxr_linenumber" name="L1192" href="#L1192">1192</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> LineParser <strong class="jxr_keyword">extends</strong> HeaderParser {
-<a class="jxr_linenumber" name="L1193" href="#L1193">1193</a> 
-<a class="jxr_linenumber" name="L1194" href="#L1194">1194</a>         LineParser(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> seq, <strong class="jxr_keyword">int</strong> maxLength) {
-<a class="jxr_linenumber" name="L1195" href="#L1195">1195</a>             <strong class="jxr_keyword">super</strong>(seq, maxLength);
-<a class="jxr_linenumber" name="L1196" href="#L1196">1196</a>         }
-<a class="jxr_linenumber" name="L1197" href="#L1197">1197</a> 
-<a class="jxr_linenumber" name="L1198" href="#L1198">1198</a>         @Override
-<a class="jxr_linenumber" name="L1199" href="#L1199">1199</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> parse(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
-<a class="jxr_linenumber" name="L1200" href="#L1200">1200</a>             <em class="jxr_comment">// Suppress a warning because HeaderParser.reset() is supposed to be called</em>
-<a class="jxr_linenumber" name="L1201" href="#L1201">1201</a>             reset();
-<a class="jxr_linenumber" name="L1202" href="#L1202">1202</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buffer.readableBytes();
-<a class="jxr_linenumber" name="L1203" href="#L1203">1203</a>             <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
-<a class="jxr_linenumber" name="L1204" href="#L1204">1204</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L1205" href="#L1205">1205</a>             }
-<a class="jxr_linenumber" name="L1206" href="#L1206">1206</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readerIndex = buffer.readerIndex();
-<a class="jxr_linenumber" name="L1207" href="#L1207">1207</a>             <strong class="jxr_keyword">if</strong> (currentState == State.SKIP_CONTROL_CHARS &amp;&amp; skipControlChars(buffer, readableBytes, readerIndex)) {
-<a class="jxr_linenumber" name="L1208" href="#L1208">1208</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L1209" href="#L1209">1209</a>             }
-<a class="jxr_linenumber" name="L1210" href="#L1210">1210</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.parse(buffer);
-<a class="jxr_linenumber" name="L1211" href="#L1211">1211</a>         }
-<a class="jxr_linenumber" name="L1212" href="#L1212">1212</a> 
-<a class="jxr_linenumber" name="L1213" href="#L1213">1213</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> skipControlChars(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer, <strong class="jxr_keyword">int</strong> readableBytes, <strong class="jxr_keyword">int</strong> readerIndex) {
-<a class="jxr_linenumber" name="L1214" href="#L1214">1214</a>             assert currentState == State.SKIP_CONTROL_CHARS;
-<a class="jxr_linenumber" name="L1215" href="#L1215">1215</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxToSkip = Math.min(maxLength, readableBytes);
-<a class="jxr_linenumber" name="L1216" href="#L1216">1216</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> firstNonControlIndex = buffer.forEachByte(readerIndex, maxToSkip, SKIP_CONTROL_CHARS_BYTES);
-<a class="jxr_linenumber" name="L1217" href="#L1217">1217</a>             <strong class="jxr_keyword">if</strong> (firstNonControlIndex == -1) {
-<a class="jxr_linenumber" name="L1218" href="#L1218">1218</a>                 buffer.skipBytes(maxToSkip);
-<a class="jxr_linenumber" name="L1219" href="#L1219">1219</a>                 <strong class="jxr_keyword">if</strong> (readableBytes &gt; maxLength) {
-<a class="jxr_linenumber" name="L1220" href="#L1220">1220</a>                     <strong class="jxr_keyword">throw</strong> newException(maxLength);
-<a class="jxr_linenumber" name="L1221" href="#L1221">1221</a>                 }
-<a class="jxr_linenumber" name="L1222" href="#L1222">1222</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1223" href="#L1223">1223</a>             }
-<a class="jxr_linenumber" name="L1224" href="#L1224">1224</a>             <em class="jxr_comment">// from now on we don't care about control chars</em>
-<a class="jxr_linenumber" name="L1225" href="#L1225">1225</a>             buffer.readerIndex(firstNonControlIndex);
-<a class="jxr_linenumber" name="L1226" href="#L1226">1226</a>             currentState = State.READ_INITIAL;
-<a class="jxr_linenumber" name="L1227" href="#L1227">1227</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L1228" href="#L1228">1228</a>         }
-<a class="jxr_linenumber" name="L1229" href="#L1229">1229</a> 
-<a class="jxr_linenumber" name="L1230" href="#L1230">1230</a>         @Override
-<a class="jxr_linenumber" name="L1231" href="#L1231">1231</a>         <strong class="jxr_keyword">protected</strong> <a name="TooLongFrameException" href="../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a> newException(<strong class="jxr_keyword">int</strong> maxLength) {
-<a class="jxr_linenumber" name="L1232" href="#L1232">1232</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongHttpLineException" href="../../../../../io/netty/handler/codec/http/TooLongHttpLineException.html#TooLongHttpLineException">TooLongHttpLineException</a>(<span class="jxr_string">"An HTTP line is larger than "</span> + maxLength + <span class="jxr_string">" bytes."</span>);
-<a class="jxr_linenumber" name="L1233" href="#L1233">1233</a>         }
-<a class="jxr_linenumber" name="L1234" href="#L1234">1234</a>     }
-<a class="jxr_linenumber" name="L1235" href="#L1235">1235</a> 
-<a class="jxr_linenumber" name="L1236" href="#L1236">1236</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong>[] ISO_CONTROL_OR_WHITESPACE;
-<a class="jxr_linenumber" name="L1237" href="#L1237">1237</a> 
-<a class="jxr_linenumber" name="L1238" href="#L1238">1238</a>     <strong class="jxr_keyword">static</strong> {
-<a class="jxr_linenumber" name="L1239" href="#L1239">1239</a>         ISO_CONTROL_OR_WHITESPACE = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">boolean</strong>[256];
-<a class="jxr_linenumber" name="L1240" href="#L1240">1240</a>         <strong class="jxr_keyword">for</strong> (byte b = Byte.MIN_VALUE; b &lt; Byte.MAX_VALUE; b++) {
-<a class="jxr_linenumber" name="L1241" href="#L1241">1241</a>             ISO_CONTROL_OR_WHITESPACE[128 + b] = Character.isISOControl(b) || isWhitespace(b);
-<a class="jxr_linenumber" name="L1242" href="#L1242">1242</a>         }
-<a class="jxr_linenumber" name="L1243" href="#L1243">1243</a>     }
-<a class="jxr_linenumber" name="L1244" href="#L1244">1244</a> 
-<a class="jxr_linenumber" name="L1245" href="#L1245">1245</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="ByteProcessor" href="../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> SKIP_CONTROL_CHARS_BYTES = <strong class="jxr_keyword">new</strong> <a name="ByteProcessor" href="../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a>() {
-<a class="jxr_linenumber" name="L1246" href="#L1246">1246</a> 
-<a class="jxr_linenumber" name="L1247" href="#L1247">1247</a>         @Override
-<a class="jxr_linenumber" name="L1248" href="#L1248">1248</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte value) {
-<a class="jxr_linenumber" name="L1249" href="#L1249">1249</a>             <strong class="jxr_keyword">return</strong> ISO_CONTROL_OR_WHITESPACE[128 + value];
-<a class="jxr_linenumber" name="L1250" href="#L1250">1250</a>         }
-<a class="jxr_linenumber" name="L1251" href="#L1251">1251</a>     };
-<a class="jxr_linenumber" name="L1252" href="#L1252">1252</a> 
-<a class="jxr_linenumber" name="L1253" href="#L1253">1253</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isControlOrWhitespaceAsciiChar(byte b) {
-<a class="jxr_linenumber" name="L1254" href="#L1254">1254</a>         <strong class="jxr_keyword">return</strong> ISO_CONTROL_OR_WHITESPACE[128 + b];
-<a class="jxr_linenumber" name="L1255" href="#L1255">1255</a>     }
-<a class="jxr_linenumber" name="L1256" href="#L1256">1256</a> }
+<a class="jxr_linenumber" name="L1172" href="#L1172">1172</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> endOfSeqIncluded;
+<a class="jxr_linenumber" name="L1173" href="#L1173">1173</a>             <strong class="jxr_keyword">if</strong> (indexOfLf &gt; readerIndex &amp;&amp; buffer.getByte(indexOfLf - 1) == HttpConstants.CR) {
+<a class="jxr_linenumber" name="L1174" href="#L1174">1174</a>                 <em class="jxr_comment">// Drop CR if we had a CRLF pair</em>
+<a class="jxr_linenumber" name="L1175" href="#L1175">1175</a>                 endOfSeqIncluded = indexOfLf - 1;
+<a class="jxr_linenumber" name="L1176" href="#L1176">1176</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1177" href="#L1177">1177</a>                 endOfSeqIncluded = indexOfLf;
+<a class="jxr_linenumber" name="L1178" href="#L1178">1178</a>             }
+<a class="jxr_linenumber" name="L1179" href="#L1179">1179</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> newSize = endOfSeqIncluded - readerIndex;
+<a class="jxr_linenumber" name="L1180" href="#L1180">1180</a>             <strong class="jxr_keyword">if</strong> (newSize == 0) {
+<a class="jxr_linenumber" name="L1181" href="#L1181">1181</a>                 seq.clear();
+<a class="jxr_linenumber" name="L1182" href="#L1182">1182</a>                 buffer.readerIndex(indexOfLf + 1);
+<a class="jxr_linenumber" name="L1183" href="#L1183">1183</a>                 <strong class="jxr_keyword">return</strong> seq;
+<a class="jxr_linenumber" name="L1184" href="#L1184">1184</a>             }
+<a class="jxr_linenumber" name="L1185" href="#L1185">1185</a>             <strong class="jxr_keyword">int</strong> size = <strong class="jxr_keyword">this</strong>.size + newSize;
+<a class="jxr_linenumber" name="L1186" href="#L1186">1186</a>             <strong class="jxr_keyword">if</strong> (size &gt; maxLength) {
+<a class="jxr_linenumber" name="L1187" href="#L1187">1187</a>                 <strong class="jxr_keyword">throw</strong> newException(maxLength);
+<a class="jxr_linenumber" name="L1188" href="#L1188">1188</a>             }
+<a class="jxr_linenumber" name="L1189" href="#L1189">1189</a>             <strong class="jxr_keyword">this</strong>.size = size;
+<a class="jxr_linenumber" name="L1190" href="#L1190">1190</a>             seq.clear();
+<a class="jxr_linenumber" name="L1191" href="#L1191">1191</a>             seq.writeBytes(buffer, readerIndex, newSize);
+<a class="jxr_linenumber" name="L1192" href="#L1192">1192</a>             buffer.readerIndex(indexOfLf + 1);
+<a class="jxr_linenumber" name="L1193" href="#L1193">1193</a>             <strong class="jxr_keyword">return</strong> seq;
+<a class="jxr_linenumber" name="L1194" href="#L1194">1194</a>         }
+<a class="jxr_linenumber" name="L1195" href="#L1195">1195</a> 
+<a class="jxr_linenumber" name="L1196" href="#L1196">1196</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> reset() {
+<a class="jxr_linenumber" name="L1197" href="#L1197">1197</a>             size = 0;
+<a class="jxr_linenumber" name="L1198" href="#L1198">1198</a>         }
+<a class="jxr_linenumber" name="L1199" href="#L1199">1199</a> 
+<a class="jxr_linenumber" name="L1200" href="#L1200">1200</a>         <strong class="jxr_keyword">protected</strong> <a name="TooLongFrameException" href="../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a> newException(<strong class="jxr_keyword">int</strong> maxLength) {
+<a class="jxr_linenumber" name="L1201" href="#L1201">1201</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongHttpHeaderException" href="../../../../../io/netty/handler/codec/http/TooLongHttpHeaderException.html#TooLongHttpHeaderException">TooLongHttpHeaderException</a>(<span class="jxr_string">"HTTP header is larger than "</span> + maxLength + <span class="jxr_string">" bytes."</span>);
+<a class="jxr_linenumber" name="L1202" href="#L1202">1202</a>         }
+<a class="jxr_linenumber" name="L1203" href="#L1203">1203</a>     }
+<a class="jxr_linenumber" name="L1204" href="#L1204">1204</a> 
+<a class="jxr_linenumber" name="L1205" href="#L1205">1205</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> LineParser <strong class="jxr_keyword">extends</strong> HeaderParser {
+<a class="jxr_linenumber" name="L1206" href="#L1206">1206</a> 
+<a class="jxr_linenumber" name="L1207" href="#L1207">1207</a>         LineParser(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> seq, <strong class="jxr_keyword">int</strong> maxLength) {
+<a class="jxr_linenumber" name="L1208" href="#L1208">1208</a>             <strong class="jxr_keyword">super</strong>(seq, maxLength);
+<a class="jxr_linenumber" name="L1209" href="#L1209">1209</a>         }
+<a class="jxr_linenumber" name="L1210" href="#L1210">1210</a> 
+<a class="jxr_linenumber" name="L1211" href="#L1211">1211</a>         @Override
+<a class="jxr_linenumber" name="L1212" href="#L1212">1212</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> parse(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
+<a class="jxr_linenumber" name="L1213" href="#L1213">1213</a>             <em class="jxr_comment">// Suppress a warning because HeaderParser.reset() is supposed to be called</em>
+<a class="jxr_linenumber" name="L1214" href="#L1214">1214</a>             reset();
+<a class="jxr_linenumber" name="L1215" href="#L1215">1215</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buffer.readableBytes();
+<a class="jxr_linenumber" name="L1216" href="#L1216">1216</a>             <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
+<a class="jxr_linenumber" name="L1217" href="#L1217">1217</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L1218" href="#L1218">1218</a>             }
+<a class="jxr_linenumber" name="L1219" href="#L1219">1219</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readerIndex = buffer.readerIndex();
+<a class="jxr_linenumber" name="L1220" href="#L1220">1220</a>             <strong class="jxr_keyword">if</strong> (currentState == State.SKIP_CONTROL_CHARS &amp;&amp; skipControlChars(buffer, readableBytes, readerIndex)) {
+<a class="jxr_linenumber" name="L1221" href="#L1221">1221</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L1222" href="#L1222">1222</a>             }
+<a class="jxr_linenumber" name="L1223" href="#L1223">1223</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.parse(buffer);
+<a class="jxr_linenumber" name="L1224" href="#L1224">1224</a>         }
+<a class="jxr_linenumber" name="L1225" href="#L1225">1225</a> 
+<a class="jxr_linenumber" name="L1226" href="#L1226">1226</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> skipControlChars(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer, <strong class="jxr_keyword">int</strong> readableBytes, <strong class="jxr_keyword">int</strong> readerIndex) {
+<a class="jxr_linenumber" name="L1227" href="#L1227">1227</a>             assert currentState == State.SKIP_CONTROL_CHARS;
+<a class="jxr_linenumber" name="L1228" href="#L1228">1228</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> maxToSkip = Math.min(maxLength, readableBytes);
+<a class="jxr_linenumber" name="L1229" href="#L1229">1229</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> firstNonControlIndex = buffer.forEachByte(readerIndex, maxToSkip, SKIP_CONTROL_CHARS_BYTES);
+<a class="jxr_linenumber" name="L1230" href="#L1230">1230</a>             <strong class="jxr_keyword">if</strong> (firstNonControlIndex == -1) {
+<a class="jxr_linenumber" name="L1231" href="#L1231">1231</a>                 buffer.skipBytes(maxToSkip);
+<a class="jxr_linenumber" name="L1232" href="#L1232">1232</a>                 <strong class="jxr_keyword">if</strong> (readableBytes &gt; maxLength) {
+<a class="jxr_linenumber" name="L1233" href="#L1233">1233</a>                     <strong class="jxr_keyword">throw</strong> newException(maxLength);
+<a class="jxr_linenumber" name="L1234" href="#L1234">1234</a>                 }
+<a class="jxr_linenumber" name="L1235" href="#L1235">1235</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1236" href="#L1236">1236</a>             }
+<a class="jxr_linenumber" name="L1237" href="#L1237">1237</a>             <em class="jxr_comment">// from now on we don't care about control chars</em>
+<a class="jxr_linenumber" name="L1238" href="#L1238">1238</a>             buffer.readerIndex(firstNonControlIndex);
+<a class="jxr_linenumber" name="L1239" href="#L1239">1239</a>             currentState = State.READ_INITIAL;
+<a class="jxr_linenumber" name="L1240" href="#L1240">1240</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L1241" href="#L1241">1241</a>         }
+<a class="jxr_linenumber" name="L1242" href="#L1242">1242</a> 
+<a class="jxr_linenumber" name="L1243" href="#L1243">1243</a>         @Override
+<a class="jxr_linenumber" name="L1244" href="#L1244">1244</a>         <strong class="jxr_keyword">protected</strong> <a name="TooLongFrameException" href="../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a> newException(<strong class="jxr_keyword">int</strong> maxLength) {
+<a class="jxr_linenumber" name="L1245" href="#L1245">1245</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongHttpLineException" href="../../../../../io/netty/handler/codec/http/TooLongHttpLineException.html#TooLongHttpLineException">TooLongHttpLineException</a>(<span class="jxr_string">"An HTTP line is larger than "</span> + maxLength + <span class="jxr_string">" bytes."</span>);
+<a class="jxr_linenumber" name="L1246" href="#L1246">1246</a>         }
+<a class="jxr_linenumber" name="L1247" href="#L1247">1247</a>     }
+<a class="jxr_linenumber" name="L1248" href="#L1248">1248</a> 
+<a class="jxr_linenumber" name="L1249" href="#L1249">1249</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong>[] ISO_CONTROL_OR_WHITESPACE;
+<a class="jxr_linenumber" name="L1250" href="#L1250">1250</a> 
+<a class="jxr_linenumber" name="L1251" href="#L1251">1251</a>     <strong class="jxr_keyword">static</strong> {
+<a class="jxr_linenumber" name="L1252" href="#L1252">1252</a>         ISO_CONTROL_OR_WHITESPACE = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">boolean</strong>[256];
+<a class="jxr_linenumber" name="L1253" href="#L1253">1253</a>         <strong class="jxr_keyword">for</strong> (byte b = Byte.MIN_VALUE; b &lt; Byte.MAX_VALUE; b++) {
+<a class="jxr_linenumber" name="L1254" href="#L1254">1254</a>             ISO_CONTROL_OR_WHITESPACE[128 + b] = Character.isISOControl(b) || isWhitespace(b);
+<a class="jxr_linenumber" name="L1255" href="#L1255">1255</a>         }
+<a class="jxr_linenumber" name="L1256" href="#L1256">1256</a>     }
+<a class="jxr_linenumber" name="L1257" href="#L1257">1257</a> 
+<a class="jxr_linenumber" name="L1258" href="#L1258">1258</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="ByteProcessor" href="../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> SKIP_CONTROL_CHARS_BYTES = <strong class="jxr_keyword">new</strong> <a name="ByteProcessor" href="../../../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a>() {
+<a class="jxr_linenumber" name="L1259" href="#L1259">1259</a> 
+<a class="jxr_linenumber" name="L1260" href="#L1260">1260</a>         @Override
+<a class="jxr_linenumber" name="L1261" href="#L1261">1261</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte value) {
+<a class="jxr_linenumber" name="L1262" href="#L1262">1262</a>             <strong class="jxr_keyword">return</strong> ISO_CONTROL_OR_WHITESPACE[128 + value];
+<a class="jxr_linenumber" name="L1263" href="#L1263">1263</a>         }
+<a class="jxr_linenumber" name="L1264" href="#L1264">1264</a>     };
+<a class="jxr_linenumber" name="L1265" href="#L1265">1265</a> 
+<a class="jxr_linenumber" name="L1266" href="#L1266">1266</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isControlOrWhitespaceAsciiChar(byte b) {
+<a class="jxr_linenumber" name="L1267" href="#L1267">1267</a>         <strong class="jxr_keyword">return</strong> ISO_CONTROL_OR_WHITESPACE[128 + b];
+<a class="jxr_linenumber" name="L1268" href="#L1268">1268</a>     }
+<a class="jxr_linenumber" name="L1269" href="#L1269">1269</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

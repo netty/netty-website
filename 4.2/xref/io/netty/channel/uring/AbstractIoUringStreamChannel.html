@@ -290,7 +290,7 @@
 <a class="jxr_linenumber" name="L282" href="#L282">282</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> readComplete0(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">int</strong> data, <strong class="jxr_keyword">int</strong> outstanding) {
 <a class="jxr_linenumber" name="L283" href="#L283">283</a>             assert readId != 0;
 <a class="jxr_linenumber" name="L284" href="#L284">284</a>             readId = 0;
-<a class="jxr_linenumber" name="L285" href="#L285">285</a>             <strong class="jxr_keyword">boolean</strong> close = false;
+<a class="jxr_linenumber" name="L285" href="#L285">285</a>             <strong class="jxr_keyword">boolean</strong> allDataRead = false;
 <a class="jxr_linenumber" name="L286" href="#L286">286</a> 
 <a class="jxr_linenumber" name="L287" href="#L287">287</a>             <strong class="jxr_keyword">final</strong> <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle = recvBufAllocHandle();
 <a class="jxr_linenumber" name="L288" href="#L288">288</a>             <strong class="jxr_keyword">final</strong> <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = pipeline();
@@ -318,10 +318,10 @@
 <a class="jxr_linenumber" name="L310" href="#L310">310</a>                     <em class="jxr_comment">// nothing was read, release the buffer.</em>
 <a class="jxr_linenumber" name="L311" href="#L311">311</a>                     byteBuf.release();
 <a class="jxr_linenumber" name="L312" href="#L312">312</a>                     byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L313" href="#L313">313</a>                     close = allocHandle.lastBytesRead() &lt; 0;
-<a class="jxr_linenumber" name="L314" href="#L314">314</a>                     <strong class="jxr_keyword">if</strong> (close) {
+<a class="jxr_linenumber" name="L313" href="#L313">313</a>                     allDataRead = allocHandle.lastBytesRead() &lt; 0;
+<a class="jxr_linenumber" name="L314" href="#L314">314</a>                     <strong class="jxr_keyword">if</strong> (allDataRead) {
 <a class="jxr_linenumber" name="L315" href="#L315">315</a>                         <em class="jxr_comment">// There is nothing left to read as we received an EOF.</em>
-<a class="jxr_linenumber" name="L316" href="#L316">316</a>                         shutdownInput(false);
+<a class="jxr_linenumber" name="L316" href="#L316">316</a>                         shutdownInput(<strong class="jxr_keyword">true</strong>);
 <a class="jxr_linenumber" name="L317" href="#L317">317</a>                     }
 <a class="jxr_linenumber" name="L318" href="#L318">318</a>                     allocHandle.readComplete();
 <a class="jxr_linenumber" name="L319" href="#L319">319</a>                     pipeline.fireChannelReadComplete();
@@ -346,12 +346,12 @@
 <a class="jxr_linenumber" name="L338" href="#L338">338</a>                     pipeline.fireChannelReadComplete();
 <a class="jxr_linenumber" name="L339" href="#L339">339</a>                 }
 <a class="jxr_linenumber" name="L340" href="#L340">340</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="L341" href="#L341">341</a>                 handleReadException(pipeline, byteBuf, t, close, allocHandle);
+<a class="jxr_linenumber" name="L341" href="#L341">341</a>                 handleReadException(pipeline, byteBuf, t, allDataRead, allocHandle);
 <a class="jxr_linenumber" name="L342" href="#L342">342</a>             }
 <a class="jxr_linenumber" name="L343" href="#L343">343</a>         }
 <a class="jxr_linenumber" name="L344" href="#L344">344</a> 
 <a class="jxr_linenumber" name="L345" href="#L345">345</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> handleReadException(<a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf,
-<a class="jxr_linenumber" name="L346" href="#L346">346</a>                                          Throwable cause, <strong class="jxr_keyword">boolean</strong> close,
+<a class="jxr_linenumber" name="L346" href="#L346">346</a>                                          Throwable cause, <strong class="jxr_keyword">boolean</strong> allDataRead,
 <a class="jxr_linenumber" name="L347" href="#L347">347</a>                                          <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle) {
 <a class="jxr_linenumber" name="L348" href="#L348">348</a>             <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L349" href="#L349">349</a>                 <strong class="jxr_keyword">if</strong> (byteBuf.isReadable()) {
@@ -363,8 +363,8 @@
 <a class="jxr_linenumber" name="L355" href="#L355">355</a>             allocHandle.readComplete();
 <a class="jxr_linenumber" name="L356" href="#L356">356</a>             pipeline.fireChannelReadComplete();
 <a class="jxr_linenumber" name="L357" href="#L357">357</a>             pipeline.fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="L358" href="#L358">358</a>             <strong class="jxr_keyword">if</strong> (close || cause instanceof IOException) {
-<a class="jxr_linenumber" name="L359" href="#L359">359</a>                 shutdownInput(false);
+<a class="jxr_linenumber" name="L358" href="#L358">358</a>             <strong class="jxr_keyword">if</strong> (allDataRead || cause instanceof IOException) {
+<a class="jxr_linenumber" name="L359" href="#L359">359</a>                 shutdownInput(<strong class="jxr_keyword">true</strong>);
 <a class="jxr_linenumber" name="L360" href="#L360">360</a>             }
 <a class="jxr_linenumber" name="L361" href="#L361">361</a>         }
 <a class="jxr_linenumber" name="L362" href="#L362">362</a> 
