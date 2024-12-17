@@ -139,7 +139,7 @@
 <a class="jxr_linenumber" name="L131" href="#L131">131</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="L132" href="#L132">132</a>     <strong class="jxr_keyword">protected</strong> <a name="SpdyHttpDecoder" href="../../../../../io/netty/handler/codec/spdy/SpdyHttpDecoder.html#SpdyHttpDecoder">SpdyHttpDecoder</a>(<a name="SpdyVersion" href="../../../../../io/netty/handler/codec/spdy/SpdyVersion.html#SpdyVersion">SpdyVersion</a> version, <strong class="jxr_keyword">int</strong> maxContentLength, Map&lt;Integer,
 <a class="jxr_linenumber" name="L133" href="#L133">133</a>             FullHttpMessage&gt; messageMap, <a name="HttpHeadersFactory" href="../../../../../io/netty/handler/codec/http/HttpHeadersFactory.html#HttpHeadersFactory">HttpHeadersFactory</a> headersFactory, <a name="HttpHeadersFactory" href="../../../../../io/netty/handler/codec/http/HttpHeadersFactory.html#HttpHeadersFactory">HttpHeadersFactory</a> trailersFactory) {
-<a class="jxr_linenumber" name="L134" href="#L134">134</a>         spdyVersion = ObjectUtil.checkNotNull(version, <span class="jxr_string">"version"</span>).getVersion();
+<a class="jxr_linenumber" name="L134" href="#L134">134</a>         spdyVersion = ObjectUtil.checkNotNull(version, <span class="jxr_string">"version"</span>).version();
 <a class="jxr_linenumber" name="L135" href="#L135">135</a>         <strong class="jxr_keyword">this</strong>.maxContentLength = checkPositive(maxContentLength, <span class="jxr_string">"maxContentLength"</span>);
 <a class="jxr_linenumber" name="L136" href="#L136">136</a>         <strong class="jxr_keyword">this</strong>.messageMap = messageMap;
 <a class="jxr_linenumber" name="L137" href="#L137">137</a>         <strong class="jxr_keyword">this</strong>.headersFactory = headersFactory;
@@ -371,104 +371,105 @@
 <a class="jxr_linenumber" name="L363" href="#L363">363</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - spdyDataFrame.content().readableBytes()) {
 <a class="jxr_linenumber" name="L364" href="#L364">364</a>                 removeMessage(streamId);
 <a class="jxr_linenumber" name="L365" href="#L365">365</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(
-<a class="jxr_linenumber" name="L366" href="#L366">366</a>                         <span class="jxr_string">"HTTP content length exceeded "</span> + maxContentLength + <span class="jxr_string">" bytes."</span>);
-<a class="jxr_linenumber" name="L367" href="#L367">367</a>             }
-<a class="jxr_linenumber" name="L368" href="#L368">368</a> 
-<a class="jxr_linenumber" name="L369" href="#L369">369</a>             <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> spdyDataFrameData = spdyDataFrame.content();
-<a class="jxr_linenumber" name="L370" href="#L370">370</a>             <strong class="jxr_keyword">int</strong> spdyDataFrameDataLen = spdyDataFrameData.readableBytes();
-<a class="jxr_linenumber" name="L371" href="#L371">371</a>             content.writeBytes(spdyDataFrameData, spdyDataFrameData.readerIndex(), spdyDataFrameDataLen);
-<a class="jxr_linenumber" name="L372" href="#L372">372</a> 
-<a class="jxr_linenumber" name="L373" href="#L373">373</a>             <strong class="jxr_keyword">if</strong> (spdyDataFrame.isLast()) {
-<a class="jxr_linenumber" name="L374" href="#L374">374</a>                 HttpUtil.setContentLength(fullHttpMessage, content.readableBytes());
-<a class="jxr_linenumber" name="L375" href="#L375">375</a>                 removeMessage(streamId);
-<a class="jxr_linenumber" name="L376" href="#L376">376</a>                 out.add(fullHttpMessage);
-<a class="jxr_linenumber" name="L377" href="#L377">377</a>             }
-<a class="jxr_linenumber" name="L378" href="#L378">378</a> 
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof <a name="SpdyRstStreamFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html#SpdyRstStreamFrame">SpdyRstStreamFrame</a>) {
-<a class="jxr_linenumber" name="L380" href="#L380">380</a> 
-<a class="jxr_linenumber" name="L381" href="#L381">381</a>             <a name="SpdyRstStreamFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html#SpdyRstStreamFrame">SpdyRstStreamFrame</a> spdyRstStreamFrame = (<a name="SpdyRstStreamFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html#SpdyRstStreamFrame">SpdyRstStreamFrame</a>) msg;
-<a class="jxr_linenumber" name="L382" href="#L382">382</a>             <strong class="jxr_keyword">int</strong> streamId = spdyRstStreamFrame.streamId();
-<a class="jxr_linenumber" name="L383" href="#L383">383</a>             removeMessage(streamId);
-<a class="jxr_linenumber" name="L384" href="#L384">384</a>         }
-<a class="jxr_linenumber" name="L385" href="#L385">385</a>     }
-<a class="jxr_linenumber" name="L386" href="#L386">386</a> 
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="FullHttpRequest" href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> createHttpRequest(<a name="SpdyHeadersFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html#SpdyHeadersFrame">SpdyHeadersFrame</a> requestFrame, <a name="ByteBufAllocator" href="../../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc)
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>        <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L389" href="#L389">389</a>         <em class="jxr_comment">// Create the first line of the request from the name/value pairs</em>
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>         <a name="SpdyHeaders" href="../../../../../io/netty/handler/codec/spdy/SpdyHeaders.html#SpdyHeaders">SpdyHeaders</a> headers     = requestFrame.headers();
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>         <a name="HttpMethod" href="../../../../../io/netty/handler/codec/http/HttpMethod.html#HttpMethod">HttpMethod</a>  method      = HttpMethod.valueOf(headers.getAsString(METHOD));
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>         String      url         = headers.getAsString(PATH);
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>         <a name="HttpVersion" href="../../../../../io/netty/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> httpVersion = HttpVersion.valueOf(headers.getAsString(VERSION));
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>         headers.remove(METHOD);
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>         headers.remove(PATH);
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>         headers.remove(VERSION);
-<a class="jxr_linenumber" name="L397" href="#L397">397</a> 
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>         <strong class="jxr_keyword">boolean</strong> release = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer = alloc.buffer();
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>             <a name="FullHttpRequest" href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> req = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpRequest" href="../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html#DefaultFullHttpRequest">DefaultFullHttpRequest</a>(httpVersion, method, url, buffer);
-<a class="jxr_linenumber" name="L402" href="#L402">402</a> 
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>             <em class="jxr_comment">// Remove the scheme header</em>
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>             headers.remove(SCHEME);
-<a class="jxr_linenumber" name="L405" href="#L405">405</a> 
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>             <em class="jxr_comment">// Replace the SPDY host header with the HTTP host header</em>
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>             CharSequence host = headers.get(HOST);
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>             headers.remove(HOST);
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>             req.headers().set(HttpHeaderNames.HOST, host);
-<a class="jxr_linenumber" name="L410" href="#L410">410</a> 
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>             <strong class="jxr_keyword">for</strong> (Map.Entry&lt;CharSequence, CharSequence&gt; e : requestFrame.headers()) {
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>                 req.headers().add(e.getKey(), e.getValue());
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>             }
-<a class="jxr_linenumber" name="L414" href="#L414">414</a> 
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>             <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>             HttpUtil.setKeepAlive(req, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L417" href="#L417">417</a> 
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>             <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>             req.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>             release = false;
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <strong class="jxr_keyword">return</strong> req;
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>             <strong class="jxr_keyword">if</strong> (release) {
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 buffer.release();
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>             }
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>         }
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>     }
-<a class="jxr_linenumber" name="L428" href="#L428">428</a> 
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>     <strong class="jxr_keyword">private</strong> <a name="FullHttpResponse" href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> createHttpResponse(<a name="SpdyHeadersFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html#SpdyHeadersFrame">SpdyHeadersFrame</a> responseFrame, <a name="ByteBufAllocator" href="../../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc)
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>             <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L431" href="#L431">431</a> 
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>         <em class="jxr_comment">// Create the first line of the response from the name/value pairs</em>
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>         <a name="SpdyHeaders" href="../../../../../io/netty/handler/codec/spdy/SpdyHeaders.html#SpdyHeaders">SpdyHeaders</a> headers = responseFrame.headers();
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>         <a name="HttpResponseStatus" href="../../../../../io/netty/handler/codec/http/HttpResponseStatus.html#HttpResponseStatus">HttpResponseStatus</a> status = HttpResponseStatus.parseLine(headers.get(STATUS));
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <a name="HttpVersion" href="../../../../../io/netty/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> version = HttpVersion.valueOf(headers.getAsString(VERSION));
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>         headers.remove(STATUS);
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>         headers.remove(VERSION);
-<a class="jxr_linenumber" name="L438" href="#L438">438</a> 
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>         <strong class="jxr_keyword">boolean</strong> release = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer = alloc.buffer();
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>             <a name="FullHttpResponse" href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> res = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpResponse" href="../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html#DefaultFullHttpResponse">DefaultFullHttpResponse</a>(
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                     version, status, buffer, headersFactory, trailersFactory);
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>             <strong class="jxr_keyword">for</strong> (Map.Entry&lt;CharSequence, CharSequence&gt; e: responseFrame.headers()) {
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 res.headers().add(e.getKey(), e.getValue());
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>             }
-<a class="jxr_linenumber" name="L447" href="#L447">447</a> 
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>             <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>             HttpUtil.setKeepAlive(res, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L450" href="#L450">450</a> 
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>             <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>             res.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>             res.headers().remove(HttpHeaderNames.TRAILER);
-<a class="jxr_linenumber" name="L454" href="#L454">454</a> 
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>             release = false;
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>             <strong class="jxr_keyword">return</strong> res;
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">if</strong> (release) {
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>                 buffer.release();
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>             }
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>         }
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>     }
-<a class="jxr_linenumber" name="L463" href="#L463">463</a> }
+<a class="jxr_linenumber" name="L366" href="#L366">366</a>                         <span class="jxr_string">"HTTP content length exceeded "</span> + maxContentLength + <span class="jxr_string">" bytes: "</span>
+<a class="jxr_linenumber" name="L367" href="#L367">367</a>                                 + spdyDataFrame.content().readableBytes());
+<a class="jxr_linenumber" name="L368" href="#L368">368</a>             }
+<a class="jxr_linenumber" name="L369" href="#L369">369</a> 
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>             <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> spdyDataFrameData = spdyDataFrame.content();
+<a class="jxr_linenumber" name="L371" href="#L371">371</a>             <strong class="jxr_keyword">int</strong> spdyDataFrameDataLen = spdyDataFrameData.readableBytes();
+<a class="jxr_linenumber" name="L372" href="#L372">372</a>             content.writeBytes(spdyDataFrameData, spdyDataFrameData.readerIndex(), spdyDataFrameDataLen);
+<a class="jxr_linenumber" name="L373" href="#L373">373</a> 
+<a class="jxr_linenumber" name="L374" href="#L374">374</a>             <strong class="jxr_keyword">if</strong> (spdyDataFrame.isLast()) {
+<a class="jxr_linenumber" name="L375" href="#L375">375</a>                 HttpUtil.setContentLength(fullHttpMessage, content.readableBytes());
+<a class="jxr_linenumber" name="L376" href="#L376">376</a>                 removeMessage(streamId);
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>                 out.add(fullHttpMessage);
+<a class="jxr_linenumber" name="L378" href="#L378">378</a>             }
+<a class="jxr_linenumber" name="L379" href="#L379">379</a> 
+<a class="jxr_linenumber" name="L380" href="#L380">380</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof <a name="SpdyRstStreamFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html#SpdyRstStreamFrame">SpdyRstStreamFrame</a>) {
+<a class="jxr_linenumber" name="L381" href="#L381">381</a> 
+<a class="jxr_linenumber" name="L382" href="#L382">382</a>             <a name="SpdyRstStreamFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html#SpdyRstStreamFrame">SpdyRstStreamFrame</a> spdyRstStreamFrame = (<a name="SpdyRstStreamFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyRstStreamFrame.html#SpdyRstStreamFrame">SpdyRstStreamFrame</a>) msg;
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>             <strong class="jxr_keyword">int</strong> streamId = spdyRstStreamFrame.streamId();
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>             removeMessage(streamId);
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>         }
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>     }
+<a class="jxr_linenumber" name="L387" href="#L387">387</a> 
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="FullHttpRequest" href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> createHttpRequest(<a name="SpdyHeadersFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html#SpdyHeadersFrame">SpdyHeadersFrame</a> requestFrame, <a name="ByteBufAllocator" href="../../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc)
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>        <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>         <em class="jxr_comment">// Create the first line of the request from the name/value pairs</em>
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>         <a name="SpdyHeaders" href="../../../../../io/netty/handler/codec/spdy/SpdyHeaders.html#SpdyHeaders">SpdyHeaders</a> headers     = requestFrame.headers();
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>         <a name="HttpMethod" href="../../../../../io/netty/handler/codec/http/HttpMethod.html#HttpMethod">HttpMethod</a>  method      = HttpMethod.valueOf(headers.getAsString(METHOD));
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>         String      url         = headers.getAsString(PATH);
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>         <a name="HttpVersion" href="../../../../../io/netty/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> httpVersion = HttpVersion.valueOf(headers.getAsString(VERSION));
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>         headers.remove(METHOD);
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>         headers.remove(PATH);
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>         headers.remove(VERSION);
+<a class="jxr_linenumber" name="L398" href="#L398">398</a> 
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <strong class="jxr_keyword">boolean</strong> release = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer = alloc.buffer();
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>             <a name="FullHttpRequest" href="../../../../../io/netty/handler/codec/http/FullHttpRequest.html#FullHttpRequest">FullHttpRequest</a> req = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpRequest" href="../../../../../io/netty/handler/codec/http/DefaultFullHttpRequest.html#DefaultFullHttpRequest">DefaultFullHttpRequest</a>(httpVersion, method, url, buffer);
+<a class="jxr_linenumber" name="L403" href="#L403">403</a> 
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>             <em class="jxr_comment">// Remove the scheme header</em>
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>             headers.remove(SCHEME);
+<a class="jxr_linenumber" name="L406" href="#L406">406</a> 
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>             <em class="jxr_comment">// Replace the SPDY host header with the HTTP host header</em>
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>             CharSequence host = headers.get(HOST);
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>             headers.remove(HOST);
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>             req.headers().set(HttpHeaderNames.HOST, host);
+<a class="jxr_linenumber" name="L411" href="#L411">411</a> 
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>             <strong class="jxr_keyword">for</strong> (Map.Entry&lt;CharSequence, CharSequence&gt; e : requestFrame.headers()) {
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>                 req.headers().add(e.getKey(), e.getValue());
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>             }
+<a class="jxr_linenumber" name="L415" href="#L415">415</a> 
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>             <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>             HttpUtil.setKeepAlive(req, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L418" href="#L418">418</a> 
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>             <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>             req.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>             release = false;
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>             <strong class="jxr_keyword">return</strong> req;
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">if</strong> (release) {
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 buffer.release();
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>             }
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>         }
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>     }
+<a class="jxr_linenumber" name="L429" href="#L429">429</a> 
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>     <strong class="jxr_keyword">private</strong> <a name="FullHttpResponse" href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> createHttpResponse(<a name="SpdyHeadersFrame" href="../../../../../io/netty/handler/codec/spdy/SpdyHeadersFrame.html#SpdyHeadersFrame">SpdyHeadersFrame</a> responseFrame, <a name="ByteBufAllocator" href="../../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc)
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>             <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>         <em class="jxr_comment">// Create the first line of the response from the name/value pairs</em>
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>         <a name="SpdyHeaders" href="../../../../../io/netty/handler/codec/spdy/SpdyHeaders.html#SpdyHeaders">SpdyHeaders</a> headers = responseFrame.headers();
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <a name="HttpResponseStatus" href="../../../../../io/netty/handler/codec/http/HttpResponseStatus.html#HttpResponseStatus">HttpResponseStatus</a> status = HttpResponseStatus.parseLine(headers.get(STATUS));
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         <a name="HttpVersion" href="../../../../../io/netty/handler/codec/http/HttpVersion.html#HttpVersion">HttpVersion</a> version = HttpVersion.valueOf(headers.getAsString(VERSION));
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>         headers.remove(STATUS);
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>         headers.remove(VERSION);
+<a class="jxr_linenumber" name="L439" href="#L439">439</a> 
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>         <strong class="jxr_keyword">boolean</strong> release = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer = alloc.buffer();
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>             <a name="FullHttpResponse" href="../../../../../io/netty/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> res = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpResponse" href="../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html#DefaultFullHttpResponse">DefaultFullHttpResponse</a>(
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>                     version, status, buffer, headersFactory, trailersFactory);
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>             <strong class="jxr_keyword">for</strong> (Map.Entry&lt;CharSequence, CharSequence&gt; e: responseFrame.headers()) {
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>                 res.headers().add(e.getKey(), e.getValue());
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>             }
+<a class="jxr_linenumber" name="L448" href="#L448">448</a> 
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>             <em class="jxr_comment">// The Connection and Keep-Alive headers are no longer valid</em>
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>             HttpUtil.setKeepAlive(res, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L451" href="#L451">451</a> 
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <em class="jxr_comment">// Transfer-Encoding header is not valid</em>
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>             res.headers().remove(HttpHeaderNames.TRANSFER_ENCODING);
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>             res.headers().remove(HttpHeaderNames.TRAILER);
+<a class="jxr_linenumber" name="L455" href="#L455">455</a> 
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             release = false;
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>             <strong class="jxr_keyword">return</strong> res;
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">if</strong> (release) {
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>                 buffer.release();
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>             }
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>         }
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>     }
+<a class="jxr_linenumber" name="L464" href="#L464">464</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
