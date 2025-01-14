@@ -63,8 +63,8 @@
 <a class="jxr_linenumber" name="L55" href="#L55">55</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">class</strong> <a name="IpSubnetFilter" href="../../../../io/netty/handler/ipfilter/IpSubnetFilter.html#IpSubnetFilter">IpSubnetFilter</a> <strong class="jxr_keyword">extends</strong> AbstractRemoteAddressFilter&lt;InetSocketAddress&gt; {
 <a class="jxr_linenumber" name="L56" href="#L56">56</a>  
 <a class="jxr_linenumber" name="L57" href="#L57">57</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> acceptIfNotFound;
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> List&lt;IpSubnetFilterRule&gt; ipv4Rules;
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> List&lt;IpSubnetFilterRule&gt; ipv6Rules;
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IpSubnetFilterRule" href="../../../../io/netty/handler/ipfilter/IpSubnetFilterRule.html#IpSubnetFilterRule">IpSubnetFilterRule</a>[] ipv4Rules;
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IpSubnetFilterRule" href="../../../../io/netty/handler/ipfilter/IpSubnetFilterRule.html#IpSubnetFilterRule">IpSubnetFilterRule</a>[] ipv6Rules;
 <a class="jxr_linenumber" name="L60" href="#L60">60</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IpFilterRuleType" href="../../../../io/netty/handler/ipfilter/IpFilterRuleType.html#IpFilterRuleType">IpFilterRuleType</a> ipFilterRuleTypeIPv4;
 <a class="jxr_linenumber" name="L61" href="#L61">61</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IpFilterRuleType" href="../../../../io/netty/handler/ipfilter/IpFilterRuleType.html#IpFilterRuleType">IpFilterRuleType</a> ipFilterRuleTypeIPv6;
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>  
@@ -168,26 +168,26 @@
 <a class="jxr_linenumber" name="L160" href="#L160">160</a>             ipFilterRuleTypeIPv6 = <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="L161" href="#L161">161</a>         }
 <a class="jxr_linenumber" name="L162" href="#L162">162</a> 
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>         <strong class="jxr_keyword">this</strong>.ipv4Rules = sortAndFilter(unsortedIPv4Rules);
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>         <strong class="jxr_keyword">this</strong>.ipv6Rules = sortAndFilter(unsortedIPv6Rules);
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>         <strong class="jxr_keyword">this</strong>.ipv4Rules = unsortedIPv4Rules.isEmpty() ? <strong class="jxr_keyword">null</strong> : sortAndFilter(unsortedIPv4Rules);
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>         <strong class="jxr_keyword">this</strong>.ipv6Rules = unsortedIPv6Rules.isEmpty() ? <strong class="jxr_keyword">null</strong> : sortAndFilter(unsortedIPv6Rules);
 <a class="jxr_linenumber" name="L165" href="#L165">165</a>     }
 <a class="jxr_linenumber" name="L166" href="#L166">166</a> 
 <a class="jxr_linenumber" name="L167" href="#L167">167</a>     @Override
 <a class="jxr_linenumber" name="L168" href="#L168">168</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> accept(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, InetSocketAddress remoteAddress) {
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>         <strong class="jxr_keyword">if</strong> (remoteAddress.getAddress() instanceof Inet4Address) {
-<a class="jxr_linenumber" name="L170" href="#L170">170</a>             <strong class="jxr_keyword">int</strong> indexOf = Collections.binarySearch(ipv4Rules, remoteAddress, IpSubnetFilterRuleComparator.INSTANCE);
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>         <strong class="jxr_keyword">if</strong> (ipv4Rules != <strong class="jxr_keyword">null</strong> &amp;&amp; remoteAddress.getAddress() instanceof Inet4Address) {
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>             <strong class="jxr_keyword">int</strong> indexOf = Arrays.binarySearch(ipv4Rules, remoteAddress, IpSubnetFilterRuleComparator.INSTANCE);
 <a class="jxr_linenumber" name="L171" href="#L171">171</a>             <strong class="jxr_keyword">if</strong> (indexOf &gt;= 0) {
 <a class="jxr_linenumber" name="L172" href="#L172">172</a>                 <strong class="jxr_keyword">if</strong> (ipFilterRuleTypeIPv4 == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>                     <strong class="jxr_keyword">return</strong> ipv4Rules.get(indexOf).ruleType() == IpFilterRuleType.ACCEPT;
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>                     <strong class="jxr_keyword">return</strong> ipv4Rules[indexOf].ruleType() == IpFilterRuleType.ACCEPT;
 <a class="jxr_linenumber" name="L174" href="#L174">174</a>                 } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="L175" href="#L175">175</a>                     <strong class="jxr_keyword">return</strong> ipFilterRuleTypeIPv4 == IpFilterRuleType.ACCEPT;
 <a class="jxr_linenumber" name="L176" href="#L176">176</a>                 }
 <a class="jxr_linenumber" name="L177" href="#L177">177</a>             }
-<a class="jxr_linenumber" name="L178" href="#L178">178</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>             <strong class="jxr_keyword">int</strong> indexOf = Collections.binarySearch(ipv6Rules, remoteAddress, IpSubnetFilterRuleComparator.INSTANCE);
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (ipv6Rules != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>             <strong class="jxr_keyword">int</strong> indexOf = Arrays.binarySearch(ipv6Rules, remoteAddress, IpSubnetFilterRuleComparator.INSTANCE);
 <a class="jxr_linenumber" name="L180" href="#L180">180</a>             <strong class="jxr_keyword">if</strong> (indexOf &gt;= 0) {
 <a class="jxr_linenumber" name="L181" href="#L181">181</a>                 <strong class="jxr_keyword">if</strong> (ipFilterRuleTypeIPv6 == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>                     <strong class="jxr_keyword">return</strong> ipv6Rules.get(indexOf).ruleType() == IpFilterRuleType.ACCEPT;
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>                     <strong class="jxr_keyword">return</strong> ipv6Rules[indexOf].ruleType() == IpFilterRuleType.ACCEPT;
 <a class="jxr_linenumber" name="L183" href="#L183">183</a>                 } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="L184" href="#L184">184</a>                     <strong class="jxr_keyword">return</strong> ipFilterRuleTypeIPv6 == IpFilterRuleType.ACCEPT;
 <a class="jxr_linenumber" name="L185" href="#L185">185</a>                 }
@@ -204,8 +204,8 @@
 <a class="jxr_linenumber" name="L196" href="#L196">196</a> <em class="jxr_javadoccomment">     *     &lt;li&gt; Sort the list again &lt;/li&gt;</em>
 <a class="jxr_linenumber" name="L197" href="#L197">197</a> <em class="jxr_javadoccomment">     * &lt;/ol&gt;</em>
 <a class="jxr_linenumber" name="L198" href="#L198">198</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>     @SuppressWarnings(<span class="jxr_string">"ConstantConditions"</span>)
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> List&lt;IpSubnetFilterRule&gt; sortAndFilter(List&lt;IpSubnetFilterRule&gt; rules) {
+<a class="jxr_linenumber" name="L199" href="#L199">199</a>     @SuppressWarnings(<span class="jxr_string">"ZeroLengthArrayAllocation"</span>)
+<a class="jxr_linenumber" name="L200" href="#L200">200</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="IpSubnetFilterRule" href="../../../../io/netty/handler/ipfilter/IpSubnetFilterRule.html#IpSubnetFilterRule">IpSubnetFilterRule</a>[] sortAndFilter(List&lt;IpSubnetFilterRule&gt; rules) {
 <a class="jxr_linenumber" name="L201" href="#L201">201</a>         Collections.sort(rules);
 <a class="jxr_linenumber" name="L202" href="#L202">202</a>         Iterator&lt;IpSubnetFilterRule&gt; iterator = rules.iterator();
 <a class="jxr_linenumber" name="L203" href="#L203">203</a>         List&lt;IpSubnetFilterRule&gt; toKeep = <strong class="jxr_keyword">new</strong> ArrayList&lt;IpSubnetFilterRule&gt;();
@@ -229,11 +229,11 @@
 <a class="jxr_linenumber" name="L221" href="#L221">221</a>             }
 <a class="jxr_linenumber" name="L222" href="#L222">222</a>         }
 <a class="jxr_linenumber" name="L223" href="#L223">223</a> 
-<a class="jxr_linenumber" name="L224" href="#L224">224</a>         <strong class="jxr_keyword">return</strong> toKeep;
+<a class="jxr_linenumber" name="L224" href="#L224">224</a>         <strong class="jxr_keyword">return</strong> toKeep.toArray(<strong class="jxr_keyword">new</strong> <a name="IpSubnetFilterRule" href="../../../../io/netty/handler/ipfilter/IpSubnetFilterRule.html#IpSubnetFilterRule">IpSubnetFilterRule</a>[0]);
 <a class="jxr_linenumber" name="L225" href="#L225">225</a>     }
 <a class="jxr_linenumber" name="L226" href="#L226">226</a> }
 </pre>
 <hr/>
-<div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+<div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
 </body>
 </html>
