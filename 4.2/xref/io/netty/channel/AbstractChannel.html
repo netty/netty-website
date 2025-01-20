@@ -490,7 +490,7 @@
 <a class="jxr_linenumber" name="L482" href="#L482">482</a> 
 <a class="jxr_linenumber" name="L483" href="#L483">483</a>             ClosedChannelException closedChannelException =
 <a class="jxr_linenumber" name="L484" href="#L484">484</a>                     StacklessClosedChannelException.newInstance(AbstractChannel.<strong class="jxr_keyword">class</strong>, <span class="jxr_string">"close(ChannelPromise)"</span>);
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>             close(promise, closedChannelException, closedChannelException, false);
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>             close(promise, closedChannelException, closedChannelException);
 <a class="jxr_linenumber" name="L486" href="#L486">486</a>         }
 <a class="jxr_linenumber" name="L487" href="#L487">487</a> 
 <a class="jxr_linenumber" name="L488" href="#L488">488</a>         <em class="jxr_javadoccomment">/**</em>
@@ -546,8 +546,8 @@
 <a class="jxr_linenumber" name="L538" href="#L538">538</a>             pipeline.fireUserEventTriggered(ChannelOutputShutdownEvent.INSTANCE);
 <a class="jxr_linenumber" name="L539" href="#L539">539</a>         }
 <a class="jxr_linenumber" name="L540" href="#L540">540</a> 
-<a class="jxr_linenumber" name="L541" href="#L541">541</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> close(<strong class="jxr_keyword">final</strong> <a name="ChannelPromise" href="../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise, <strong class="jxr_keyword">final</strong> Throwable cause,
-<a class="jxr_linenumber" name="L542" href="#L542">542</a>                            <strong class="jxr_keyword">final</strong> ClosedChannelException closeCause, <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> notify) {
+<a class="jxr_linenumber" name="L541" href="#L541">541</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> close(<strong class="jxr_keyword">final</strong> <a name="ChannelPromise" href="../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise, <strong class="jxr_keyword">final</strong> Throwable cause,
+<a class="jxr_linenumber" name="L542" href="#L542">542</a>                            <strong class="jxr_keyword">final</strong> ClosedChannelException closeCause) {
 <a class="jxr_linenumber" name="L543" href="#L543">543</a>             <strong class="jxr_keyword">if</strong> (!promise.setUncancellable()) {
 <a class="jxr_linenumber" name="L544" href="#L544">544</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L545" href="#L545">545</a>             }
@@ -588,7 +588,7 @@
 <a class="jxr_linenumber" name="L580" href="#L580">580</a>                                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
 <a class="jxr_linenumber" name="L581" href="#L581">581</a>                                     <strong class="jxr_keyword">if</strong> (outboundBuffer != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L582" href="#L582">582</a>                                         <em class="jxr_comment">// Fail all the queued messages</em>
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>                                         outboundBuffer.failFlushed(cause, notify);
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>                                         outboundBuffer.failFlushed(cause, false);
 <a class="jxr_linenumber" name="L584" href="#L584">584</a>                                         outboundBuffer.close(closeCause);
 <a class="jxr_linenumber" name="L585" href="#L585">585</a>                                     }
 <a class="jxr_linenumber" name="L586" href="#L586">586</a>                                     fireChannelInactiveAndDeregister(wasActive);
@@ -604,7 +604,7 @@
 <a class="jxr_linenumber" name="L596" href="#L596">596</a>                 } <strong class="jxr_keyword">finally</strong> {
 <a class="jxr_linenumber" name="L597" href="#L597">597</a>                     <strong class="jxr_keyword">if</strong> (outboundBuffer != <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L598" href="#L598">598</a>                         <em class="jxr_comment">// Fail all the queued messages.</em>
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>                         outboundBuffer.failFlushed(cause, notify);
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>                         outboundBuffer.failFlushed(cause, false);
 <a class="jxr_linenumber" name="L600" href="#L600">600</a>                         outboundBuffer.close(closeCause);
 <a class="jxr_linenumber" name="L601" href="#L601">601</a>                     }
 <a class="jxr_linenumber" name="L602" href="#L602">602</a>                 }
@@ -819,13 +819,13 @@
 <a class="jxr_linenumber" name="L811" href="#L811">811</a> <em class="jxr_javadoccomment">                 * may still return {@code true} even if the channel should be closed as result of the exception.</em>
 <a class="jxr_linenumber" name="L812" href="#L812">812</a> <em class="jxr_javadoccomment">                 */</em>
 <a class="jxr_linenumber" name="L813" href="#L813">813</a>                 initialCloseCause = t;
-<a class="jxr_linenumber" name="L814" href="#L814">814</a>                 close(voidPromise(), t, newClosedChannelException(t, <span class="jxr_string">"flush0()"</span>), false);
+<a class="jxr_linenumber" name="L814" href="#L814">814</a>                 close(voidPromise(), t, newClosedChannelException(t, <span class="jxr_string">"flush0()"</span>));
 <a class="jxr_linenumber" name="L815" href="#L815">815</a>             } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="L816" href="#L816">816</a>                 <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L817" href="#L817">817</a>                     shutdownOutput(voidPromise(), t);
 <a class="jxr_linenumber" name="L818" href="#L818">818</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t2) {
 <a class="jxr_linenumber" name="L819" href="#L819">819</a>                     initialCloseCause = t;
-<a class="jxr_linenumber" name="L820" href="#L820">820</a>                     close(voidPromise(), t2, newClosedChannelException(t, <span class="jxr_string">"flush0()"</span>), false);
+<a class="jxr_linenumber" name="L820" href="#L820">820</a>                     close(voidPromise(), t2, newClosedChannelException(t, <span class="jxr_string">"flush0()"</span>));
 <a class="jxr_linenumber" name="L821" href="#L821">821</a>                 }
 <a class="jxr_linenumber" name="L822" href="#L822">822</a>             }
 <a class="jxr_linenumber" name="L823" href="#L823">823</a>         }
@@ -1104,6 +1104,6 @@
 <a class="jxr_linenumber" name="L1096" href="#L1096">1096</a> }
 </pre>
 <hr/>
-<div id="footer">Copyright &#169; 2008&#x2013;2024 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
+<div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
 </body>
 </html>
