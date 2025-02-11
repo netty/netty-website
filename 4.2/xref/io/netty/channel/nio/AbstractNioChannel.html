@@ -66,7 +66,7 @@
 <a class="jxr_linenumber" name="L58" href="#L58">58</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> SelectableChannel ch;
 <a class="jxr_linenumber" name="L59" href="#L59">59</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readInterestOp;
 <a class="jxr_linenumber" name="L60" href="#L60">60</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="NioIoOps" href="../../../../io/netty/channel/nio/NioIoOps.html#NioIoOps">NioIoOps</a> readOps;
-<a class="jxr_linenumber" name="L61" href="#L61">61</a>      <strong class="jxr_keyword">volatile</strong> <a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a> registration;
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>      <strong class="jxr_keyword">volatile</strong> <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration;
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>      <strong class="jxr_keyword">boolean</strong> readPending;
 <a class="jxr_linenumber" name="L63" href="#L63">63</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Runnable clearReadPendingRunnable = <strong class="jxr_keyword">new</strong> Runnable() {
 <a class="jxr_linenumber" name="L64" href="#L64">64</a>          @Override
@@ -156,11 +156,11 @@
 <a class="jxr_linenumber" name="L148" href="#L148">148</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="L149" href="#L149">149</a>     @Deprecated
 <a class="jxr_linenumber" name="L150" href="#L150">150</a>     <strong class="jxr_keyword">protected</strong> SelectionKey selectionKey() {
-<a class="jxr_linenumber" name="L151" href="#L151">151</a>         <strong class="jxr_keyword">return</strong> registration().selectionKey();
+<a class="jxr_linenumber" name="L151" href="#L151">151</a>         <strong class="jxr_keyword">return</strong> registration().attachment();
 <a class="jxr_linenumber" name="L152" href="#L152">152</a>     }
 <a class="jxr_linenumber" name="L153" href="#L153">153</a> 
 <a class="jxr_linenumber" name="L154" href="#L154">154</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L155" href="#L155">155</a>     <strong class="jxr_keyword">protected</strong> <a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a> registration() {
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>     <strong class="jxr_keyword">protected</strong> <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration() {
 <a class="jxr_linenumber" name="L156" href="#L156">156</a>         assert registration != <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="L157" href="#L157">157</a>         <strong class="jxr_keyword">return</strong> registration;
 <a class="jxr_linenumber" name="L158" href="#L158">158</a>     }
@@ -269,7 +269,7 @@
 <a class="jxr_linenumber" name="L261" href="#L261">261</a>         }
 <a class="jxr_linenumber" name="L262" href="#L262">262</a> 
 <a class="jxr_linenumber" name="L263" href="#L263">263</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> removeReadOp() {
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>             <a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a> registration = registration();
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
 <a class="jxr_linenumber" name="L265" href="#L265">265</a>             <em class="jxr_comment">// Check first if the key is still valid as it may be canceled as part of the deregistration</em>
 <a class="jxr_linenumber" name="L266" href="#L266">266</a>             <em class="jxr_comment">// from the EventLoop</em>
 <a class="jxr_linenumber" name="L267" href="#L267">267</a>             <em class="jxr_comment">// See https://github.com/netty/netty/issues/2104</em>
@@ -420,179 +420,180 @@
 <a class="jxr_linenumber" name="L412" href="#L412">412</a>         }
 <a class="jxr_linenumber" name="L413" href="#L413">413</a> 
 <a class="jxr_linenumber" name="L414" href="#L414">414</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> isFlushPending() {
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>             <a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a> registration = registration();
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>             <strong class="jxr_keyword">return</strong> registration.isValid() &amp;&amp; NioIoOps.WRITE.isIncludedIn(registration.selectionKey().interestOps());
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>         }
-<a class="jxr_linenumber" name="L418" href="#L418">418</a> 
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>         @Override
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handle(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <a name="IoEvent" href="../../../../io/netty/channel/IoEvent.html#IoEvent">IoEvent</a> event) {
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>                 <a name="NioIoEvent" href="../../../../io/netty/channel/nio/NioIoEvent.html#NioIoEvent">NioIoEvent</a> nioEvent = (<a name="NioIoEvent" href="../../../../io/netty/channel/nio/NioIoEvent.html#NioIoEvent">NioIoEvent</a>) event;
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>                 <a name="NioIoOps" href="../../../../io/netty/channel/nio/NioIoOps.html#NioIoOps">NioIoOps</a> nioReadyOps = nioEvent.ops();
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 <em class="jxr_comment">// We first need to call finishConnect() before try to trigger a read(...) or write(...) as otherwise</em>
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <em class="jxr_comment">// the NIO JDK channel implementation may throw a NotYetConnectedException.</em>
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>                 <strong class="jxr_keyword">if</strong> (nioReadyOps.contains(NioIoOps.CONNECT)) {
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>                     <em class="jxr_comment">// remove OP_CONNECT as otherwise Selector.select(..) will always return without blocking</em>
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/924</em>
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>                     removeAndSubmit(NioIoOps.CONNECT);
-<a class="jxr_linenumber" name="L430" href="#L430">430</a> 
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>                     unsafe().finishConnect();
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>                 }
-<a class="jxr_linenumber" name="L433" href="#L433">433</a> 
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>                 <em class="jxr_comment">// Process OP_WRITE first as we may be able to write some queued buffers and so free memory.</em>
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>                 <strong class="jxr_keyword">if</strong> (nioReadyOps.contains(NioIoOps.WRITE)) {
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>                     <em class="jxr_comment">// Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to</em>
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>                     <em class="jxr_comment">// write</em>
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>                     forceFlush();
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>                 }
-<a class="jxr_linenumber" name="L440" href="#L440">440</a> 
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>                 <em class="jxr_comment">// Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead</em>
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>                 <em class="jxr_comment">// to a spin loop</em>
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                 <strong class="jxr_keyword">if</strong> (nioReadyOps.contains(NioIoOps.READ_AND_ACCEPT) || nioReadyOps.equals(NioIoOps.NONE)) {
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>                     read();
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 }
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>             } <strong class="jxr_keyword">catch</strong> (CancelledKeyException ignored) {
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 close(voidPromise());
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>             }
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>         }
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>     }
-<a class="jxr_linenumber" name="L451" href="#L451">451</a> 
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>     @Override
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isCompatible(<a name="EventLoop" href="../../../../io/netty/channel/EventLoop.html#EventLoop">EventLoop</a> loop) {
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>         <strong class="jxr_keyword">return</strong> loop instanceof <a name="IoEventLoop" href="../../../../io/netty/channel/IoEventLoop.html#IoEventLoop">IoEventLoop</a> &amp;&amp; ((<a name="IoEventLoopGroup" href="../../../../io/netty/channel/IoEventLoopGroup.html#IoEventLoopGroup">IoEventLoopGroup</a>) loop).isCompatible(AbstractNioUnsafe.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>     }
-<a class="jxr_linenumber" name="L456" href="#L456">456</a> 
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>     @Override
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doRegister(<a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>         assert registration == <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>         ((<a name="IoEventLoop" href="../../../../io/netty/channel/IoEventLoop.html#IoEventLoop">IoEventLoop</a>) eventLoop()).register((AbstractNioUnsafe) unsafe()).addListener(f -&gt; {
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>             <strong class="jxr_keyword">if</strong> (f.isSuccess()) {
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>                 registration = (<a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a>) f.getNow();
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>                 promise.setSuccess();
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 promise.setFailure(f.cause());
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>             }
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>         });
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>     }
-<a class="jxr_linenumber" name="L470" href="#L470">470</a> 
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>     @Override
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doDeregister() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>         <a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a> registration = <strong class="jxr_keyword">this</strong>.registration;
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>         <strong class="jxr_keyword">if</strong> (registration != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>             <strong class="jxr_keyword">this</strong>.registration = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>             registration.cancel();
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>         }
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>     }
-<a class="jxr_linenumber" name="L479" href="#L479">479</a> 
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>     @Override
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doBeginRead() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L482" href="#L482">482</a>         <em class="jxr_comment">// Channel.read() or ChannelHandlerContext.read() was called</em>
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>         <a name="NioIoRegistration" href="../../../../io/netty/channel/nio/NioIoRegistration.html#NioIoRegistration">NioIoRegistration</a> registration = <strong class="jxr_keyword">this</strong>.registration;
-<a class="jxr_linenumber" name="L484" href="#L484">484</a>         <strong class="jxr_keyword">if</strong> (registration == <strong class="jxr_keyword">null</strong> || !registration.isValid()) {
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>         }
-<a class="jxr_linenumber" name="L487" href="#L487">487</a> 
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>         readPending = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L489" href="#L489">489</a> 
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>         addAndSubmit(readOps);
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>     }
-<a class="jxr_linenumber" name="L492" href="#L492">492</a> 
-<a class="jxr_linenumber" name="L493" href="#L493">493</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L494" href="#L494">494</a> <em class="jxr_javadoccomment">     * Connect to the remote peer</em>
-<a class="jxr_linenumber" name="L495" href="#L495">495</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L496" href="#L496">496</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> doConnect(SocketAddress remoteAddress, SocketAddress localAddress) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L497" href="#L497">497</a> 
-<a class="jxr_linenumber" name="L498" href="#L498">498</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L499" href="#L499">499</a> <em class="jxr_javadoccomment">     * Finish the connect</em>
-<a class="jxr_linenumber" name="L500" href="#L500">500</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L501" href="#L501">501</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> doFinishConnect() <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L502" href="#L502">502</a> 
-<a class="jxr_linenumber" name="L503" href="#L503">503</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L504" href="#L504">504</a> <em class="jxr_javadoccomment">     * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the original one.</em>
-<a class="jxr_linenumber" name="L505" href="#L505">505</a> <em class="jxr_javadoccomment">     * Note that this method does not create an off-heap copy if the allocation / deallocation cost is too high,</em>
-<a class="jxr_linenumber" name="L506" href="#L506">506</a> <em class="jxr_javadoccomment">     * but just returns the original {@link ByteBuf}..</em>
-<a class="jxr_linenumber" name="L507" href="#L507">507</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L508" href="#L508">508</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> newDirectBuffer(<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf) {
-<a class="jxr_linenumber" name="L509" href="#L509">509</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buf.readableBytes();
-<a class="jxr_linenumber" name="L510" href="#L510">510</a>         <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
-<a class="jxr_linenumber" name="L511" href="#L511">511</a>             ReferenceCountUtil.safeRelease(buf);
-<a class="jxr_linenumber" name="L512" href="#L512">512</a>             <strong class="jxr_keyword">return</strong> Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="L513" href="#L513">513</a>         }
-<a class="jxr_linenumber" name="L514" href="#L514">514</a> 
-<a class="jxr_linenumber" name="L515" href="#L515">515</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBufAllocator" href="../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc = alloc();
-<a class="jxr_linenumber" name="L516" href="#L516">516</a>         <strong class="jxr_keyword">if</strong> (alloc.isDirectBufferPooled()) {
-<a class="jxr_linenumber" name="L517" href="#L517">517</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = alloc.directBuffer(readableBytes);
-<a class="jxr_linenumber" name="L518" href="#L518">518</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
-<a class="jxr_linenumber" name="L519" href="#L519">519</a>             ReferenceCountUtil.safeRelease(buf);
-<a class="jxr_linenumber" name="L520" href="#L520">520</a>             <strong class="jxr_keyword">return</strong> directBuf;
-<a class="jxr_linenumber" name="L521" href="#L521">521</a>         }
-<a class="jxr_linenumber" name="L522" href="#L522">522</a> 
-<a class="jxr_linenumber" name="L523" href="#L523">523</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = ByteBufUtil.threadLocalDirectBuffer();
-<a class="jxr_linenumber" name="L524" href="#L524">524</a>         <strong class="jxr_keyword">if</strong> (directBuf != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L525" href="#L525">525</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
-<a class="jxr_linenumber" name="L526" href="#L526">526</a>             ReferenceCountUtil.safeRelease(buf);
-<a class="jxr_linenumber" name="L527" href="#L527">527</a>             <strong class="jxr_keyword">return</strong> directBuf;
-<a class="jxr_linenumber" name="L528" href="#L528">528</a>         }
-<a class="jxr_linenumber" name="L529" href="#L529">529</a> 
-<a class="jxr_linenumber" name="L530" href="#L530">530</a>         <em class="jxr_comment">// Allocating and deallocating an unpooled direct buffer is very expensive; give up.</em>
-<a class="jxr_linenumber" name="L531" href="#L531">531</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="L532" href="#L532">532</a>     }
-<a class="jxr_linenumber" name="L533" href="#L533">533</a> 
-<a class="jxr_linenumber" name="L534" href="#L534">534</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L535" href="#L535">535</a> <em class="jxr_javadoccomment">     * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the specified holder.</em>
-<a class="jxr_linenumber" name="L536" href="#L536">536</a> <em class="jxr_javadoccomment">     * The caller must ensure that the holder releases the original {@link ByteBuf} when the holder is released by</em>
-<a class="jxr_linenumber" name="L537" href="#L537">537</a> <em class="jxr_javadoccomment">     * this method.  Note that this method does not create an off-heap copy if the allocation / deallocation cost is</em>
-<a class="jxr_linenumber" name="L538" href="#L538">538</a> <em class="jxr_javadoccomment">     * too high, but just returns the original {@link ByteBuf}..</em>
-<a class="jxr_linenumber" name="L539" href="#L539">539</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L540" href="#L540">540</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> newDirectBuffer(<a name="ReferenceCounted" href="../../../../io/netty/util/ReferenceCounted.html#ReferenceCounted">ReferenceCounted</a> holder, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf) {
-<a class="jxr_linenumber" name="L541" href="#L541">541</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buf.readableBytes();
-<a class="jxr_linenumber" name="L542" href="#L542">542</a>         <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
-<a class="jxr_linenumber" name="L543" href="#L543">543</a>             ReferenceCountUtil.safeRelease(holder);
-<a class="jxr_linenumber" name="L544" href="#L544">544</a>             <strong class="jxr_keyword">return</strong> Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="L545" href="#L545">545</a>         }
-<a class="jxr_linenumber" name="L546" href="#L546">546</a> 
-<a class="jxr_linenumber" name="L547" href="#L547">547</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBufAllocator" href="../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc = alloc();
-<a class="jxr_linenumber" name="L548" href="#L548">548</a>         <strong class="jxr_keyword">if</strong> (alloc.isDirectBufferPooled()) {
-<a class="jxr_linenumber" name="L549" href="#L549">549</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = alloc.directBuffer(readableBytes);
-<a class="jxr_linenumber" name="L550" href="#L550">550</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
-<a class="jxr_linenumber" name="L551" href="#L551">551</a>             ReferenceCountUtil.safeRelease(holder);
-<a class="jxr_linenumber" name="L552" href="#L552">552</a>             <strong class="jxr_keyword">return</strong> directBuf;
-<a class="jxr_linenumber" name="L553" href="#L553">553</a>         }
-<a class="jxr_linenumber" name="L554" href="#L554">554</a> 
-<a class="jxr_linenumber" name="L555" href="#L555">555</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = ByteBufUtil.threadLocalDirectBuffer();
-<a class="jxr_linenumber" name="L556" href="#L556">556</a>         <strong class="jxr_keyword">if</strong> (directBuf != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L557" href="#L557">557</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
-<a class="jxr_linenumber" name="L558" href="#L558">558</a>             ReferenceCountUtil.safeRelease(holder);
-<a class="jxr_linenumber" name="L559" href="#L559">559</a>             <strong class="jxr_keyword">return</strong> directBuf;
-<a class="jxr_linenumber" name="L560" href="#L560">560</a>         }
-<a class="jxr_linenumber" name="L561" href="#L561">561</a> 
-<a class="jxr_linenumber" name="L562" href="#L562">562</a>         <em class="jxr_comment">// Allocating and deallocating an unpooled direct buffer is very expensive; give up.</em>
-<a class="jxr_linenumber" name="L563" href="#L563">563</a>         <strong class="jxr_keyword">if</strong> (holder != buf) {
-<a class="jxr_linenumber" name="L564" href="#L564">564</a>             <em class="jxr_comment">// Ensure to call holder.release() to give the holder a chance to release other resources than its content.</em>
-<a class="jxr_linenumber" name="L565" href="#L565">565</a>             buf.retain();
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>             ReferenceCountUtil.safeRelease(holder);
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>         }
-<a class="jxr_linenumber" name="L568" href="#L568">568</a> 
-<a class="jxr_linenumber" name="L569" href="#L569">569</a>         <strong class="jxr_keyword">return</strong> buf;
-<a class="jxr_linenumber" name="L570" href="#L570">570</a>     }
-<a class="jxr_linenumber" name="L571" href="#L571">571</a> 
-<a class="jxr_linenumber" name="L572" href="#L572">572</a>     @Override
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doClose() <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>         <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise = connectPromise;
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>         <strong class="jxr_keyword">if</strong> (promise != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>             <em class="jxr_comment">// Use tryFailure() instead of setFailure() to avoid the race against cancel().</em>
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>             promise.tryFailure(<strong class="jxr_keyword">new</strong> ClosedChannelException());
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>             connectPromise = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L579" href="#L579">579</a>         }
-<a class="jxr_linenumber" name="L580" href="#L580">580</a> 
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>         Future&lt;?&gt; future = connectTimeoutFuture;
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>         <strong class="jxr_keyword">if</strong> (future != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>             future.cancel(false);
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>             connectTimeoutFuture = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>         }
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>     }
-<a class="jxr_linenumber" name="L587" href="#L587">587</a> }
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>             <strong class="jxr_keyword">return</strong> registration.isValid() &amp;&amp; NioIoOps.WRITE.isIncludedIn((
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>                     (SelectionKey) registration.attachment()).interestOps());
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>         }
+<a class="jxr_linenumber" name="L419" href="#L419">419</a> 
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>         @Override
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handle(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <a name="IoEvent" href="../../../../io/netty/channel/IoEvent.html#IoEvent">IoEvent</a> event) {
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>                 <a name="NioIoEvent" href="../../../../io/netty/channel/nio/NioIoEvent.html#NioIoEvent">NioIoEvent</a> nioEvent = (<a name="NioIoEvent" href="../../../../io/netty/channel/nio/NioIoEvent.html#NioIoEvent">NioIoEvent</a>) event;
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 <a name="NioIoOps" href="../../../../io/netty/channel/nio/NioIoOps.html#NioIoOps">NioIoOps</a> nioReadyOps = nioEvent.ops();
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <em class="jxr_comment">// We first need to call finishConnect() before try to trigger a read(...) or write(...) as otherwise</em>
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>                 <em class="jxr_comment">// the NIO JDK channel implementation may throw a NotYetConnectedException.</em>
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>                 <strong class="jxr_keyword">if</strong> (nioReadyOps.contains(NioIoOps.CONNECT)) {
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>                     <em class="jxr_comment">// remove OP_CONNECT as otherwise Selector.select(..) will always return without blocking</em>
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>                     <em class="jxr_comment">// See https://github.com/netty/netty/issues/924</em>
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>                     removeAndSubmit(NioIoOps.CONNECT);
+<a class="jxr_linenumber" name="L431" href="#L431">431</a> 
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>                     unsafe().finishConnect();
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>                 }
+<a class="jxr_linenumber" name="L434" href="#L434">434</a> 
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>                 <em class="jxr_comment">// Process OP_WRITE first as we may be able to write some queued buffers and so free memory.</em>
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>                 <strong class="jxr_keyword">if</strong> (nioReadyOps.contains(NioIoOps.WRITE)) {
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>                     <em class="jxr_comment">// Call forceFlush which will also take care of clear the OP_WRITE once there is nothing left to</em>
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>                     <em class="jxr_comment">// write</em>
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>                     forceFlush();
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>                 }
+<a class="jxr_linenumber" name="L441" href="#L441">441</a> 
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>                 <em class="jxr_comment">// Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead</em>
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>                 <em class="jxr_comment">// to a spin loop</em>
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>                 <strong class="jxr_keyword">if</strong> (nioReadyOps.contains(NioIoOps.READ_AND_ACCEPT) || nioReadyOps.equals(NioIoOps.NONE)) {
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>                     read();
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>                 }
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>             } <strong class="jxr_keyword">catch</strong> (CancelledKeyException ignored) {
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>                 close(voidPromise());
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>             }
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>         }
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>     }
+<a class="jxr_linenumber" name="L452" href="#L452">452</a> 
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>     @Override
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isCompatible(<a name="EventLoop" href="../../../../io/netty/channel/EventLoop.html#EventLoop">EventLoop</a> loop) {
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>         <strong class="jxr_keyword">return</strong> loop instanceof <a name="IoEventLoop" href="../../../../io/netty/channel/IoEventLoop.html#IoEventLoop">IoEventLoop</a> &amp;&amp; ((<a name="IoEventLoopGroup" href="../../../../io/netty/channel/IoEventLoopGroup.html#IoEventLoopGroup">IoEventLoopGroup</a>) loop).isCompatible(AbstractNioUnsafe.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>     }
+<a class="jxr_linenumber" name="L457" href="#L457">457</a> 
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>     @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>     @Override
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doRegister(<a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>         assert registration == <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>         ((<a name="IoEventLoop" href="../../../../io/netty/channel/IoEventLoop.html#IoEventLoop">IoEventLoop</a>) eventLoop()).register((AbstractNioUnsafe) unsafe()).addListener(f -&gt; {
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>             <strong class="jxr_keyword">if</strong> (f.isSuccess()) {
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>                 registration = (<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a>) f.getNow();
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>                 promise.setSuccess();
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 promise.setFailure(f.cause());
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>             }
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>         });
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>     }
+<a class="jxr_linenumber" name="L471" href="#L471">471</a> 
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>     @Override
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doDeregister() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>         <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = <strong class="jxr_keyword">this</strong>.registration;
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>         <strong class="jxr_keyword">if</strong> (registration != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <strong class="jxr_keyword">this</strong>.registration = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>             registration.cancel();
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>         }
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>     }
+<a class="jxr_linenumber" name="L480" href="#L480">480</a> 
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>     @Override
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doBeginRead() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>         <em class="jxr_comment">// Channel.read() or ChannelHandlerContext.read() was called</em>
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>         <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = <strong class="jxr_keyword">this</strong>.registration;
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>         <strong class="jxr_keyword">if</strong> (registration == <strong class="jxr_keyword">null</strong> || !registration.isValid()) {
+<a class="jxr_linenumber" name="L486" href="#L486">486</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>         }
+<a class="jxr_linenumber" name="L488" href="#L488">488</a> 
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>         readPending = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L490" href="#L490">490</a> 
+<a class="jxr_linenumber" name="L491" href="#L491">491</a>         addAndSubmit(readOps);
+<a class="jxr_linenumber" name="L492" href="#L492">492</a>     }
+<a class="jxr_linenumber" name="L493" href="#L493">493</a> 
+<a class="jxr_linenumber" name="L494" href="#L494">494</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L495" href="#L495">495</a> <em class="jxr_javadoccomment">     * Connect to the remote peer</em>
+<a class="jxr_linenumber" name="L496" href="#L496">496</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> doConnect(SocketAddress remoteAddress, SocketAddress localAddress) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L498" href="#L498">498</a> 
+<a class="jxr_linenumber" name="L499" href="#L499">499</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L500" href="#L500">500</a> <em class="jxr_javadoccomment">     * Finish the connect</em>
+<a class="jxr_linenumber" name="L501" href="#L501">501</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L502" href="#L502">502</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> doFinishConnect() <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L503" href="#L503">503</a> 
+<a class="jxr_linenumber" name="L504" href="#L504">504</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L505" href="#L505">505</a> <em class="jxr_javadoccomment">     * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the original one.</em>
+<a class="jxr_linenumber" name="L506" href="#L506">506</a> <em class="jxr_javadoccomment">     * Note that this method does not create an off-heap copy if the allocation / deallocation cost is too high,</em>
+<a class="jxr_linenumber" name="L507" href="#L507">507</a> <em class="jxr_javadoccomment">     * but just returns the original {@link ByteBuf}..</em>
+<a class="jxr_linenumber" name="L508" href="#L508">508</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L509" href="#L509">509</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> newDirectBuffer(<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf) {
+<a class="jxr_linenumber" name="L510" href="#L510">510</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buf.readableBytes();
+<a class="jxr_linenumber" name="L511" href="#L511">511</a>         <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
+<a class="jxr_linenumber" name="L512" href="#L512">512</a>             ReferenceCountUtil.safeRelease(buf);
+<a class="jxr_linenumber" name="L513" href="#L513">513</a>             <strong class="jxr_keyword">return</strong> Unpooled.EMPTY_BUFFER;
+<a class="jxr_linenumber" name="L514" href="#L514">514</a>         }
+<a class="jxr_linenumber" name="L515" href="#L515">515</a> 
+<a class="jxr_linenumber" name="L516" href="#L516">516</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBufAllocator" href="../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc = alloc();
+<a class="jxr_linenumber" name="L517" href="#L517">517</a>         <strong class="jxr_keyword">if</strong> (alloc.isDirectBufferPooled()) {
+<a class="jxr_linenumber" name="L518" href="#L518">518</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = alloc.directBuffer(readableBytes);
+<a class="jxr_linenumber" name="L519" href="#L519">519</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
+<a class="jxr_linenumber" name="L520" href="#L520">520</a>             ReferenceCountUtil.safeRelease(buf);
+<a class="jxr_linenumber" name="L521" href="#L521">521</a>             <strong class="jxr_keyword">return</strong> directBuf;
+<a class="jxr_linenumber" name="L522" href="#L522">522</a>         }
+<a class="jxr_linenumber" name="L523" href="#L523">523</a> 
+<a class="jxr_linenumber" name="L524" href="#L524">524</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = ByteBufUtil.threadLocalDirectBuffer();
+<a class="jxr_linenumber" name="L525" href="#L525">525</a>         <strong class="jxr_keyword">if</strong> (directBuf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L526" href="#L526">526</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
+<a class="jxr_linenumber" name="L527" href="#L527">527</a>             ReferenceCountUtil.safeRelease(buf);
+<a class="jxr_linenumber" name="L528" href="#L528">528</a>             <strong class="jxr_keyword">return</strong> directBuf;
+<a class="jxr_linenumber" name="L529" href="#L529">529</a>         }
+<a class="jxr_linenumber" name="L530" href="#L530">530</a> 
+<a class="jxr_linenumber" name="L531" href="#L531">531</a>         <em class="jxr_comment">// Allocating and deallocating an unpooled direct buffer is very expensive; give up.</em>
+<a class="jxr_linenumber" name="L532" href="#L532">532</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="L533" href="#L533">533</a>     }
+<a class="jxr_linenumber" name="L534" href="#L534">534</a> 
+<a class="jxr_linenumber" name="L535" href="#L535">535</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L536" href="#L536">536</a> <em class="jxr_javadoccomment">     * Returns an off-heap copy of the specified {@link ByteBuf}, and releases the specified holder.</em>
+<a class="jxr_linenumber" name="L537" href="#L537">537</a> <em class="jxr_javadoccomment">     * The caller must ensure that the holder releases the original {@link ByteBuf} when the holder is released by</em>
+<a class="jxr_linenumber" name="L538" href="#L538">538</a> <em class="jxr_javadoccomment">     * this method.  Note that this method does not create an off-heap copy if the allocation / deallocation cost is</em>
+<a class="jxr_linenumber" name="L539" href="#L539">539</a> <em class="jxr_javadoccomment">     * too high, but just returns the original {@link ByteBuf}..</em>
+<a class="jxr_linenumber" name="L540" href="#L540">540</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L541" href="#L541">541</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> newDirectBuffer(<a name="ReferenceCounted" href="../../../../io/netty/util/ReferenceCounted.html#ReferenceCounted">ReferenceCounted</a> holder, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf) {
+<a class="jxr_linenumber" name="L542" href="#L542">542</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> readableBytes = buf.readableBytes();
+<a class="jxr_linenumber" name="L543" href="#L543">543</a>         <strong class="jxr_keyword">if</strong> (readableBytes == 0) {
+<a class="jxr_linenumber" name="L544" href="#L544">544</a>             ReferenceCountUtil.safeRelease(holder);
+<a class="jxr_linenumber" name="L545" href="#L545">545</a>             <strong class="jxr_keyword">return</strong> Unpooled.EMPTY_BUFFER;
+<a class="jxr_linenumber" name="L546" href="#L546">546</a>         }
+<a class="jxr_linenumber" name="L547" href="#L547">547</a> 
+<a class="jxr_linenumber" name="L548" href="#L548">548</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBufAllocator" href="../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc = alloc();
+<a class="jxr_linenumber" name="L549" href="#L549">549</a>         <strong class="jxr_keyword">if</strong> (alloc.isDirectBufferPooled()) {
+<a class="jxr_linenumber" name="L550" href="#L550">550</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = alloc.directBuffer(readableBytes);
+<a class="jxr_linenumber" name="L551" href="#L551">551</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
+<a class="jxr_linenumber" name="L552" href="#L552">552</a>             ReferenceCountUtil.safeRelease(holder);
+<a class="jxr_linenumber" name="L553" href="#L553">553</a>             <strong class="jxr_keyword">return</strong> directBuf;
+<a class="jxr_linenumber" name="L554" href="#L554">554</a>         }
+<a class="jxr_linenumber" name="L555" href="#L555">555</a> 
+<a class="jxr_linenumber" name="L556" href="#L556">556</a>         <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> directBuf = ByteBufUtil.threadLocalDirectBuffer();
+<a class="jxr_linenumber" name="L557" href="#L557">557</a>         <strong class="jxr_keyword">if</strong> (directBuf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L558" href="#L558">558</a>             directBuf.writeBytes(buf, buf.readerIndex(), readableBytes);
+<a class="jxr_linenumber" name="L559" href="#L559">559</a>             ReferenceCountUtil.safeRelease(holder);
+<a class="jxr_linenumber" name="L560" href="#L560">560</a>             <strong class="jxr_keyword">return</strong> directBuf;
+<a class="jxr_linenumber" name="L561" href="#L561">561</a>         }
+<a class="jxr_linenumber" name="L562" href="#L562">562</a> 
+<a class="jxr_linenumber" name="L563" href="#L563">563</a>         <em class="jxr_comment">// Allocating and deallocating an unpooled direct buffer is very expensive; give up.</em>
+<a class="jxr_linenumber" name="L564" href="#L564">564</a>         <strong class="jxr_keyword">if</strong> (holder != buf) {
+<a class="jxr_linenumber" name="L565" href="#L565">565</a>             <em class="jxr_comment">// Ensure to call holder.release() to give the holder a chance to release other resources than its content.</em>
+<a class="jxr_linenumber" name="L566" href="#L566">566</a>             buf.retain();
+<a class="jxr_linenumber" name="L567" href="#L567">567</a>             ReferenceCountUtil.safeRelease(holder);
+<a class="jxr_linenumber" name="L568" href="#L568">568</a>         }
+<a class="jxr_linenumber" name="L569" href="#L569">569</a> 
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>         <strong class="jxr_keyword">return</strong> buf;
+<a class="jxr_linenumber" name="L571" href="#L571">571</a>     }
+<a class="jxr_linenumber" name="L572" href="#L572">572</a> 
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>     @Override
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> doClose() <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>         <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise = connectPromise;
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>         <strong class="jxr_keyword">if</strong> (promise != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>             <em class="jxr_comment">// Use tryFailure() instead of setFailure() to avoid the race against cancel().</em>
+<a class="jxr_linenumber" name="L578" href="#L578">578</a>             promise.tryFailure(<strong class="jxr_keyword">new</strong> ClosedChannelException());
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>             connectPromise = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>         }
+<a class="jxr_linenumber" name="L581" href="#L581">581</a> 
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>         Future&lt;?&gt; future = connectTimeoutFuture;
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>         <strong class="jxr_keyword">if</strong> (future != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>             future.cancel(false);
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>             connectTimeoutFuture = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>         }
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>     }
+<a class="jxr_linenumber" name="L588" href="#L588">588</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
