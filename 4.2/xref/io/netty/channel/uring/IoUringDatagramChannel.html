@@ -391,308 +391,310 @@
 <a class="jxr_linenumber" name="L383" href="#L383">383</a> 
 <a class="jxr_linenumber" name="L384" href="#L384">384</a>         @Override
 <a class="jxr_linenumber" name="L385" href="#L385">385</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> readComplete0(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data, <strong class="jxr_keyword">int</strong> outstanding) {
-<a class="jxr_linenumber" name="L386" href="#L386">386</a>             <strong class="jxr_keyword">final</strong> <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle = recvBufAllocHandle();
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>             <strong class="jxr_keyword">final</strong> <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = pipeline();
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = <strong class="jxr_keyword">this</strong>.readBuffer;
-<a class="jxr_linenumber" name="L389" href="#L389">389</a>             assert byteBuf != <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>                 recvmsgComplete(pipeline, allocHandle, byteBuf, res, flags, data, outstanding);
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>                 <strong class="jxr_keyword">if</strong> (connected &amp;&amp; t instanceof NativeIoException) {
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>                     t = translateForConnected((NativeIoException) t);
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>                 }
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>                 pipeline.fireExceptionCaught(t);
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>             }
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>         }
-<a class="jxr_linenumber" name="L399" href="#L399">399</a> 
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> recvmsgComplete(<a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline, <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle,
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>                                       <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">int</strong> idx, <strong class="jxr_keyword">int</strong> outstanding)
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>             <a name="MsgHdrMemory" href="../../../../io/netty/channel/uring/MsgHdrMemory.html#MsgHdrMemory">MsgHdrMemory</a> hdr = recvmsgHdrs.hdr(idx);
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>             <strong class="jxr_keyword">if</strong> (res &lt; 0) {
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>                 <strong class="jxr_keyword">if</strong> (res != Native.ERRNO_ECANCELED_NEGATIVE) {
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>                     <em class="jxr_comment">// If res is negative we should pass it to ioResult(...) which will either throw</em>
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>                     <em class="jxr_comment">// or convert it to 0 if we could not read because the socket was not readable.</em>
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>                     allocHandle.lastBytesRead(ioResult(<span class="jxr_string">"io_uring recvmsg"</span>, res));
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>                 }
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>                 allocHandle.lastBytesRead(res);
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>                 <strong class="jxr_keyword">if</strong> (hdr.hasPort(IoUringDatagramChannel.<strong class="jxr_keyword">this</strong>)) {
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>                     allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>                     <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a> packet = hdr.read(
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>                             IoUringDatagramChannel.<strong class="jxr_keyword">this</strong>, registration().attachment(), byteBuf, res);
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>                     pipeline.fireChannelRead(packet);
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>                 }
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>             }
-<a class="jxr_linenumber" name="L419" href="#L419">419</a> 
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>             <em class="jxr_comment">// Reset the id as this read was completed and so don't need to be cancelled later.</em>
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             recvmsgHdrs.setId(idx, MsgHdrMemoryArray.NO_ID);
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>             <strong class="jxr_keyword">if</strong> (outstanding == 0) {
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>                 <em class="jxr_comment">// There are no outstanding completion events, release the readBuffer and see if we need to schedule</em>
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 <em class="jxr_comment">// another one or if the user will do it.</em>
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <strong class="jxr_keyword">this</strong>.readBuffer.release();
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>                 <strong class="jxr_keyword">this</strong>.readBuffer = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>                 recvmsgHdrs.clear();
-<a class="jxr_linenumber" name="L428" href="#L428">428</a> 
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>                 <strong class="jxr_keyword">if</strong> (res != Native.ERRNO_ECANCELED_NEGATIVE) {
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>                     <strong class="jxr_keyword">if</strong> (allocHandle.lastBytesRead() &gt; 0 &amp;&amp;
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>                             allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER) &amp;&amp;
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>                             <em class="jxr_comment">// If IORING_CQE_F_SOCK_NONEMPTY is supported we should check for it first before</em>
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>                             <em class="jxr_comment">// trying to schedule a read. If it's supported and not part of the flags we know for sure</em>
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>                             <em class="jxr_comment">// that the next read (which would be using Native.MSG_DONTWAIT) will complete without</em>
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>                             <em class="jxr_comment">// be able to read any data. This is useless work and we can skip it.</em>
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>                             (!IoUring.isIOUringCqeFSockNonEmptySupported() ||
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>                                     (flags &amp; Native.IORING_CQE_F_SOCK_NONEMPTY) != 0)) {
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>                         <em class="jxr_comment">// Let's schedule another read.</em>
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>                         scheduleRead(false);
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>                         <em class="jxr_comment">// the read was completed with EAGAIN.</em>
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>                         allocHandle.readComplete();
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                         pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>                     }
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 }
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>             }
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>         }
-<a class="jxr_linenumber" name="L448" href="#L448">448</a> 
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>         @Override
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> scheduleRead0(<strong class="jxr_keyword">boolean</strong> first, <strong class="jxr_keyword">boolean</strong> socketIsEmpty) {
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>             <strong class="jxr_keyword">final</strong> <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle = recvBufAllocHandle();
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = allocHandle.allocate(alloc());
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>             assert readBuffer == <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>             readBuffer = byteBuf;
-<a class="jxr_linenumber" name="L455" href="#L455">455</a> 
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>             <strong class="jxr_keyword">int</strong> writable = byteBuf.writableBytes();
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>             allocHandle.attemptedBytesRead(writable);
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">int</strong> datagramSize = ((<a name="IoUringDatagramChannelConfig" href="../../../../io/netty/channel/uring/IoUringDatagramChannelConfig.html#IoUringDatagramChannelConfig">IoUringDatagramChannelConfig</a>) config()).getMaxDatagramPayloadSize();
-<a class="jxr_linenumber" name="L459" href="#L459">459</a> 
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>             <strong class="jxr_keyword">int</strong> numDatagram = datagramSize == 0 ? 1 : Math.max(1, byteBuf.writableBytes() / datagramSize);
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>             assert outstanding != -1 : <span class="jxr_string">"multi-shot not implemented yet"</span>;
+<a class="jxr_linenumber" name="L387" href="#L387">387</a> 
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>             <strong class="jxr_keyword">final</strong> <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle = recvBufAllocHandle();
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>             <strong class="jxr_keyword">final</strong> <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = pipeline();
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = <strong class="jxr_keyword">this</strong>.readBuffer;
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>             assert byteBuf != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>                 recvmsgComplete(pipeline, allocHandle, byteBuf, res, flags, data, outstanding);
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>                 <strong class="jxr_keyword">if</strong> (connected &amp;&amp; t instanceof NativeIoException) {
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>                     t = translateForConnected((NativeIoException) t);
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>                 }
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>                 pipeline.fireExceptionCaught(t);
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>             }
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>         }
+<a class="jxr_linenumber" name="L401" href="#L401">401</a> 
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> recvmsgComplete(<a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline, <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle,
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>                                       <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">int</strong> idx, <strong class="jxr_keyword">int</strong> outstanding)
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>             <a name="MsgHdrMemory" href="../../../../io/netty/channel/uring/MsgHdrMemory.html#MsgHdrMemory">MsgHdrMemory</a> hdr = recvmsgHdrs.hdr(idx);
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>             <strong class="jxr_keyword">if</strong> (res &lt; 0) {
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>                 <strong class="jxr_keyword">if</strong> (res != Native.ERRNO_ECANCELED_NEGATIVE) {
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>                     <em class="jxr_comment">// If res is negative we should pass it to ioResult(...) which will either throw</em>
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>                     <em class="jxr_comment">// or convert it to 0 if we could not read because the socket was not readable.</em>
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>                     allocHandle.lastBytesRead(ioResult(<span class="jxr_string">"io_uring recvmsg"</span>, res));
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>                 }
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>                 allocHandle.lastBytesRead(res);
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>                 <strong class="jxr_keyword">if</strong> (hdr.hasPort(IoUringDatagramChannel.<strong class="jxr_keyword">this</strong>)) {
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>                     allocHandle.incMessagesRead(1);
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                     <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a> packet = hdr.read(
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>                             IoUringDatagramChannel.<strong class="jxr_keyword">this</strong>, registration().attachment(), byteBuf, res);
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>                     pipeline.fireChannelRead(packet);
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>                 }
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>             }
+<a class="jxr_linenumber" name="L421" href="#L421">421</a> 
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>             <em class="jxr_comment">// Reset the id as this read was completed and so don't need to be cancelled later.</em>
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>             recvmsgHdrs.setId(idx, MsgHdrMemoryArray.NO_ID);
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>             <strong class="jxr_keyword">if</strong> (outstanding == 0) {
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <em class="jxr_comment">// There are no outstanding completion events, release the readBuffer and see if we need to schedule</em>
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>                 <em class="jxr_comment">// another one or if the user will do it.</em>
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>                 <strong class="jxr_keyword">this</strong>.readBuffer.release();
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>                 <strong class="jxr_keyword">this</strong>.readBuffer = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>                 recvmsgHdrs.clear();
+<a class="jxr_linenumber" name="L430" href="#L430">430</a> 
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>                 <strong class="jxr_keyword">if</strong> (res != Native.ERRNO_ECANCELED_NEGATIVE) {
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>                     <strong class="jxr_keyword">if</strong> (allocHandle.lastBytesRead() &gt; 0 &amp;&amp;
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>                             allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER) &amp;&amp;
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>                             <em class="jxr_comment">// If IORING_CQE_F_SOCK_NONEMPTY is supported we should check for it first before</em>
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>                             <em class="jxr_comment">// trying to schedule a read. If it's supported and not part of the flags we know for sure</em>
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>                             <em class="jxr_comment">// that the next read (which would be using Native.MSG_DONTWAIT) will complete without</em>
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>                             <em class="jxr_comment">// be able to read any data. This is useless work and we can skip it.</em>
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>                             (!IoUring.isCqeFSockNonEmptySupported() ||
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>                                     (flags &amp; Native.IORING_CQE_F_SOCK_NONEMPTY) != 0)) {
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>                         <em class="jxr_comment">// Let's schedule another read.</em>
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>                         scheduleRead(false);
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>                         <em class="jxr_comment">// the read was completed with EAGAIN.</em>
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>                         allocHandle.readComplete();
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>                         pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>                     }
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 }
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>             }
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>         }
+<a class="jxr_linenumber" name="L450" href="#L450">450</a> 
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>         @Override
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> scheduleRead0(<strong class="jxr_keyword">boolean</strong> first, <strong class="jxr_keyword">boolean</strong> socketIsEmpty) {
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>             <strong class="jxr_keyword">final</strong> <a name="IoUringRecvByteAllocatorHandle" href="../../../../io/netty/channel/uring/IoUringRecvByteAllocatorHandle.html#IoUringRecvByteAllocatorHandle">IoUringRecvByteAllocatorHandle</a> allocHandle = recvBufAllocHandle();
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>             <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = allocHandle.allocate(alloc());
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>             assert readBuffer == <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             readBuffer = byteBuf;
+<a class="jxr_linenumber" name="L457" href="#L457">457</a> 
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">int</strong> writable = byteBuf.writableBytes();
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>             allocHandle.attemptedBytesRead(writable);
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>             <strong class="jxr_keyword">int</strong> datagramSize = ((<a name="IoUringDatagramChannelConfig" href="../../../../io/netty/channel/uring/IoUringDatagramChannelConfig.html#IoUringDatagramChannelConfig">IoUringDatagramChannelConfig</a>) config()).getMaxDatagramPayloadSize();
 <a class="jxr_linenumber" name="L461" href="#L461">461</a> 
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>             <strong class="jxr_keyword">int</strong> scheduled = scheduleRecvmsg(byteBuf, numDatagram, datagramSize);
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>             <strong class="jxr_keyword">if</strong> (scheduled == 0) {
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>                 <em class="jxr_comment">// We could not schedule any recvmmsg so we need to release the buffer as there will be no</em>
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>                 <em class="jxr_comment">// completion event.</em>
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 readBuffer = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 byteBuf.release();
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>             }
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>             <strong class="jxr_keyword">return</strong> scheduled;
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>         }
-<a class="jxr_linenumber" name="L471" href="#L471">471</a> 
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> scheduleRecvmsg(<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf, <strong class="jxr_keyword">int</strong> numDatagram, <strong class="jxr_keyword">int</strong> datagramSize) {
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>             <strong class="jxr_keyword">int</strong> writable = byteBuf.writableBytes();
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>             <strong class="jxr_keyword">long</strong> bufferAddress = byteBuf.memoryAddress() + byteBuf.writerIndex();
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>             <strong class="jxr_keyword">if</strong> (numDatagram &lt;= 1) {
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>                 <strong class="jxr_keyword">return</strong> scheduleRecvmsg0(bufferAddress, writable, <strong class="jxr_keyword">true</strong>) ? 1 : 0;
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>             }
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>             <strong class="jxr_keyword">int</strong> i = 0;
-<a class="jxr_linenumber" name="L479" href="#L479">479</a>             <em class="jxr_comment">// Add multiple IORING_OP_RECVMSG to the submission queue. This basically emulates recvmmsg(...)</em>
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>             <strong class="jxr_keyword">for</strong> (; i &lt; numDatagram &amp;&amp; writable &gt;= datagramSize; i++) {
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>                 <strong class="jxr_keyword">if</strong> (!scheduleRecvmsg0(bufferAddress, datagramSize, i == 0)) {
-<a class="jxr_linenumber" name="L482" href="#L482">482</a>                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>                 }
-<a class="jxr_linenumber" name="L484" href="#L484">484</a>                 bufferAddress += datagramSize;
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>                 writable -= datagramSize;
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>             }
-<a class="jxr_linenumber" name="L487" href="#L487">487</a>             <strong class="jxr_keyword">return</strong> i;
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>         }
-<a class="jxr_linenumber" name="L489" href="#L489">489</a> 
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scheduleRecvmsg0(<strong class="jxr_keyword">long</strong> bufferAddress, <strong class="jxr_keyword">int</strong> bufferLength, <strong class="jxr_keyword">boolean</strong> first) {
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>             <a name="MsgHdrMemory" href="../../../../io/netty/channel/uring/MsgHdrMemory.html#MsgHdrMemory">MsgHdrMemory</a> msgHdrMemory = recvmsgHdrs.nextHdr();
-<a class="jxr_linenumber" name="L492" href="#L492">492</a>             <strong class="jxr_keyword">if</strong> (msgHdrMemory == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L493" href="#L493">493</a>                 <em class="jxr_comment">// We can not continue reading before we did not submit the recvmsg(s) and received the results.</em>
-<a class="jxr_linenumber" name="L494" href="#L494">494</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L495" href="#L495">495</a>             }
-<a class="jxr_linenumber" name="L496" href="#L496">496</a>             msgHdrMemory.write(socket, <strong class="jxr_keyword">null</strong>, bufferAddress, bufferLength, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L497" href="#L497">497</a> 
-<a class="jxr_linenumber" name="L498" href="#L498">498</a>             <strong class="jxr_keyword">int</strong> fd = fd().intValue();
-<a class="jxr_linenumber" name="L499" href="#L499">499</a>             <strong class="jxr_keyword">int</strong> msgFlags = first ? 0 : Native.MSG_DONTWAIT;
-<a class="jxr_linenumber" name="L500" href="#L500">500</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
-<a class="jxr_linenumber" name="L501" href="#L501">501</a>             <em class="jxr_comment">// We always use idx here so we can detect if no idx was used by checking if data &lt; 0 in</em>
-<a class="jxr_linenumber" name="L502" href="#L502">502</a>             <em class="jxr_comment">// readComplete0(...)</em>
-<a class="jxr_linenumber" name="L503" href="#L503">503</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newRecvmsg(
-<a class="jxr_linenumber" name="L504" href="#L504">504</a>                     fd, flags((byte) 0), msgFlags, msgHdrMemory.address(), msgHdrMemory.idx());
-<a class="jxr_linenumber" name="L505" href="#L505">505</a>             <strong class="jxr_keyword">long</strong> id = registration.submit(ops);
-<a class="jxr_linenumber" name="L506" href="#L506">506</a>             <strong class="jxr_keyword">if</strong> (id == 0) {
-<a class="jxr_linenumber" name="L507" href="#L507">507</a>                 <em class="jxr_comment">// Submission failed we don't used the MsgHdrMemory and so should give it back.</em>
-<a class="jxr_linenumber" name="L508" href="#L508">508</a>                 recvmsgHdrs.restoreNextHdr(msgHdrMemory);
-<a class="jxr_linenumber" name="L509" href="#L509">509</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L510" href="#L510">510</a>             }
-<a class="jxr_linenumber" name="L511" href="#L511">511</a>             recvmsgHdrs.setId(msgHdrMemory.idx(), id);
-<a class="jxr_linenumber" name="L512" href="#L512">512</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L513" href="#L513">513</a>         }
-<a class="jxr_linenumber" name="L514" href="#L514">514</a> 
-<a class="jxr_linenumber" name="L515" href="#L515">515</a>         @Override
-<a class="jxr_linenumber" name="L516" href="#L516">516</a>         <strong class="jxr_keyword">boolean</strong> writeComplete0(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data, <strong class="jxr_keyword">int</strong> outstanding) {
-<a class="jxr_linenumber" name="L517" href="#L517">517</a>             <a name="ChannelOutboundBuffer" href="../../../../io/netty/channel/ChannelOutboundBuffer.html#ChannelOutboundBuffer">ChannelOutboundBuffer</a> outboundBuffer = outboundBuffer();
-<a class="jxr_linenumber" name="L518" href="#L518">518</a> 
-<a class="jxr_linenumber" name="L519" href="#L519">519</a>             <em class="jxr_comment">// Reset the id as this write was completed and so don't need to be cancelled later.</em>
-<a class="jxr_linenumber" name="L520" href="#L520">520</a>             sendmsgHdrs.setId(data, MsgHdrMemoryArray.NO_ID);
-<a class="jxr_linenumber" name="L521" href="#L521">521</a>             sendmsgResArray[data] = res;
-<a class="jxr_linenumber" name="L522" href="#L522">522</a>             <em class="jxr_comment">// Store the result so we can handle it as soon as we have no outstanding writes anymore.</em>
-<a class="jxr_linenumber" name="L523" href="#L523">523</a>             <strong class="jxr_keyword">if</strong> (outstanding == 0) {
-<a class="jxr_linenumber" name="L524" href="#L524">524</a>                 <em class="jxr_comment">// All writes are done as part of a batch. Let's remove these from the ChannelOutboundBuffer</em>
-<a class="jxr_linenumber" name="L525" href="#L525">525</a>                 <strong class="jxr_keyword">boolean</strong> writtenSomething = false;
-<a class="jxr_linenumber" name="L526" href="#L526">526</a>                 <strong class="jxr_keyword">int</strong> numWritten = sendmsgHdrs.length();
-<a class="jxr_linenumber" name="L527" href="#L527">527</a>                 sendmsgHdrs.clear();
-<a class="jxr_linenumber" name="L528" href="#L528">528</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; numWritten; i++) {
-<a class="jxr_linenumber" name="L529" href="#L529">529</a>                     writtenSomething |= removeFromOutboundBuffer(
-<a class="jxr_linenumber" name="L530" href="#L530">530</a>                             outboundBuffer, sendmsgResArray[i], <span class="jxr_string">"io_uring sendmsg"</span>);
-<a class="jxr_linenumber" name="L531" href="#L531">531</a>                 }
-<a class="jxr_linenumber" name="L532" href="#L532">532</a>                 <strong class="jxr_keyword">return</strong> writtenSomething;
-<a class="jxr_linenumber" name="L533" href="#L533">533</a>             }
-<a class="jxr_linenumber" name="L534" href="#L534">534</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L535" href="#L535">535</a>         }
-<a class="jxr_linenumber" name="L536" href="#L536">536</a> 
-<a class="jxr_linenumber" name="L537" href="#L537">537</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> removeFromOutboundBuffer(<a name="ChannelOutboundBuffer" href="../../../../io/netty/channel/ChannelOutboundBuffer.html#ChannelOutboundBuffer">ChannelOutboundBuffer</a> outboundBuffer, <strong class="jxr_keyword">int</strong> res, String errormsg) {
-<a class="jxr_linenumber" name="L538" href="#L538">538</a>             <strong class="jxr_keyword">if</strong> (res &gt;= 0) {
-<a class="jxr_linenumber" name="L539" href="#L539">539</a>                 <em class="jxr_comment">// When using Datagram we should consider the message written as long as res is not negative.</em>
-<a class="jxr_linenumber" name="L540" href="#L540">540</a>                 <strong class="jxr_keyword">return</strong> outboundBuffer.remove();
-<a class="jxr_linenumber" name="L541" href="#L541">541</a>             }
-<a class="jxr_linenumber" name="L542" href="#L542">542</a>             <strong class="jxr_keyword">if</strong> (res == Native.ERRNO_ECANCELED_NEGATIVE) {
-<a class="jxr_linenumber" name="L543" href="#L543">543</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L544" href="#L544">544</a>             }
-<a class="jxr_linenumber" name="L545" href="#L545">545</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L546" href="#L546">546</a>                 <strong class="jxr_keyword">return</strong> ioResult(errormsg, res) != 0;
-<a class="jxr_linenumber" name="L547" href="#L547">547</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="L548" href="#L548">548</a>                 <strong class="jxr_keyword">return</strong> outboundBuffer.remove(cause);
-<a class="jxr_linenumber" name="L549" href="#L549">549</a>             }
-<a class="jxr_linenumber" name="L550" href="#L550">550</a>         }
-<a class="jxr_linenumber" name="L551" href="#L551">551</a> 
-<a class="jxr_linenumber" name="L552" href="#L552">552</a>         @Override
-<a class="jxr_linenumber" name="L553" href="#L553">553</a>         <strong class="jxr_keyword">void</strong> connectComplete(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data) {
-<a class="jxr_linenumber" name="L554" href="#L554">554</a>             <strong class="jxr_keyword">if</strong> (res &gt;= 0) {
-<a class="jxr_linenumber" name="L555" href="#L555">555</a>                 connected = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L556" href="#L556">556</a>             }
-<a class="jxr_linenumber" name="L557" href="#L557">557</a>             <strong class="jxr_keyword">super</strong>.connectComplete(op, res, flags, data);
-<a class="jxr_linenumber" name="L558" href="#L558">558</a>         }
-<a class="jxr_linenumber" name="L559" href="#L559">559</a> 
-<a class="jxr_linenumber" name="L560" href="#L560">560</a>         @Override
-<a class="jxr_linenumber" name="L561" href="#L561">561</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> scheduleWriteMultiple(<a name="ChannelOutboundBuffer" href="../../../../io/netty/channel/ChannelOutboundBuffer.html#ChannelOutboundBuffer">ChannelOutboundBuffer</a> in) {
-<a class="jxr_linenumber" name="L562" href="#L562">562</a>             <strong class="jxr_keyword">return</strong> writeProcessor.write(in);
-<a class="jxr_linenumber" name="L563" href="#L563">563</a>         }
-<a class="jxr_linenumber" name="L564" href="#L564">564</a> 
-<a class="jxr_linenumber" name="L565" href="#L565">565</a>         @Override
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> scheduleWriteSingle(Object msg) {
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>             <strong class="jxr_keyword">return</strong> scheduleWrite(msg, <strong class="jxr_keyword">true</strong>) ? 1 : 0;
-<a class="jxr_linenumber" name="L568" href="#L568">568</a>         }
-<a class="jxr_linenumber" name="L569" href="#L569">569</a> 
-<a class="jxr_linenumber" name="L570" href="#L570">570</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scheduleWrite(Object msg, <strong class="jxr_keyword">boolean</strong> first) {
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>             <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> data;
-<a class="jxr_linenumber" name="L572" href="#L572">572</a>             <strong class="jxr_keyword">final</strong> InetSocketAddress remoteAddress;
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> segmentSize;
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>             <strong class="jxr_keyword">if</strong> (msg instanceof <a name="AddressedEnvelope" href="../../../../io/netty/channel/AddressedEnvelope.html#AddressedEnvelope">AddressedEnvelope</a>) {
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>                 @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>                 AddressedEnvelope&lt;ByteBuf, InetSocketAddress&gt; envelope =
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>                         (AddressedEnvelope&lt;ByteBuf, InetSocketAddress&gt;) msg;
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>                 data = envelope.content();
-<a class="jxr_linenumber" name="L579" href="#L579">579</a>                 remoteAddress = envelope.recipient();
-<a class="jxr_linenumber" name="L580" href="#L580">580</a>                 <strong class="jxr_keyword">if</strong> (msg instanceof <a name="SegmentedDatagramPacket" href="../../../../io/netty/channel/unix/SegmentedDatagramPacket.html#SegmentedDatagramPacket">SegmentedDatagramPacket</a>) {
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>                     segmentSize = ((<a name="SegmentedDatagramPacket" href="../../../../io/netty/channel/unix/SegmentedDatagramPacket.html#SegmentedDatagramPacket">SegmentedDatagramPacket</a>) msg).segmentSize();
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>                     segmentSize = 0;
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>                 }
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>                 data = (<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a>) msg;
-<a class="jxr_linenumber" name="L587" href="#L587">587</a>                 remoteAddress = (InetSocketAddress) remoteAddress();
-<a class="jxr_linenumber" name="L588" href="#L588">588</a>                 segmentSize = 0;
-<a class="jxr_linenumber" name="L589" href="#L589">589</a>             }
-<a class="jxr_linenumber" name="L590" href="#L590">590</a> 
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>             <strong class="jxr_keyword">long</strong> bufferAddress = data.memoryAddress();
-<a class="jxr_linenumber" name="L592" href="#L592">592</a>             <strong class="jxr_keyword">return</strong> scheduleSendmsg(remoteAddress, bufferAddress, data.readableBytes(), segmentSize, first);
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>         }
-<a class="jxr_linenumber" name="L594" href="#L594">594</a> 
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scheduleSendmsg(InetSocketAddress remoteAddress, <strong class="jxr_keyword">long</strong> bufferAddress,
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>                                         <strong class="jxr_keyword">int</strong> bufferLength, <strong class="jxr_keyword">int</strong> segmentSize, <strong class="jxr_keyword">boolean</strong> first) {
-<a class="jxr_linenumber" name="L597" href="#L597">597</a>             <a name="MsgHdrMemory" href="../../../../io/netty/channel/uring/MsgHdrMemory.html#MsgHdrMemory">MsgHdrMemory</a> hdr = sendmsgHdrs.nextHdr();
-<a class="jxr_linenumber" name="L598" href="#L598">598</a>             <strong class="jxr_keyword">if</strong> (hdr == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>                 <em class="jxr_comment">// There is no MsgHdrMemory left to use. We need to submit and wait for the writes to complete</em>
-<a class="jxr_linenumber" name="L600" href="#L600">600</a>                 <em class="jxr_comment">// before we can write again.</em>
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L602" href="#L602">602</a>             }
-<a class="jxr_linenumber" name="L603" href="#L603">603</a>             hdr.write(socket, remoteAddress, bufferAddress, bufferLength, (<strong class="jxr_keyword">short</strong>) segmentSize);
-<a class="jxr_linenumber" name="L604" href="#L604">604</a> 
-<a class="jxr_linenumber" name="L605" href="#L605">605</a>             <strong class="jxr_keyword">int</strong> fd = fd().intValue();
-<a class="jxr_linenumber" name="L606" href="#L606">606</a>             <strong class="jxr_keyword">int</strong> msgFlags = first ? 0 : Native.MSG_DONTWAIT;
-<a class="jxr_linenumber" name="L607" href="#L607">607</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newSendmsg(fd, flags((byte) 0), msgFlags, hdr.address(), hdr.idx());
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>             <strong class="jxr_keyword">long</strong> id = registration.submit(ops);
-<a class="jxr_linenumber" name="L610" href="#L610">610</a>             <strong class="jxr_keyword">if</strong> (id == 0) {
-<a class="jxr_linenumber" name="L611" href="#L611">611</a>                 <em class="jxr_comment">// Submission failed we don't used the MsgHdrMemory and so should give it back.</em>
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>                 sendmsgHdrs.restoreNextHdr(hdr);
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L614" href="#L614">614</a>             }
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>             sendmsgHdrs.setId(hdr.idx(), id);
-<a class="jxr_linenumber" name="L616" href="#L616">616</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L617" href="#L617">617</a>         }
-<a class="jxr_linenumber" name="L618" href="#L618">618</a> 
-<a class="jxr_linenumber" name="L619" href="#L619">619</a>         @Override
-<a class="jxr_linenumber" name="L620" href="#L620">620</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> freeResourcesNow(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> reg) {
-<a class="jxr_linenumber" name="L621" href="#L621">621</a>             sendmsgHdrs.release();
-<a class="jxr_linenumber" name="L622" href="#L622">622</a>             recvmsgHdrs.release();
-<a class="jxr_linenumber" name="L623" href="#L623">623</a>             <strong class="jxr_keyword">super</strong>.freeResourcesNow(reg);
-<a class="jxr_linenumber" name="L624" href="#L624">624</a>         }
-<a class="jxr_linenumber" name="L625" href="#L625">625</a>     }
-<a class="jxr_linenumber" name="L626" href="#L626">626</a> 
-<a class="jxr_linenumber" name="L627" href="#L627">627</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> IOException translateForConnected(NativeIoException e) {
-<a class="jxr_linenumber" name="L628" href="#L628">628</a>         <em class="jxr_comment">// We need to correctly translate connect errors to match NIO behaviour.</em>
-<a class="jxr_linenumber" name="L629" href="#L629">629</a>         <strong class="jxr_keyword">if</strong> (e.expectedErr() == Errors.ERROR_ECONNREFUSED_NEGATIVE) {
-<a class="jxr_linenumber" name="L630" href="#L630">630</a>             PortUnreachableException error = <strong class="jxr_keyword">new</strong> PortUnreachableException(e.getMessage());
-<a class="jxr_linenumber" name="L631" href="#L631">631</a>             error.initCause(e);
-<a class="jxr_linenumber" name="L632" href="#L632">632</a>             <strong class="jxr_keyword">return</strong> error;
-<a class="jxr_linenumber" name="L633" href="#L633">633</a>         }
-<a class="jxr_linenumber" name="L634" href="#L634">634</a>         <strong class="jxr_keyword">return</strong> e;
-<a class="jxr_linenumber" name="L635" href="#L635">635</a>     }
-<a class="jxr_linenumber" name="L636" href="#L636">636</a> 
-<a class="jxr_linenumber" name="L637" href="#L637">637</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L638" href="#L638">638</a> <em class="jxr_javadoccomment">     * Returns {@code true} if the usage of {@link io.netty.channel.unix.SegmentedDatagramPacket} is supported.</em>
-<a class="jxr_linenumber" name="L639" href="#L639">639</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L640" href="#L640">640</a> <em class="jxr_javadoccomment">     * @return {@code true} if supported, {@code false} otherwise.</em>
-<a class="jxr_linenumber" name="L641" href="#L641">641</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L642" href="#L642">642</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isSegmentedDatagramPacketSupported() {
-<a class="jxr_linenumber" name="L643" href="#L643">643</a>         <strong class="jxr_keyword">return</strong> IoUring.isAvailable();
-<a class="jxr_linenumber" name="L644" href="#L644">644</a>     }
-<a class="jxr_linenumber" name="L645" href="#L645">645</a> 
-<a class="jxr_linenumber" name="L646" href="#L646">646</a>     @Override
-<a class="jxr_linenumber" name="L647" href="#L647">647</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> cancelOutstandingReads(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <strong class="jxr_keyword">int</strong> numOutstandingReads) {
-<a class="jxr_linenumber" name="L648" href="#L648">648</a>         <strong class="jxr_keyword">if</strong> (numOutstandingReads &gt; 0) {
-<a class="jxr_linenumber" name="L649" href="#L649">649</a>             <strong class="jxr_keyword">int</strong> canceled = cancel(registration, Native.IORING_OP_RECVMSG, recvmsgHdrs);
-<a class="jxr_linenumber" name="L650" href="#L650">650</a>             assert canceled == numOutstandingReads;
-<a class="jxr_linenumber" name="L651" href="#L651">651</a>         }
-<a class="jxr_linenumber" name="L652" href="#L652">652</a>     }
-<a class="jxr_linenumber" name="L653" href="#L653">653</a> 
-<a class="jxr_linenumber" name="L654" href="#L654">654</a>     @Override
-<a class="jxr_linenumber" name="L655" href="#L655">655</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> cancelOutstandingWrites(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <strong class="jxr_keyword">int</strong> numOutstandingWrites) {
-<a class="jxr_linenumber" name="L656" href="#L656">656</a>         <strong class="jxr_keyword">if</strong> (numOutstandingWrites &gt; 0) {
-<a class="jxr_linenumber" name="L657" href="#L657">657</a>             <strong class="jxr_keyword">int</strong> canceled = cancel(registration, Native.IORING_OP_SENDMSG, sendmsgHdrs);
-<a class="jxr_linenumber" name="L658" href="#L658">658</a>             assert canceled == numOutstandingWrites;
-<a class="jxr_linenumber" name="L659" href="#L659">659</a>         }
-<a class="jxr_linenumber" name="L660" href="#L660">660</a>     }
-<a class="jxr_linenumber" name="L661" href="#L661">661</a> 
-<a class="jxr_linenumber" name="L662" href="#L662">662</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> cancel(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, byte op, <a name="MsgHdrMemoryArray" href="../../../../io/netty/channel/uring/MsgHdrMemoryArray.html#MsgHdrMemoryArray">MsgHdrMemoryArray</a> array) {
-<a class="jxr_linenumber" name="L663" href="#L663">663</a>         <strong class="jxr_keyword">int</strong> cancelled = 0;
-<a class="jxr_linenumber" name="L664" href="#L664">664</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> idx = 0; idx &lt; array.length(); idx++) {
-<a class="jxr_linenumber" name="L665" href="#L665">665</a>             <strong class="jxr_keyword">long</strong> id = array.id(idx);
-<a class="jxr_linenumber" name="L666" href="#L666">666</a>             <strong class="jxr_keyword">if</strong> (id == MsgHdrMemoryArray.NO_ID) {
-<a class="jxr_linenumber" name="L667" href="#L667">667</a>                 <strong class="jxr_keyword">continue</strong>;
-<a class="jxr_linenumber" name="L668" href="#L668">668</a>             }
-<a class="jxr_linenumber" name="L669" href="#L669">669</a>             <em class="jxr_comment">// Let's try to cancel outstanding op as these might be submitted and waiting for data</em>
-<a class="jxr_linenumber" name="L670" href="#L670">670</a>             <em class="jxr_comment">// (via fastpoll).</em>
-<a class="jxr_linenumber" name="L671" href="#L671">671</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newAsyncCancel(flags((byte) 0), id, op);
-<a class="jxr_linenumber" name="L672" href="#L672">672</a>             registration.submit(ops);
-<a class="jxr_linenumber" name="L673" href="#L673">673</a>             cancelled++;
-<a class="jxr_linenumber" name="L674" href="#L674">674</a>         }
-<a class="jxr_linenumber" name="L675" href="#L675">675</a>         <strong class="jxr_keyword">return</strong> cancelled;
-<a class="jxr_linenumber" name="L676" href="#L676">676</a>     }
-<a class="jxr_linenumber" name="L677" href="#L677">677</a> 
-<a class="jxr_linenumber" name="L678" href="#L678">678</a>     @Override
-<a class="jxr_linenumber" name="L679" href="#L679">679</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> socketIsEmpty(<strong class="jxr_keyword">int</strong> flags) {
-<a class="jxr_linenumber" name="L680" href="#L680">680</a>         <strong class="jxr_keyword">return</strong> IoUring.isIOUringCqeFSockNonEmptySupported() &amp;&amp; (flags &amp; Native.IORING_CQE_F_SOCK_NONEMPTY) == 0;
-<a class="jxr_linenumber" name="L681" href="#L681">681</a>     }
-<a class="jxr_linenumber" name="L682" href="#L682">682</a> 
-<a class="jxr_linenumber" name="L683" href="#L683">683</a>     @Override
-<a class="jxr_linenumber" name="L684" href="#L684">684</a>     <strong class="jxr_keyword">boolean</strong> isPollInFirst() {
-<a class="jxr_linenumber" name="L685" href="#L685">685</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L686" href="#L686">686</a>     }
-<a class="jxr_linenumber" name="L687" href="#L687">687</a> }
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>             <strong class="jxr_keyword">int</strong> numDatagram = datagramSize == 0 ? 1 : Math.max(1, byteBuf.writableBytes() / datagramSize);
+<a class="jxr_linenumber" name="L463" href="#L463">463</a> 
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>             <strong class="jxr_keyword">int</strong> scheduled = scheduleRecvmsg(byteBuf, numDatagram, datagramSize);
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>             <strong class="jxr_keyword">if</strong> (scheduled == 0) {
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 <em class="jxr_comment">// We could not schedule any recvmmsg so we need to release the buffer as there will be no</em>
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 <em class="jxr_comment">// completion event.</em>
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>                 readBuffer = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>                 byteBuf.release();
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>             }
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>             <strong class="jxr_keyword">return</strong> scheduled;
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>         }
+<a class="jxr_linenumber" name="L473" href="#L473">473</a> 
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> scheduleRecvmsg(<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf, <strong class="jxr_keyword">int</strong> numDatagram, <strong class="jxr_keyword">int</strong> datagramSize) {
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>             <strong class="jxr_keyword">int</strong> writable = byteBuf.writableBytes();
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <strong class="jxr_keyword">long</strong> bufferAddress = byteBuf.memoryAddress() + byteBuf.writerIndex();
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>             <strong class="jxr_keyword">if</strong> (numDatagram &lt;= 1) {
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>                 <strong class="jxr_keyword">return</strong> scheduleRecvmsg0(bufferAddress, writable, <strong class="jxr_keyword">true</strong>) ? 1 : 0;
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>             }
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>             <strong class="jxr_keyword">int</strong> i = 0;
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>             <em class="jxr_comment">// Add multiple IORING_OP_RECVMSG to the submission queue. This basically emulates recvmmsg(...)</em>
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>             <strong class="jxr_keyword">for</strong> (; i &lt; numDatagram &amp;&amp; writable &gt;= datagramSize; i++) {
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>                 <strong class="jxr_keyword">if</strong> (!scheduleRecvmsg0(bufferAddress, datagramSize, i == 0)) {
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>                 }
+<a class="jxr_linenumber" name="L486" href="#L486">486</a>                 bufferAddress += datagramSize;
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>                 writable -= datagramSize;
+<a class="jxr_linenumber" name="L488" href="#L488">488</a>             }
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>             <strong class="jxr_keyword">return</strong> i;
+<a class="jxr_linenumber" name="L490" href="#L490">490</a>         }
+<a class="jxr_linenumber" name="L491" href="#L491">491</a> 
+<a class="jxr_linenumber" name="L492" href="#L492">492</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scheduleRecvmsg0(<strong class="jxr_keyword">long</strong> bufferAddress, <strong class="jxr_keyword">int</strong> bufferLength, <strong class="jxr_keyword">boolean</strong> first) {
+<a class="jxr_linenumber" name="L493" href="#L493">493</a>             <a name="MsgHdrMemory" href="../../../../io/netty/channel/uring/MsgHdrMemory.html#MsgHdrMemory">MsgHdrMemory</a> msgHdrMemory = recvmsgHdrs.nextHdr();
+<a class="jxr_linenumber" name="L494" href="#L494">494</a>             <strong class="jxr_keyword">if</strong> (msgHdrMemory == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L495" href="#L495">495</a>                 <em class="jxr_comment">// We can not continue reading before we did not submit the recvmsg(s) and received the results.</em>
+<a class="jxr_linenumber" name="L496" href="#L496">496</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>             }
+<a class="jxr_linenumber" name="L498" href="#L498">498</a>             msgHdrMemory.write(socket, <strong class="jxr_keyword">null</strong>, bufferAddress, bufferLength, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L499" href="#L499">499</a> 
+<a class="jxr_linenumber" name="L500" href="#L500">500</a>             <strong class="jxr_keyword">int</strong> fd = fd().intValue();
+<a class="jxr_linenumber" name="L501" href="#L501">501</a>             <strong class="jxr_keyword">int</strong> msgFlags = first ? 0 : Native.MSG_DONTWAIT;
+<a class="jxr_linenumber" name="L502" href="#L502">502</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
+<a class="jxr_linenumber" name="L503" href="#L503">503</a>             <em class="jxr_comment">// We always use idx here so we can detect if no idx was used by checking if data &lt; 0 in</em>
+<a class="jxr_linenumber" name="L504" href="#L504">504</a>             <em class="jxr_comment">// readComplete0(...)</em>
+<a class="jxr_linenumber" name="L505" href="#L505">505</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newRecvmsg(
+<a class="jxr_linenumber" name="L506" href="#L506">506</a>                     fd, flags((byte) 0), msgFlags, msgHdrMemory.address(), msgHdrMemory.idx());
+<a class="jxr_linenumber" name="L507" href="#L507">507</a>             <strong class="jxr_keyword">long</strong> id = registration.submit(ops);
+<a class="jxr_linenumber" name="L508" href="#L508">508</a>             <strong class="jxr_keyword">if</strong> (id == 0) {
+<a class="jxr_linenumber" name="L509" href="#L509">509</a>                 <em class="jxr_comment">// Submission failed we don't used the MsgHdrMemory and so should give it back.</em>
+<a class="jxr_linenumber" name="L510" href="#L510">510</a>                 recvmsgHdrs.restoreNextHdr(msgHdrMemory);
+<a class="jxr_linenumber" name="L511" href="#L511">511</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L512" href="#L512">512</a>             }
+<a class="jxr_linenumber" name="L513" href="#L513">513</a>             recvmsgHdrs.setId(msgHdrMemory.idx(), id);
+<a class="jxr_linenumber" name="L514" href="#L514">514</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L515" href="#L515">515</a>         }
+<a class="jxr_linenumber" name="L516" href="#L516">516</a> 
+<a class="jxr_linenumber" name="L517" href="#L517">517</a>         @Override
+<a class="jxr_linenumber" name="L518" href="#L518">518</a>         <strong class="jxr_keyword">boolean</strong> writeComplete0(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data, <strong class="jxr_keyword">int</strong> outstanding) {
+<a class="jxr_linenumber" name="L519" href="#L519">519</a>             <a name="ChannelOutboundBuffer" href="../../../../io/netty/channel/ChannelOutboundBuffer.html#ChannelOutboundBuffer">ChannelOutboundBuffer</a> outboundBuffer = outboundBuffer();
+<a class="jxr_linenumber" name="L520" href="#L520">520</a> 
+<a class="jxr_linenumber" name="L521" href="#L521">521</a>             <em class="jxr_comment">// Reset the id as this write was completed and so don't need to be cancelled later.</em>
+<a class="jxr_linenumber" name="L522" href="#L522">522</a>             sendmsgHdrs.setId(data, MsgHdrMemoryArray.NO_ID);
+<a class="jxr_linenumber" name="L523" href="#L523">523</a>             sendmsgResArray[data] = res;
+<a class="jxr_linenumber" name="L524" href="#L524">524</a>             <em class="jxr_comment">// Store the result so we can handle it as soon as we have no outstanding writes anymore.</em>
+<a class="jxr_linenumber" name="L525" href="#L525">525</a>             <strong class="jxr_keyword">if</strong> (outstanding == 0) {
+<a class="jxr_linenumber" name="L526" href="#L526">526</a>                 <em class="jxr_comment">// All writes are done as part of a batch. Let's remove these from the ChannelOutboundBuffer</em>
+<a class="jxr_linenumber" name="L527" href="#L527">527</a>                 <strong class="jxr_keyword">boolean</strong> writtenSomething = false;
+<a class="jxr_linenumber" name="L528" href="#L528">528</a>                 <strong class="jxr_keyword">int</strong> numWritten = sendmsgHdrs.length();
+<a class="jxr_linenumber" name="L529" href="#L529">529</a>                 sendmsgHdrs.clear();
+<a class="jxr_linenumber" name="L530" href="#L530">530</a>                 <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; numWritten; i++) {
+<a class="jxr_linenumber" name="L531" href="#L531">531</a>                     writtenSomething |= removeFromOutboundBuffer(
+<a class="jxr_linenumber" name="L532" href="#L532">532</a>                             outboundBuffer, sendmsgResArray[i], <span class="jxr_string">"io_uring sendmsg"</span>);
+<a class="jxr_linenumber" name="L533" href="#L533">533</a>                 }
+<a class="jxr_linenumber" name="L534" href="#L534">534</a>                 <strong class="jxr_keyword">return</strong> writtenSomething;
+<a class="jxr_linenumber" name="L535" href="#L535">535</a>             }
+<a class="jxr_linenumber" name="L536" href="#L536">536</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L537" href="#L537">537</a>         }
+<a class="jxr_linenumber" name="L538" href="#L538">538</a> 
+<a class="jxr_linenumber" name="L539" href="#L539">539</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> removeFromOutboundBuffer(<a name="ChannelOutboundBuffer" href="../../../../io/netty/channel/ChannelOutboundBuffer.html#ChannelOutboundBuffer">ChannelOutboundBuffer</a> outboundBuffer, <strong class="jxr_keyword">int</strong> res, String errormsg) {
+<a class="jxr_linenumber" name="L540" href="#L540">540</a>             <strong class="jxr_keyword">if</strong> (res &gt;= 0) {
+<a class="jxr_linenumber" name="L541" href="#L541">541</a>                 <em class="jxr_comment">// When using Datagram we should consider the message written as long as res is not negative.</em>
+<a class="jxr_linenumber" name="L542" href="#L542">542</a>                 <strong class="jxr_keyword">return</strong> outboundBuffer.remove();
+<a class="jxr_linenumber" name="L543" href="#L543">543</a>             }
+<a class="jxr_linenumber" name="L544" href="#L544">544</a>             <strong class="jxr_keyword">if</strong> (res == Native.ERRNO_ECANCELED_NEGATIVE) {
+<a class="jxr_linenumber" name="L545" href="#L545">545</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L546" href="#L546">546</a>             }
+<a class="jxr_linenumber" name="L547" href="#L547">547</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L548" href="#L548">548</a>                 <strong class="jxr_keyword">return</strong> ioResult(errormsg, res) != 0;
+<a class="jxr_linenumber" name="L549" href="#L549">549</a>             } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="L550" href="#L550">550</a>                 <strong class="jxr_keyword">return</strong> outboundBuffer.remove(cause);
+<a class="jxr_linenumber" name="L551" href="#L551">551</a>             }
+<a class="jxr_linenumber" name="L552" href="#L552">552</a>         }
+<a class="jxr_linenumber" name="L553" href="#L553">553</a> 
+<a class="jxr_linenumber" name="L554" href="#L554">554</a>         @Override
+<a class="jxr_linenumber" name="L555" href="#L555">555</a>         <strong class="jxr_keyword">void</strong> connectComplete(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data) {
+<a class="jxr_linenumber" name="L556" href="#L556">556</a>             <strong class="jxr_keyword">if</strong> (res &gt;= 0) {
+<a class="jxr_linenumber" name="L557" href="#L557">557</a>                 connected = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L558" href="#L558">558</a>             }
+<a class="jxr_linenumber" name="L559" href="#L559">559</a>             <strong class="jxr_keyword">super</strong>.connectComplete(op, res, flags, data);
+<a class="jxr_linenumber" name="L560" href="#L560">560</a>         }
+<a class="jxr_linenumber" name="L561" href="#L561">561</a> 
+<a class="jxr_linenumber" name="L562" href="#L562">562</a>         @Override
+<a class="jxr_linenumber" name="L563" href="#L563">563</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> scheduleWriteMultiple(<a name="ChannelOutboundBuffer" href="../../../../io/netty/channel/ChannelOutboundBuffer.html#ChannelOutboundBuffer">ChannelOutboundBuffer</a> in) {
+<a class="jxr_linenumber" name="L564" href="#L564">564</a>             <strong class="jxr_keyword">return</strong> writeProcessor.write(in);
+<a class="jxr_linenumber" name="L565" href="#L565">565</a>         }
+<a class="jxr_linenumber" name="L566" href="#L566">566</a> 
+<a class="jxr_linenumber" name="L567" href="#L567">567</a>         @Override
+<a class="jxr_linenumber" name="L568" href="#L568">568</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">int</strong> scheduleWriteSingle(Object msg) {
+<a class="jxr_linenumber" name="L569" href="#L569">569</a>             <strong class="jxr_keyword">return</strong> scheduleWrite(msg, <strong class="jxr_keyword">true</strong>) ? 1 : 0;
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>         }
+<a class="jxr_linenumber" name="L571" href="#L571">571</a> 
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scheduleWrite(Object msg, <strong class="jxr_keyword">boolean</strong> first) {
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>             <strong class="jxr_keyword">final</strong> <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> data;
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>             <strong class="jxr_keyword">final</strong> InetSocketAddress remoteAddress;
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> segmentSize;
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>             <strong class="jxr_keyword">if</strong> (msg instanceof <a name="AddressedEnvelope" href="../../../../io/netty/channel/AddressedEnvelope.html#AddressedEnvelope">AddressedEnvelope</a>) {
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>                 @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="L578" href="#L578">578</a>                 AddressedEnvelope&lt;ByteBuf, InetSocketAddress&gt; envelope =
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>                         (AddressedEnvelope&lt;ByteBuf, InetSocketAddress&gt;) msg;
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>                 data = envelope.content();
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>                 remoteAddress = envelope.recipient();
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>                 <strong class="jxr_keyword">if</strong> (msg instanceof <a name="SegmentedDatagramPacket" href="../../../../io/netty/channel/unix/SegmentedDatagramPacket.html#SegmentedDatagramPacket">SegmentedDatagramPacket</a>) {
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>                     segmentSize = ((<a name="SegmentedDatagramPacket" href="../../../../io/netty/channel/unix/SegmentedDatagramPacket.html#SegmentedDatagramPacket">SegmentedDatagramPacket</a>) msg).segmentSize();
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>                     segmentSize = 0;
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>                 }
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L588" href="#L588">588</a>                 data = (<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a>) msg;
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>                 remoteAddress = (InetSocketAddress) remoteAddress();
+<a class="jxr_linenumber" name="L590" href="#L590">590</a>                 segmentSize = 0;
+<a class="jxr_linenumber" name="L591" href="#L591">591</a>             }
+<a class="jxr_linenumber" name="L592" href="#L592">592</a> 
+<a class="jxr_linenumber" name="L593" href="#L593">593</a>             <strong class="jxr_keyword">long</strong> bufferAddress = data.memoryAddress();
+<a class="jxr_linenumber" name="L594" href="#L594">594</a>             <strong class="jxr_keyword">return</strong> scheduleSendmsg(remoteAddress, bufferAddress, data.readableBytes(), segmentSize, first);
+<a class="jxr_linenumber" name="L595" href="#L595">595</a>         }
+<a class="jxr_linenumber" name="L596" href="#L596">596</a> 
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> scheduleSendmsg(InetSocketAddress remoteAddress, <strong class="jxr_keyword">long</strong> bufferAddress,
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>                                         <strong class="jxr_keyword">int</strong> bufferLength, <strong class="jxr_keyword">int</strong> segmentSize, <strong class="jxr_keyword">boolean</strong> first) {
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>             <a name="MsgHdrMemory" href="../../../../io/netty/channel/uring/MsgHdrMemory.html#MsgHdrMemory">MsgHdrMemory</a> hdr = sendmsgHdrs.nextHdr();
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>             <strong class="jxr_keyword">if</strong> (hdr == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L601" href="#L601">601</a>                 <em class="jxr_comment">// There is no MsgHdrMemory left to use. We need to submit and wait for the writes to complete</em>
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>                 <em class="jxr_comment">// before we can write again.</em>
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L604" href="#L604">604</a>             }
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>             hdr.write(socket, remoteAddress, bufferAddress, bufferLength, (<strong class="jxr_keyword">short</strong>) segmentSize);
+<a class="jxr_linenumber" name="L606" href="#L606">606</a> 
+<a class="jxr_linenumber" name="L607" href="#L607">607</a>             <strong class="jxr_keyword">int</strong> fd = fd().intValue();
+<a class="jxr_linenumber" name="L608" href="#L608">608</a>             <strong class="jxr_keyword">int</strong> msgFlags = first ? 0 : Native.MSG_DONTWAIT;
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
+<a class="jxr_linenumber" name="L610" href="#L610">610</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newSendmsg(fd, flags((byte) 0), msgFlags, hdr.address(), hdr.idx());
+<a class="jxr_linenumber" name="L611" href="#L611">611</a>             <strong class="jxr_keyword">long</strong> id = registration.submit(ops);
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>             <strong class="jxr_keyword">if</strong> (id == 0) {
+<a class="jxr_linenumber" name="L613" href="#L613">613</a>                 <em class="jxr_comment">// Submission failed we don't used the MsgHdrMemory and so should give it back.</em>
+<a class="jxr_linenumber" name="L614" href="#L614">614</a>                 sendmsgHdrs.restoreNextHdr(hdr);
+<a class="jxr_linenumber" name="L615" href="#L615">615</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L616" href="#L616">616</a>             }
+<a class="jxr_linenumber" name="L617" href="#L617">617</a>             sendmsgHdrs.setId(hdr.idx(), id);
+<a class="jxr_linenumber" name="L618" href="#L618">618</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L619" href="#L619">619</a>         }
+<a class="jxr_linenumber" name="L620" href="#L620">620</a> 
+<a class="jxr_linenumber" name="L621" href="#L621">621</a>         @Override
+<a class="jxr_linenumber" name="L622" href="#L622">622</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> freeResourcesNow(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> reg) {
+<a class="jxr_linenumber" name="L623" href="#L623">623</a>             sendmsgHdrs.release();
+<a class="jxr_linenumber" name="L624" href="#L624">624</a>             recvmsgHdrs.release();
+<a class="jxr_linenumber" name="L625" href="#L625">625</a>             <strong class="jxr_keyword">super</strong>.freeResourcesNow(reg);
+<a class="jxr_linenumber" name="L626" href="#L626">626</a>         }
+<a class="jxr_linenumber" name="L627" href="#L627">627</a>     }
+<a class="jxr_linenumber" name="L628" href="#L628">628</a> 
+<a class="jxr_linenumber" name="L629" href="#L629">629</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> IOException translateForConnected(NativeIoException e) {
+<a class="jxr_linenumber" name="L630" href="#L630">630</a>         <em class="jxr_comment">// We need to correctly translate connect errors to match NIO behaviour.</em>
+<a class="jxr_linenumber" name="L631" href="#L631">631</a>         <strong class="jxr_keyword">if</strong> (e.expectedErr() == Errors.ERROR_ECONNREFUSED_NEGATIVE) {
+<a class="jxr_linenumber" name="L632" href="#L632">632</a>             PortUnreachableException error = <strong class="jxr_keyword">new</strong> PortUnreachableException(e.getMessage());
+<a class="jxr_linenumber" name="L633" href="#L633">633</a>             error.initCause(e);
+<a class="jxr_linenumber" name="L634" href="#L634">634</a>             <strong class="jxr_keyword">return</strong> error;
+<a class="jxr_linenumber" name="L635" href="#L635">635</a>         }
+<a class="jxr_linenumber" name="L636" href="#L636">636</a>         <strong class="jxr_keyword">return</strong> e;
+<a class="jxr_linenumber" name="L637" href="#L637">637</a>     }
+<a class="jxr_linenumber" name="L638" href="#L638">638</a> 
+<a class="jxr_linenumber" name="L639" href="#L639">639</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L640" href="#L640">640</a> <em class="jxr_javadoccomment">     * Returns {@code true} if the usage of {@link io.netty.channel.unix.SegmentedDatagramPacket} is supported.</em>
+<a class="jxr_linenumber" name="L641" href="#L641">641</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L642" href="#L642">642</a> <em class="jxr_javadoccomment">     * @return {@code true} if supported, {@code false} otherwise.</em>
+<a class="jxr_linenumber" name="L643" href="#L643">643</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L644" href="#L644">644</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">boolean</strong> isSegmentedDatagramPacketSupported() {
+<a class="jxr_linenumber" name="L645" href="#L645">645</a>         <strong class="jxr_keyword">return</strong> IoUring.isAvailable();
+<a class="jxr_linenumber" name="L646" href="#L646">646</a>     }
+<a class="jxr_linenumber" name="L647" href="#L647">647</a> 
+<a class="jxr_linenumber" name="L648" href="#L648">648</a>     @Override
+<a class="jxr_linenumber" name="L649" href="#L649">649</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> cancelOutstandingReads(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <strong class="jxr_keyword">int</strong> numOutstandingReads) {
+<a class="jxr_linenumber" name="L650" href="#L650">650</a>         <strong class="jxr_keyword">if</strong> (numOutstandingReads &gt; 0) {
+<a class="jxr_linenumber" name="L651" href="#L651">651</a>             <strong class="jxr_keyword">int</strong> canceled = cancel(registration, Native.IORING_OP_RECVMSG, recvmsgHdrs);
+<a class="jxr_linenumber" name="L652" href="#L652">652</a>             assert canceled == numOutstandingReads;
+<a class="jxr_linenumber" name="L653" href="#L653">653</a>         }
+<a class="jxr_linenumber" name="L654" href="#L654">654</a>     }
+<a class="jxr_linenumber" name="L655" href="#L655">655</a> 
+<a class="jxr_linenumber" name="L656" href="#L656">656</a>     @Override
+<a class="jxr_linenumber" name="L657" href="#L657">657</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> cancelOutstandingWrites(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <strong class="jxr_keyword">int</strong> numOutstandingWrites) {
+<a class="jxr_linenumber" name="L658" href="#L658">658</a>         <strong class="jxr_keyword">if</strong> (numOutstandingWrites &gt; 0) {
+<a class="jxr_linenumber" name="L659" href="#L659">659</a>             <strong class="jxr_keyword">int</strong> canceled = cancel(registration, Native.IORING_OP_SENDMSG, sendmsgHdrs);
+<a class="jxr_linenumber" name="L660" href="#L660">660</a>             assert canceled == numOutstandingWrites;
+<a class="jxr_linenumber" name="L661" href="#L661">661</a>         }
+<a class="jxr_linenumber" name="L662" href="#L662">662</a>     }
+<a class="jxr_linenumber" name="L663" href="#L663">663</a> 
+<a class="jxr_linenumber" name="L664" href="#L664">664</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> cancel(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, byte op, <a name="MsgHdrMemoryArray" href="../../../../io/netty/channel/uring/MsgHdrMemoryArray.html#MsgHdrMemoryArray">MsgHdrMemoryArray</a> array) {
+<a class="jxr_linenumber" name="L665" href="#L665">665</a>         <strong class="jxr_keyword">int</strong> cancelled = 0;
+<a class="jxr_linenumber" name="L666" href="#L666">666</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> idx = 0; idx &lt; array.length(); idx++) {
+<a class="jxr_linenumber" name="L667" href="#L667">667</a>             <strong class="jxr_keyword">long</strong> id = array.id(idx);
+<a class="jxr_linenumber" name="L668" href="#L668">668</a>             <strong class="jxr_keyword">if</strong> (id == MsgHdrMemoryArray.NO_ID) {
+<a class="jxr_linenumber" name="L669" href="#L669">669</a>                 <strong class="jxr_keyword">continue</strong>;
+<a class="jxr_linenumber" name="L670" href="#L670">670</a>             }
+<a class="jxr_linenumber" name="L671" href="#L671">671</a>             <em class="jxr_comment">// Let's try to cancel outstanding op as these might be submitted and waiting for data</em>
+<a class="jxr_linenumber" name="L672" href="#L672">672</a>             <em class="jxr_comment">// (via fastpoll).</em>
+<a class="jxr_linenumber" name="L673" href="#L673">673</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newAsyncCancel(flags((byte) 0), id, op);
+<a class="jxr_linenumber" name="L674" href="#L674">674</a>             registration.submit(ops);
+<a class="jxr_linenumber" name="L675" href="#L675">675</a>             cancelled++;
+<a class="jxr_linenumber" name="L676" href="#L676">676</a>         }
+<a class="jxr_linenumber" name="L677" href="#L677">677</a>         <strong class="jxr_keyword">return</strong> cancelled;
+<a class="jxr_linenumber" name="L678" href="#L678">678</a>     }
+<a class="jxr_linenumber" name="L679" href="#L679">679</a> 
+<a class="jxr_linenumber" name="L680" href="#L680">680</a>     @Override
+<a class="jxr_linenumber" name="L681" href="#L681">681</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> socketIsEmpty(<strong class="jxr_keyword">int</strong> flags) {
+<a class="jxr_linenumber" name="L682" href="#L682">682</a>         <strong class="jxr_keyword">return</strong> IoUring.isCqeFSockNonEmptySupported() &amp;&amp; (flags &amp; Native.IORING_CQE_F_SOCK_NONEMPTY) == 0;
+<a class="jxr_linenumber" name="L683" href="#L683">683</a>     }
+<a class="jxr_linenumber" name="L684" href="#L684">684</a> 
+<a class="jxr_linenumber" name="L685" href="#L685">685</a>     @Override
+<a class="jxr_linenumber" name="L686" href="#L686">686</a>     <strong class="jxr_keyword">boolean</strong> isPollInFirst() {
+<a class="jxr_linenumber" name="L687" href="#L687">687</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L688" href="#L688">688</a>     }
+<a class="jxr_linenumber" name="L689" href="#L689">689</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

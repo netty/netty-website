@@ -54,42 +54,47 @@
 <a class="jxr_linenumber" name="L46" href="#L46">46</a>  
 <a class="jxr_linenumber" name="L47" href="#L47">47</a>      @Override
 <a class="jxr_linenumber" name="L48" href="#L48">48</a>      <a name="Channel" href="../../../../io/netty/channel/Channel.html#Channel">Channel</a> newChildChannel(<strong class="jxr_keyword">int</strong> fd, <strong class="jxr_keyword">long</strong> acceptedAddressMemoryAddress, <strong class="jxr_keyword">long</strong> acceptedAddressLengthMemoryAddress) {
-<a class="jxr_linenumber" name="L49" href="#L49">49</a>          <strong class="jxr_keyword">final</strong> InetSocketAddress address;
-<a class="jxr_linenumber" name="L50" href="#L50">50</a>          <a name="IoUringIoHandler" href="../../../../io/netty/channel/uring/IoUringIoHandler.html#IoUringIoHandler">IoUringIoHandler</a> handler = registration().attachment();
-<a class="jxr_linenumber" name="L51" href="#L51">51</a>          <strong class="jxr_keyword">if</strong> (socket.isIpv6()) {
-<a class="jxr_linenumber" name="L52" href="#L52">52</a>              byte[] ipv6Array = handler.inet6AddressArray();
-<a class="jxr_linenumber" name="L53" href="#L53">53</a>              byte[] ipv4Array = handler.inet4AddressArray();
-<a class="jxr_linenumber" name="L54" href="#L54">54</a>              address = SockaddrIn.readIPv6(acceptedAddressMemoryAddress, ipv6Array, ipv4Array);
-<a class="jxr_linenumber" name="L55" href="#L55">55</a>          } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L56" href="#L56">56</a>              byte[] addressArray = handler.inet4AddressArray();
-<a class="jxr_linenumber" name="L57" href="#L57">57</a>              address = SockaddrIn.readIPv4(acceptedAddressMemoryAddress, addressArray);
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>          }
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoUringSocketChannel" href="../../../../io/netty/channel/uring/IoUringSocketChannel.html#IoUringSocketChannel">IoUringSocketChannel</a>(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> <a name="LinuxSocket" href="../../../../io/netty/channel/uring/LinuxSocket.html#LinuxSocket">LinuxSocket</a>(fd), address);
-<a class="jxr_linenumber" name="L60" href="#L60">60</a>      }
-<a class="jxr_linenumber" name="L61" href="#L61">61</a>  
-<a class="jxr_linenumber" name="L62" href="#L62">62</a>      @Override
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>      <strong class="jxr_keyword">public</strong> InetSocketAddress remoteAddress() {
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>          <strong class="jxr_keyword">return</strong> (InetSocketAddress) <strong class="jxr_keyword">super</strong>.remoteAddress();
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>          <a name="IoUringIoHandler" href="../../../../io/netty/channel/uring/IoUringIoHandler.html#IoUringIoHandler">IoUringIoHandler</a> handler = registration().attachment();
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>          <a name="LinuxSocket" href="../../../../io/netty/channel/uring/LinuxSocket.html#LinuxSocket">LinuxSocket</a> socket = <strong class="jxr_keyword">new</strong> <a name="LinuxSocket" href="../../../../io/netty/channel/uring/LinuxSocket.html#LinuxSocket">LinuxSocket</a>(fd);
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>          <strong class="jxr_keyword">if</strong> (acceptedAddressMemoryAddress != 0 &amp;&amp; acceptedAddressLengthMemoryAddress != 0) {
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>              <em class="jxr_comment">// We didnt use ACCEPT_MULTISHOT And so can depend on the addresses.</em>
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>              <strong class="jxr_keyword">final</strong> InetSocketAddress address;
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>              <strong class="jxr_keyword">if</strong> (socket.isIpv6()) {
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>                  byte[] ipv6Array = handler.inet6AddressArray();
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>                  byte[] ipv4Array = handler.inet4AddressArray();
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>                  address = SockaddrIn.readIPv6(acceptedAddressMemoryAddress, ipv6Array, ipv4Array);
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>              } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>                  byte[] addressArray = handler.inet4AddressArray();
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>                  address = SockaddrIn.readIPv4(acceptedAddressMemoryAddress, addressArray);
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>              }
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoUringSocketChannel" href="../../../../io/netty/channel/uring/IoUringSocketChannel.html#IoUringSocketChannel">IoUringSocketChannel</a>(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> <a name="LinuxSocket" href="../../../../io/netty/channel/uring/LinuxSocket.html#LinuxSocket">LinuxSocket</a>(fd), address);
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>          }
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoUringSocketChannel" href="../../../../io/netty/channel/uring/IoUringSocketChannel.html#IoUringSocketChannel">IoUringSocketChannel</a>(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">new</strong> <a name="LinuxSocket" href="../../../../io/netty/channel/uring/LinuxSocket.html#LinuxSocket">LinuxSocket</a>(fd));
 <a class="jxr_linenumber" name="L65" href="#L65">65</a>      }
 <a class="jxr_linenumber" name="L66" href="#L66">66</a>  
 <a class="jxr_linenumber" name="L67" href="#L67">67</a>      @Override
-<a class="jxr_linenumber" name="L68" href="#L68">68</a>      <strong class="jxr_keyword">public</strong> InetSocketAddress localAddress() {
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>          <strong class="jxr_keyword">return</strong> (InetSocketAddress) <strong class="jxr_keyword">super</strong>.localAddress();
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>      <strong class="jxr_keyword">public</strong> InetSocketAddress remoteAddress() {
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>          <strong class="jxr_keyword">return</strong> (InetSocketAddress) <strong class="jxr_keyword">super</strong>.remoteAddress();
 <a class="jxr_linenumber" name="L70" href="#L70">70</a>      }
 <a class="jxr_linenumber" name="L71" href="#L71">71</a>  
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>      @Override
-<a class="jxr_linenumber" name="L73" href="#L73">73</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> doBind(SocketAddress localAddress) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L74" href="#L74">74</a>          <strong class="jxr_keyword">super</strong>.doBind(localAddress);
-<a class="jxr_linenumber" name="L75" href="#L75">75</a>          <strong class="jxr_keyword">if</strong> (IoUring.isTcpFastOpenServerSideAvailable()) {
-<a class="jxr_linenumber" name="L76" href="#L76">76</a>              Integer fastOpen = config().getOption(ChannelOption.TCP_FASTOPEN);
-<a class="jxr_linenumber" name="L77" href="#L77">77</a>              <strong class="jxr_keyword">if</strong> (fastOpen != <strong class="jxr_keyword">null</strong> &amp;&amp; fastOpen &gt; 0) {
-<a class="jxr_linenumber" name="L78" href="#L78">78</a>                  socket.setTcpFastOpen(fastOpen);
-<a class="jxr_linenumber" name="L79" href="#L79">79</a>              }
-<a class="jxr_linenumber" name="L80" href="#L80">80</a>          }
-<a class="jxr_linenumber" name="L81" href="#L81">81</a>          socket.listen(config.getBacklog());
-<a class="jxr_linenumber" name="L82" href="#L82">82</a>          active = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L83" href="#L83">83</a>      }
-<a class="jxr_linenumber" name="L84" href="#L84">84</a>  }
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>      <strong class="jxr_keyword">public</strong> InetSocketAddress localAddress() {
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>          <strong class="jxr_keyword">return</strong> (InetSocketAddress) <strong class="jxr_keyword">super</strong>.localAddress();
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>      }
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>  
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>      @Override
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> doBind(SocketAddress localAddress) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>          <strong class="jxr_keyword">super</strong>.doBind(localAddress);
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>          <strong class="jxr_keyword">if</strong> (IoUring.isTcpFastOpenServerSideAvailable()) {
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>              Integer fastOpen = config().getOption(ChannelOption.TCP_FASTOPEN);
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>              <strong class="jxr_keyword">if</strong> (fastOpen != <strong class="jxr_keyword">null</strong> &amp;&amp; fastOpen &gt; 0) {
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>                  socket.setTcpFastOpen(fastOpen);
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>              }
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>          }
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>          socket.listen(config.getBacklog());
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>          active = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>      }
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>  }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
