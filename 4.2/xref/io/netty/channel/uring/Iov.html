@@ -23,7 +23,7 @@
 <a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.channel.uring;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
-<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.PlatformDependent;
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> java.nio.ByteBuffer;
 <a class="jxr_linenumber" name="L19" href="#L19">19</a>  
 <a class="jxr_linenumber" name="L20" href="#L20">20</a>  <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="L21" href="#L21">21</a>  <em class="jxr_javadoccomment"> * &lt;pre&gt;{@code</em>
@@ -37,42 +37,34 @@
 <a class="jxr_linenumber" name="L29" href="#L29">29</a>  
 <a class="jxr_linenumber" name="L30" href="#L30">30</a>      <strong class="jxr_keyword">private</strong> <a name="Iov" href="../../../../io/netty/channel/uring/Iov.html#Iov">Iov</a>() { }
 <a class="jxr_linenumber" name="L31" href="#L31">31</a>  
-<a class="jxr_linenumber" name="L32" href="#L32">32</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> write(<strong class="jxr_keyword">long</strong> iovAddress, <strong class="jxr_keyword">long</strong> bufferAddress, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L33" href="#L33">33</a>          <strong class="jxr_keyword">if</strong> (Native.SIZEOF_SIZE_T == 4) {
-<a class="jxr_linenumber" name="L34" href="#L34">34</a>              PlatformDependent.putInt(iovAddress + Native.IOVEC_OFFSETOF_IOV_BASE, (<strong class="jxr_keyword">int</strong>) bufferAddress);
-<a class="jxr_linenumber" name="L35" href="#L35">35</a>              PlatformDependent.putInt(iovAddress + Native.IOVEC_OFFSETOF_IOV_LEN, length);
-<a class="jxr_linenumber" name="L36" href="#L36">36</a>          } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L37" href="#L37">37</a>              assert Native.SIZEOF_SIZE_T == 8;
-<a class="jxr_linenumber" name="L38" href="#L38">38</a>              PlatformDependent.putLong(iovAddress + Native.IOVEC_OFFSETOF_IOV_BASE, bufferAddress);
-<a class="jxr_linenumber" name="L39" href="#L39">39</a>              PlatformDependent.putLong(iovAddress + Native.IOVEC_OFFSETOF_IOV_LEN, length);
-<a class="jxr_linenumber" name="L40" href="#L40">40</a>          }
-<a class="jxr_linenumber" name="L41" href="#L41">41</a>      }
-<a class="jxr_linenumber" name="L42" href="#L42">42</a>  
-<a class="jxr_linenumber" name="L43" href="#L43">43</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> readBufferAddress(<strong class="jxr_keyword">long</strong> iovAddress) {
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>          <strong class="jxr_keyword">if</strong> (Native.SIZEOF_SIZE_T == 4) {
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>              <strong class="jxr_keyword">return</strong> PlatformDependent.getInt(iovAddress + Native.IOVEC_OFFSETOF_IOV_BASE);
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>          }
-<a class="jxr_linenumber" name="L47" href="#L47">47</a>          assert Native.SIZEOF_SIZE_T == 8;
-<a class="jxr_linenumber" name="L48" href="#L48">48</a>          <strong class="jxr_keyword">return</strong> PlatformDependent.getLong(iovAddress + Native.IOVEC_OFFSETOF_IOV_BASE);
-<a class="jxr_linenumber" name="L49" href="#L49">49</a>      }
-<a class="jxr_linenumber" name="L50" href="#L50">50</a>  
-<a class="jxr_linenumber" name="L51" href="#L51">51</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> readBufferLength(<strong class="jxr_keyword">long</strong> iovAddress) {
-<a class="jxr_linenumber" name="L52" href="#L52">52</a>          <strong class="jxr_keyword">if</strong> (Native.SIZEOF_SIZE_T == 4) {
-<a class="jxr_linenumber" name="L53" href="#L53">53</a>              <strong class="jxr_keyword">return</strong> PlatformDependent.getInt(iovAddress + Native.IOVEC_OFFSETOF_IOV_LEN);
-<a class="jxr_linenumber" name="L54" href="#L54">54</a>          }
-<a class="jxr_linenumber" name="L55" href="#L55">55</a>          assert Native.SIZEOF_SIZE_T == 8;
-<a class="jxr_linenumber" name="L56" href="#L56">56</a>          <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) PlatformDependent.getLong(iovAddress + Native.IOVEC_OFFSETOF_IOV_LEN);
-<a class="jxr_linenumber" name="L57" href="#L57">57</a>      }
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>  
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> sumSize(<strong class="jxr_keyword">long</strong> iovAddress, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L60" href="#L60">60</a>          <strong class="jxr_keyword">long</strong> sum = 0;
-<a class="jxr_linenumber" name="L61" href="#L61">61</a>          <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; length; i++) {
-<a class="jxr_linenumber" name="L62" href="#L62">62</a>              sum += readBufferLength(iovAddress);
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>              iovAddress += 2L * Native.SIZEOF_SIZE_T;
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>          }
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>          <strong class="jxr_keyword">return</strong> sum;
-<a class="jxr_linenumber" name="L66" href="#L66">66</a>      }
-<a class="jxr_linenumber" name="L67" href="#L67">67</a>  }
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> set(ByteBuffer buffer, <strong class="jxr_keyword">long</strong> bufferAddress, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>          <strong class="jxr_keyword">int</strong> position = buffer.position();
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>          <strong class="jxr_keyword">if</strong> (Native.SIZEOF_SIZE_T == 4) {
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>              buffer.putInt(position + Native.IOVEC_OFFSETOF_IOV_BASE, (<strong class="jxr_keyword">int</strong>) bufferAddress);
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>              buffer.putInt(position + Native.IOVEC_OFFSETOF_IOV_LEN, length);
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>              assert Native.SIZEOF_SIZE_T == 8;
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>              buffer.putLong(position + Native.IOVEC_OFFSETOF_IOV_BASE, bufferAddress);
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>              buffer.putLong(position + Native.IOVEC_OFFSETOF_IOV_LEN, length);
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>          }
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>      }
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>  
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">long</strong> getBufferAddress(ByteBuffer iov) {
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>          <strong class="jxr_keyword">if</strong> (Native.SIZEOF_SIZE_T == 4) {
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>              <strong class="jxr_keyword">return</strong> iov.getInt(iov.position() + Native.IOVEC_OFFSETOF_IOV_BASE);
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>          }
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>          assert Native.SIZEOF_SIZE_T == 8;
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>          <strong class="jxr_keyword">return</strong> iov.getLong(iov.position() + Native.IOVEC_OFFSETOF_IOV_BASE);
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>      }
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>  
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getBufferLength(ByteBuffer iov) {
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>          <strong class="jxr_keyword">if</strong> (Native.SIZEOF_SIZE_T == 4) {
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>              <strong class="jxr_keyword">return</strong> iov.getInt(iov.position() + Native.IOVEC_OFFSETOF_IOV_LEN);
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>          }
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>          assert Native.SIZEOF_SIZE_T == 8;
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>          <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) iov.getLong(iov.position() + Native.IOVEC_OFFSETOF_IOV_LEN);
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>      }
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>  }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

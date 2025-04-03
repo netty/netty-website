@@ -85,7 +85,7 @@
 <a class="jxr_linenumber" name="L77" href="#L77">77</a>          <em class="jxr_comment">//       time to process a past connection. If the application knows that a</em>
 <a class="jxr_linenumber" name="L78" href="#L78">78</a>          <em class="jxr_comment">//       new connection cannot come in before a previous one has been</em>
 <a class="jxr_linenumber" name="L79" href="#L79">79</a>          <em class="jxr_comment">//       processed, it may be used as expected.</em>
-<a class="jxr_linenumber" name="L80" href="#L80">80</a>          <strong class="jxr_keyword">if</strong> (IoUring.isAcceptMultishotSupported()) {
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>          <strong class="jxr_keyword">if</strong> (IoUring.isAcceptMultishotEnabled()) {
 <a class="jxr_linenumber" name="L81" href="#L81">81</a>              acceptedAddressMemory = <strong class="jxr_keyword">null</strong>;
 <a class="jxr_linenumber" name="L82" href="#L82">82</a>          } <strong class="jxr_keyword">else</strong> {
 <a class="jxr_linenumber" name="L83" href="#L83">83</a>              acceptedAddressMemory = <strong class="jxr_keyword">new</strong> AcceptedAddressMemory();
@@ -116,7 +116,7 @@
 <a class="jxr_linenumber" name="L108" href="#L108">108</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> cancelOutstandingReads(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration, <strong class="jxr_keyword">int</strong> numOutstandingReads) {
 <a class="jxr_linenumber" name="L109" href="#L109">109</a>         <strong class="jxr_keyword">if</strong> (acceptId != 0) {
 <a class="jxr_linenumber" name="L110" href="#L110">110</a>             assert numOutstandingReads == 1 || numOutstandingReads == -1;
-<a class="jxr_linenumber" name="L111" href="#L111">111</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newAsyncCancel(flags((byte) 0), acceptId, Native.IORING_OP_ACCEPT);
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newAsyncCancel((byte) 0, acceptId, Native.IORING_OP_ACCEPT);
 <a class="jxr_linenumber" name="L112" href="#L112">112</a>             registration.submit(ops);
 <a class="jxr_linenumber" name="L113" href="#L113">113</a>             acceptId = 0;
 <a class="jxr_linenumber" name="L114" href="#L114">114</a>         } <strong class="jxr_keyword">else</strong> {
@@ -130,7 +130,7 @@
 <a class="jxr_linenumber" name="L122" href="#L122">122</a>     }
 <a class="jxr_linenumber" name="L123" href="#L123">123</a> 
 <a class="jxr_linenumber" name="L124" href="#L124">124</a>     <strong class="jxr_keyword">abstract</strong> <a name="Channel" href="../../../../io/netty/channel/Channel.html#Channel">Channel</a> newChildChannel(
-<a class="jxr_linenumber" name="L125" href="#L125">125</a>             <strong class="jxr_keyword">int</strong> fd, <strong class="jxr_keyword">long</strong> acceptedAddressMemoryAddress, <strong class="jxr_keyword">long</strong> acceptedAddressLengthMemoryAddress) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L125" href="#L125">125</a>             <strong class="jxr_keyword">int</strong> fd, ByteBuffer acceptedAddressMemory) <strong class="jxr_keyword">throws</strong> Exception;
 <a class="jxr_linenumber" name="L126" href="#L126">126</a> 
 <a class="jxr_linenumber" name="L127" href="#L127">127</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> UringServerChannelUnsafe <strong class="jxr_keyword">extends</strong> AbstractIoUringChannel.AbstractUringUnsafe {
 <a class="jxr_linenumber" name="L128" href="#L128">128</a> 
@@ -158,64 +158,64 @@
 <a class="jxr_linenumber" name="L150" href="#L150">150</a>             <strong class="jxr_keyword">int</strong> fd = fd().intValue();
 <a class="jxr_linenumber" name="L151" href="#L151">151</a>             <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> registration = registration();
 <a class="jxr_linenumber" name="L152" href="#L152">152</a> 
-<a class="jxr_linenumber" name="L153" href="#L153">153</a>             <em class="jxr_comment">// Depending on if socketIsEmpty is true we will arm the poll upfront and skip the initial transfer</em>
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>             <em class="jxr_comment">// attempt.</em>
-<a class="jxr_linenumber" name="L155" href="#L155">155</a>             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/io_uring-and-networking-in-2023#socket-state</em>
-<a class="jxr_linenumber" name="L156" href="#L156">156</a>             <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L157" href="#L157">157</a>             <em class="jxr_comment">// Depending on if this is the first read or not we will use Native.IORING_ACCEPT_DONT_WAIT.</em>
-<a class="jxr_linenumber" name="L158" href="#L158">158</a>             <em class="jxr_comment">// The idea is that if the socket is blocking we can do the first read in a blocking fashion</em>
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>             <em class="jxr_comment">// and so not need to also register POLLIN. As we can not 100 % sure if reads after the first will</em>
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>             <em class="jxr_comment">// be possible directly we schedule these with Native.IORING_ACCEPT_DONT_WAIT. This allows us to still be</em>
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>             <em class="jxr_comment">// able to signal the fireChannelReadComplete() in a timely manner and be consistent with other</em>
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>             <em class="jxr_comment">// transports.</em>
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>             <strong class="jxr_keyword">short</strong> ioPrio;
-<a class="jxr_linenumber" name="L164" href="#L164">164</a> 
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>             <em class="jxr_comment">// IORING_ACCEPT_POLL_FIRST and IORING_ACCEPT_DONTWAIT were added in the same release.</em>
-<a class="jxr_linenumber" name="L166" href="#L166">166</a>             <em class="jxr_comment">// We need to check if its supported as otherwise providing these would result in an -EINVAL.</em>
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>             <strong class="jxr_keyword">if</strong> (IoUring.isAcceptNoWaitSupported()) {
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>                 <strong class="jxr_keyword">if</strong> (first) {
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>                     ioPrio = socketIsEmpty ? Native.IORING_ACCEPT_POLL_FIRST : 0;
-<a class="jxr_linenumber" name="L170" href="#L170">170</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>                     ioPrio = Native.IORING_ACCEPT_DONTWAIT;
-<a class="jxr_linenumber" name="L172" href="#L172">172</a>                 }
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L174" href="#L174">174</a>                 ioPrio = 0;
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>             }
-<a class="jxr_linenumber" name="L176" href="#L176">176</a> 
-<a class="jxr_linenumber" name="L177" href="#L177">177</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> acceptedAddressMemoryAddress;
-<a class="jxr_linenumber" name="L178" href="#L178">178</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> acceptedAddressLengthMemoryAddress;
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>             <strong class="jxr_keyword">if</strong> (IoUring.isAcceptMultishotSupported()) {
-<a class="jxr_linenumber" name="L180" href="#L180">180</a>                 <em class="jxr_comment">// Let's use multi-shot accept to reduce overhead.</em>
-<a class="jxr_linenumber" name="L181" href="#L181">181</a>                 ioPrio |= Native.IORING_ACCEPT_MULTISHOT;
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>                 acceptedAddressMemoryAddress = 0;
-<a class="jxr_linenumber" name="L183" href="#L183">183</a>                 acceptedAddressLengthMemoryAddress = 0;
-<a class="jxr_linenumber" name="L184" href="#L184">184</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L185" href="#L185">185</a>                 assert acceptedAddressMemory != <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>                 acceptedAddressMemoryAddress = acceptedAddressMemory.acceptedAddressMemoryAddress;
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>                 acceptedAddressLengthMemoryAddress = acceptedAddressMemory.acceptedAddressLengthMemoryAddress;
-<a class="jxr_linenumber" name="L188" href="#L188">188</a>             }
-<a class="jxr_linenumber" name="L189" href="#L189">189</a> 
-<a class="jxr_linenumber" name="L190" href="#L190">190</a>             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.10#improvements-for-accept</em>
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newAccept(fd, flags((byte) 0), 0, ioPrio,
-<a class="jxr_linenumber" name="L192" href="#L192">192</a>                     acceptedAddressMemoryAddress, acceptedAddressLengthMemoryAddress, nextOpsId());
-<a class="jxr_linenumber" name="L193" href="#L193">193</a>             acceptId = registration.submit(ops);
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>             <strong class="jxr_keyword">if</strong> (acceptId == 0) {
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>                 <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="L196" href="#L196">196</a>             }
-<a class="jxr_linenumber" name="L197" href="#L197">197</a>             <strong class="jxr_keyword">if</strong> ((ioPrio &amp; Native.IORING_ACCEPT_MULTISHOT) != 0) {
-<a class="jxr_linenumber" name="L198" href="#L198">198</a>                 <em class="jxr_comment">// Let's return -1 to signal that we used multi-shot.</em>
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>                 <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>             }
-<a class="jxr_linenumber" name="L201" href="#L201">201</a>             <strong class="jxr_keyword">return</strong> 1;
-<a class="jxr_linenumber" name="L202" href="#L202">202</a>         }
-<a class="jxr_linenumber" name="L203" href="#L203">203</a> 
-<a class="jxr_linenumber" name="L204" href="#L204">204</a>         @Override
-<a class="jxr_linenumber" name="L205" href="#L205">205</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> readComplete0(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data, <strong class="jxr_keyword">int</strong> outstanding) {
-<a class="jxr_linenumber" name="L206" href="#L206">206</a>             <strong class="jxr_keyword">if</strong> (res == Native.ERRNO_ECANCELED_NEGATIVE) {
-<a class="jxr_linenumber" name="L207" href="#L207">207</a>                 acceptId = 0;
-<a class="jxr_linenumber" name="L208" href="#L208">208</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L209" href="#L209">209</a>             }
-<a class="jxr_linenumber" name="L210" href="#L210">210</a>             assert acceptId != 0;
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">short</strong> ioPrio;
+<a class="jxr_linenumber" name="L154" href="#L154">154</a> 
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> acceptedAddressMemoryAddress;
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> acceptedAddressLengthMemoryAddress;
+<a class="jxr_linenumber" name="L157" href="#L157">157</a>             <strong class="jxr_keyword">if</strong> (IoUring.isAcceptMultishotEnabled()) {
+<a class="jxr_linenumber" name="L158" href="#L158">158</a>                 <em class="jxr_comment">// Let's use multi-shot accept to reduce overhead.</em>
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>                 ioPrio = Native.IORING_ACCEPT_MULTISHOT;
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>                 acceptedAddressMemoryAddress = 0;
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>                 acceptedAddressLengthMemoryAddress = 0;
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>                 <em class="jxr_comment">// Depending on if socketIsEmpty is true we will arm the poll upfront and skip the initial transfer</em>
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>                 <em class="jxr_comment">// attempt.</em>
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>                 <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/io_uring-and-networking-in-2023#socket-state</em>
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>                 <em class="jxr_comment">// Depending on if this is the first read or not we will use Native.IORING_ACCEPT_DONT_WAIT.</em>
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>                 <em class="jxr_comment">// The idea is that if the socket is blocking we can do the first read in a blocking fashion</em>
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>                 <em class="jxr_comment">// and so not need to also register POLLIN. As we can not 100 % sure if reads after the first will</em>
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>                 <em class="jxr_comment">// be possible directly we schedule these with Native.IORING_ACCEPT_DONT_WAIT. This allows us to still</em>
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>                 <em class="jxr_comment">// be able to signal the fireChannelReadComplete() in a timely manner and be consistent with other</em>
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>                 <em class="jxr_comment">// transports.</em>
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>                 <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>                 <em class="jxr_comment">// IORING_ACCEPT_POLL_FIRST and IORING_ACCEPT_DONTWAIT were added in the same release.</em>
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>                 <em class="jxr_comment">// We need to check if its supported as otherwise providing these would result in an -EINVAL.</em>
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>                 <strong class="jxr_keyword">if</strong> (IoUring.isAcceptNoWaitSupported()) {
+<a class="jxr_linenumber" name="L177" href="#L177">177</a>                     <strong class="jxr_keyword">if</strong> (first) {
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>                         ioPrio = socketIsEmpty ? Native.IORING_ACCEPT_POLL_FIRST : 0;
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>                         ioPrio = Native.IORING_ACCEPT_DONTWAIT;
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>                     }
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>                     ioPrio = 0;
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>                 }
+<a class="jxr_linenumber" name="L185" href="#L185">185</a> 
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>                 assert acceptedAddressMemory != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>                 acceptedAddressMemoryAddress = acceptedAddressMemory.acceptedAddressMemoryAddress;
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>                 acceptedAddressLengthMemoryAddress = acceptedAddressMemory.acceptedAddressLengthMemoryAddress;
+<a class="jxr_linenumber" name="L189" href="#L189">189</a>             }
+<a class="jxr_linenumber" name="L190" href="#L190">190</a> 
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.10#improvements-for-accept</em>
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ops = IoUringIoOps.newAccept(fd, (byte) 0, 0, ioPrio,
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>                     acceptedAddressMemoryAddress, acceptedAddressLengthMemoryAddress, nextOpsId());
+<a class="jxr_linenumber" name="L194" href="#L194">194</a>             acceptId = registration.submit(ops);
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>             <strong class="jxr_keyword">if</strong> (acceptId == 0) {
+<a class="jxr_linenumber" name="L196" href="#L196">196</a>                 <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>             }
+<a class="jxr_linenumber" name="L198" href="#L198">198</a>             <strong class="jxr_keyword">if</strong> ((ioPrio &amp; Native.IORING_ACCEPT_MULTISHOT) != 0) {
+<a class="jxr_linenumber" name="L199" href="#L199">199</a>                 <em class="jxr_comment">// Let's return -1 to signal that we used multi-shot.</em>
+<a class="jxr_linenumber" name="L200" href="#L200">200</a>                 <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="L201" href="#L201">201</a>             }
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>             <strong class="jxr_keyword">return</strong> 1;
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>         }
+<a class="jxr_linenumber" name="L204" href="#L204">204</a> 
+<a class="jxr_linenumber" name="L205" href="#L205">205</a>         @Override
+<a class="jxr_linenumber" name="L206" href="#L206">206</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> readComplete0(byte op, <strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">short</strong> data, <strong class="jxr_keyword">int</strong> outstanding) {
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>             <strong class="jxr_keyword">if</strong> (res == Native.ERRNO_ECANCELED_NEGATIVE) {
+<a class="jxr_linenumber" name="L208" href="#L208">208</a>                 acceptId = 0;
+<a class="jxr_linenumber" name="L209" href="#L209">209</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L210" href="#L210">210</a>             }
 <a class="jxr_linenumber" name="L211" href="#L211">211</a>             <strong class="jxr_keyword">boolean</strong> rearm = (flags &amp; Native.IORING_CQE_F_MORE) == 0;
 <a class="jxr_linenumber" name="L212" href="#L212">212</a>             <strong class="jxr_keyword">if</strong> (rearm) {
 <a class="jxr_linenumber" name="L213" href="#L213">213</a>                 <em class="jxr_comment">// Only reset if we don't use multi-shot or we need to re-arm because the multi-shot was cancelled.</em>
@@ -229,82 +229,79 @@
 <a class="jxr_linenumber" name="L221" href="#L221">221</a> 
 <a class="jxr_linenumber" name="L222" href="#L222">222</a>             <strong class="jxr_keyword">if</strong> (res &gt;= 0) {
 <a class="jxr_linenumber" name="L223" href="#L223">223</a>                 allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="L224" href="#L224">224</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> acceptedAddressMemoryAddress;
+<a class="jxr_linenumber" name="L224" href="#L224">224</a>                 <strong class="jxr_keyword">final</strong> ByteBuffer acceptedAddressBuffer;
 <a class="jxr_linenumber" name="L225" href="#L225">225</a>                 <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> acceptedAddressLengthMemoryAddress;
 <a class="jxr_linenumber" name="L226" href="#L226">226</a>                 <strong class="jxr_keyword">if</strong> (acceptedAddressMemory == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L227" href="#L227">227</a>                     acceptedAddressMemoryAddress = 0;
-<a class="jxr_linenumber" name="L228" href="#L228">228</a>                     acceptedAddressLengthMemoryAddress = 0;
-<a class="jxr_linenumber" name="L229" href="#L229">229</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L230" href="#L230">230</a>                     acceptedAddressMemoryAddress = acceptedAddressMemory.acceptedAddressMemoryAddress;
-<a class="jxr_linenumber" name="L231" href="#L231">231</a>                     acceptedAddressLengthMemoryAddress = acceptedAddressMemory.acceptedAddressLengthMemoryAddress;
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>                 }
-<a class="jxr_linenumber" name="L233" href="#L233">233</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L234" href="#L234">234</a>                     <a name="Channel" href="../../../../io/netty/channel/Channel.html#Channel">Channel</a> channel = newChildChannel(
-<a class="jxr_linenumber" name="L235" href="#L235">235</a>                             res, acceptedAddressMemoryAddress, acceptedAddressLengthMemoryAddress);
-<a class="jxr_linenumber" name="L236" href="#L236">236</a>                     pipeline.fireChannelRead(channel);
-<a class="jxr_linenumber" name="L237" href="#L237">237</a> 
-<a class="jxr_linenumber" name="L238" href="#L238">238</a>                     <strong class="jxr_keyword">if</strong> (allocHandle.continueReading() &amp;&amp;
-<a class="jxr_linenumber" name="L239" href="#L239">239</a>                             <em class="jxr_comment">// If IORING_CQE_F_SOCK_NONEMPTY is supported we should check for it first before</em>
-<a class="jxr_linenumber" name="L240" href="#L240">240</a>                             <em class="jxr_comment">// trying to schedule a read. If it's supported and not part of the flags we know for sure</em>
-<a class="jxr_linenumber" name="L241" href="#L241">241</a>                             <em class="jxr_comment">// that the next read (which would be using Native.IORING_ACCEPT_DONTWAIT) will complete</em>
-<a class="jxr_linenumber" name="L242" href="#L242">242</a>                             <em class="jxr_comment">// without be able to read any data. This is useless work and we can skip it.</em>
-<a class="jxr_linenumber" name="L243" href="#L243">243</a>                             <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L244" href="#L244">244</a>                             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.10</em>
-<a class="jxr_linenumber" name="L245" href="#L245">245</a>                             !socketIsEmpty(flags)) {
-<a class="jxr_linenumber" name="L246" href="#L246">246</a>                         <strong class="jxr_keyword">if</strong> (rearm) {
-<a class="jxr_linenumber" name="L247" href="#L247">247</a>                             <em class="jxr_comment">// We only should schedule another read if we need to rearm.</em>
-<a class="jxr_linenumber" name="L248" href="#L248">248</a>                             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/io_uring-and-networking-in-2023#multi-shot</em>
-<a class="jxr_linenumber" name="L249" href="#L249">249</a>                             scheduleRead(false);
-<a class="jxr_linenumber" name="L250" href="#L250">250</a>                         }
-<a class="jxr_linenumber" name="L251" href="#L251">251</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L252" href="#L252">252</a>                         allocHandle.readComplete();
-<a class="jxr_linenumber" name="L253" href="#L253">253</a>                         pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L254" href="#L254">254</a>                     }
-<a class="jxr_linenumber" name="L255" href="#L255">255</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="L256" href="#L256">256</a>                     allocHandle.readComplete();
-<a class="jxr_linenumber" name="L257" href="#L257">257</a>                     pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L258" href="#L258">258</a>                     pipeline.fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="L259" href="#L259">259</a>                 }
-<a class="jxr_linenumber" name="L260" href="#L260">260</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L261" href="#L261">261</a>                 allocHandle.readComplete();
-<a class="jxr_linenumber" name="L262" href="#L262">262</a>                 pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L263" href="#L263">263</a>                 <em class="jxr_comment">// Check if we did fail because there was nothing to accept atm.</em>
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>                 <strong class="jxr_keyword">if</strong> (res != ERRNO_EAGAIN_NEGATIVE &amp;&amp; res != ERRNO_EWOULDBLOCK_NEGATIVE) {
-<a class="jxr_linenumber" name="L265" href="#L265">265</a>                     <em class="jxr_comment">// Something bad happened. Convert to an exception.</em>
-<a class="jxr_linenumber" name="L266" href="#L266">266</a>                     pipeline.fireExceptionCaught(Errors.newIOException(<span class="jxr_string">"io_uring accept"</span>, res));
-<a class="jxr_linenumber" name="L267" href="#L267">267</a>                 }
-<a class="jxr_linenumber" name="L268" href="#L268">268</a>             }
-<a class="jxr_linenumber" name="L269" href="#L269">269</a>         }
-<a class="jxr_linenumber" name="L270" href="#L270">270</a> 
-<a class="jxr_linenumber" name="L271" href="#L271">271</a>         @Override
-<a class="jxr_linenumber" name="L272" href="#L272">272</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(<strong class="jxr_keyword">final</strong> SocketAddress remoteAddress, <strong class="jxr_keyword">final</strong> SocketAddress localAddress,
-<a class="jxr_linenumber" name="L273" href="#L273">273</a>                             <strong class="jxr_keyword">final</strong> <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="L274" href="#L274">274</a>             promise.setFailure(<strong class="jxr_keyword">new</strong> UnsupportedOperationException());
-<a class="jxr_linenumber" name="L275" href="#L275">275</a>         }
-<a class="jxr_linenumber" name="L276" href="#L276">276</a> 
-<a class="jxr_linenumber" name="L277" href="#L277">277</a>         @Override
-<a class="jxr_linenumber" name="L278" href="#L278">278</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> freeResourcesNow(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> reg) {
-<a class="jxr_linenumber" name="L279" href="#L279">279</a>             <strong class="jxr_keyword">super</strong>.freeResourcesNow(reg);
-<a class="jxr_linenumber" name="L280" href="#L280">280</a>             <strong class="jxr_keyword">if</strong> (acceptedAddressMemory != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L281" href="#L281">281</a>                 acceptedAddressMemory.free();
-<a class="jxr_linenumber" name="L282" href="#L282">282</a>             }
-<a class="jxr_linenumber" name="L283" href="#L283">283</a>         }
-<a class="jxr_linenumber" name="L284" href="#L284">284</a>     }
-<a class="jxr_linenumber" name="L285" href="#L285">285</a> 
-<a class="jxr_linenumber" name="L286" href="#L286">286</a>     @Override
-<a class="jxr_linenumber" name="L287" href="#L287">287</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> socketIsEmpty(<strong class="jxr_keyword">int</strong> flags) {
-<a class="jxr_linenumber" name="L288" href="#L288">288</a>         <em class="jxr_comment">// IORING_CQE_F_SOCK_NONEMPTY is used for accept since IORING_ACCEPT_DONTWAIT was added.</em>
-<a class="jxr_linenumber" name="L289" href="#L289">289</a>         <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.10</em>
-<a class="jxr_linenumber" name="L290" href="#L290">290</a>         <strong class="jxr_keyword">return</strong> IoUring.isAcceptNoWaitSupported() &amp;&amp;
-<a class="jxr_linenumber" name="L291" href="#L291">291</a>                 IoUring.isCqeFSockNonEmptySupported() &amp;&amp; (flags &amp; Native.IORING_CQE_F_SOCK_NONEMPTY) == 0;
-<a class="jxr_linenumber" name="L292" href="#L292">292</a>     }
-<a class="jxr_linenumber" name="L293" href="#L293">293</a> 
-<a class="jxr_linenumber" name="L294" href="#L294">294</a>     @Override
-<a class="jxr_linenumber" name="L295" href="#L295">295</a>     <strong class="jxr_keyword">boolean</strong> isPollInFirst() {
-<a class="jxr_linenumber" name="L296" href="#L296">296</a>         <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L297" href="#L297">297</a>     }
-<a class="jxr_linenumber" name="L298" href="#L298">298</a> }
-<a class="jxr_linenumber" name="L299" href="#L299">299</a> 
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>                     acceptedAddressBuffer = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>                     acceptedAddressBuffer = acceptedAddressMemory.acceptedAddressMemory;
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>                 }
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L232" href="#L232">232</a>                     <a name="Channel" href="../../../../io/netty/channel/Channel.html#Channel">Channel</a> channel = newChildChannel(res, acceptedAddressBuffer);
+<a class="jxr_linenumber" name="L233" href="#L233">233</a>                     pipeline.fireChannelRead(channel);
+<a class="jxr_linenumber" name="L234" href="#L234">234</a> 
+<a class="jxr_linenumber" name="L235" href="#L235">235</a>                     <strong class="jxr_keyword">if</strong> (allocHandle.continueReading() &amp;&amp;
+<a class="jxr_linenumber" name="L236" href="#L236">236</a>                             <em class="jxr_comment">// If IORING_CQE_F_SOCK_NONEMPTY is supported we should check for it first before</em>
+<a class="jxr_linenumber" name="L237" href="#L237">237</a>                             <em class="jxr_comment">// trying to schedule a read. If it's supported and not part of the flags we know for sure</em>
+<a class="jxr_linenumber" name="L238" href="#L238">238</a>                             <em class="jxr_comment">// that the next read (which would be using Native.IORING_ACCEPT_DONTWAIT) will complete</em>
+<a class="jxr_linenumber" name="L239" href="#L239">239</a>                             <em class="jxr_comment">// without be able to read any data. This is useless work and we can skip it.</em>
+<a class="jxr_linenumber" name="L240" href="#L240">240</a>                             <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L241" href="#L241">241</a>                             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.10</em>
+<a class="jxr_linenumber" name="L242" href="#L242">242</a>                             !socketIsEmpty(flags)) {
+<a class="jxr_linenumber" name="L243" href="#L243">243</a>                         <strong class="jxr_keyword">if</strong> (rearm) {
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>                             <em class="jxr_comment">// We only should schedule another read if we need to rearm.</em>
+<a class="jxr_linenumber" name="L245" href="#L245">245</a>                             <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/io_uring-and-networking-in-2023#multi-shot</em>
+<a class="jxr_linenumber" name="L246" href="#L246">246</a>                             scheduleRead(false);
+<a class="jxr_linenumber" name="L247" href="#L247">247</a>                         }
+<a class="jxr_linenumber" name="L248" href="#L248">248</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L249" href="#L249">249</a>                         allocHandle.readComplete();
+<a class="jxr_linenumber" name="L250" href="#L250">250</a>                         pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L251" href="#L251">251</a>                     }
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>                     allocHandle.readComplete();
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>                     pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L255" href="#L255">255</a>                     pipeline.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>                 }
+<a class="jxr_linenumber" name="L257" href="#L257">257</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>                 allocHandle.readComplete();
+<a class="jxr_linenumber" name="L259" href="#L259">259</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>                 <em class="jxr_comment">// Check if we did fail because there was nothing to accept atm.</em>
+<a class="jxr_linenumber" name="L261" href="#L261">261</a>                 <strong class="jxr_keyword">if</strong> (res != ERRNO_EAGAIN_NEGATIVE &amp;&amp; res != ERRNO_EWOULDBLOCK_NEGATIVE) {
+<a class="jxr_linenumber" name="L262" href="#L262">262</a>                     <em class="jxr_comment">// Something bad happened. Convert to an exception.</em>
+<a class="jxr_linenumber" name="L263" href="#L263">263</a>                     pipeline.fireExceptionCaught(Errors.newIOException(<span class="jxr_string">"io_uring accept"</span>, res));
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>                 }
+<a class="jxr_linenumber" name="L265" href="#L265">265</a>             }
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>         }
+<a class="jxr_linenumber" name="L267" href="#L267">267</a> 
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>         @Override
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(<strong class="jxr_keyword">final</strong> SocketAddress remoteAddress, <strong class="jxr_keyword">final</strong> SocketAddress localAddress,
+<a class="jxr_linenumber" name="L270" href="#L270">270</a>                             <strong class="jxr_keyword">final</strong> <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="L271" href="#L271">271</a>             promise.setFailure(<strong class="jxr_keyword">new</strong> UnsupportedOperationException());
+<a class="jxr_linenumber" name="L272" href="#L272">272</a>         }
+<a class="jxr_linenumber" name="L273" href="#L273">273</a> 
+<a class="jxr_linenumber" name="L274" href="#L274">274</a>         @Override
+<a class="jxr_linenumber" name="L275" href="#L275">275</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> freeResourcesNow(<a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> reg) {
+<a class="jxr_linenumber" name="L276" href="#L276">276</a>             <strong class="jxr_keyword">super</strong>.freeResourcesNow(reg);
+<a class="jxr_linenumber" name="L277" href="#L277">277</a>             <strong class="jxr_keyword">if</strong> (acceptedAddressMemory != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L278" href="#L278">278</a>                 acceptedAddressMemory.free();
+<a class="jxr_linenumber" name="L279" href="#L279">279</a>             }
+<a class="jxr_linenumber" name="L280" href="#L280">280</a>         }
+<a class="jxr_linenumber" name="L281" href="#L281">281</a>     }
+<a class="jxr_linenumber" name="L282" href="#L282">282</a> 
+<a class="jxr_linenumber" name="L283" href="#L283">283</a>     @Override
+<a class="jxr_linenumber" name="L284" href="#L284">284</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> socketIsEmpty(<strong class="jxr_keyword">int</strong> flags) {
+<a class="jxr_linenumber" name="L285" href="#L285">285</a>         <em class="jxr_comment">// IORING_CQE_F_SOCK_NONEMPTY is used for accept since IORING_ACCEPT_DONTWAIT was added.</em>
+<a class="jxr_linenumber" name="L286" href="#L286">286</a>         <em class="jxr_comment">// See https://github.com/axboe/liburing/wiki/What's-new-with-io_uring-in-6.10</em>
+<a class="jxr_linenumber" name="L287" href="#L287">287</a>         <strong class="jxr_keyword">return</strong> IoUring.isAcceptNoWaitSupported() &amp;&amp;
+<a class="jxr_linenumber" name="L288" href="#L288">288</a>                 IoUring.isCqeFSockNonEmptySupported() &amp;&amp; (flags &amp; Native.IORING_CQE_F_SOCK_NONEMPTY) == 0;
+<a class="jxr_linenumber" name="L289" href="#L289">289</a>     }
+<a class="jxr_linenumber" name="L290" href="#L290">290</a> 
+<a class="jxr_linenumber" name="L291" href="#L291">291</a>     @Override
+<a class="jxr_linenumber" name="L292" href="#L292">292</a>     <strong class="jxr_keyword">boolean</strong> isPollInFirst() {
+<a class="jxr_linenumber" name="L293" href="#L293">293</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L294" href="#L294">294</a>     }
+<a class="jxr_linenumber" name="L295" href="#L295">295</a> }
+<a class="jxr_linenumber" name="L296" href="#L296">296</a> 
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
