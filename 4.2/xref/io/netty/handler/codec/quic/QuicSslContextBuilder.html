@@ -1,0 +1,431 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="" lang="">
+<head><meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>QuicSslContextBuilder xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../../apidocs/io/netty/handler/codec/quic/QuicSslContextBuilder.html">View Javadoc</a></div><pre>
+<a class="jxr_linenumber" name="L1" href="#L1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L2" href="#L2">2</a>   <em class="jxr_comment"> * Copyright 2021 The Netty Project</em>
+<a class="jxr_linenumber" name="L3" href="#L3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="L5" href="#L5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="L6" href="#L6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <em class="jxr_comment"> *   <a href="https://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">https://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="L11" href="#L11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="L12" href="#L12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="L13" href="#L13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="L14" href="#L14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="L16" href="#L16">16</a>  
+<a class="jxr_linenumber" name="L17" href="#L17">17</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.codec.quic;
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.ClientAuth;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.SslContextOption;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.util.KeyManagerFactoryWrapper;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.ssl.util.TrustManagerFactoryWrapper;
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.util.Mapping;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> org.jetbrains.annotations.Nullable;
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <strong class="jxr_keyword">import</strong> javax.net.ssl.KeyManager;
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">import</strong> javax.net.ssl.KeyManagerFactory;
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">import</strong> javax.net.ssl.SSLEngine;
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <strong class="jxr_keyword">import</strong> javax.net.ssl.TrustManager;
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <strong class="jxr_keyword">import</strong> javax.net.ssl.TrustManagerFactory;
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">import</strong> javax.net.ssl.X509ExtendedKeyManager;
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  <strong class="jxr_keyword">import</strong> java.io.File;
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>  <strong class="jxr_keyword">import</strong> java.net.Socket;
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  <strong class="jxr_keyword">import</strong> java.security.KeyStore;
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>  <strong class="jxr_keyword">import</strong> java.security.Principal;
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>  <strong class="jxr_keyword">import</strong> java.security.PrivateKey;
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>  <strong class="jxr_keyword">import</strong> java.security.cert.X509Certificate;
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>  <strong class="jxr_keyword">import</strong> java.util.ArrayList;
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>  <strong class="jxr_keyword">import</strong> java.util.HashMap;
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>  <strong class="jxr_keyword">import</strong> java.util.List;
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>  <strong class="jxr_keyword">import</strong> java.util.Map;
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>  
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>  <strong class="jxr_keyword">import</strong> <strong class="jxr_keyword">static</strong> io.netty.util.internal.ObjectUtil.checkNotNull;
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>  
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <em class="jxr_javadoccomment"> * Builder for configuring a new SslContext for creation.</em>
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> {
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>  
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>  <em class="jxr_javadoccomment">     * Special {@link X509ExtendedKeyManager} implementation which will just fail the certificate selection.</em>
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>  <em class="jxr_javadoccomment">     * This is used as a "dummy" implementation when SNI is used as we should always select an other</em>
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>  <em class="jxr_javadoccomment">     * {@link QuicSslContext} based on the provided hostname.</em>
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> X509ExtendedKeyManager SNI_KEYMANAGER = <strong class="jxr_keyword">new</strong> X509ExtendedKeyManager() {
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>          <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> X509Certificate[] emptyCerts = <strong class="jxr_keyword">new</strong> X509Certificate[0];
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>          <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> String[] emptyStrings = <strong class="jxr_keyword">new</strong> String[0];
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>  
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>          @Override
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>          <strong class="jxr_keyword">public</strong> String[] getClientAliases(String keyType, Principal[] issuers) {
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>              <strong class="jxr_keyword">return</strong> emptyStrings;
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>          }
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>  
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>          @Override
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>          @Nullable
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>          <strong class="jxr_keyword">public</strong> String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>          }
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>  
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>          @Override
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>          <strong class="jxr_keyword">public</strong> String[] getServerAliases(String keyType, Principal[] issuers) {
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>              <strong class="jxr_keyword">return</strong> emptyStrings;
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>          }
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>  
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>          @Override
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>          @Nullable
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>          <strong class="jxr_keyword">public</strong> String chooseServerAlias(String keyType, Principal[] issuers, Socket socket) {
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>          }
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>  
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>          @Override
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>          <strong class="jxr_keyword">public</strong> X509Certificate[] getCertificateChain(String alias) {
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>              <strong class="jxr_keyword">return</strong> emptyCerts;
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>          }
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>  
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>          @Override
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>          @Nullable
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>          <strong class="jxr_keyword">public</strong> PrivateKey getPrivateKey(String alias) {
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>              <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>          }
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>      };
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>  
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>  <em class="jxr_javadoccomment">     * Creates a builder for new client-side {@link QuicSslContext} that can be used for {@code QUIC}.</em>
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> forClient() {
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a>(false);
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>      }
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>  
+<a class="jxr_linenumber" name="L100" href="#L100">100</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L101" href="#L101">101</a> <em class="jxr_javadoccomment">     * Creates a builder for new server-side {@link QuicSslContext} that can be used for {@code QUIC}.</em>
+<a class="jxr_linenumber" name="L102" href="#L102">102</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L103" href="#L103">103</a> <em class="jxr_javadoccomment">     * @param keyFile a PKCS#8 private key file in PEM format</em>
+<a class="jxr_linenumber" name="L104" href="#L104">104</a> <em class="jxr_javadoccomment">     * @param keyPassword the password of the {@code keyFile}, or {@code null} if it's not</em>
+<a class="jxr_linenumber" name="L105" href="#L105">105</a> <em class="jxr_javadoccomment">     *     password-protected</em>
+<a class="jxr_linenumber" name="L106" href="#L106">106</a> <em class="jxr_javadoccomment">     * @param certChainFile an X.509 certificate chain file in PEM format</em>
+<a class="jxr_linenumber" name="L107" href="#L107">107</a> <em class="jxr_javadoccomment">     * @see #keyManager(File, String, File)</em>
+<a class="jxr_linenumber" name="L108" href="#L108">108</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L109" href="#L109">109</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> forServer(
+<a class="jxr_linenumber" name="L110" href="#L110">110</a>             File keyFile, @Nullable String keyPassword, File certChainFile) {
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a>(<strong class="jxr_keyword">true</strong>).keyManager(keyFile, keyPassword, certChainFile);
+<a class="jxr_linenumber" name="L112" href="#L112">112</a>     }
+<a class="jxr_linenumber" name="L113" href="#L113">113</a> 
+<a class="jxr_linenumber" name="L114" href="#L114">114</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L115" href="#L115">115</a> <em class="jxr_javadoccomment">     * Creates a builder for new server-side {@link QuicSslContext} that can be used for {@code QUIC}.</em>
+<a class="jxr_linenumber" name="L116" href="#L116">116</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L117" href="#L117">117</a> <em class="jxr_javadoccomment">     * @param key a PKCS#8 private key</em>
+<a class="jxr_linenumber" name="L118" href="#L118">118</a> <em class="jxr_javadoccomment">     * @param keyPassword the password of the {@code keyFile}, or {@code null} if it's not</em>
+<a class="jxr_linenumber" name="L119" href="#L119">119</a> <em class="jxr_javadoccomment">     *     password-protected</em>
+<a class="jxr_linenumber" name="L120" href="#L120">120</a> <em class="jxr_javadoccomment">     * @param certChain the X.509 certificate chain</em>
+<a class="jxr_linenumber" name="L121" href="#L121">121</a> <em class="jxr_javadoccomment">     * @see #keyManager(File, String, File)</em>
+<a class="jxr_linenumber" name="L122" href="#L122">122</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L123" href="#L123">123</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> forServer(
+<a class="jxr_linenumber" name="L124" href="#L124">124</a>             PrivateKey key, @Nullable String keyPassword, X509Certificate... certChain) {
+<a class="jxr_linenumber" name="L125" href="#L125">125</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a>(<strong class="jxr_keyword">true</strong>).keyManager(key, keyPassword, certChain);
+<a class="jxr_linenumber" name="L126" href="#L126">126</a>     }
+<a class="jxr_linenumber" name="L127" href="#L127">127</a> 
+<a class="jxr_linenumber" name="L128" href="#L128">128</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L129" href="#L129">129</a> <em class="jxr_javadoccomment">     * Creates a builder for new server-side {@link QuicSslContext} that can be used for {@code QUIC}.</em>
+<a class="jxr_linenumber" name="L130" href="#L130">130</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L131" href="#L131">131</a> <em class="jxr_javadoccomment">     * @param keyManagerFactory non-{@code null} factory for server's private key</em>
+<a class="jxr_linenumber" name="L132" href="#L132">132</a> <em class="jxr_javadoccomment">     * @see #keyManager(KeyManagerFactory, String)</em>
+<a class="jxr_linenumber" name="L133" href="#L133">133</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L134" href="#L134">134</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> forServer(KeyManagerFactory keyManagerFactory, @Nullable String password) {
+<a class="jxr_linenumber" name="L135" href="#L135">135</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a>(<strong class="jxr_keyword">true</strong>).keyManager(keyManagerFactory, password);
+<a class="jxr_linenumber" name="L136" href="#L136">136</a>     }
+<a class="jxr_linenumber" name="L137" href="#L137">137</a> 
+<a class="jxr_linenumber" name="L138" href="#L138">138</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L139" href="#L139">139</a> <em class="jxr_javadoccomment">     * Creates a builder for new server-side {@link QuicSslContext} with {@link KeyManager} that can be used for</em>
+<a class="jxr_linenumber" name="L140" href="#L140">140</a> <em class="jxr_javadoccomment">     * {@code QUIC}.</em>
+<a class="jxr_linenumber" name="L141" href="#L141">141</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L142" href="#L142">142</a> <em class="jxr_javadoccomment">     * @param keyManager non-{@code null} KeyManager for server's private key</em>
+<a class="jxr_linenumber" name="L143" href="#L143">143</a> <em class="jxr_javadoccomment">     * @param keyPassword the password of the {@code keyFile}, or {@code null} if it's not</em>
+<a class="jxr_linenumber" name="L144" href="#L144">144</a> <em class="jxr_javadoccomment">     *     password-protected</em>
+<a class="jxr_linenumber" name="L145" href="#L145">145</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L146" href="#L146">146</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> forServer(KeyManager keyManager, @Nullable String keyPassword) {
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a>(<strong class="jxr_keyword">true</strong>).keyManager(keyManager, keyPassword);
+<a class="jxr_linenumber" name="L148" href="#L148">148</a>     }
+<a class="jxr_linenumber" name="L149" href="#L149">149</a> 
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L151" href="#L151">151</a> <em class="jxr_javadoccomment">     * Enables support for</em>
+<a class="jxr_linenumber" name="L152" href="#L152">152</a> <em class="jxr_javadoccomment">     * &lt;a href="<a href="https://quicwg.org/ops-drafts/draft-ietf-quic-manageability.html" target="alexandria_uri">https://quicwg.org/ops-drafts/draft-ietf-quic-manageability.html</a>#name-server-name-indication-sni"&gt;</em>
+<a class="jxr_linenumber" name="L153" href="#L153">153</a> <em class="jxr_javadoccomment">     *     SNI&lt;/a&gt; on the server side.</em>
+<a class="jxr_linenumber" name="L154" href="#L154">154</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L155" href="#L155">155</a> <em class="jxr_javadoccomment">     * @param mapping   the {@link Mapping} that is used to map names to the {@link QuicSslContext} to use.</em>
+<a class="jxr_linenumber" name="L156" href="#L156">156</a> <em class="jxr_javadoccomment">     *                  Usually using {@link io.netty.util.DomainWildcardMappingBuilder} should be used</em>
+<a class="jxr_linenumber" name="L157" href="#L157">157</a> <em class="jxr_javadoccomment">     *                  to create the {@link Mapping}.</em>
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="QuicSslContext" href="../../../../../io/netty/handler/codec/quic/QuicSslContext.html#QuicSslContext">QuicSslContext</a> buildForServerWithSni(Mapping&lt;? <strong class="jxr_keyword">super</strong> String, ? <strong class="jxr_keyword">extends</strong> QuicSslContext&gt; mapping) {
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>         <strong class="jxr_keyword">return</strong> forServer(SNI_KEYMANAGER, <strong class="jxr_keyword">null</strong>).sni(mapping).build();
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>     }
+<a class="jxr_linenumber" name="L162" href="#L162">162</a> 
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> Map.Entry[] EMPTY_ENTRIES = <strong class="jxr_keyword">new</strong> Map.Entry[0];
+<a class="jxr_linenumber" name="L164" href="#L164">164</a> 
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> forServer;
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Map&lt;SslContextOption&lt;?&gt;, Object&gt; options = <strong class="jxr_keyword">new</strong> HashMap&lt;&gt;();
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>     <strong class="jxr_keyword">private</strong> TrustManagerFactory trustManagerFactory;
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>     <strong class="jxr_keyword">private</strong> String keyPassword;
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>     <strong class="jxr_keyword">private</strong> KeyManagerFactory keyManagerFactory;
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> sessionCacheSize = 20480;
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">long</strong> sessionTimeout = 300;
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>     <strong class="jxr_keyword">private</strong> <a name="ClientAuth" href="../../../../../io/netty/handler/ssl/ClientAuth.html#ClientAuth">ClientAuth</a> clientAuth = ClientAuth.NONE;
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>     <strong class="jxr_keyword">private</strong> String[] applicationProtocols;
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>     <strong class="jxr_keyword">private</strong> Boolean earlyData;
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>     <strong class="jxr_keyword">private</strong> <a name="BoringSSLKeylog" href="../../../../../io/netty/handler/codec/quic/BoringSSLKeylog.html#BoringSSLKeylog">BoringSSLKeylog</a> keylog;
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>     <strong class="jxr_keyword">private</strong> Mapping&lt;? <strong class="jxr_keyword">super</strong> String, ? <strong class="jxr_keyword">extends</strong> QuicSslContext&gt; mapping;
+<a class="jxr_linenumber" name="L177" href="#L177">177</a> 
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>     <strong class="jxr_keyword">private</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a>(<strong class="jxr_keyword">boolean</strong> forServer) {
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>         <strong class="jxr_keyword">this</strong>.forServer = forServer;
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>     }
+<a class="jxr_linenumber" name="L181" href="#L181">181</a> 
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>     <strong class="jxr_keyword">private</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> sni(Mapping&lt;? <strong class="jxr_keyword">super</strong> String, ? <strong class="jxr_keyword">extends</strong> QuicSslContext&gt; mapping) {
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>         <strong class="jxr_keyword">this</strong>.mapping = checkNotNull(mapping, <span class="jxr_string">"mapping"</span>);
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>     }
+<a class="jxr_linenumber" name="L186" href="#L186">186</a> 
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L188" href="#L188">188</a> <em class="jxr_javadoccomment">     * Configure a {@link SslContextOption}.</em>
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>     <strong class="jxr_keyword">public</strong> &lt;T&gt; <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> option(SslContextOption&lt;T&gt; option, T value) {
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>         <strong class="jxr_keyword">if</strong> (value == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>             options.remove(option);
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L194" href="#L194">194</a>             options.put(option, value);
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>         }
+<a class="jxr_linenumber" name="L196" href="#L196">196</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>     }
+<a class="jxr_linenumber" name="L198" href="#L198">198</a> 
+<a class="jxr_linenumber" name="L199" href="#L199">199</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L200" href="#L200">200</a> <em class="jxr_javadoccomment">     * Enable / disable the usage of early data.</em>
+<a class="jxr_linenumber" name="L201" href="#L201">201</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> earlyData(<strong class="jxr_keyword">boolean</strong> enabled) {
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>         <strong class="jxr_keyword">this</strong>.earlyData = enabled;
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L205" href="#L205">205</a>     }
+<a class="jxr_linenumber" name="L206" href="#L206">206</a> 
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L208" href="#L208">208</a> <em class="jxr_javadoccomment">     * Enable / disable keylog. When enabled, TLS keys are logged to an internal logger named</em>
+<a class="jxr_linenumber" name="L209" href="#L209">209</a> <em class="jxr_javadoccomment">     * "io.netty.handler.codec.quic.BoringSSLLogginKeylog" with DEBUG level, see</em>
+<a class="jxr_linenumber" name="L210" href="#L210">210</a> <em class="jxr_javadoccomment">     * {@link BoringSSLKeylog} for detail, logging keys are following</em>
+<a class="jxr_linenumber" name="L211" href="#L211">211</a> <em class="jxr_javadoccomment">     * &lt;a href="<a href="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Key_Log_Format" target="alexandria_uri">https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Key_Log_Format</a>"&gt;</em>
+<a class="jxr_linenumber" name="L212" href="#L212">212</a> <em class="jxr_javadoccomment">     *     NSS Key Log Format&lt;/a&gt;. This is intended for debugging use with tools like Wireshark.</em>
+<a class="jxr_linenumber" name="L213" href="#L213">213</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L214" href="#L214">214</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> keylog(<strong class="jxr_keyword">boolean</strong> enabled) {
+<a class="jxr_linenumber" name="L215" href="#L215">215</a>         keylog(enabled ? BoringSSLLoggingKeylog.INSTANCE : <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="L216" href="#L216">216</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L217" href="#L217">217</a>     }
+<a class="jxr_linenumber" name="L218" href="#L218">218</a> 
+<a class="jxr_linenumber" name="L219" href="#L219">219</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L220" href="#L220">220</a> <em class="jxr_javadoccomment">     * Enable / disable keylog. When enabled, TLS keys are logged to {@link BoringSSLKeylog#logKey(SSLEngine, String)}</em>
+<a class="jxr_linenumber" name="L221" href="#L221">221</a> <em class="jxr_javadoccomment">     * logging keys are following</em>
+<a class="jxr_linenumber" name="L222" href="#L222">222</a> <em class="jxr_javadoccomment">     * &lt;a href="<a href="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Key_Log_Format" target="alexandria_uri">https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Key_Log_Format</a>"&gt;</em>
+<a class="jxr_linenumber" name="L223" href="#L223">223</a> <em class="jxr_javadoccomment">     *     NSS Key Log Format&lt;/a&gt;. This is intended for debugging use with tools like Wireshark.</em>
+<a class="jxr_linenumber" name="L224" href="#L224">224</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L225" href="#L225">225</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> keylog(@Nullable <a name="BoringSSLKeylog" href="../../../../../io/netty/handler/codec/quic/BoringSSLKeylog.html#BoringSSLKeylog">BoringSSLKeylog</a> keylog) {
+<a class="jxr_linenumber" name="L226" href="#L226">226</a>         <strong class="jxr_keyword">this</strong>.keylog = keylog;
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>     }
+<a class="jxr_linenumber" name="L229" href="#L229">229</a> 
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L231" href="#L231">231</a> <em class="jxr_javadoccomment">     * Trusted certificates for verifying the remote endpoint's certificate. The file should</em>
+<a class="jxr_linenumber" name="L232" href="#L232">232</a> <em class="jxr_javadoccomment">     * contain an X.509 certificate collection in PEM format. {@code null} uses the system default</em>
+<a class="jxr_linenumber" name="L233" href="#L233">233</a> <em class="jxr_javadoccomment">     * which only works with Java 8u261 and later as these versions support TLS1.3,</em>
+<a class="jxr_linenumber" name="L234" href="#L234">234</a> <em class="jxr_javadoccomment">     * see &lt;a href="<a href="https://www.oracle.com/java/technologies/javase/8u261-relnotes.html" target="alexandria_uri">https://www.oracle.com/java/technologies/javase/8u261-relnotes.html</a>"&gt;</em>
+<a class="jxr_linenumber" name="L235" href="#L235">235</a> <em class="jxr_javadoccomment">     *     JDK 8u261 Update Release Notes&lt;/a&gt;</em>
+<a class="jxr_linenumber" name="L236" href="#L236">236</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L237" href="#L237">237</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> trustManager(@Nullable File trustCertCollectionFile) {
+<a class="jxr_linenumber" name="L238" href="#L238">238</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L239" href="#L239">239</a>             <strong class="jxr_keyword">return</strong> trustManager(QuicheQuicSslContext.toX509Certificates0(trustCertCollectionFile));
+<a class="jxr_linenumber" name="L240" href="#L240">240</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L241" href="#L241">241</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"File does not contain valid certificates: "</span>
+<a class="jxr_linenumber" name="L242" href="#L242">242</a>                     + trustCertCollectionFile, e);
+<a class="jxr_linenumber" name="L243" href="#L243">243</a>         }
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>     }
+<a class="jxr_linenumber" name="L245" href="#L245">245</a> 
+<a class="jxr_linenumber" name="L246" href="#L246">246</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L247" href="#L247">247</a> <em class="jxr_javadoccomment">     * Trusted certificates for verifying the remote endpoint's certificate. {@code null} uses the system default</em>
+<a class="jxr_linenumber" name="L248" href="#L248">248</a> <em class="jxr_javadoccomment">     * which only works with Java 8u261 and later as these versions support TLS1.3,</em>
+<a class="jxr_linenumber" name="L249" href="#L249">249</a> <em class="jxr_javadoccomment">     * see &lt;a href="<a href="https://www.oracle.com/java/technologies/javase/8u261-relnotes.html" target="alexandria_uri">https://www.oracle.com/java/technologies/javase/8u261-relnotes.html</a>"&gt;</em>
+<a class="jxr_linenumber" name="L250" href="#L250">250</a> <em class="jxr_javadoccomment">     *     JDK 8u261 Update Release Notes&lt;/a&gt;</em>
+<a class="jxr_linenumber" name="L251" href="#L251">251</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> trustManager(X509Certificate @Nullable ... trustCertCollection) {
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>             <strong class="jxr_keyword">return</strong> trustManager(QuicheQuicSslContext.buildTrustManagerFactory0(trustCertCollection));
+<a class="jxr_linenumber" name="L255" href="#L255">255</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(e);
+<a class="jxr_linenumber" name="L257" href="#L257">257</a>         }
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>     }
+<a class="jxr_linenumber" name="L259" href="#L259">259</a> 
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L261" href="#L261">261</a> <em class="jxr_javadoccomment">     * Trusted manager for verifying the remote endpoint's certificate. {@code null} uses the system default</em>
+<a class="jxr_linenumber" name="L262" href="#L262">262</a> <em class="jxr_javadoccomment">     * which only works with Java 8u261 and later as these versions support TLS1.3,</em>
+<a class="jxr_linenumber" name="L263" href="#L263">263</a> <em class="jxr_javadoccomment">     * see &lt;a href="<a href="https://www.oracle.com/java/technologies/javase/8u261-relnotes.html" target="alexandria_uri">https://www.oracle.com/java/technologies/javase/8u261-relnotes.html</a>"&gt;</em>
+<a class="jxr_linenumber" name="L264" href="#L264">264</a> <em class="jxr_javadoccomment">     *     JDK 8u261 Update Release Notes&lt;/a&gt;</em>
+<a class="jxr_linenumber" name="L265" href="#L265">265</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> trustManager(@Nullable TrustManagerFactory trustManagerFactory) {
+<a class="jxr_linenumber" name="L267" href="#L267">267</a>         <strong class="jxr_keyword">this</strong>.trustManagerFactory = trustManagerFactory;
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>     }
+<a class="jxr_linenumber" name="L270" href="#L270">270</a> 
+<a class="jxr_linenumber" name="L271" href="#L271">271</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L272" href="#L272">272</a> <em class="jxr_javadoccomment">     * A single trusted manager for verifying the remote endpoint's certificate.</em>
+<a class="jxr_linenumber" name="L273" href="#L273">273</a> <em class="jxr_javadoccomment">     * This is helpful when custom implementation of {@link TrustManager} is needed.</em>
+<a class="jxr_linenumber" name="L274" href="#L274">274</a> <em class="jxr_javadoccomment">     * Internally, a simple wrapper of {@link TrustManagerFactory} that only produces this</em>
+<a class="jxr_linenumber" name="L275" href="#L275">275</a> <em class="jxr_javadoccomment">     * specified {@link TrustManager} will be created, thus all the requirements specified in</em>
+<a class="jxr_linenumber" name="L276" href="#L276">276</a> <em class="jxr_javadoccomment">     * {@link #trustManager(TrustManagerFactory trustManagerFactory)} also apply here.</em>
+<a class="jxr_linenumber" name="L277" href="#L277">277</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L278" href="#L278">278</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> trustManager(TrustManager trustManager) {
+<a class="jxr_linenumber" name="L279" href="#L279">279</a>         <strong class="jxr_keyword">return</strong> trustManager(<strong class="jxr_keyword">new</strong> <a name="TrustManagerFactoryWrapper" href="../../../../../io/netty/handler/ssl/util/TrustManagerFactoryWrapper.html#TrustManagerFactoryWrapper">TrustManagerFactoryWrapper</a>(trustManager));
+<a class="jxr_linenumber" name="L280" href="#L280">280</a>     }
+<a class="jxr_linenumber" name="L281" href="#L281">281</a> 
+<a class="jxr_linenumber" name="L282" href="#L282">282</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L283" href="#L283">283</a> <em class="jxr_javadoccomment">     * Identifying certificate for this host. {@code keyCertChainFile} and {@code keyFile} may</em>
+<a class="jxr_linenumber" name="L284" href="#L284">284</a> <em class="jxr_javadoccomment">     * be {@code null} for client contexts, which disables mutual authentication.</em>
+<a class="jxr_linenumber" name="L285" href="#L285">285</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L286" href="#L286">286</a> <em class="jxr_javadoccomment">     * @param keyFile a PKCS#8 private key file in PEM format</em>
+<a class="jxr_linenumber" name="L287" href="#L287">287</a> <em class="jxr_javadoccomment">     * @param keyPassword the password of the {@code keyFile}, or {@code null} if it's not</em>
+<a class="jxr_linenumber" name="L288" href="#L288">288</a> <em class="jxr_javadoccomment">     *     password-protected</em>
+<a class="jxr_linenumber" name="L289" href="#L289">289</a> <em class="jxr_javadoccomment">     * @param keyCertChainFile an X.509 certificate chain file in PEM format</em>
+<a class="jxr_linenumber" name="L290" href="#L290">290</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L291" href="#L291">291</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> keyManager(
+<a class="jxr_linenumber" name="L292" href="#L292">292</a>             @Nullable File keyFile, @Nullable String keyPassword, @Nullable File keyCertChainFile) {
+<a class="jxr_linenumber" name="L293" href="#L293">293</a>         X509Certificate[] keyCertChain;
+<a class="jxr_linenumber" name="L294" href="#L294">294</a>         PrivateKey key;
+<a class="jxr_linenumber" name="L295" href="#L295">295</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L296" href="#L296">296</a>             keyCertChain = QuicheQuicSslContext.toX509Certificates0(keyCertChainFile);
+<a class="jxr_linenumber" name="L297" href="#L297">297</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L298" href="#L298">298</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"File does not contain valid certificates: "</span> + keyCertChainFile, e);
+<a class="jxr_linenumber" name="L299" href="#L299">299</a>         }
+<a class="jxr_linenumber" name="L300" href="#L300">300</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L301" href="#L301">301</a>             key = QuicheQuicSslContext.toPrivateKey0(keyFile, keyPassword);
+<a class="jxr_linenumber" name="L302" href="#L302">302</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L303" href="#L303">303</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"File does not contain valid private key: "</span> + keyFile, e);
+<a class="jxr_linenumber" name="L304" href="#L304">304</a>         }
+<a class="jxr_linenumber" name="L305" href="#L305">305</a>         <strong class="jxr_keyword">return</strong> keyManager(key, keyPassword, keyCertChain);
+<a class="jxr_linenumber" name="L306" href="#L306">306</a>     }
+<a class="jxr_linenumber" name="L307" href="#L307">307</a> 
+<a class="jxr_linenumber" name="L308" href="#L308">308</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L309" href="#L309">309</a> <em class="jxr_javadoccomment">     * Identifying certificate for this host. {@code keyCertChain} and {@code key} may</em>
+<a class="jxr_linenumber" name="L310" href="#L310">310</a> <em class="jxr_javadoccomment">     * be {@code null} for client contexts, which disables mutual authentication.</em>
+<a class="jxr_linenumber" name="L311" href="#L311">311</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L312" href="#L312">312</a> <em class="jxr_javadoccomment">     * @param key a PKCS#8 private key file</em>
+<a class="jxr_linenumber" name="L313" href="#L313">313</a> <em class="jxr_javadoccomment">     * @param keyPassword the password of the {@code key}, or {@code null} if it's not</em>
+<a class="jxr_linenumber" name="L314" href="#L314">314</a> <em class="jxr_javadoccomment">     *     password-protected</em>
+<a class="jxr_linenumber" name="L315" href="#L315">315</a> <em class="jxr_javadoccomment">     * @param certChain an X.509 certificate chain</em>
+<a class="jxr_linenumber" name="L316" href="#L316">316</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L317" href="#L317">317</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> keyManager(
+<a class="jxr_linenumber" name="L318" href="#L318">318</a>             @Nullable PrivateKey key, @Nullable String keyPassword, X509Certificate @Nullable ... certChain) {
+<a class="jxr_linenumber" name="L319" href="#L319">319</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L320" href="#L320">320</a>             java.security.KeyStore ks = java.security.KeyStore.getInstance(KeyStore.getDefaultType());
+<a class="jxr_linenumber" name="L321" href="#L321">321</a>             ks.load(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="L322" href="#L322">322</a>             <strong class="jxr_keyword">char</strong>[] pass = keyPassword == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">char</strong>[0]: keyPassword.toCharArray();
+<a class="jxr_linenumber" name="L323" href="#L323">323</a>             ks.setKeyEntry(<span class="jxr_string">"alias"</span>, key, pass, certChain);
+<a class="jxr_linenumber" name="L324" href="#L324">324</a>             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+<a class="jxr_linenumber" name="L325" href="#L325">325</a>                     KeyManagerFactory.getDefaultAlgorithm());
+<a class="jxr_linenumber" name="L326" href="#L326">326</a>             keyManagerFactory.init(ks, pass);
+<a class="jxr_linenumber" name="L327" href="#L327">327</a>             <strong class="jxr_keyword">return</strong> keyManager(keyManagerFactory, keyPassword);
+<a class="jxr_linenumber" name="L328" href="#L328">328</a>         } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L329" href="#L329">329</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(e);
+<a class="jxr_linenumber" name="L330" href="#L330">330</a>         }
+<a class="jxr_linenumber" name="L331" href="#L331">331</a>     }
+<a class="jxr_linenumber" name="L332" href="#L332">332</a> 
+<a class="jxr_linenumber" name="L333" href="#L333">333</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L334" href="#L334">334</a> <em class="jxr_javadoccomment">     * Identifying manager for this host. {@code keyManagerFactory} may be {@code null} for</em>
+<a class="jxr_linenumber" name="L335" href="#L335">335</a> <em class="jxr_javadoccomment">     * client contexts, which disables mutual authentication.</em>
+<a class="jxr_linenumber" name="L336" href="#L336">336</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L337" href="#L337">337</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> keyManager(
+<a class="jxr_linenumber" name="L338" href="#L338">338</a>             @Nullable KeyManagerFactory keyManagerFactory, @Nullable String keyPassword) {
+<a class="jxr_linenumber" name="L339" href="#L339">339</a>         <strong class="jxr_keyword">this</strong>.keyPassword = keyPassword;
+<a class="jxr_linenumber" name="L340" href="#L340">340</a>         <strong class="jxr_keyword">this</strong>.keyManagerFactory = keyManagerFactory;
+<a class="jxr_linenumber" name="L341" href="#L341">341</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L342" href="#L342">342</a>     }
+<a class="jxr_linenumber" name="L343" href="#L343">343</a> 
+<a class="jxr_linenumber" name="L344" href="#L344">344</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L345" href="#L345">345</a> <em class="jxr_javadoccomment">     * A single key manager managing the identity information of this host.</em>
+<a class="jxr_linenumber" name="L346" href="#L346">346</a> <em class="jxr_javadoccomment">     * This is helpful when custom implementation of {@link KeyManager} is needed.</em>
+<a class="jxr_linenumber" name="L347" href="#L347">347</a> <em class="jxr_javadoccomment">     * Internally, a wrapper of {@link KeyManagerFactory} that only produces this specified</em>
+<a class="jxr_linenumber" name="L348" href="#L348">348</a> <em class="jxr_javadoccomment">     * {@link KeyManager} will be created, thus all the requirements specified in</em>
+<a class="jxr_linenumber" name="L349" href="#L349">349</a> <em class="jxr_javadoccomment">     * {@link #keyManager(KeyManagerFactory, String)} also apply here.</em>
+<a class="jxr_linenumber" name="L350" href="#L350">350</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L351" href="#L351">351</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> keyManager(KeyManager keyManager, @Nullable String password) {
+<a class="jxr_linenumber" name="L352" href="#L352">352</a>         <strong class="jxr_keyword">return</strong> keyManager(<strong class="jxr_keyword">new</strong> <a name="KeyManagerFactoryWrapper" href="../../../../../io/netty/handler/ssl/util/KeyManagerFactoryWrapper.html#KeyManagerFactoryWrapper">KeyManagerFactoryWrapper</a>(keyManager), password);
+<a class="jxr_linenumber" name="L353" href="#L353">353</a>     }
+<a class="jxr_linenumber" name="L354" href="#L354">354</a> 
+<a class="jxr_linenumber" name="L355" href="#L355">355</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L356" href="#L356">356</a> <em class="jxr_javadoccomment">     * Application protocol negotiation configuration. {@code null} disables support.</em>
+<a class="jxr_linenumber" name="L357" href="#L357">357</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L358" href="#L358">358</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> applicationProtocols(String @Nullable ... applicationProtocols) {
+<a class="jxr_linenumber" name="L359" href="#L359">359</a>         <strong class="jxr_keyword">this</strong>.applicationProtocols = applicationProtocols;
+<a class="jxr_linenumber" name="L360" href="#L360">360</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L361" href="#L361">361</a>     }
+<a class="jxr_linenumber" name="L362" href="#L362">362</a> 
+<a class="jxr_linenumber" name="L363" href="#L363">363</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L364" href="#L364">364</a> <em class="jxr_javadoccomment">     * Set the size of the cache used for storing SSL session objects. {@code 0} to use the</em>
+<a class="jxr_linenumber" name="L365" href="#L365">365</a> <em class="jxr_javadoccomment">     * default value.</em>
+<a class="jxr_linenumber" name="L366" href="#L366">366</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L367" href="#L367">367</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> sessionCacheSize(<strong class="jxr_keyword">long</strong> sessionCacheSize) {
+<a class="jxr_linenumber" name="L368" href="#L368">368</a>         <strong class="jxr_keyword">this</strong>.sessionCacheSize = sessionCacheSize;
+<a class="jxr_linenumber" name="L369" href="#L369">369</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>     }
+<a class="jxr_linenumber" name="L371" href="#L371">371</a> 
+<a class="jxr_linenumber" name="L372" href="#L372">372</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L373" href="#L373">373</a> <em class="jxr_javadoccomment">     * Set the timeout for the cached SSL session objects, in seconds. {@code 0} to use the</em>
+<a class="jxr_linenumber" name="L374" href="#L374">374</a> <em class="jxr_javadoccomment">     * default value.</em>
+<a class="jxr_linenumber" name="L375" href="#L375">375</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L376" href="#L376">376</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> sessionTimeout(<strong class="jxr_keyword">long</strong> sessionTimeout) {
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>         <strong class="jxr_keyword">this</strong>.sessionTimeout = sessionTimeout;
+<a class="jxr_linenumber" name="L378" href="#L378">378</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L379" href="#L379">379</a>     }
+<a class="jxr_linenumber" name="L380" href="#L380">380</a> 
+<a class="jxr_linenumber" name="L381" href="#L381">381</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L382" href="#L382">382</a> <em class="jxr_javadoccomment">     * Sets the client authentication mode.</em>
+<a class="jxr_linenumber" name="L383" href="#L383">383</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContextBuilder" href="../../../../../io/netty/handler/codec/quic/QuicSslContextBuilder.html#QuicSslContextBuilder">QuicSslContextBuilder</a> clientAuth(<a name="ClientAuth" href="../../../../../io/netty/handler/ssl/ClientAuth.html#ClientAuth">ClientAuth</a> clientAuth) {
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>         <strong class="jxr_keyword">if</strong> (!forServer) {
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> UnsupportedOperationException(<span class="jxr_string">"Only supported for server"</span>);
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>         }
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>         <strong class="jxr_keyword">this</strong>.clientAuth = checkNotNull(clientAuth, <span class="jxr_string">"clientAuth"</span>);
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>     }
+<a class="jxr_linenumber" name="L391" href="#L391">391</a> 
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L393" href="#L393">393</a> <em class="jxr_javadoccomment">     * Create new {@link QuicSslContext} instance with configured settings that can be used for {@code QUIC}.</em>
+<a class="jxr_linenumber" name="L394" href="#L394">394</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L395" href="#L395">395</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>     <strong class="jxr_keyword">public</strong> <a name="QuicSslContext" href="../../../../../io/netty/handler/codec/quic/QuicSslContext.html#QuicSslContext">QuicSslContext</a> build() {
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>         <strong class="jxr_keyword">if</strong> (forServer) {
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicheQuicSslContext" href="../../../../../io/netty/handler/codec/quic/QuicheQuicSslContext.html#QuicheQuicSslContext">QuicheQuicSslContext</a>(<strong class="jxr_keyword">true</strong>, sessionTimeout, sessionCacheSize, clientAuth, trustManagerFactory,
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>                     keyManagerFactory, keyPassword, mapping, earlyData, keylog,
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>                     applicationProtocols, toArray(options.entrySet(), EMPTY_ENTRIES));
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="QuicheQuicSslContext" href="../../../../../io/netty/handler/codec/quic/QuicheQuicSslContext.html#QuicheQuicSslContext">QuicheQuicSslContext</a>(false, sessionTimeout, sessionCacheSize, clientAuth, trustManagerFactory,
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>                     keyManagerFactory, keyPassword, mapping, earlyData, keylog,
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>                     applicationProtocols, toArray(options.entrySet(), EMPTY_ENTRIES));
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>         }
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>     }
+<a class="jxr_linenumber" name="L407" href="#L407">407</a> 
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> &lt;T&gt; T[] toArray(Iterable&lt;? <strong class="jxr_keyword">extends</strong> T&gt; iterable, T[] prototype) {
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>         <strong class="jxr_keyword">if</strong> (iterable == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>         }
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>         <strong class="jxr_keyword">final</strong> List&lt;T&gt; list = <strong class="jxr_keyword">new</strong> ArrayList&lt;&gt;();
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>         <strong class="jxr_keyword">for</strong> (T element : iterable) {
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>             list.add(element);
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>         }
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>         <strong class="jxr_keyword">return</strong> list.toArray(prototype);
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>     }
+<a class="jxr_linenumber" name="L418" href="#L418">418</a> }
+</pre>
+<hr/>
+<div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
+</body>
+</html>
