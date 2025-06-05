@@ -404,96 +404,100 @@
 <a class="jxr_linenumber" name="L396" href="#L396">396</a>         ByteOrder order = frame.order();
 <a class="jxr_linenumber" name="L397" href="#L397">397</a> 
 <a class="jxr_linenumber" name="L398" href="#L398">398</a>         <strong class="jxr_keyword">int</strong> intMask = mask;
-<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <em class="jxr_comment">// Avoid sign extension on widening primitive conversion</em>
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>         <strong class="jxr_keyword">long</strong> longMask = intMask &amp; 0xFFFFFFFFL;
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>         longMask |= longMask &lt;&lt; 32;
-<a class="jxr_linenumber" name="L402" href="#L402">402</a> 
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> lim = end - 7; i &lt; lim; i += 8) {
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>             frame.setLong(i, frame.getLong(i) ^ longMask);
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>         }
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <strong class="jxr_keyword">if</strong> (intMask == 0) {
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>             <em class="jxr_comment">// If the mask is 0 we can just return directly as the XOR operations will just produce the same value.</em>
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>         }
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>         <em class="jxr_comment">// Avoid sign extension on widening primitive conversion</em>
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>         <strong class="jxr_keyword">long</strong> longMask = intMask &amp; 0xFFFFFFFFL;
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>         longMask |= longMask &lt;&lt; 32;
 <a class="jxr_linenumber" name="L406" href="#L406">406</a> 
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>         <strong class="jxr_keyword">if</strong> (i &lt; end - 3) {
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>             frame.setInt(i, frame.getInt(i) ^ (<strong class="jxr_keyword">int</strong>) longMask);
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>             i += 4;
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>         }
-<a class="jxr_linenumber" name="L411" href="#L411">411</a> 
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>         <strong class="jxr_keyword">if</strong> (order == ByteOrder.LITTLE_ENDIAN) {
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>             intMask = Integer.reverseBytes(intMask);
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> lim = end - 7; i &lt; lim; i += 8) {
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>             frame.setLong(i, frame.getLong(i) ^ longMask);
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>         }
+<a class="jxr_linenumber" name="L410" href="#L410">410</a> 
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>         <strong class="jxr_keyword">if</strong> (i &lt; end - 3) {
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>             frame.setInt(i, frame.getInt(i) ^ (<strong class="jxr_keyword">int</strong>) longMask);
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>             i += 4;
 <a class="jxr_linenumber" name="L414" href="#L414">414</a>         }
 <a class="jxr_linenumber" name="L415" href="#L415">415</a> 
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>         <strong class="jxr_keyword">int</strong> maskOffset = 0;
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>         <strong class="jxr_keyword">for</strong> (; i &lt; end; i++) {
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>             frame.setByte(i, frame.getByte(i) ^ WebSocketUtil.byteAtIndex(intMask, maskOffset++ &amp; 3));
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>         }
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>     }
-<a class="jxr_linenumber" name="L421" href="#L421">421</a> 
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> protocolViolation(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, String reason) {
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>         protocolViolation(ctx, in, WebSocketCloseStatus.PROTOCOL_ERROR, reason);
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>         <strong class="jxr_keyword">if</strong> (order == ByteOrder.LITTLE_ENDIAN) {
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>             intMask = Integer.reverseBytes(intMask);
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>         }
+<a class="jxr_linenumber" name="L419" href="#L419">419</a> 
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>         <strong class="jxr_keyword">int</strong> maskOffset = 0;
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>         <strong class="jxr_keyword">for</strong> (; i &lt; end; i++) {
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>             frame.setByte(i, frame.getByte(i) ^ WebSocketUtil.byteAtIndex(intMask, maskOffset++ &amp; 3));
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>         }
 <a class="jxr_linenumber" name="L424" href="#L424">424</a>     }
 <a class="jxr_linenumber" name="L425" href="#L425">425</a> 
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> protocolViolation(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <a name="WebSocketCloseStatus" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketCloseStatus.html#WebSocketCloseStatus">WebSocketCloseStatus</a> status, String reason) {
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>         protocolViolation(ctx, in, <strong class="jxr_keyword">new</strong> <a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a>(status, reason));
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> protocolViolation(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, String reason) {
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>         protocolViolation(ctx, in, WebSocketCloseStatus.PROTOCOL_ERROR, reason);
 <a class="jxr_linenumber" name="L428" href="#L428">428</a>     }
 <a class="jxr_linenumber" name="L429" href="#L429">429</a> 
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> protocolViolation(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a> ex) {
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>         state = State.CORRUPT;
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>         <strong class="jxr_keyword">int</strong> readableBytes = in.readableBytes();
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>         <strong class="jxr_keyword">if</strong> (readableBytes &gt; 0) {
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>             <em class="jxr_comment">// Fix for memory leak, caused by ByteToMessageDecoder#channelRead:</em>
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>             <em class="jxr_comment">// buffer 'cumulation' is released ONLY when no more readable bytes available.</em>
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>             in.skipBytes(readableBytes);
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>         }
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>         <strong class="jxr_keyword">if</strong> (ctx.channel().isActive() &amp;&amp; config.closeOnProtocolViolation()) {
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>             Object closeMessage;
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>             <strong class="jxr_keyword">if</strong> (receivedClosingHandshake) {
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>                 closeMessage = Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                 <a name="WebSocketCloseStatus" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketCloseStatus.html#WebSocketCloseStatus">WebSocketCloseStatus</a> closeStatus = ex.closeStatus();
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>                 String reasonText = ex.getMessage();
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 <strong class="jxr_keyword">if</strong> (reasonText == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>                     reasonText = closeStatus.reasonText();
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 }
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>                 closeMessage = <strong class="jxr_keyword">new</strong> <a name="CloseWebSocketFrame" href="../../../../../../io/netty/handler/codec/http/websocketx/CloseWebSocketFrame.html#CloseWebSocketFrame">CloseWebSocketFrame</a>(closeStatus, reasonText);
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>             }
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>             ctx.writeAndFlush(closeMessage).addListener(ChannelFutureListener.CLOSE);
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>         }
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>         <strong class="jxr_keyword">throw</strong> ex;
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>     }
-<a class="jxr_linenumber" name="L454" href="#L454">454</a> 
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> toFrameLength(<strong class="jxr_keyword">long</strong> l) {
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>         <strong class="jxr_keyword">if</strong> (l &gt; Integer.MAX_VALUE) {
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(<span class="jxr_string">"frame length exceeds "</span> + Integer.MAX_VALUE + <span class="jxr_string">": "</span> + l);
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) l;
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>         }
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>     }
-<a class="jxr_linenumber" name="L462" href="#L462">462</a> 
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>     <em class="jxr_javadoccomment">/** */</em>
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> checkCloseFrameBody(
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>             <a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>         <strong class="jxr_keyword">if</strong> (buffer == <strong class="jxr_keyword">null</strong> || !buffer.isReadable()) {
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>         }
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &lt; 2) {
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>             protocolViolation(ctx, buffer, WebSocketCloseStatus.INVALID_PAYLOAD_DATA, <span class="jxr_string">"Invalid close frame body"</span>);
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>         }
-<a class="jxr_linenumber" name="L472" href="#L472">472</a> 
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>         <em class="jxr_comment">// Must have 2 byte integer within the valid range</em>
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>         <strong class="jxr_keyword">int</strong> statusCode = buffer.getShort(buffer.readerIndex());
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>         <strong class="jxr_keyword">if</strong> (!WebSocketCloseStatus.isValidStatusCode(statusCode)) {
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>             protocolViolation(ctx, buffer, <span class="jxr_string">"Invalid close frame getStatus code: "</span> + statusCode);
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>         }
-<a class="jxr_linenumber" name="L478" href="#L478">478</a> 
-<a class="jxr_linenumber" name="L479" href="#L479">479</a>         <em class="jxr_comment">// May have UTF-8 message</em>
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &gt; 2) {
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L482" href="#L482">482</a>                 <strong class="jxr_keyword">new</strong> <a name="Utf8Validator" href="../../../../../../io/netty/handler/codec/http/websocketx/Utf8Validator.html#Utf8Validator">Utf8Validator</a>().check(buffer, buffer.readerIndex() + 2, buffer.readableBytes() - 2);
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>             } <strong class="jxr_keyword">catch</strong> (<a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a> ex) {
-<a class="jxr_linenumber" name="L484" href="#L484">484</a>                 protocolViolation(ctx, buffer, ex);
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>             }
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>         }
-<a class="jxr_linenumber" name="L487" href="#L487">487</a>     }
-<a class="jxr_linenumber" name="L488" href="#L488">488</a> }
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> protocolViolation(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <a name="WebSocketCloseStatus" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketCloseStatus.html#WebSocketCloseStatus">WebSocketCloseStatus</a> status, String reason) {
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>         protocolViolation(ctx, in, <strong class="jxr_keyword">new</strong> <a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a>(status, reason));
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>     }
+<a class="jxr_linenumber" name="L433" href="#L433">433</a> 
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> protocolViolation(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> in, <a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a> ex) {
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         state = State.CORRUPT;
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         <strong class="jxr_keyword">int</strong> readableBytes = in.readableBytes();
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>         <strong class="jxr_keyword">if</strong> (readableBytes &gt; 0) {
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>             <em class="jxr_comment">// Fix for memory leak, caused by ByteToMessageDecoder#channelRead:</em>
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>             <em class="jxr_comment">// buffer 'cumulation' is released ONLY when no more readable bytes available.</em>
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>             in.skipBytes(readableBytes);
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>         }
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>         <strong class="jxr_keyword">if</strong> (ctx.channel().isActive() &amp;&amp; config.closeOnProtocolViolation()) {
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>             Object closeMessage;
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>             <strong class="jxr_keyword">if</strong> (receivedClosingHandshake) {
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>                 closeMessage = Unpooled.EMPTY_BUFFER;
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>                 <a name="WebSocketCloseStatus" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketCloseStatus.html#WebSocketCloseStatus">WebSocketCloseStatus</a> closeStatus = ex.closeStatus();
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>                 String reasonText = ex.getMessage();
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>                 <strong class="jxr_keyword">if</strong> (reasonText == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>                     reasonText = closeStatus.reasonText();
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>                 }
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>                 closeMessage = <strong class="jxr_keyword">new</strong> <a name="CloseWebSocketFrame" href="../../../../../../io/netty/handler/codec/http/websocketx/CloseWebSocketFrame.html#CloseWebSocketFrame">CloseWebSocketFrame</a>(closeStatus, reasonText);
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>             }
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>             ctx.writeAndFlush(closeMessage).addListener(ChannelFutureListener.CLOSE);
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>         }
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>         <strong class="jxr_keyword">throw</strong> ex;
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>     }
+<a class="jxr_linenumber" name="L458" href="#L458">458</a> 
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> toFrameLength(<strong class="jxr_keyword">long</strong> l) {
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>         <strong class="jxr_keyword">if</strong> (l &gt; Integer.MAX_VALUE) {
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(<span class="jxr_string">"frame length exceeds "</span> + Integer.MAX_VALUE + <span class="jxr_string">": "</span> + l);
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>             <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">int</strong>) l;
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>         }
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>     }
+<a class="jxr_linenumber" name="L466" href="#L466">466</a> 
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>     <em class="jxr_javadoccomment">/** */</em>
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> checkCloseFrameBody(
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>             <a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ByteBuf" href="../../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>         <strong class="jxr_keyword">if</strong> (buffer == <strong class="jxr_keyword">null</strong> || !buffer.isReadable()) {
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>         }
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &lt; 2) {
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>             protocolViolation(ctx, buffer, WebSocketCloseStatus.INVALID_PAYLOAD_DATA, <span class="jxr_string">"Invalid close frame body"</span>);
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>         }
+<a class="jxr_linenumber" name="L476" href="#L476">476</a> 
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>         <em class="jxr_comment">// Must have 2 byte integer within the valid range</em>
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>         <strong class="jxr_keyword">int</strong> statusCode = buffer.getShort(buffer.readerIndex());
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>         <strong class="jxr_keyword">if</strong> (!WebSocketCloseStatus.isValidStatusCode(statusCode)) {
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>             protocolViolation(ctx, buffer, <span class="jxr_string">"Invalid close frame getStatus code: "</span> + statusCode);
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>         }
+<a class="jxr_linenumber" name="L482" href="#L482">482</a> 
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>         <em class="jxr_comment">// May have UTF-8 message</em>
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>         <strong class="jxr_keyword">if</strong> (buffer.readableBytes() &gt; 2) {
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L486" href="#L486">486</a>                 <strong class="jxr_keyword">new</strong> <a name="Utf8Validator" href="../../../../../../io/netty/handler/codec/http/websocketx/Utf8Validator.html#Utf8Validator">Utf8Validator</a>().check(buffer, buffer.readerIndex() + 2, buffer.readableBytes() - 2);
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>             } <strong class="jxr_keyword">catch</strong> (<a name="CorruptedWebSocketFrameException" href="../../../../../../io/netty/handler/codec/http/websocketx/CorruptedWebSocketFrameException.html#CorruptedWebSocketFrameException">CorruptedWebSocketFrameException</a> ex) {
+<a class="jxr_linenumber" name="L488" href="#L488">488</a>                 protocolViolation(ctx, buffer, ex);
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>             }
+<a class="jxr_linenumber" name="L490" href="#L490">490</a>         }
+<a class="jxr_linenumber" name="L491" href="#L491">491</a>     }
+<a class="jxr_linenumber" name="L492" href="#L492">492</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
