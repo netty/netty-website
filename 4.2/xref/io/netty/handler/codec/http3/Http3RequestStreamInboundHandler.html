@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="" lang="">
+<head><meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<title>Http3RequestStreamInboundHandler xref</title>
+<link type="text/css" rel="stylesheet" href="../../../../../stylesheet.css" />
+</head>
+<body>
+<div id="overview"><a href="../../../../../../apidocs/io/netty/handler/codec/http3/Http3RequestStreamInboundHandler.html">View Javadoc</a></div><pre>
+<a class="jxr_linenumber" name="L1" href="#L1">1</a>   <em class="jxr_comment">/*</em>
+<a class="jxr_linenumber" name="L2" href="#L2">2</a>   <em class="jxr_comment"> * Copyright 2020 The Netty Project</em>
+<a class="jxr_linenumber" name="L3" href="#L3">3</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L4" href="#L4">4</a>   <em class="jxr_comment"> * The Netty Project licenses this file to you under the Apache License,</em>
+<a class="jxr_linenumber" name="L5" href="#L5">5</a>   <em class="jxr_comment"> * version 2.0 (the "License"); you may not use this file except in compliance</em>
+<a class="jxr_linenumber" name="L6" href="#L6">6</a>   <em class="jxr_comment"> * with the License. You may obtain a copy of the License at:</em>
+<a class="jxr_linenumber" name="L7" href="#L7">7</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L8" href="#L8">8</a>   <em class="jxr_comment"> *   <a href="https://www.apache.org/licenses/LICENSE-2.0" target="alexandria_uri">https://www.apache.org/licenses/LICENSE-2.0</a></em>
+<a class="jxr_linenumber" name="L9" href="#L9">9</a>   <em class="jxr_comment"> *</em>
+<a class="jxr_linenumber" name="L10" href="#L10">10</a>  <em class="jxr_comment"> * Unless required by applicable law or agreed to in writing, software</em>
+<a class="jxr_linenumber" name="L11" href="#L11">11</a>  <em class="jxr_comment"> * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT</em>
+<a class="jxr_linenumber" name="L12" href="#L12">12</a>  <em class="jxr_comment"> * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the</em>
+<a class="jxr_linenumber" name="L13" href="#L13">13</a>  <em class="jxr_comment"> * License for the specific language governing permissions and limitations</em>
+<a class="jxr_linenumber" name="L14" href="#L14">14</a>  <em class="jxr_comment"> * under the License.</em>
+<a class="jxr_linenumber" name="L15" href="#L15">15</a>  <em class="jxr_comment"> */</em>
+<a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.codec.http3;
+<a class="jxr_linenumber" name="L17" href="#L17">17</a>  
+<a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelHandlerContext;
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.ChannelInboundHandlerAdapter;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> io.netty.channel.socket.ChannelInputShutdownEvent;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.quic.QuicException;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">import</strong> io.netty.handler.codec.quic.QuicStreamChannel;
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLogger;
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.logging.InternalLoggerFactory;
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <strong class="jxr_keyword">import</strong> org.jetbrains.annotations.Nullable;
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <em class="jxr_javadoccomment"> * {@link ChannelInboundHandlerAdapter} which makes it easy to handle</em>
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  <em class="jxr_javadoccomment"> * &lt;a href="<a href="https://tools.ietf.org/html/draft-ietf-quic-http-32" target="alexandria_uri">https://tools.ietf.org/html/draft-ietf-quic-http-32</a>#section-7"&gt;HTTP3 request streams&lt;/a&gt;.</em>
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">class</strong> <a name="Http3RequestStreamInboundHandler" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamInboundHandler.html#Http3RequestStreamInboundHandler">Http3RequestStreamInboundHandler</a> <strong class="jxr_keyword">extends</strong> <a name="ChannelInboundHandlerAdapter" href="../../../../../io/netty/channel/ChannelInboundHandlerAdapter.html#ChannelInboundHandlerAdapter">ChannelInboundHandlerAdapter</a> {
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="InternalLogger" href="../../../../../io/netty/util/internal/logging/InternalLogger.html#InternalLogger">InternalLogger</a> logger =
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>              InternalLoggerFactory.getInstance(Http3RequestStreamInboundHandler.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>      @Override
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> channelRead(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object msg) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>          <strong class="jxr_keyword">if</strong> (msg instanceof <a name="Http3UnknownFrame" href="../../../../../io/netty/handler/codec/http3/Http3UnknownFrame.html#Http3UnknownFrame">Http3UnknownFrame</a>) {
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>              channelRead(ctx, (<a name="Http3UnknownFrame" href="../../../../../io/netty/handler/codec/http3/Http3UnknownFrame.html#Http3UnknownFrame">Http3UnknownFrame</a>) msg);
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof <a name="Http3HeadersFrame" href="../../../../../io/netty/handler/codec/http3/Http3HeadersFrame.html#Http3HeadersFrame">Http3HeadersFrame</a>) {
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>              channelRead(ctx, (<a name="Http3HeadersFrame" href="../../../../../io/netty/handler/codec/http3/Http3HeadersFrame.html#Http3HeadersFrame">Http3HeadersFrame</a>) msg);
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (msg instanceof <a name="Http3DataFrame" href="../../../../../io/netty/handler/codec/http3/Http3DataFrame.html#Http3DataFrame">Http3DataFrame</a>) {
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>              channelRead(ctx, (<a name="Http3DataFrame" href="../../../../../io/netty/handler/codec/http3/Http3DataFrame.html#Http3DataFrame">Http3DataFrame</a>) msg);
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>              <strong class="jxr_keyword">super</strong>.channelRead(ctx, msg);
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>          }
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>      }
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>  
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>      @Override
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> userEventTriggered(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Object evt) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>          <strong class="jxr_keyword">if</strong> (evt == ChannelInputShutdownEvent.INSTANCE) {
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>              channelInputClosed(ctx);
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>          }
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>          ctx.fireUserEventTriggered(evt);
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>      }
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>  
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>      @Override
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) {
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>          <strong class="jxr_keyword">if</strong> (cause instanceof <a name="QuicException" href="../../../../../io/netty/handler/codec/quic/QuicException.html#QuicException">QuicException</a>) {
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>              handleQuicException(ctx, (<a name="QuicException" href="../../../../../io/netty/handler/codec/quic/QuicException.html#QuicException">QuicException</a>) cause);
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (cause instanceof <a name="Http3Exception" href="../../../../../io/netty/handler/codec/http3/Http3Exception.html#Http3Exception">Http3Exception</a>) {
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>              handleHttp3Exception(ctx, (<a name="Http3Exception" href="../../../../../io/netty/handler/codec/http3/Http3Exception.html#Http3Exception">Http3Exception</a>) cause);
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>              ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>          }
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>      }
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>  
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>  <em class="jxr_javadoccomment">     * Called once a {@link Http3HeadersFrame} is ready for this stream to process.</em>
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>  <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>  <em class="jxr_javadoccomment">     * @param frame         the {@link Http3HeadersFrame} that was read</em>
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>  <em class="jxr_javadoccomment">     * @throws Exception    thrown if an error happens during processing.</em>
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> channelRead(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="Http3HeadersFrame" href="../../../../../io/netty/handler/codec/http3/Http3HeadersFrame.html#Http3HeadersFrame">Http3HeadersFrame</a> frame) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>  
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>  <em class="jxr_javadoccomment">     * Called once a {@link Http3DataFrame} is ready for this stream to process.</em>
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>  <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>  <em class="jxr_javadoccomment">     * @param frame         the {@link Http3DataFrame} that was read</em>
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>  <em class="jxr_javadoccomment">     * @throws Exception    thrown if an error happens during processing.</em>
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> channelRead(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="Http3DataFrame" href="../../../../../io/netty/handler/codec/http3/Http3DataFrame.html#Http3DataFrame">Http3DataFrame</a> frame) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>  
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>  <em class="jxr_javadoccomment">     * Called once the input is closed and so no more inbound data is received on it.</em>
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>  <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>  <em class="jxr_javadoccomment">     * @throws Exception    thrown if an error happens during processing.</em>
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>      <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> channelInputClosed(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>  
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>  <em class="jxr_javadoccomment">     * Called once a {@link Http3UnknownFrame} is ready for this stream to process. By default these frames are just</em>
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>  <em class="jxr_javadoccomment">     * released and so dropped on the floor as stated in the RFC. That said you may want to override this method if</em>
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>  <em class="jxr_javadoccomment">     * you use some custom frames which are not part of the main spec.</em>
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>  <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>  <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>  <em class="jxr_javadoccomment">     * @param frame         the {@link Http3UnknownFrame} that was read</em>
+<a class="jxr_linenumber" name="L100" href="#L100">100</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L101" href="#L101">101</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> channelRead(@SuppressWarnings(<span class="jxr_string">"unused"</span>) <a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="Http3UnknownFrame" href="../../../../../io/netty/handler/codec/http3/Http3UnknownFrame.html#Http3UnknownFrame">Http3UnknownFrame</a> frame) {
+<a class="jxr_linenumber" name="L102" href="#L102">102</a>         frame.release();
+<a class="jxr_linenumber" name="L103" href="#L103">103</a>     }
+<a class="jxr_linenumber" name="L104" href="#L104">104</a> 
+<a class="jxr_linenumber" name="L105" href="#L105">105</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L106" href="#L106">106</a> <em class="jxr_javadoccomment">     * Called once a {@link QuicException} should be handled.</em>
+<a class="jxr_linenumber" name="L107" href="#L107">107</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L108" href="#L108">108</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L109" href="#L109">109</a> <em class="jxr_javadoccomment">     * @param exception     the {@link QuicException} that caused the error.</em>
+<a class="jxr_linenumber" name="L110" href="#L110">110</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handleQuicException(@SuppressWarnings(<span class="jxr_string">"unused"</span>) <a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="QuicException" href="../../../../../io/netty/handler/codec/quic/QuicException.html#QuicException">QuicException</a> exception) {
+<a class="jxr_linenumber" name="L112" href="#L112">112</a>         logger.debug(<span class="jxr_string">"Caught QuicException on channel {}"</span>, ctx.channel(), exception);
+<a class="jxr_linenumber" name="L113" href="#L113">113</a>     }
+<a class="jxr_linenumber" name="L114" href="#L114">114</a> 
+<a class="jxr_linenumber" name="L115" href="#L115">115</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L116" href="#L116">116</a> <em class="jxr_javadoccomment">     * Called once a {@link Http3Exception} should be handled.</em>
+<a class="jxr_linenumber" name="L117" href="#L117">117</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L118" href="#L118">118</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L119" href="#L119">119</a> <em class="jxr_javadoccomment">     * @param exception     the {@link Http3Exception} that caused the error.</em>
+<a class="jxr_linenumber" name="L120" href="#L120">120</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L121" href="#L121">121</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handleHttp3Exception(@SuppressWarnings(<span class="jxr_string">"unused"</span>) <a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx,
+<a class="jxr_linenumber" name="L122" href="#L122">122</a>                                         <a name="Http3Exception" href="../../../../../io/netty/handler/codec/http3/Http3Exception.html#Http3Exception">Http3Exception</a> exception) {
+<a class="jxr_linenumber" name="L123" href="#L123">123</a>         logger.error(<span class="jxr_string">"Caught Http3Exception on channel {}"</span>, ctx.channel(), exception);
+<a class="jxr_linenumber" name="L124" href="#L124">124</a>     }
+<a class="jxr_linenumber" name="L125" href="#L125">125</a> 
+<a class="jxr_linenumber" name="L126" href="#L126">126</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L127" href="#L127">127</a> <em class="jxr_javadoccomment">     * Return the local control stream for this HTTP/3 connection. This can be used to send</em>
+<a class="jxr_linenumber" name="L128" href="#L128">128</a> <em class="jxr_javadoccomment">     * {@link Http3ControlStreamFrame}s to the remote peer.</em>
+<a class="jxr_linenumber" name="L129" href="#L129">129</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L130" href="#L130">130</a> <em class="jxr_javadoccomment">     * @param ctx           the {@link ChannelHandlerContext} of this handler.</em>
+<a class="jxr_linenumber" name="L131" href="#L131">131</a> <em class="jxr_javadoccomment">     * @return              the control stream.</em>
+<a class="jxr_linenumber" name="L132" href="#L132">132</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L133" href="#L133">133</a>     @Nullable
+<a class="jxr_linenumber" name="L134" href="#L134">134</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <a name="QuicStreamChannel" href="../../../../../io/netty/handler/codec/quic/QuicStreamChannel.html#QuicStreamChannel">QuicStreamChannel</a> controlStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="L135" href="#L135">135</a>         <strong class="jxr_keyword">return</strong> Http3.getLocalControlStream(ctx.channel().parent());
+<a class="jxr_linenumber" name="L136" href="#L136">136</a>     }
+<a class="jxr_linenumber" name="L137" href="#L137">137</a> }
+</pre>
+<hr/>
+<div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
+</body>
+</html>

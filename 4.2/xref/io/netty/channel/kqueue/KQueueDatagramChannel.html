@@ -394,95 +394,96 @@
 <a class="jxr_linenumber" name="L386" href="#L386">386</a>             <strong class="jxr_keyword">final</strong> <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = pipeline();
 <a class="jxr_linenumber" name="L387" href="#L387">387</a>             <strong class="jxr_keyword">final</strong> <a name="ByteBufAllocator" href="../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> allocator = config.getAllocator();
 <a class="jxr_linenumber" name="L388" href="#L388">388</a>             allocHandle.reset(config);
-<a class="jxr_linenumber" name="L389" href="#L389">389</a>             readReadyBefore();
-<a class="jxr_linenumber" name="L390" href="#L390">390</a> 
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>             Throwable exception = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>                 <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>                 <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>                     <strong class="jxr_keyword">boolean</strong> connected = isConnected();
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>                     <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>                         byteBuf = allocHandle.allocate(allocator);
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>                         allocHandle.attemptedBytesRead(byteBuf.writableBytes());
-<a class="jxr_linenumber" name="L399" href="#L399">399</a> 
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>                         <strong class="jxr_keyword">final</strong> <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a> packet;
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>                         <strong class="jxr_keyword">if</strong> (connected) {
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>                             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>                                 allocHandle.lastBytesRead(doReadBytes(byteBuf));
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>                             } <strong class="jxr_keyword">catch</strong> (Errors.NativeIoException e) {
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>                                 <em class="jxr_comment">// We need to correctly translate connect errors to match NIO behaviour.</em>
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>                                 <strong class="jxr_keyword">if</strong> (e.expectedErr() == Errors.ERROR_ECONNREFUSED_NEGATIVE) {
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>                                     PortUnreachableException error = <strong class="jxr_keyword">new</strong> PortUnreachableException(e.getMessage());
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>                                     error.initCause(e);
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>                                     <strong class="jxr_keyword">throw</strong> error;
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>                                 }
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>                                 <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>                             }
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>                             <strong class="jxr_keyword">if</strong> (allocHandle.lastBytesRead() &lt;= 0) {
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>                                 <em class="jxr_comment">// nothing was read, release the buffer.</em>
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>                                 byteBuf.release();
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>                                 byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>                                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>                             }
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>                             packet = <strong class="jxr_keyword">new</strong> <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a>(byteBuf,
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>                                     (InetSocketAddress) localAddress(), (InetSocketAddress) remoteAddress());
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>                         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>                             <strong class="jxr_keyword">final</strong> <a name="DatagramSocketAddress" href="../../../../io/netty/channel/unix/DatagramSocketAddress.html#DatagramSocketAddress">DatagramSocketAddress</a> remoteAddress;
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>                             <strong class="jxr_keyword">if</strong> (byteBuf.hasMemoryAddress()) {
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>                                 <em class="jxr_comment">// has a memory address so use optimized call</em>
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>                                 remoteAddress = socket.recvFromAddress(byteBuf.memoryAddress(), byteBuf.writerIndex(),
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>                                         byteBuf.capacity());
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>                                 ByteBuffer nioData = byteBuf.internalNioBuffer(
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>                                         byteBuf.writerIndex(), byteBuf.writableBytes());
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>                                 remoteAddress = socket.recvFrom(nioData, nioData.position(), nioData.limit());
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>                             }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>                             <strong class="jxr_keyword">if</strong> (remoteAddress == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>                                 allocHandle.lastBytesRead(-1);
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>                                 byteBuf.release();
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>                                 byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>                                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>                             }
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>                             InetSocketAddress localAddress = remoteAddress.localAddress();
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>                             <strong class="jxr_keyword">if</strong> (localAddress == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>                                 localAddress = (InetSocketAddress) localAddress();
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>                             }
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>                             allocHandle.lastBytesRead(remoteAddress.receivedAmount());
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>                             byteBuf.writerIndex(byteBuf.writerIndex() + allocHandle.lastBytesRead());
-<a class="jxr_linenumber" name="L445" href="#L445">445</a> 
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>                             packet = <strong class="jxr_keyword">new</strong> <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a>(byteBuf, localAddress, remoteAddress);
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>                         }
-<a class="jxr_linenumber" name="L448" href="#L448">448</a> 
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>                         allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="L450" href="#L450">450</a> 
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>                         readPending = false;
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>                         pipeline.fireChannelRead(packet);
-<a class="jxr_linenumber" name="L453" href="#L453">453</a> 
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>                         byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L455" href="#L455">455</a> 
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>                     <em class="jxr_comment">// We use the TRUE_SUPPLIER as it is also ok to read less then what we did try to read (as long</em>
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>                     <em class="jxr_comment">// as we read anything).</em>
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>                     } <strong class="jxr_keyword">while</strong> (allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER));
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>                     <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>                         byteBuf.release();
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>                     }
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>                     exception = t;
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>                 }
-<a class="jxr_linenumber" name="L465" href="#L465">465</a> 
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 allocHandle.readComplete();
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>                 pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L468" href="#L468">468</a> 
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>                 <strong class="jxr_keyword">if</strong> (exception != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>                     pipeline.fireExceptionCaught(exception);
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>                 }
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>                 readReadyFinally(config);
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>             }
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>         }
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>     }
-<a class="jxr_linenumber" name="L477" href="#L477">477</a> }
+<a class="jxr_linenumber" name="L389" href="#L389">389</a> 
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>             Throwable exception = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>                 <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>                 <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>                     <strong class="jxr_keyword">boolean</strong> connected = isConnected();
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>                     <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>                         byteBuf = allocHandle.allocate(allocator);
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>                         allocHandle.attemptedBytesRead(byteBuf.writableBytes());
+<a class="jxr_linenumber" name="L398" href="#L398">398</a> 
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>                         <strong class="jxr_keyword">final</strong> <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a> packet;
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>                         <strong class="jxr_keyword">if</strong> (connected) {
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>                             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>                                 allocHandle.lastBytesRead(doReadBytes(byteBuf));
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>                             } <strong class="jxr_keyword">catch</strong> (Errors.NativeIoException e) {
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>                                 <em class="jxr_comment">// We need to correctly translate connect errors to match NIO behaviour.</em>
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>                                 <strong class="jxr_keyword">if</strong> (e.expectedErr() == Errors.ERROR_ECONNREFUSED_NEGATIVE) {
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>                                     PortUnreachableException error = <strong class="jxr_keyword">new</strong> PortUnreachableException(e.getMessage());
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>                                     error.initCause(e);
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>                                     <strong class="jxr_keyword">throw</strong> error;
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>                                 }
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>                                 <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>                             }
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>                             <strong class="jxr_keyword">if</strong> (allocHandle.lastBytesRead() &lt;= 0) {
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>                                 <em class="jxr_comment">// nothing was read, release the buffer.</em>
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>                                 byteBuf.release();
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>                                 byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>                             }
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>                             packet = <strong class="jxr_keyword">new</strong> <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a>(byteBuf,
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>                                     (InetSocketAddress) localAddress(), (InetSocketAddress) remoteAddress());
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>                         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>                             <strong class="jxr_keyword">final</strong> <a name="DatagramSocketAddress" href="../../../../io/netty/channel/unix/DatagramSocketAddress.html#DatagramSocketAddress">DatagramSocketAddress</a> remoteAddress;
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>                             <strong class="jxr_keyword">if</strong> (byteBuf.hasMemoryAddress()) {
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>                                 <em class="jxr_comment">// has a memory address so use optimized call</em>
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>                                 remoteAddress = socket.recvFromAddress(byteBuf.memoryAddress(), byteBuf.writerIndex(),
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>                                         byteBuf.capacity());
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>                                 ByteBuffer nioData = byteBuf.internalNioBuffer(
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>                                         byteBuf.writerIndex(), byteBuf.writableBytes());
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>                                 remoteAddress = socket.recvFrom(nioData, nioData.position(), nioData.limit());
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>                             }
+<a class="jxr_linenumber" name="L431" href="#L431">431</a> 
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>                             <strong class="jxr_keyword">if</strong> (remoteAddress == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>                                 allocHandle.lastBytesRead(-1);
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>                                 byteBuf.release();
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>                                 byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>                                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>                             }
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>                             InetSocketAddress localAddress = remoteAddress.localAddress();
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>                             <strong class="jxr_keyword">if</strong> (localAddress == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>                                 localAddress = (InetSocketAddress) localAddress();
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>                             }
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>                             allocHandle.lastBytesRead(remoteAddress.receivedAmount());
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>                             byteBuf.writerIndex(byteBuf.writerIndex() + allocHandle.lastBytesRead());
+<a class="jxr_linenumber" name="L444" href="#L444">444</a> 
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>                             packet = <strong class="jxr_keyword">new</strong> <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a>(byteBuf, localAddress, remoteAddress);
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>                         }
+<a class="jxr_linenumber" name="L447" href="#L447">447</a> 
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>                         allocHandle.incMessagesRead(1);
+<a class="jxr_linenumber" name="L449" href="#L449">449</a> 
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>                         readPending = false;
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>                         pipeline.fireChannelRead(packet);
+<a class="jxr_linenumber" name="L452" href="#L452">452</a> 
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>                         byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L454" href="#L454">454</a> 
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>                     <em class="jxr_comment">// We use the TRUE_SUPPLIER as it is also ok to read less then what we did try to read (as long</em>
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>                     <em class="jxr_comment">// as we read anything).</em>
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>                     } <strong class="jxr_keyword">while</strong> (allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER));
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>                     <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>                         byteBuf.release();
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>                     }
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>                     exception = t;
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>                 }
+<a class="jxr_linenumber" name="L464" href="#L464">464</a> 
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>                 allocHandle.readComplete();
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L467" href="#L467">467</a> 
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>                 <strong class="jxr_keyword">if</strong> (exception != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>                     pipeline.fireExceptionCaught(exception);
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>                 }
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>                 <strong class="jxr_keyword">if</strong> (shouldStopReading(config)) {
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>                     clearReadFilter0();
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>                 }
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>             }
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>         }
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>     }
+<a class="jxr_linenumber" name="L478" href="#L478">478</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>

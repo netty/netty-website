@@ -217,80 +217,104 @@
 <a class="jxr_linenumber" name="L209" href="#L209">209</a>                 udata, (<strong class="jxr_keyword">short</strong>) 0, (<strong class="jxr_keyword">short</strong>) 0, 0, 0);
 <a class="jxr_linenumber" name="L210" href="#L210">210</a>     }
 <a class="jxr_linenumber" name="L211" href="#L211">211</a> 
-<a class="jxr_linenumber" name="L212" href="#L212">212</a>     <strong class="jxr_keyword">int</strong> submit() {
-<a class="jxr_linenumber" name="L213" href="#L213">213</a>         checkClosed();
-<a class="jxr_linenumber" name="L214" href="#L214">214</a>         <strong class="jxr_keyword">int</strong> submit = tail - head;
-<a class="jxr_linenumber" name="L215" href="#L215">215</a>         <strong class="jxr_keyword">return</strong> submit &gt; 0 ? submit(submit, 0, 0) : 0;
-<a class="jxr_linenumber" name="L216" href="#L216">216</a>     }
-<a class="jxr_linenumber" name="L217" href="#L217">217</a> 
-<a class="jxr_linenumber" name="L218" href="#L218">218</a>     <strong class="jxr_keyword">int</strong> submitAndWait() {
-<a class="jxr_linenumber" name="L219" href="#L219">219</a>         checkClosed();
-<a class="jxr_linenumber" name="L220" href="#L220">220</a>         <strong class="jxr_keyword">int</strong> submit = tail - head;
-<a class="jxr_linenumber" name="L221" href="#L221">221</a>         <strong class="jxr_keyword">if</strong> (submit &gt; 0) {
-<a class="jxr_linenumber" name="L222" href="#L222">222</a>             <strong class="jxr_keyword">return</strong> submit(submit, 1, Native.IORING_ENTER_GETEVENTS);
-<a class="jxr_linenumber" name="L223" href="#L223">223</a>         }
-<a class="jxr_linenumber" name="L224" href="#L224">224</a>         assert submit == 0;
-<a class="jxr_linenumber" name="L225" href="#L225">225</a>         <strong class="jxr_keyword">int</strong> ret = ioUringEnter(0, 1, Native.IORING_ENTER_GETEVENTS);
-<a class="jxr_linenumber" name="L226" href="#L226">226</a>         <strong class="jxr_keyword">if</strong> (ret &lt; 0) {
-<a class="jxr_linenumber" name="L227" href="#L227">227</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(<span class="jxr_string">"ioUringEnter syscall returned "</span> + ret);
-<a class="jxr_linenumber" name="L228" href="#L228">228</a>         }
-<a class="jxr_linenumber" name="L229" href="#L229">229</a>         <strong class="jxr_keyword">return</strong> ret; <em class="jxr_comment">// should be 0</em>
-<a class="jxr_linenumber" name="L230" href="#L230">230</a>     }
-<a class="jxr_linenumber" name="L231" href="#L231">231</a> 
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> submit(<strong class="jxr_keyword">int</strong> toSubmit, <strong class="jxr_keyword">int</strong> minComplete, <strong class="jxr_keyword">int</strong> flags) {
-<a class="jxr_linenumber" name="L233" href="#L233">233</a>         INT_HANDLE.setRelease(kTail, 0, tail);
-<a class="jxr_linenumber" name="L234" href="#L234">234</a>         <strong class="jxr_keyword">int</strong> ret = ioUringEnter(toSubmit, minComplete, flags);
-<a class="jxr_linenumber" name="L235" href="#L235">235</a>         head = (<strong class="jxr_keyword">int</strong>) INT_HANDLE.getVolatile(kHead, 0); <em class="jxr_comment">// acquire memory barrier</em>
-<a class="jxr_linenumber" name="L236" href="#L236">236</a>         <strong class="jxr_keyword">if</strong> (ret != toSubmit) {
-<a class="jxr_linenumber" name="L237" href="#L237">237</a>             <strong class="jxr_keyword">if</strong> (ret &lt; 0) {
-<a class="jxr_linenumber" name="L238" href="#L238">238</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(<span class="jxr_string">"ioUringEnter syscall returned "</span> + ret);
-<a class="jxr_linenumber" name="L239" href="#L239">239</a>             }
-<a class="jxr_linenumber" name="L240" href="#L240">240</a>         }
-<a class="jxr_linenumber" name="L241" href="#L241">241</a>         <strong class="jxr_keyword">return</strong> ret;
-<a class="jxr_linenumber" name="L242" href="#L242">242</a>     }
-<a class="jxr_linenumber" name="L243" href="#L243">243</a> 
-<a class="jxr_linenumber" name="L244" href="#L244">244</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> ioUringEnter(<strong class="jxr_keyword">int</strong> toSubmit, <strong class="jxr_keyword">int</strong> minComplete, <strong class="jxr_keyword">int</strong> flags) {
-<a class="jxr_linenumber" name="L245" href="#L245">245</a>         <strong class="jxr_keyword">int</strong> f = enterFlags | flags;
-<a class="jxr_linenumber" name="L246" href="#L246">246</a> 
-<a class="jxr_linenumber" name="L247" href="#L247">247</a>         <strong class="jxr_keyword">if</strong> (IoUring.isSetupSubmitAllSupported()) {
-<a class="jxr_linenumber" name="L248" href="#L248">248</a>             <strong class="jxr_keyword">return</strong> ioUringEnter0(toSubmit, minComplete, f);
-<a class="jxr_linenumber" name="L249" href="#L249">249</a>         }
-<a class="jxr_linenumber" name="L250" href="#L250">250</a>         <em class="jxr_comment">// If IORING_SETUP_SUBMIT_ALL is not supported we need to loop until we submitted everything as</em>
-<a class="jxr_linenumber" name="L251" href="#L251">251</a>         <em class="jxr_comment">// io_uring_enter(...) will stop submitting once the first inline executed submission fails.</em>
-<a class="jxr_linenumber" name="L252" href="#L252">252</a>         <strong class="jxr_keyword">int</strong> submitted = 0;
-<a class="jxr_linenumber" name="L253" href="#L253">253</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="L254" href="#L254">254</a>             <strong class="jxr_keyword">int</strong> ret = ioUringEnter0(toSubmit, minComplete, f);
-<a class="jxr_linenumber" name="L255" href="#L255">255</a>             <strong class="jxr_keyword">if</strong> (ret &lt; 0) {
-<a class="jxr_linenumber" name="L256" href="#L256">256</a>                 <strong class="jxr_keyword">return</strong> ret;
-<a class="jxr_linenumber" name="L257" href="#L257">257</a>             }
-<a class="jxr_linenumber" name="L258" href="#L258">258</a>             submitted += ret;
-<a class="jxr_linenumber" name="L259" href="#L259">259</a>             <strong class="jxr_keyword">if</strong> (ret == toSubmit) {
-<a class="jxr_linenumber" name="L260" href="#L260">260</a>                 <strong class="jxr_keyword">return</strong> submitted;
-<a class="jxr_linenumber" name="L261" href="#L261">261</a>             }
-<a class="jxr_linenumber" name="L262" href="#L262">262</a>             <strong class="jxr_keyword">if</strong> (logger.isTraceEnabled()) {
-<a class="jxr_linenumber" name="L263" href="#L263">263</a>                 <em class="jxr_comment">// some submission might fail if these are done inline and failed.</em>
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>                 logger.trace(<span class="jxr_string">"Not all submissions succeeded. Only {} of {} SQEs were submitted."</span>, ret, toSubmit);
-<a class="jxr_linenumber" name="L265" href="#L265">265</a>             }
-<a class="jxr_linenumber" name="L266" href="#L266">266</a>             toSubmit -= ret;
-<a class="jxr_linenumber" name="L267" href="#L267">267</a>         }
-<a class="jxr_linenumber" name="L268" href="#L268">268</a>     }
-<a class="jxr_linenumber" name="L269" href="#L269">269</a> 
-<a class="jxr_linenumber" name="L270" href="#L270">270</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> ioUringEnter0(<strong class="jxr_keyword">int</strong> toSubmit, <strong class="jxr_keyword">int</strong> minComplete, <strong class="jxr_keyword">int</strong> f) {
-<a class="jxr_linenumber" name="L271" href="#L271">271</a>         <strong class="jxr_keyword">if</strong> (logger.isTraceEnabled()) {
-<a class="jxr_linenumber" name="L272" href="#L272">272</a>             logger.trace(<span class="jxr_string">"io_uring_enter(ring={}, enterRing={}, toSubmit={}, minComplete={}, flags={}): {}"</span>,
-<a class="jxr_linenumber" name="L273" href="#L273">273</a>                     ringFd, enterRingFd, toSubmit, minComplete, f, toString());
-<a class="jxr_linenumber" name="L274" href="#L274">274</a>         }
-<a class="jxr_linenumber" name="L275" href="#L275">275</a>         <strong class="jxr_keyword">return</strong> Native.ioUringEnter(enterRingFd, toSubmit, minComplete, f);
-<a class="jxr_linenumber" name="L276" href="#L276">276</a>     }
-<a class="jxr_linenumber" name="L277" href="#L277">277</a> 
-<a class="jxr_linenumber" name="L278" href="#L278">278</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> count() {
-<a class="jxr_linenumber" name="L279" href="#L279">279</a>         <strong class="jxr_keyword">return</strong> tail - head;
-<a class="jxr_linenumber" name="L280" href="#L280">280</a>     }
-<a class="jxr_linenumber" name="L281" href="#L281">281</a> 
-<a class="jxr_linenumber" name="L282" href="#L282">282</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> remaining() {
-<a class="jxr_linenumber" name="L283" href="#L283">283</a>         <strong class="jxr_keyword">return</strong> ringEntries - count();
-<a class="jxr_linenumber" name="L284" href="#L284">284</a>     }
-<a class="jxr_linenumber" name="L285" href="#L285">285</a> }
+<a class="jxr_linenumber" name="L212" href="#L212">212</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L213" href="#L213">213</a> <em class="jxr_javadoccomment">     * Submit entries.</em>
+<a class="jxr_linenumber" name="L214" href="#L214">214</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L215" href="#L215">215</a> <em class="jxr_javadoccomment">     * @return  the number of submitted entries.</em>
+<a class="jxr_linenumber" name="L216" href="#L216">216</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L217" href="#L217">217</a>     <strong class="jxr_keyword">int</strong> submit() {
+<a class="jxr_linenumber" name="L218" href="#L218">218</a>         checkClosed();
+<a class="jxr_linenumber" name="L219" href="#L219">219</a>         <strong class="jxr_keyword">int</strong> submit = tail - head;
+<a class="jxr_linenumber" name="L220" href="#L220">220</a>         <strong class="jxr_keyword">return</strong> submit &gt; 0 ? submit(submit, 0, 0) : 0;
+<a class="jxr_linenumber" name="L221" href="#L221">221</a>     }
+<a class="jxr_linenumber" name="L222" href="#L222">222</a> 
+<a class="jxr_linenumber" name="L223" href="#L223">223</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L224" href="#L224">224</a> <em class="jxr_javadoccomment">     * Submit entries and fetch completions. This method will block until there is at least one completion ready to be</em>
+<a class="jxr_linenumber" name="L225" href="#L225">225</a> <em class="jxr_javadoccomment">     * processed.</em>
+<a class="jxr_linenumber" name="L226" href="#L226">226</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L227" href="#L227">227</a> <em class="jxr_javadoccomment">     * @return  the number of submitted entries.</em>
+<a class="jxr_linenumber" name="L228" href="#L228">228</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>     <strong class="jxr_keyword">int</strong> submitAndGet() {
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>         <strong class="jxr_keyword">return</strong> submitAndGet0(1);
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>     }
+<a class="jxr_linenumber" name="L232" href="#L232">232</a> 
+<a class="jxr_linenumber" name="L233" href="#L233">233</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L234" href="#L234">234</a> <em class="jxr_javadoccomment">     * Submit entries and fetch completions.</em>
+<a class="jxr_linenumber" name="L235" href="#L235">235</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L236" href="#L236">236</a> <em class="jxr_javadoccomment">     * @return  the number of submitted entries.</em>
+<a class="jxr_linenumber" name="L237" href="#L237">237</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L238" href="#L238">238</a>     <strong class="jxr_keyword">int</strong> submitAndGetNow() {
+<a class="jxr_linenumber" name="L239" href="#L239">239</a>         <strong class="jxr_keyword">return</strong> submitAndGet0(0);
+<a class="jxr_linenumber" name="L240" href="#L240">240</a>     }
+<a class="jxr_linenumber" name="L241" href="#L241">241</a> 
+<a class="jxr_linenumber" name="L242" href="#L242">242</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> submitAndGet0(<strong class="jxr_keyword">int</strong> minComplete) {
+<a class="jxr_linenumber" name="L243" href="#L243">243</a>         checkClosed();
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>         <strong class="jxr_keyword">int</strong> submit = tail - head;
+<a class="jxr_linenumber" name="L245" href="#L245">245</a>         <strong class="jxr_keyword">if</strong> (submit &gt; 0) {
+<a class="jxr_linenumber" name="L246" href="#L246">246</a>             <strong class="jxr_keyword">return</strong> submit(submit, minComplete, Native.IORING_ENTER_GETEVENTS);
+<a class="jxr_linenumber" name="L247" href="#L247">247</a>         }
+<a class="jxr_linenumber" name="L248" href="#L248">248</a>         assert submit == 0;
+<a class="jxr_linenumber" name="L249" href="#L249">249</a>         <strong class="jxr_keyword">int</strong> ret = ioUringEnter(0, minComplete, Native.IORING_ENTER_GETEVENTS);
+<a class="jxr_linenumber" name="L250" href="#L250">250</a>         <strong class="jxr_keyword">if</strong> (ret &lt; 0) {
+<a class="jxr_linenumber" name="L251" href="#L251">251</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(<span class="jxr_string">"ioUringEnter syscall returned "</span> + ret);
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>         }
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>         <strong class="jxr_keyword">return</strong> ret; <em class="jxr_comment">// should be 0</em>
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>     }
+<a class="jxr_linenumber" name="L255" href="#L255">255</a> 
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> submit(<strong class="jxr_keyword">int</strong> toSubmit, <strong class="jxr_keyword">int</strong> minComplete, <strong class="jxr_keyword">int</strong> flags) {
+<a class="jxr_linenumber" name="L257" href="#L257">257</a>         INT_HANDLE.setRelease(kTail, 0, tail);
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>         <strong class="jxr_keyword">int</strong> ret = ioUringEnter(toSubmit, minComplete, flags);
+<a class="jxr_linenumber" name="L259" href="#L259">259</a>         head = (<strong class="jxr_keyword">int</strong>) INT_HANDLE.getVolatile(kHead, 0); <em class="jxr_comment">// acquire memory barrier</em>
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>         <strong class="jxr_keyword">if</strong> (ret != toSubmit) {
+<a class="jxr_linenumber" name="L261" href="#L261">261</a>             <strong class="jxr_keyword">if</strong> (ret &lt; 0) {
+<a class="jxr_linenumber" name="L262" href="#L262">262</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(<span class="jxr_string">"ioUringEnter syscall returned "</span> + ret);
+<a class="jxr_linenumber" name="L263" href="#L263">263</a>             }
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>         }
+<a class="jxr_linenumber" name="L265" href="#L265">265</a>         <strong class="jxr_keyword">return</strong> ret;
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>     }
+<a class="jxr_linenumber" name="L267" href="#L267">267</a> 
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> ioUringEnter(<strong class="jxr_keyword">int</strong> toSubmit, <strong class="jxr_keyword">int</strong> minComplete, <strong class="jxr_keyword">int</strong> flags) {
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>         <strong class="jxr_keyword">int</strong> f = enterFlags | flags;
+<a class="jxr_linenumber" name="L270" href="#L270">270</a> 
+<a class="jxr_linenumber" name="L271" href="#L271">271</a>         <strong class="jxr_keyword">if</strong> (IoUring.isSetupSubmitAllSupported()) {
+<a class="jxr_linenumber" name="L272" href="#L272">272</a>             <strong class="jxr_keyword">return</strong> ioUringEnter0(toSubmit, minComplete, f);
+<a class="jxr_linenumber" name="L273" href="#L273">273</a>         }
+<a class="jxr_linenumber" name="L274" href="#L274">274</a>         <em class="jxr_comment">// If IORING_SETUP_SUBMIT_ALL is not supported we need to loop until we submitted everything as</em>
+<a class="jxr_linenumber" name="L275" href="#L275">275</a>         <em class="jxr_comment">// io_uring_enter(...) will stop submitting once the first inline executed submission fails.</em>
+<a class="jxr_linenumber" name="L276" href="#L276">276</a>         <strong class="jxr_keyword">int</strong> submitted = 0;
+<a class="jxr_linenumber" name="L277" href="#L277">277</a>         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="L278" href="#L278">278</a>             <strong class="jxr_keyword">int</strong> ret = ioUringEnter0(toSubmit, minComplete, f);
+<a class="jxr_linenumber" name="L279" href="#L279">279</a>             <strong class="jxr_keyword">if</strong> (ret &lt; 0) {
+<a class="jxr_linenumber" name="L280" href="#L280">280</a>                 <strong class="jxr_keyword">return</strong> ret;
+<a class="jxr_linenumber" name="L281" href="#L281">281</a>             }
+<a class="jxr_linenumber" name="L282" href="#L282">282</a>             submitted += ret;
+<a class="jxr_linenumber" name="L283" href="#L283">283</a>             <strong class="jxr_keyword">if</strong> (ret == toSubmit) {
+<a class="jxr_linenumber" name="L284" href="#L284">284</a>                 <strong class="jxr_keyword">return</strong> submitted;
+<a class="jxr_linenumber" name="L285" href="#L285">285</a>             }
+<a class="jxr_linenumber" name="L286" href="#L286">286</a>             <strong class="jxr_keyword">if</strong> (logger.isTraceEnabled()) {
+<a class="jxr_linenumber" name="L287" href="#L287">287</a>                 <em class="jxr_comment">// some submission might fail if these are done inline and failed.</em>
+<a class="jxr_linenumber" name="L288" href="#L288">288</a>                 logger.trace(<span class="jxr_string">"Not all submissions succeeded. Only {} of {} SQEs were submitted."</span>, ret, toSubmit);
+<a class="jxr_linenumber" name="L289" href="#L289">289</a>             }
+<a class="jxr_linenumber" name="L290" href="#L290">290</a>             toSubmit -= ret;
+<a class="jxr_linenumber" name="L291" href="#L291">291</a>         }
+<a class="jxr_linenumber" name="L292" href="#L292">292</a>     }
+<a class="jxr_linenumber" name="L293" href="#L293">293</a> 
+<a class="jxr_linenumber" name="L294" href="#L294">294</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> ioUringEnter0(<strong class="jxr_keyword">int</strong> toSubmit, <strong class="jxr_keyword">int</strong> minComplete, <strong class="jxr_keyword">int</strong> f) {
+<a class="jxr_linenumber" name="L295" href="#L295">295</a>         <strong class="jxr_keyword">if</strong> (logger.isTraceEnabled()) {
+<a class="jxr_linenumber" name="L296" href="#L296">296</a>             logger.trace(<span class="jxr_string">"io_uring_enter(ring={}, enterRing={}, toSubmit={}, minComplete={}, flags={}): {}"</span>,
+<a class="jxr_linenumber" name="L297" href="#L297">297</a>                     ringFd, enterRingFd, toSubmit, minComplete, f, toString());
+<a class="jxr_linenumber" name="L298" href="#L298">298</a>         }
+<a class="jxr_linenumber" name="L299" href="#L299">299</a>         <strong class="jxr_keyword">return</strong> Native.ioUringEnter(enterRingFd, toSubmit, minComplete, f);
+<a class="jxr_linenumber" name="L300" href="#L300">300</a>     }
+<a class="jxr_linenumber" name="L301" href="#L301">301</a> 
+<a class="jxr_linenumber" name="L302" href="#L302">302</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> count() {
+<a class="jxr_linenumber" name="L303" href="#L303">303</a>         <strong class="jxr_keyword">return</strong> tail - head;
+<a class="jxr_linenumber" name="L304" href="#L304">304</a>     }
+<a class="jxr_linenumber" name="L305" href="#L305">305</a> 
+<a class="jxr_linenumber" name="L306" href="#L306">306</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> remaining() {
+<a class="jxr_linenumber" name="L307" href="#L307">307</a>         <strong class="jxr_keyword">return</strong> ringEntries - count();
+<a class="jxr_linenumber" name="L308" href="#L308">308</a>     }
+<a class="jxr_linenumber" name="L309" href="#L309">309</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
