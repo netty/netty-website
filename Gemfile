@@ -8,7 +8,6 @@ gem 'uglifier', '~> 4.2'
 gem 'coffee-rails', '~> 5.0'
 
 gem 'eventmachine', '~> 1.2', '>= 1.2.7'
-gem 'disqus', '~> 1.0', '>= 1.0.4'
 gem 'nokogiri', '~> 1.16', '>= 1.16.2'
 gem 'htmlentities', '~> 4.3', '>= 4.3.4'
 gem 'listen', '~> 3.9'                                    # Needed for the Rakefi

@@ -121,7 +121,6 @@ Awestruct::Extensions::Pipeline.new do
 
   # Put the Posts extension first so that it fills the correct output path for news items.
   extension Awestruct::Extensions::Posts.new( '/news', :posts )
-  extension Awestruct::Extensions::Disqus.new()
 
   # Register our own extensions
   extension RelativeSiteUrl.new()
