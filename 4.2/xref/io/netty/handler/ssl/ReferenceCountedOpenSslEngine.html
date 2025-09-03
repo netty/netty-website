@@ -209,7 +209,7 @@
 <a class="jxr_linenumber" name="L201" href="#L201">201</a>     <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> jdkCompatibilityMode;
 <a class="jxr_linenumber" name="L202" href="#L202">202</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> clientMode;
 <a class="jxr_linenumber" name="L203" href="#L203">203</a>     <strong class="jxr_keyword">final</strong> <a name="ByteBufAllocator" href="../../../../io/netty/buffer/ByteBufAllocator.html#ByteBufAllocator">ByteBufAllocator</a> alloc;
-<a class="jxr_linenumber" name="L204" href="#L204">204</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="OpenSslEngineMap" href="../../../../io/netty/handler/ssl/OpenSslEngineMap.html#OpenSslEngineMap">OpenSslEngineMap</a> engineMap;
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> Map&lt;Long, ReferenceCountedOpenSslEngine&gt; engines;
 <a class="jxr_linenumber" name="L205" href="#L205">205</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="OpenSslApplicationProtocolNegotiator" href="../../../../io/netty/handler/ssl/OpenSslApplicationProtocolNegotiator.html#OpenSslApplicationProtocolNegotiator">OpenSslApplicationProtocolNegotiator</a> apn;
 <a class="jxr_linenumber" name="L206" href="#L206">206</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="ReferenceCountedOpenSslContext" href="../../../../io/netty/handler/ssl/ReferenceCountedOpenSslContext.html#ReferenceCountedOpenSslContext">ReferenceCountedOpenSslContext</a> parentContext;
 <a class="jxr_linenumber" name="L207" href="#L207">207</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="OpenSslInternalSession" href="../../../../io/netty/handler/ssl/OpenSslInternalSession.html#OpenSslInternalSession">OpenSslInternalSession</a> session;
@@ -237,7 +237,7 @@
 <a class="jxr_linenumber" name="L229" href="#L229">229</a>                                   String endpointIdentificationAlgorithm, List&lt;SNIServerName&gt; serverNames) {
 <a class="jxr_linenumber" name="L230" href="#L230">230</a>         <strong class="jxr_keyword">super</strong>(peerHost, peerPort);
 <a class="jxr_linenumber" name="L231" href="#L231">231</a>         OpenSsl.ensureAvailability();
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>         engineMap = context.engineMap;
+<a class="jxr_linenumber" name="L232" href="#L232">232</a>         engines = context.engines;
 <a class="jxr_linenumber" name="L233" href="#L233">233</a>         enableOcsp = context.enableOcsp;
 <a class="jxr_linenumber" name="L234" href="#L234">234</a>         <strong class="jxr_keyword">this</strong>.jdkCompatibilityMode = jdkCompatibilityMode;
 <a class="jxr_linenumber" name="L235" href="#L235">235</a>         <strong class="jxr_keyword">this</strong>.alloc = checkNotNull(alloc, <span class="jxr_string">"alloc"</span>);
@@ -589,8 +589,8 @@
 <a class="jxr_linenumber" name="L581" href="#L581">581</a>             <em class="jxr_comment">// Let's check if engineMap is null as it could be in theory if we throw an OOME during the construction of</em>
 <a class="jxr_linenumber" name="L582" href="#L582">582</a>             <em class="jxr_comment">// ReferenceCountedOpenSslEngine (before we assign the field). This is needed as shutdown() is called from</em>
 <a class="jxr_linenumber" name="L583" href="#L583">583</a>             <em class="jxr_comment">// the finalizer as well.</em>
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>             <strong class="jxr_keyword">if</strong> (engineMap != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>                 engineMap.remove(ssl);
+<a class="jxr_linenumber" name="L584" href="#L584">584</a>             <strong class="jxr_keyword">if</strong> (engines != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>                 engines.remove(ssl);
 <a class="jxr_linenumber" name="L586" href="#L586">586</a>             }
 <a class="jxr_linenumber" name="L587" href="#L587">587</a>             SSL.freeSSL(ssl);
 <a class="jxr_linenumber" name="L588" href="#L588">588</a>             ssl = networkBIO = 0;
@@ -1969,7 +1969,7 @@
 <a class="jxr_linenumber" name="L1961" href="#L1961">1961</a>         }
 <a class="jxr_linenumber" name="L1962" href="#L1962">1962</a> 
 <a class="jxr_linenumber" name="L1963" href="#L1963">1963</a>         <em class="jxr_comment">// Adding the OpenSslEngine to the OpenSslEngineMap so it can be used in the AbstractCertificateVerifier.</em>
-<a class="jxr_linenumber" name="L1964" href="#L1964">1964</a>         engineMap.add(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L1964" href="#L1964">1964</a>         engines.put(sslPointer(), <strong class="jxr_keyword">this</strong>);
 <a class="jxr_linenumber" name="L1965" href="#L1965">1965</a> 
 <a class="jxr_linenumber" name="L1966" href="#L1966">1966</a>         <strong class="jxr_keyword">if</strong> (!sessionSet) {
 <a class="jxr_linenumber" name="L1967" href="#L1967">1967</a>             <strong class="jxr_keyword">if</strong> (!parentContext.sessionContext().setSessionFromCache(ssl, session, getPeerHost(), getPeerPort())) {
