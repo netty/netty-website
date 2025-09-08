@@ -988,80 +988,81 @@
 <a class="jxr_linenumber" name="L980" href="#L980">980</a>                         <strong class="jxr_keyword">while</strong> (!finReceived &amp;&amp; continueReading) {
 <a class="jxr_linenumber" name="L981" href="#L981">981</a>                             byteBuf = allocHandle.allocate(allocator);
 <a class="jxr_linenumber" name="L982" href="#L982">982</a>                             allocHandle.attemptedBytesRead(byteBuf.writableBytes());
-<a class="jxr_linenumber" name="L983" href="#L983">983</a>                             <strong class="jxr_keyword">switch</strong> (parent.streamRecv(streamId(), byteBuf)) {
-<a class="jxr_linenumber" name="L984" href="#L984">984</a>                                 <strong class="jxr_keyword">case</strong> DONE:
-<a class="jxr_linenumber" name="L985" href="#L985">985</a>                                     <em class="jxr_comment">// Nothing left to read;</em>
-<a class="jxr_linenumber" name="L986" href="#L986">986</a>                                     readable = false;
-<a class="jxr_linenumber" name="L987" href="#L987">987</a>                                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L988" href="#L988">988</a>                                 <strong class="jxr_keyword">case</strong> FIN:
-<a class="jxr_linenumber" name="L989" href="#L989">989</a>                                     <em class="jxr_comment">// If we received a FIN we also should mark the channel as non readable as</em>
-<a class="jxr_linenumber" name="L990" href="#L990">990</a>                                     <em class="jxr_comment">// there is nothing left to read really.</em>
-<a class="jxr_linenumber" name="L991" href="#L991">991</a>                                     readable = false;
-<a class="jxr_linenumber" name="L992" href="#L992">992</a>                                     finReceived = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L993" href="#L993">993</a>                                     inputShutdown = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L994" href="#L994">994</a>                                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L995" href="#L995">995</a>                                 <strong class="jxr_keyword">case</strong> OK:
-<a class="jxr_linenumber" name="L996" href="#L996">996</a>                                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L997" href="#L997">997</a>                                 <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="L998" href="#L998">998</a>                                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error();
-<a class="jxr_linenumber" name="L999" href="#L999">999</a>                             }
-<a class="jxr_linenumber" name="L1000" href="#L1000">1000</a>                             allocHandle.lastBytesRead(byteBuf.readableBytes());
-<a class="jxr_linenumber" name="L1001" href="#L1001">1001</a>                             <strong class="jxr_keyword">if</strong> (allocHandle.lastBytesRead() &lt;= 0) {
-<a class="jxr_linenumber" name="L1002" href="#L1002">1002</a>                                 byteBuf.release();
-<a class="jxr_linenumber" name="L1003" href="#L1003">1003</a>                                 <strong class="jxr_keyword">if</strong> (finReceived &amp;&amp; readFrames) {
-<a class="jxr_linenumber" name="L1004" href="#L1004">1004</a>                                     <em class="jxr_comment">// If we read QuicStreamFrames we should fire an frame through the pipeline</em>
-<a class="jxr_linenumber" name="L1005" href="#L1005">1005</a>                                     <em class="jxr_comment">// with an empty buffer but the fin flag set to true.</em>
-<a class="jxr_linenumber" name="L1006" href="#L1006">1006</a>                                     byteBuf = Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="L1007" href="#L1007">1007</a>                                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1008" href="#L1008">1008</a>                                     byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L1009" href="#L1009">1009</a>                                     <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L1010" href="#L1010">1010</a>                                 }
-<a class="jxr_linenumber" name="L1011" href="#L1011">1011</a>                             }
-<a class="jxr_linenumber" name="L1012" href="#L1012">1012</a>                             <em class="jxr_comment">// We did read one message.</em>
-<a class="jxr_linenumber" name="L1013" href="#L1013">1013</a>                             allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="L1014" href="#L1014">1014</a>                             readCompleteNeeded = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L1015" href="#L1015">1015</a> 
-<a class="jxr_linenumber" name="L1016" href="#L1016">1016</a>                             <em class="jxr_comment">// It's important that we reset this to false before we call fireChannelRead(...)</em>
-<a class="jxr_linenumber" name="L1017" href="#L1017">1017</a>                             <em class="jxr_comment">// as the user may request another read() from channelRead(...) callback.</em>
-<a class="jxr_linenumber" name="L1018" href="#L1018">1018</a>                             readPending = false;
-<a class="jxr_linenumber" name="L1019" href="#L1019">1019</a> 
-<a class="jxr_linenumber" name="L1020" href="#L1020">1020</a>                             <strong class="jxr_keyword">if</strong> (readFrames) {
-<a class="jxr_linenumber" name="L1021" href="#L1021">1021</a>                                 pipeline.fireChannelRead(<strong class="jxr_keyword">new</strong> <a name="DefaultQuicStreamFrame" href="../../../../../io/netty/handler/codec/quic/DefaultQuicStreamFrame.html#DefaultQuicStreamFrame">DefaultQuicStreamFrame</a>(byteBuf, finReceived));
-<a class="jxr_linenumber" name="L1022" href="#L1022">1022</a>                             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L1023" href="#L1023">1023</a>                                 pipeline.fireChannelRead(byteBuf);
-<a class="jxr_linenumber" name="L1024" href="#L1024">1024</a>                             }
-<a class="jxr_linenumber" name="L1025" href="#L1025">1025</a>                             byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L1026" href="#L1026">1026</a>                             continueReading = allocHandle.continueReading();
-<a class="jxr_linenumber" name="L1027" href="#L1027">1027</a>                         }
-<a class="jxr_linenumber" name="L1028" href="#L1028">1028</a> 
-<a class="jxr_linenumber" name="L1029" href="#L1029">1029</a>                         <strong class="jxr_keyword">if</strong> (readCompleteNeeded) {
-<a class="jxr_linenumber" name="L1030" href="#L1030">1030</a>                             readComplete(allocHandle, pipeline);
-<a class="jxr_linenumber" name="L1031" href="#L1031">1031</a>                         }
-<a class="jxr_linenumber" name="L1032" href="#L1032">1032</a>                         <strong class="jxr_keyword">if</strong> (finReceived) {
-<a class="jxr_linenumber" name="L1033" href="#L1033">1033</a>                             readable = false;
-<a class="jxr_linenumber" name="L1034" href="#L1034">1034</a>                             closeOnRead(pipeline, readFrames);
-<a class="jxr_linenumber" name="L1035" href="#L1035">1035</a>                         }
-<a class="jxr_linenumber" name="L1036" href="#L1036">1036</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
-<a class="jxr_linenumber" name="L1037" href="#L1037">1037</a>                         readable = false;
-<a class="jxr_linenumber" name="L1038" href="#L1038">1038</a>                         handleReadException(pipeline, byteBuf, cause, allocHandle, readFrames);
-<a class="jxr_linenumber" name="L1039" href="#L1039">1039</a>                     }
-<a class="jxr_linenumber" name="L1040" href="#L1040">1040</a>                 }
-<a class="jxr_linenumber" name="L1041" href="#L1041">1041</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L1042" href="#L1042">1042</a>                 <em class="jxr_comment">// About to leave the method lets reset so we can enter it again.</em>
-<a class="jxr_linenumber" name="L1043" href="#L1043">1043</a>                 inRecv = false;
-<a class="jxr_linenumber" name="L1044" href="#L1044">1044</a>                 removeStreamFromParent();
-<a class="jxr_linenumber" name="L1045" href="#L1045">1045</a>             }
-<a class="jxr_linenumber" name="L1046" href="#L1046">1046</a>         }
-<a class="jxr_linenumber" name="L1047" href="#L1047">1047</a> 
-<a class="jxr_linenumber" name="L1048" href="#L1048">1048</a>         <em class="jxr_comment">// Read was complete and something was read, so we we need to reset the readPending flags, the allocHandle</em>
-<a class="jxr_linenumber" name="L1049" href="#L1049">1049</a>         <em class="jxr_comment">// and call fireChannelReadComplete(). The user may schedule another read now.</em>
-<a class="jxr_linenumber" name="L1050" href="#L1050">1050</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> readComplete(@SuppressWarnings(<span class="jxr_string">"deprecation"</span>) RecvByteBufAllocator.Handle allocHandle,
-<a class="jxr_linenumber" name="L1051" href="#L1051">1051</a>                                   <a name="ChannelPipeline" href="../../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline) {
-<a class="jxr_linenumber" name="L1052" href="#L1052">1052</a>             allocHandle.readComplete();
-<a class="jxr_linenumber" name="L1053" href="#L1053">1053</a>             pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L1054" href="#L1054">1054</a>         }
-<a class="jxr_linenumber" name="L1055" href="#L1055">1055</a>     }
-<a class="jxr_linenumber" name="L1056" href="#L1056">1056</a> }
+<a class="jxr_linenumber" name="L983" href="#L983">983</a>                             QuicheQuicChannel.StreamRecvResult result = parent.streamRecv(streamId(), byteBuf);
+<a class="jxr_linenumber" name="L984" href="#L984">984</a>                             <strong class="jxr_keyword">switch</strong> (result) {
+<a class="jxr_linenumber" name="L985" href="#L985">985</a>                                 <strong class="jxr_keyword">case</strong> DONE:
+<a class="jxr_linenumber" name="L986" href="#L986">986</a>                                     <em class="jxr_comment">// Nothing left to read;</em>
+<a class="jxr_linenumber" name="L987" href="#L987">987</a>                                     readable = false;
+<a class="jxr_linenumber" name="L988" href="#L988">988</a>                                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L989" href="#L989">989</a>                                 <strong class="jxr_keyword">case</strong> FIN:
+<a class="jxr_linenumber" name="L990" href="#L990">990</a>                                     <em class="jxr_comment">// If we received a FIN we also should mark the channel as non-readable as</em>
+<a class="jxr_linenumber" name="L991" href="#L991">991</a>                                     <em class="jxr_comment">// there is nothing left to read really.</em>
+<a class="jxr_linenumber" name="L992" href="#L992">992</a>                                     readable = false;
+<a class="jxr_linenumber" name="L993" href="#L993">993</a>                                     finReceived = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L994" href="#L994">994</a>                                     inputShutdown = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L995" href="#L995">995</a>                                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L996" href="#L996">996</a>                                 <strong class="jxr_keyword">case</strong> OK:
+<a class="jxr_linenumber" name="L997" href="#L997">997</a>                                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L998" href="#L998">998</a>                                 <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="L999" href="#L999">999</a>                                     <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error(<span class="jxr_string">"Unexpected StreamRecvResult: "</span> + result);
+<a class="jxr_linenumber" name="L1000" href="#L1000">1000</a>                             }
+<a class="jxr_linenumber" name="L1001" href="#L1001">1001</a>                             allocHandle.lastBytesRead(byteBuf.readableBytes());
+<a class="jxr_linenumber" name="L1002" href="#L1002">1002</a>                             <strong class="jxr_keyword">if</strong> (allocHandle.lastBytesRead() &lt;= 0) {
+<a class="jxr_linenumber" name="L1003" href="#L1003">1003</a>                                 byteBuf.release();
+<a class="jxr_linenumber" name="L1004" href="#L1004">1004</a>                                 <strong class="jxr_keyword">if</strong> (finReceived &amp;&amp; readFrames) {
+<a class="jxr_linenumber" name="L1005" href="#L1005">1005</a>                                     <em class="jxr_comment">// If we read QuicStreamFrames we should fire an frame through the pipeline</em>
+<a class="jxr_linenumber" name="L1006" href="#L1006">1006</a>                                     <em class="jxr_comment">// with an empty buffer but the fin flag set to true.</em>
+<a class="jxr_linenumber" name="L1007" href="#L1007">1007</a>                                     byteBuf = Unpooled.EMPTY_BUFFER;
+<a class="jxr_linenumber" name="L1008" href="#L1008">1008</a>                                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1009" href="#L1009">1009</a>                                     byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L1010" href="#L1010">1010</a>                                     <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L1011" href="#L1011">1011</a>                                 }
+<a class="jxr_linenumber" name="L1012" href="#L1012">1012</a>                             }
+<a class="jxr_linenumber" name="L1013" href="#L1013">1013</a>                             <em class="jxr_comment">// We did read one message.</em>
+<a class="jxr_linenumber" name="L1014" href="#L1014">1014</a>                             allocHandle.incMessagesRead(1);
+<a class="jxr_linenumber" name="L1015" href="#L1015">1015</a>                             readCompleteNeeded = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L1016" href="#L1016">1016</a> 
+<a class="jxr_linenumber" name="L1017" href="#L1017">1017</a>                             <em class="jxr_comment">// It's important that we reset this to false before we call fireChannelRead(...)</em>
+<a class="jxr_linenumber" name="L1018" href="#L1018">1018</a>                             <em class="jxr_comment">// as the user may request another read() from channelRead(...) callback.</em>
+<a class="jxr_linenumber" name="L1019" href="#L1019">1019</a>                             readPending = false;
+<a class="jxr_linenumber" name="L1020" href="#L1020">1020</a> 
+<a class="jxr_linenumber" name="L1021" href="#L1021">1021</a>                             <strong class="jxr_keyword">if</strong> (readFrames) {
+<a class="jxr_linenumber" name="L1022" href="#L1022">1022</a>                                 pipeline.fireChannelRead(<strong class="jxr_keyword">new</strong> <a name="DefaultQuicStreamFrame" href="../../../../../io/netty/handler/codec/quic/DefaultQuicStreamFrame.html#DefaultQuicStreamFrame">DefaultQuicStreamFrame</a>(byteBuf, finReceived));
+<a class="jxr_linenumber" name="L1023" href="#L1023">1023</a>                             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L1024" href="#L1024">1024</a>                                 pipeline.fireChannelRead(byteBuf);
+<a class="jxr_linenumber" name="L1025" href="#L1025">1025</a>                             }
+<a class="jxr_linenumber" name="L1026" href="#L1026">1026</a>                             byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L1027" href="#L1027">1027</a>                             continueReading = allocHandle.continueReading();
+<a class="jxr_linenumber" name="L1028" href="#L1028">1028</a>                         }
+<a class="jxr_linenumber" name="L1029" href="#L1029">1029</a> 
+<a class="jxr_linenumber" name="L1030" href="#L1030">1030</a>                         <strong class="jxr_keyword">if</strong> (readCompleteNeeded) {
+<a class="jxr_linenumber" name="L1031" href="#L1031">1031</a>                             readComplete(allocHandle, pipeline);
+<a class="jxr_linenumber" name="L1032" href="#L1032">1032</a>                         }
+<a class="jxr_linenumber" name="L1033" href="#L1033">1033</a>                         <strong class="jxr_keyword">if</strong> (finReceived) {
+<a class="jxr_linenumber" name="L1034" href="#L1034">1034</a>                             readable = false;
+<a class="jxr_linenumber" name="L1035" href="#L1035">1035</a>                             closeOnRead(pipeline, readFrames);
+<a class="jxr_linenumber" name="L1036" href="#L1036">1036</a>                         }
+<a class="jxr_linenumber" name="L1037" href="#L1037">1037</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable cause) {
+<a class="jxr_linenumber" name="L1038" href="#L1038">1038</a>                         readable = false;
+<a class="jxr_linenumber" name="L1039" href="#L1039">1039</a>                         handleReadException(pipeline, byteBuf, cause, allocHandle, readFrames);
+<a class="jxr_linenumber" name="L1040" href="#L1040">1040</a>                     }
+<a class="jxr_linenumber" name="L1041" href="#L1041">1041</a>                 }
+<a class="jxr_linenumber" name="L1042" href="#L1042">1042</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L1043" href="#L1043">1043</a>                 <em class="jxr_comment">// About to leave the method lets reset so we can enter it again.</em>
+<a class="jxr_linenumber" name="L1044" href="#L1044">1044</a>                 inRecv = false;
+<a class="jxr_linenumber" name="L1045" href="#L1045">1045</a>                 removeStreamFromParent();
+<a class="jxr_linenumber" name="L1046" href="#L1046">1046</a>             }
+<a class="jxr_linenumber" name="L1047" href="#L1047">1047</a>         }
+<a class="jxr_linenumber" name="L1048" href="#L1048">1048</a> 
+<a class="jxr_linenumber" name="L1049" href="#L1049">1049</a>         <em class="jxr_comment">// Read was complete and something was read, so we we need to reset the readPending flags, the allocHandle</em>
+<a class="jxr_linenumber" name="L1050" href="#L1050">1050</a>         <em class="jxr_comment">// and call fireChannelReadComplete(). The user may schedule another read now.</em>
+<a class="jxr_linenumber" name="L1051" href="#L1051">1051</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> readComplete(@SuppressWarnings(<span class="jxr_string">"deprecation"</span>) RecvByteBufAllocator.Handle allocHandle,
+<a class="jxr_linenumber" name="L1052" href="#L1052">1052</a>                                   <a name="ChannelPipeline" href="../../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline) {
+<a class="jxr_linenumber" name="L1053" href="#L1053">1053</a>             allocHandle.readComplete();
+<a class="jxr_linenumber" name="L1054" href="#L1054">1054</a>             pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L1055" href="#L1055">1055</a>         }
+<a class="jxr_linenumber" name="L1056" href="#L1056">1056</a>     }
+<a class="jxr_linenumber" name="L1057" href="#L1057">1057</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
