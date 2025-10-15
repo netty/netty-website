@@ -48,60 +48,57 @@
 <a class="jxr_linenumber" name="L40" href="#L40">40</a>  <em class="jxr_javadoccomment">/**</em>
 <a class="jxr_linenumber" name="L41" href="#L41">41</a>  <em class="jxr_javadoccomment"> * An HTTP/2 Server that responds to requests with a Hello World. Once started, you can test the</em>
 <a class="jxr_linenumber" name="L42" href="#L42">42</a>  <em class="jxr_javadoccomment"> * server with the example client.</em>
-<a class="jxr_linenumber" name="L43" href="#L43">43</a>  <em class="jxr_javadoccomment"> *</em>
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>  <em class="jxr_javadoccomment"> * &lt;p&gt;This example is making use of the "multiplexing" http2 API, where streams are mapped to child</em>
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>  <em class="jxr_javadoccomment"> * Channels. This API is very experimental and incomplete.</em>
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="L47" href="#L47">47</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="Http2Server" href="../../../../../../../io/netty/example/http2/helloworld/frame/server/Http2Server.html#Http2Server">Http2Server</a> {
-<a class="jxr_linenumber" name="L48" href="#L48">48</a>  
-<a class="jxr_linenumber" name="L49" href="#L49">49</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> SSL = System.getProperty(<span class="jxr_string">"ssl"</span>) != <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L50" href="#L50">50</a>  
-<a class="jxr_linenumber" name="L51" href="#L51">51</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> PORT = Integer.parseInt(System.getProperty(<span class="jxr_string">"port"</span>, SSL? <span class="jxr_string">"8443"</span> : <span class="jxr_string">"8080"</span>));
-<a class="jxr_linenumber" name="L52" href="#L52">52</a>  
-<a class="jxr_linenumber" name="L53" href="#L53">53</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> main(String[] args) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L54" href="#L54">54</a>          <em class="jxr_comment">// Configure SSL.</em>
-<a class="jxr_linenumber" name="L55" href="#L55">55</a>          <strong class="jxr_keyword">final</strong> <a name="SslContext" href="../../../../../../../io/netty/handler/ssl/SslContext.html#SslContext">SslContext</a> sslCtx;
-<a class="jxr_linenumber" name="L56" href="#L56">56</a>          <strong class="jxr_keyword">if</strong> (SSL) {
-<a class="jxr_linenumber" name="L57" href="#L57">57</a>              <a name="SslProvider" href="../../../../../../../io/netty/handler/ssl/SslProvider.html#SslProvider">SslProvider</a> provider = OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK;
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>              <a name="SelfSignedCertificate" href="../../../../../../../io/netty/handler/ssl/util/SelfSignedCertificate.html#SelfSignedCertificate">SelfSignedCertificate</a> ssc = <strong class="jxr_keyword">new</strong> <a name="SelfSignedCertificate" href="../../../../../../../io/netty/handler/ssl/util/SelfSignedCertificate.html#SelfSignedCertificate">SelfSignedCertificate</a>();
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>              sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
-<a class="jxr_linenumber" name="L60" href="#L60">60</a>                  .sslProvider(provider)
-<a class="jxr_linenumber" name="L61" href="#L61">61</a>                  <em class="jxr_comment">/* NOTE: the cipher filter may not include all ciphers required by the HTTP/2 specification.</em>
-<a class="jxr_linenumber" name="L62" href="#L62">62</a>  <em class="jxr_comment">                 * Please refer to the HTTP/2 specification for cipher requirements. */</em>
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>                  .ciphers(Http2SecurityUtil.CIPHERS, SupportedCipherSuiteFilter.INSTANCE)
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>                  .applicationProtocolConfig(<strong class="jxr_keyword">new</strong> <a name="ApplicationProtocolConfig" href="../../../../../../../io/netty/handler/ssl/ApplicationProtocolConfig.html#ApplicationProtocolConfig">ApplicationProtocolConfig</a>(
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>                      Protocol.ALPN,
-<a class="jxr_linenumber" name="L66" href="#L66">66</a>                      <em class="jxr_comment">// NO_ADVERTISE is currently the only mode supported by both OpenSsl and JDK providers.</em>
-<a class="jxr_linenumber" name="L67" href="#L67">67</a>                      SelectorFailureBehavior.NO_ADVERTISE,
-<a class="jxr_linenumber" name="L68" href="#L68">68</a>                      <em class="jxr_comment">// ACCEPT is currently the only mode supported by both OpenSsl and JDK providers.</em>
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>                      SelectedListenerFailureBehavior.ACCEPT,
-<a class="jxr_linenumber" name="L70" href="#L70">70</a>                      ApplicationProtocolNames.HTTP_2,
-<a class="jxr_linenumber" name="L71" href="#L71">71</a>                      ApplicationProtocolNames.HTTP_1_1))
-<a class="jxr_linenumber" name="L72" href="#L72">72</a>                  .build();
-<a class="jxr_linenumber" name="L73" href="#L73">73</a>          } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L74" href="#L74">74</a>              sslCtx = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L75" href="#L75">75</a>          }
-<a class="jxr_linenumber" name="L76" href="#L76">76</a>          <em class="jxr_comment">// Configure the server.</em>
-<a class="jxr_linenumber" name="L77" href="#L77">77</a>          <a name="EventLoopGroup" href="../../../../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group = <strong class="jxr_keyword">new</strong> <a name="NioEventLoopGroup" href="../../../../../../../io/netty/channel/nio/NioEventLoopGroup.html#NioEventLoopGroup">NioEventLoopGroup</a>();
-<a class="jxr_linenumber" name="L78" href="#L78">78</a>          <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L79" href="#L79">79</a>              <a name="ServerBootstrap" href="../../../../../../../io/netty/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a> b = <strong class="jxr_keyword">new</strong> <a name="ServerBootstrap" href="../../../../../../../io/netty/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a>();
-<a class="jxr_linenumber" name="L80" href="#L80">80</a>              b.option(ChannelOption.SO_BACKLOG, 1024);
-<a class="jxr_linenumber" name="L81" href="#L81">81</a>              b.group(group)
-<a class="jxr_linenumber" name="L82" href="#L82">82</a>               .channel(NioServerSocketChannel.<strong class="jxr_keyword">class</strong>)
-<a class="jxr_linenumber" name="L83" href="#L83">83</a>               .handler(<strong class="jxr_keyword">new</strong> LoggingHandler(LogLevel.INFO))
-<a class="jxr_linenumber" name="L84" href="#L84">84</a>               .childHandler(<strong class="jxr_keyword">new</strong> <a name="Http2ServerInitializer" href="../../../../../../../io/netty/example/http2/helloworld/frame/server/Http2ServerInitializer.html#Http2ServerInitializer">Http2ServerInitializer</a>(sslCtx));
-<a class="jxr_linenumber" name="L85" href="#L85">85</a>  
-<a class="jxr_linenumber" name="L86" href="#L86">86</a>              <a name="Channel" href="../../../../../../../io/netty/channel/Channel.html#Channel">Channel</a> ch = b.bind(PORT).sync().channel();
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>  <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="Http2Server" href="../../../../../../../io/netty/example/http2/helloworld/frame/server/Http2Server.html#Http2Server">Http2Server</a> {
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>  
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> SSL = System.getProperty(<span class="jxr_string">"ssl"</span>) != <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>  
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> PORT = Integer.parseInt(System.getProperty(<span class="jxr_string">"port"</span>, SSL? <span class="jxr_string">"8443"</span> : <span class="jxr_string">"8080"</span>));
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>  
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>      <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> main(String[] args) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>          <em class="jxr_comment">// Configure SSL.</em>
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>          <strong class="jxr_keyword">final</strong> <a name="SslContext" href="../../../../../../../io/netty/handler/ssl/SslContext.html#SslContext">SslContext</a> sslCtx;
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>          <strong class="jxr_keyword">if</strong> (SSL) {
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>              <a name="SslProvider" href="../../../../../../../io/netty/handler/ssl/SslProvider.html#SslProvider">SslProvider</a> provider = OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK;
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>              <a name="SelfSignedCertificate" href="../../../../../../../io/netty/handler/ssl/util/SelfSignedCertificate.html#SelfSignedCertificate">SelfSignedCertificate</a> ssc = <strong class="jxr_keyword">new</strong> <a name="SelfSignedCertificate" href="../../../../../../../io/netty/handler/ssl/util/SelfSignedCertificate.html#SelfSignedCertificate">SelfSignedCertificate</a>();
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>              sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>                  .sslProvider(provider)
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>                  <em class="jxr_comment">/* NOTE: the cipher filter may not include all ciphers required by the HTTP/2 specification.</em>
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>  <em class="jxr_comment">                 * Please refer to the HTTP/2 specification for cipher requirements. */</em>
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>                  .ciphers(Http2SecurityUtil.CIPHERS, SupportedCipherSuiteFilter.INSTANCE)
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>                  .applicationProtocolConfig(<strong class="jxr_keyword">new</strong> <a name="ApplicationProtocolConfig" href="../../../../../../../io/netty/handler/ssl/ApplicationProtocolConfig.html#ApplicationProtocolConfig">ApplicationProtocolConfig</a>(
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>                      Protocol.ALPN,
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>                      <em class="jxr_comment">// NO_ADVERTISE is currently the only mode supported by both OpenSsl and JDK providers.</em>
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>                      SelectorFailureBehavior.NO_ADVERTISE,
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>                      <em class="jxr_comment">// ACCEPT is currently the only mode supported by both OpenSsl and JDK providers.</em>
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>                      SelectedListenerFailureBehavior.ACCEPT,
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>                      ApplicationProtocolNames.HTTP_2,
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>                      ApplicationProtocolNames.HTTP_1_1))
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>                  .build();
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>              sslCtx = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>          }
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>          <em class="jxr_comment">// Configure the server.</em>
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>          <a name="EventLoopGroup" href="../../../../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group = <strong class="jxr_keyword">new</strong> <a name="NioEventLoopGroup" href="../../../../../../../io/netty/channel/nio/NioEventLoopGroup.html#NioEventLoopGroup">NioEventLoopGroup</a>();
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>          <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>              <a name="ServerBootstrap" href="../../../../../../../io/netty/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a> b = <strong class="jxr_keyword">new</strong> <a name="ServerBootstrap" href="../../../../../../../io/netty/bootstrap/ServerBootstrap.html#ServerBootstrap">ServerBootstrap</a>();
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>              b.option(ChannelOption.SO_BACKLOG, 1024);
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>              b.group(group)
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>               .channel(NioServerSocketChannel.<strong class="jxr_keyword">class</strong>)
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>               .handler(<strong class="jxr_keyword">new</strong> LoggingHandler(LogLevel.INFO))
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>               .childHandler(<strong class="jxr_keyword">new</strong> <a name="Http2ServerInitializer" href="../../../../../../../io/netty/example/http2/helloworld/frame/server/Http2ServerInitializer.html#Http2ServerInitializer">Http2ServerInitializer</a>(sslCtx));
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>  
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>              <a name="Channel" href="../../../../../../../io/netty/channel/Channel.html#Channel">Channel</a> ch = b.bind(PORT).sync().channel();
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>  
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>              System.err.println(<span class="jxr_string">"Open your HTTP/2-enabled web browser and navigate to "</span> +
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>                      (SSL? <span class="jxr_string">"https"</span> : <span class="jxr_string">"http"</span>) + <span class="jxr_string">"://127.0.0.1:"</span> + PORT + '/');
 <a class="jxr_linenumber" name="L87" href="#L87">87</a>  
-<a class="jxr_linenumber" name="L88" href="#L88">88</a>              System.err.println(<span class="jxr_string">"Open your HTTP/2-enabled web browser and navigate to "</span> +
-<a class="jxr_linenumber" name="L89" href="#L89">89</a>                      (SSL? <span class="jxr_string">"https"</span> : <span class="jxr_string">"http"</span>) + <span class="jxr_string">"://127.0.0.1:"</span> + PORT + '/');
-<a class="jxr_linenumber" name="L90" href="#L90">90</a>  
-<a class="jxr_linenumber" name="L91" href="#L91">91</a>              ch.closeFuture().sync();
-<a class="jxr_linenumber" name="L92" href="#L92">92</a>          } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L93" href="#L93">93</a>              group.shutdownGracefully();
-<a class="jxr_linenumber" name="L94" href="#L94">94</a>          }
-<a class="jxr_linenumber" name="L95" href="#L95">95</a>      }
-<a class="jxr_linenumber" name="L96" href="#L96">96</a>  }
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>              ch.closeFuture().sync();
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>          } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>              group.shutdownGracefully();
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>          }
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>      }
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>  }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2025 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
