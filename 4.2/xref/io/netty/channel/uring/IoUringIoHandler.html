@@ -269,7 +269,7 @@
 <a class="jxr_linenumber" name="L261" href="#L261">261</a>         }
 <a class="jxr_linenumber" name="L262" href="#L262">262</a>     }
 <a class="jxr_linenumber" name="L263" href="#L263">263</a> 
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> handle(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">long</strong> udata, ByteBuffer extraCqeData) {
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> handle(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">long</strong> udata, ByteBuffer extraCqeData) {
 <a class="jxr_linenumber" name="L265" href="#L265">265</a>         <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L266" href="#L266">266</a>             <strong class="jxr_keyword">int</strong> id = UserData.decodeId(udata);
 <a class="jxr_linenumber" name="L267" href="#L267">267</a>             byte op = UserData.decodeOp(udata);
@@ -281,437 +281,435 @@
 <a class="jxr_linenumber" name="L273" href="#L273">273</a>             }
 <a class="jxr_linenumber" name="L274" href="#L274">274</a>             <strong class="jxr_keyword">if</strong> (id == EVENTFD_ID) {
 <a class="jxr_linenumber" name="L275" href="#L275">275</a>                 handleEventFdRead();
-<a class="jxr_linenumber" name="L276" href="#L276">276</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L276" href="#L276">276</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L277" href="#L277">277</a>             }
 <a class="jxr_linenumber" name="L278" href="#L278">278</a>             <strong class="jxr_keyword">if</strong> (id == RINGFD_ID) {
 <a class="jxr_linenumber" name="L279" href="#L279">279</a>                 <em class="jxr_comment">// Just return</em>
-<a class="jxr_linenumber" name="L280" href="#L280">280</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L280" href="#L280">280</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L281" href="#L281">281</a>             }
 <a class="jxr_linenumber" name="L282" href="#L282">282</a>             DefaultIoUringIoRegistration registration = registrations.get(id);
 <a class="jxr_linenumber" name="L283" href="#L283">283</a>             <strong class="jxr_keyword">if</strong> (registration == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L284" href="#L284">284</a>                 logger.debug(<span class="jxr_string">"ignoring {} completion for unknown registration (id={}, res={})"</span>,
 <a class="jxr_linenumber" name="L285" href="#L285">285</a>                         Native.opToStr(op), id, res);
-<a class="jxr_linenumber" name="L286" href="#L286">286</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L286" href="#L286">286</a>                 <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L287" href="#L287">287</a>             }
 <a class="jxr_linenumber" name="L288" href="#L288">288</a>             registration.handle(res, flags, op, data, extraCqeData);
-<a class="jxr_linenumber" name="L289" href="#L289">289</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L290" href="#L290">290</a>         } <strong class="jxr_keyword">catch</strong> (Error e) {
-<a class="jxr_linenumber" name="L291" href="#L291">291</a>             <strong class="jxr_keyword">throw</strong> e;
-<a class="jxr_linenumber" name="L292" href="#L292">292</a>         } <strong class="jxr_keyword">catch</strong> (Throwable throwable) {
-<a class="jxr_linenumber" name="L293" href="#L293">293</a>             handleLoopException(throwable);
-<a class="jxr_linenumber" name="L294" href="#L294">294</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L295" href="#L295">295</a>         }
-<a class="jxr_linenumber" name="L296" href="#L296">296</a>     }
-<a class="jxr_linenumber" name="L297" href="#L297">297</a> 
-<a class="jxr_linenumber" name="L298" href="#L298">298</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> handleEventFdRead() {
-<a class="jxr_linenumber" name="L299" href="#L299">299</a>         eventfdReadSubmitted = 0;
-<a class="jxr_linenumber" name="L300" href="#L300">300</a>         <strong class="jxr_keyword">if</strong> (!eventFdClosing) {
-<a class="jxr_linenumber" name="L301" href="#L301">301</a>             eventfdAsyncNotify.set(false);
-<a class="jxr_linenumber" name="L302" href="#L302">302</a>             submitEventFdRead();
-<a class="jxr_linenumber" name="L303" href="#L303">303</a>         }
-<a class="jxr_linenumber" name="L304" href="#L304">304</a>     }
-<a class="jxr_linenumber" name="L305" href="#L305">305</a> 
-<a class="jxr_linenumber" name="L306" href="#L306">306</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> submitEventFdRead() {
-<a class="jxr_linenumber" name="L307" href="#L307">307</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
-<a class="jxr_linenumber" name="L308" href="#L308">308</a>         <strong class="jxr_keyword">long</strong> udata = UserData.encode(EVENTFD_ID, Native.IORING_OP_READ, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L309" href="#L309">309</a> 
-<a class="jxr_linenumber" name="L310" href="#L310">310</a>         eventfdReadSubmitted = submissionQueue.addEventFdRead(
-<a class="jxr_linenumber" name="L311" href="#L311">311</a>                 eventfd.intValue(), eventfdReadBufAddress, 0, 8, udata);
-<a class="jxr_linenumber" name="L312" href="#L312">312</a>     }
-<a class="jxr_linenumber" name="L313" href="#L313">313</a> 
-<a class="jxr_linenumber" name="L314" href="#L314">314</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> submitAndWaitWithTimeout(<a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue,
-<a class="jxr_linenumber" name="L315" href="#L315">315</a>                                          <strong class="jxr_keyword">boolean</strong> linkTimeout, <strong class="jxr_keyword">long</strong> timeoutNanoSeconds) {
-<a class="jxr_linenumber" name="L316" href="#L316">316</a>         <strong class="jxr_keyword">if</strong> (timeoutNanoSeconds != -1) {
-<a class="jxr_linenumber" name="L317" href="#L317">317</a>             <strong class="jxr_keyword">long</strong> udata = UserData.encode(RINGFD_ID,
-<a class="jxr_linenumber" name="L318" href="#L318">318</a>                     linkTimeout ? Native.IORING_OP_LINK_TIMEOUT : Native.IORING_OP_TIMEOUT, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L319" href="#L319">319</a>             <em class="jxr_comment">// We use the same timespec pointer for all add*Timeout operations. This only works because we call</em>
-<a class="jxr_linenumber" name="L320" href="#L320">320</a>             <em class="jxr_comment">// submit directly after it. This ensures the submitted timeout is considered "stable" and so can be reused.</em>
-<a class="jxr_linenumber" name="L321" href="#L321">321</a>             <strong class="jxr_keyword">long</strong> seconds, nanoSeconds;
-<a class="jxr_linenumber" name="L322" href="#L322">322</a>             <strong class="jxr_keyword">if</strong> (timeoutNanoSeconds == 0) {
-<a class="jxr_linenumber" name="L323" href="#L323">323</a>                 seconds = 0;
-<a class="jxr_linenumber" name="L324" href="#L324">324</a>                 nanoSeconds = 0;
-<a class="jxr_linenumber" name="L325" href="#L325">325</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L326" href="#L326">326</a>                 seconds = (<strong class="jxr_keyword">int</strong>) min(timeoutNanoSeconds / 1000000000L, Integer.MAX_VALUE);
-<a class="jxr_linenumber" name="L327" href="#L327">327</a>                 nanoSeconds = (<strong class="jxr_keyword">int</strong>) max(timeoutNanoSeconds - seconds * 1000000000L, 0);
-<a class="jxr_linenumber" name="L328" href="#L328">328</a>             }
-<a class="jxr_linenumber" name="L329" href="#L329">329</a> 
-<a class="jxr_linenumber" name="L330" href="#L330">330</a>             timeoutMemory.putLong(KERNEL_TIMESPEC_TV_SEC_FIELD, seconds);
-<a class="jxr_linenumber" name="L331" href="#L331">331</a>             timeoutMemory.putLong(KERNEL_TIMESPEC_TV_NSEC_FIELD, nanoSeconds);
-<a class="jxr_linenumber" name="L332" href="#L332">332</a>             <strong class="jxr_keyword">if</strong> (linkTimeout) {
-<a class="jxr_linenumber" name="L333" href="#L333">333</a>                 submissionQueue.addLinkTimeout(timeoutMemoryAddress, udata);
-<a class="jxr_linenumber" name="L334" href="#L334">334</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L335" href="#L335">335</a>                 submissionQueue.addTimeout(timeoutMemoryAddress, udata);
-<a class="jxr_linenumber" name="L336" href="#L336">336</a>             }
-<a class="jxr_linenumber" name="L337" href="#L337">337</a>         }
-<a class="jxr_linenumber" name="L338" href="#L338">338</a>         <strong class="jxr_keyword">int</strong> submitted = submissionQueue.submitAndGet();
-<a class="jxr_linenumber" name="L339" href="#L339">339</a>         <em class="jxr_comment">// Clear the iovArray as we can re-use it now as things are considered stable after submission:</em>
-<a class="jxr_linenumber" name="L340" href="#L340">340</a>         <em class="jxr_comment">// See https://man7.org/linux/man-pages/man3/io_uring_prep_sendmsg.3.html</em>
-<a class="jxr_linenumber" name="L341" href="#L341">341</a>         iovArray.clear();
-<a class="jxr_linenumber" name="L342" href="#L342">342</a>         msgHdrMemoryArray.clear();
-<a class="jxr_linenumber" name="L343" href="#L343">343</a>         <strong class="jxr_keyword">return</strong> submitted;
-<a class="jxr_linenumber" name="L344" href="#L344">344</a>     }
-<a class="jxr_linenumber" name="L345" href="#L345">345</a> 
-<a class="jxr_linenumber" name="L346" href="#L346">346</a>     @Override
-<a class="jxr_linenumber" name="L347" href="#L347">347</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> prepareToDestroy() {
-<a class="jxr_linenumber" name="L348" href="#L348">348</a>         shuttingDown = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L349" href="#L349">349</a>         <a name="CompletionQueue" href="../../../../io/netty/channel/uring/CompletionQueue.html#CompletionQueue">CompletionQueue</a> completionQueue = ringBuffer.ioUringCompletionQueue();
-<a class="jxr_linenumber" name="L350" href="#L350">350</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
+<a class="jxr_linenumber" name="L289" href="#L289">289</a>         } <strong class="jxr_keyword">catch</strong> (Error e) {
+<a class="jxr_linenumber" name="L290" href="#L290">290</a>             <strong class="jxr_keyword">throw</strong> e;
+<a class="jxr_linenumber" name="L291" href="#L291">291</a>         } <strong class="jxr_keyword">catch</strong> (Throwable throwable) {
+<a class="jxr_linenumber" name="L292" href="#L292">292</a>             handleLoopException(throwable);
+<a class="jxr_linenumber" name="L293" href="#L293">293</a>         }
+<a class="jxr_linenumber" name="L294" href="#L294">294</a>     }
+<a class="jxr_linenumber" name="L295" href="#L295">295</a> 
+<a class="jxr_linenumber" name="L296" href="#L296">296</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> handleEventFdRead() {
+<a class="jxr_linenumber" name="L297" href="#L297">297</a>         eventfdReadSubmitted = 0;
+<a class="jxr_linenumber" name="L298" href="#L298">298</a>         <strong class="jxr_keyword">if</strong> (!eventFdClosing) {
+<a class="jxr_linenumber" name="L299" href="#L299">299</a>             eventfdAsyncNotify.set(false);
+<a class="jxr_linenumber" name="L300" href="#L300">300</a>             submitEventFdRead();
+<a class="jxr_linenumber" name="L301" href="#L301">301</a>         }
+<a class="jxr_linenumber" name="L302" href="#L302">302</a>     }
+<a class="jxr_linenumber" name="L303" href="#L303">303</a> 
+<a class="jxr_linenumber" name="L304" href="#L304">304</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> submitEventFdRead() {
+<a class="jxr_linenumber" name="L305" href="#L305">305</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
+<a class="jxr_linenumber" name="L306" href="#L306">306</a>         <strong class="jxr_keyword">long</strong> udata = UserData.encode(EVENTFD_ID, Native.IORING_OP_READ, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L307" href="#L307">307</a> 
+<a class="jxr_linenumber" name="L308" href="#L308">308</a>         eventfdReadSubmitted = submissionQueue.addEventFdRead(
+<a class="jxr_linenumber" name="L309" href="#L309">309</a>                 eventfd.intValue(), eventfdReadBufAddress, 0, 8, udata);
+<a class="jxr_linenumber" name="L310" href="#L310">310</a>     }
+<a class="jxr_linenumber" name="L311" href="#L311">311</a> 
+<a class="jxr_linenumber" name="L312" href="#L312">312</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> submitAndWaitWithTimeout(<a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue,
+<a class="jxr_linenumber" name="L313" href="#L313">313</a>                                          <strong class="jxr_keyword">boolean</strong> linkTimeout, <strong class="jxr_keyword">long</strong> timeoutNanoSeconds) {
+<a class="jxr_linenumber" name="L314" href="#L314">314</a>         <strong class="jxr_keyword">if</strong> (timeoutNanoSeconds != -1) {
+<a class="jxr_linenumber" name="L315" href="#L315">315</a>             <strong class="jxr_keyword">long</strong> udata = UserData.encode(RINGFD_ID,
+<a class="jxr_linenumber" name="L316" href="#L316">316</a>                     linkTimeout ? Native.IORING_OP_LINK_TIMEOUT : Native.IORING_OP_TIMEOUT, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L317" href="#L317">317</a>             <em class="jxr_comment">// We use the same timespec pointer for all add*Timeout operations. This only works because we call</em>
+<a class="jxr_linenumber" name="L318" href="#L318">318</a>             <em class="jxr_comment">// submit directly after it. This ensures the submitted timeout is considered "stable" and so can be reused.</em>
+<a class="jxr_linenumber" name="L319" href="#L319">319</a>             <strong class="jxr_keyword">long</strong> seconds, nanoSeconds;
+<a class="jxr_linenumber" name="L320" href="#L320">320</a>             <strong class="jxr_keyword">if</strong> (timeoutNanoSeconds == 0) {
+<a class="jxr_linenumber" name="L321" href="#L321">321</a>                 seconds = 0;
+<a class="jxr_linenumber" name="L322" href="#L322">322</a>                 nanoSeconds = 0;
+<a class="jxr_linenumber" name="L323" href="#L323">323</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L324" href="#L324">324</a>                 seconds = (<strong class="jxr_keyword">int</strong>) min(timeoutNanoSeconds / 1000000000L, Integer.MAX_VALUE);
+<a class="jxr_linenumber" name="L325" href="#L325">325</a>                 nanoSeconds = (<strong class="jxr_keyword">int</strong>) max(timeoutNanoSeconds - seconds * 1000000000L, 0);
+<a class="jxr_linenumber" name="L326" href="#L326">326</a>             }
+<a class="jxr_linenumber" name="L327" href="#L327">327</a> 
+<a class="jxr_linenumber" name="L328" href="#L328">328</a>             timeoutMemory.putLong(KERNEL_TIMESPEC_TV_SEC_FIELD, seconds);
+<a class="jxr_linenumber" name="L329" href="#L329">329</a>             timeoutMemory.putLong(KERNEL_TIMESPEC_TV_NSEC_FIELD, nanoSeconds);
+<a class="jxr_linenumber" name="L330" href="#L330">330</a>             <strong class="jxr_keyword">if</strong> (linkTimeout) {
+<a class="jxr_linenumber" name="L331" href="#L331">331</a>                 submissionQueue.addLinkTimeout(timeoutMemoryAddress, udata);
+<a class="jxr_linenumber" name="L332" href="#L332">332</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L333" href="#L333">333</a>                 submissionQueue.addTimeout(timeoutMemoryAddress, udata);
+<a class="jxr_linenumber" name="L334" href="#L334">334</a>             }
+<a class="jxr_linenumber" name="L335" href="#L335">335</a>         }
+<a class="jxr_linenumber" name="L336" href="#L336">336</a>         <strong class="jxr_keyword">int</strong> submitted = submissionQueue.submitAndGet();
+<a class="jxr_linenumber" name="L337" href="#L337">337</a>         <em class="jxr_comment">// Clear the iovArray as we can re-use it now as things are considered stable after submission:</em>
+<a class="jxr_linenumber" name="L338" href="#L338">338</a>         <em class="jxr_comment">// See https://man7.org/linux/man-pages/man3/io_uring_prep_sendmsg.3.html</em>
+<a class="jxr_linenumber" name="L339" href="#L339">339</a>         iovArray.clear();
+<a class="jxr_linenumber" name="L340" href="#L340">340</a>         msgHdrMemoryArray.clear();
+<a class="jxr_linenumber" name="L341" href="#L341">341</a>         <strong class="jxr_keyword">return</strong> submitted;
+<a class="jxr_linenumber" name="L342" href="#L342">342</a>     }
+<a class="jxr_linenumber" name="L343" href="#L343">343</a> 
+<a class="jxr_linenumber" name="L344" href="#L344">344</a>     @Override
+<a class="jxr_linenumber" name="L345" href="#L345">345</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> prepareToDestroy() {
+<a class="jxr_linenumber" name="L346" href="#L346">346</a>         shuttingDown = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L347" href="#L347">347</a>         <a name="CompletionQueue" href="../../../../io/netty/channel/uring/CompletionQueue.html#CompletionQueue">CompletionQueue</a> completionQueue = ringBuffer.ioUringCompletionQueue();
+<a class="jxr_linenumber" name="L348" href="#L348">348</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
+<a class="jxr_linenumber" name="L349" href="#L349">349</a> 
+<a class="jxr_linenumber" name="L350" href="#L350">350</a>         List&lt;DefaultIoUringIoRegistration&gt; copy = <strong class="jxr_keyword">new</strong> ArrayList&lt;&gt;(registrations.values());
 <a class="jxr_linenumber" name="L351" href="#L351">351</a> 
-<a class="jxr_linenumber" name="L352" href="#L352">352</a>         List&lt;DefaultIoUringIoRegistration&gt; copy = <strong class="jxr_keyword">new</strong> ArrayList&lt;&gt;(registrations.values());
-<a class="jxr_linenumber" name="L353" href="#L353">353</a> 
-<a class="jxr_linenumber" name="L354" href="#L354">354</a>         <strong class="jxr_keyword">for</strong> (DefaultIoUringIoRegistration registration: copy) {
-<a class="jxr_linenumber" name="L355" href="#L355">355</a>             registration.close();
-<a class="jxr_linenumber" name="L356" href="#L356">356</a>         }
-<a class="jxr_linenumber" name="L357" href="#L357">357</a> 
-<a class="jxr_linenumber" name="L358" href="#L358">358</a>         <em class="jxr_comment">// Write to the eventfd to ensure that if we submitted a read for the eventfd we will see the completion event.</em>
-<a class="jxr_linenumber" name="L359" href="#L359">359</a>         Native.eventFdWrite(eventfd.intValue(), 1L);
-<a class="jxr_linenumber" name="L360" href="#L360">360</a> 
-<a class="jxr_linenumber" name="L361" href="#L361">361</a>         <em class="jxr_comment">// Ensure all previously submitted IOs get to complete before tearing down everything.</em>
-<a class="jxr_linenumber" name="L362" href="#L362">362</a>         <strong class="jxr_keyword">long</strong> udata = UserData.encode(RINGFD_ID, Native.IORING_OP_NOP, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L363" href="#L363">363</a>         submissionQueue.addNop((byte) Native.IOSQE_IO_DRAIN, udata);
-<a class="jxr_linenumber" name="L364" href="#L364">364</a> 
-<a class="jxr_linenumber" name="L365" href="#L365">365</a>         <em class="jxr_comment">// Submit everything and wait until we could drain i.</em>
-<a class="jxr_linenumber" name="L366" href="#L366">366</a>         submissionQueue.submitAndGet();
-<a class="jxr_linenumber" name="L367" href="#L367">367</a> 
-<a class="jxr_linenumber" name="L368" href="#L368">368</a>         <strong class="jxr_keyword">while</strong> (completionQueue.hasCompletions()) {
-<a class="jxr_linenumber" name="L369" href="#L369">369</a>             processCompletionsAndHandleOverflow(submissionQueue, completionQueue, <strong class="jxr_keyword">this</strong>::handle);
-<a class="jxr_linenumber" name="L370" href="#L370">370</a>             <strong class="jxr_keyword">if</strong> (submissionQueue.count() &gt; 0) {
-<a class="jxr_linenumber" name="L371" href="#L371">371</a>                 submissionQueue.submitAndGetNow();
-<a class="jxr_linenumber" name="L372" href="#L372">372</a>             }
-<a class="jxr_linenumber" name="L373" href="#L373">373</a>         }
-<a class="jxr_linenumber" name="L374" href="#L374">374</a>     }
-<a class="jxr_linenumber" name="L375" href="#L375">375</a> 
-<a class="jxr_linenumber" name="L376" href="#L376">376</a>     @Override
-<a class="jxr_linenumber" name="L377" href="#L377">377</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> destroy() {
-<a class="jxr_linenumber" name="L378" href="#L378">378</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>         <a name="CompletionQueue" href="../../../../io/netty/channel/uring/CompletionQueue.html#CompletionQueue">CompletionQueue</a> completionQueue = ringBuffer.ioUringCompletionQueue();
-<a class="jxr_linenumber" name="L380" href="#L380">380</a>         drainEventFd();
-<a class="jxr_linenumber" name="L381" href="#L381">381</a>         <strong class="jxr_keyword">if</strong> (submissionQueue.remaining() &lt; 2) {
-<a class="jxr_linenumber" name="L382" href="#L382">382</a>             <em class="jxr_comment">// We need to submit 2 linked operations. Since they are linked, we cannot allow a submit-call to</em>
-<a class="jxr_linenumber" name="L383" href="#L383">383</a>             <em class="jxr_comment">// separate them. We don't have enough room (&lt; 2) in the queue, so we submit now to make more room.</em>
-<a class="jxr_linenumber" name="L384" href="#L384">384</a>             submissionQueue.submit();
-<a class="jxr_linenumber" name="L385" href="#L385">385</a>         }
-<a class="jxr_linenumber" name="L386" href="#L386">386</a>         <em class="jxr_comment">// Try to drain all the IO from the queue first...</em>
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>         <strong class="jxr_keyword">long</strong> udata = UserData.encode(RINGFD_ID, Native.IORING_OP_NOP, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>         <em class="jxr_comment">// We need to also specify the Native.IOSQE_LINK flag for it to work as otherwise it is not correctly linked</em>
-<a class="jxr_linenumber" name="L389" href="#L389">389</a>         <em class="jxr_comment">// with the timeout.</em>
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>         <em class="jxr_comment">// See:</em>
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>         <em class="jxr_comment">// - https://man7.org/linux/man-pages/man2/io_uring_enter.2.html</em>
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>         <em class="jxr_comment">// - https://git.kernel.dk/cgit/liburing/commit/?h=link-timeout&amp;id=bc1bd5e97e2c758d6fd975bd35843b9b2c770c5a</em>
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>         submissionQueue.addNop((byte) (Native.IOSQE_IO_DRAIN | Native.IOSQE_LINK), udata);
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>         <em class="jxr_comment">// ... but only wait for 200 milliseconds on this</em>
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>         submitAndWaitWithTimeout(submissionQueue, <strong class="jxr_keyword">true</strong>, TimeUnit.MILLISECONDS.toNanos(200));
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>         completionQueue.process(<strong class="jxr_keyword">this</strong>::handle);
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>         <strong class="jxr_keyword">for</strong> (<a name="IoUringBufferRing" href="../../../../io/netty/channel/uring/IoUringBufferRing.html#IoUringBufferRing">IoUringBufferRing</a> ioUringBufferRing : registeredIoUringBufferRing.values()) {
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>             ioUringBufferRing.close();
-<a class="jxr_linenumber" name="L399" href="#L399">399</a>         }
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>         completeRingClose();
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>     }
-<a class="jxr_linenumber" name="L402" href="#L402">402</a> 
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>     <em class="jxr_comment">// We need to prevent the race condition where a wakeup event is submitted to a file descriptor that has</em>
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>     <em class="jxr_comment">// already been freed (and potentially reallocated by the OS). Because submitted events is gated on the</em>
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>     <em class="jxr_comment">// `eventfdAsyncNotify` flag we can close the gate but may need to read any outstanding events that have</em>
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>     <em class="jxr_comment">// (or will) be written.</em>
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> drainEventFd() {
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>         <a name="CompletionQueue" href="../../../../io/netty/channel/uring/CompletionQueue.html#CompletionQueue">CompletionQueue</a> completionQueue = ringBuffer.ioUringCompletionQueue();
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>         assert !eventFdClosing;
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>         eventFdClosing = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>         <strong class="jxr_keyword">boolean</strong> eventPending = eventfdAsyncNotify.getAndSet(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>         <strong class="jxr_keyword">if</strong> (eventPending) {
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>             <em class="jxr_comment">// There is an event that has been or will be written by another thread, so we must wait for the event.</em>
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>             <em class="jxr_comment">// Make sure we're actually listening for writes to the event fd.</em>
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>             <strong class="jxr_keyword">while</strong> (eventfdReadSubmitted == 0) {
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>                 submitEventFdRead();
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>                 submissionQueue.submit();
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>             }
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>             <em class="jxr_comment">// Drain the eventfd of the pending wakup.</em>
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <strong class="jxr_keyword">class</strong> DrainFdEventCallback <strong class="jxr_keyword">implements</strong> <a name="CompletionCallback" href="../../../../io/netty/channel/uring/CompletionCallback.html#CompletionCallback">CompletionCallback</a> {
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>                 <strong class="jxr_keyword">boolean</strong> eventFdDrained;
-<a class="jxr_linenumber" name="L423" href="#L423">423</a> 
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 @Override
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> handle(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">long</strong> udata, ByteBuffer extraCqeData) {
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>                     <strong class="jxr_keyword">if</strong> (UserData.decodeId(udata) == EVENTFD_ID) {
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>                         eventFdDrained = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>                     }
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>                     <strong class="jxr_keyword">return</strong> IoUringIoHandler.<strong class="jxr_keyword">this</strong>.handle(res, flags, udata, extraCqeData);
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>                 }
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>             }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>             <strong class="jxr_keyword">final</strong> DrainFdEventCallback handler = <strong class="jxr_keyword">new</strong> DrainFdEventCallback();
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>             completionQueue.process(handler);
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>             <strong class="jxr_keyword">while</strong> (!handler.eventFdDrained) {
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>                 submissionQueue.submitAndGet();
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>                 processCompletionsAndHandleOverflow(submissionQueue, completionQueue, handler);
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>             }
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>         }
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>         <em class="jxr_comment">// We've consumed any pending eventfd read and `eventfdAsyncNotify` should never</em>
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>         <em class="jxr_comment">// transition back to false, thus we should never have any more events written.</em>
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>         <em class="jxr_comment">// So, if we have a read event pending, we can cancel it.</em>
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>         <strong class="jxr_keyword">if</strong> (eventfdReadSubmitted != 0) {
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>             <strong class="jxr_keyword">long</strong> udata = UserData.encode(EVENTFD_ID, Native.IORING_OP_ASYNC_CANCEL, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>             submissionQueue.addCancel(eventfdReadSubmitted, udata);
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>             eventfdReadSubmitted = 0;
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>             submissionQueue.submit();
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>         }
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>     }
-<a class="jxr_linenumber" name="L449" href="#L449">449</a> 
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> completeRingClose() {
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>         <strong class="jxr_keyword">if</strong> (closeCompleted) {
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <em class="jxr_comment">// already done.</em>
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>         }
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>         closeCompleted = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>         ringBuffer.close();
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             eventfd.close();
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>             logger.warn(<span class="jxr_string">"Failed to close eventfd"</span>, e);
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>         }
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>         eventfdReadBufCleanable.clean();
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>         timeoutMemoryCleanable.clean();
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>         iovArray.release();
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>         msgHdrMemoryArray.release();
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>     }
-<a class="jxr_linenumber" name="L467" href="#L467">467</a> 
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>     @Override
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>     <strong class="jxr_keyword">public</strong> <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> register(<a name="IoHandle" href="../../../../io/netty/channel/IoHandle.html#IoHandle">IoHandle</a> handle) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>         <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> ioHandle = <strong class="jxr_keyword">cast</strong>(handle);
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>         <strong class="jxr_keyword">if</strong> (shuttingDown) {
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"IoUringIoHandler is shutting down"</span>);
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>         }
-<a class="jxr_linenumber" name="L474" href="#L474">474</a>         DefaultIoUringIoRegistration registration = <strong class="jxr_keyword">new</strong> DefaultIoUringIoRegistration(executor, ioHandle);
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>         <strong class="jxr_keyword">for</strong> (;;) {
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <strong class="jxr_keyword">int</strong> id = nextRegistrationId();
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>             DefaultIoUringIoRegistration old = registrations.put(id, registration);
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>             <strong class="jxr_keyword">if</strong> (old != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L479" href="#L479">479</a>                 assert old.handle != registration.handle;
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>                 registrations.put(id, old);
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L482" href="#L482">482</a>                 registration.setId(id);
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>                 ioHandle.registered();
-<a class="jxr_linenumber" name="L484" href="#L484">484</a>                 <strong class="jxr_keyword">break</strong>;
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>             }
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>         }
-<a class="jxr_linenumber" name="L487" href="#L487">487</a> 
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>         <strong class="jxr_keyword">return</strong> registration;
-<a class="jxr_linenumber" name="L489" href="#L489">489</a>     }
-<a class="jxr_linenumber" name="L490" href="#L490">490</a> 
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> nextRegistrationId() {
-<a class="jxr_linenumber" name="L492" href="#L492">492</a>         <strong class="jxr_keyword">int</strong> id;
-<a class="jxr_linenumber" name="L493" href="#L493">493</a>         <strong class="jxr_keyword">do</strong> {
-<a class="jxr_linenumber" name="L494" href="#L494">494</a>             id = nextRegistrationId++;
-<a class="jxr_linenumber" name="L495" href="#L495">495</a>         } <strong class="jxr_keyword">while</strong> (id == RINGFD_ID || id == EVENTFD_ID || id == INVALID_ID);
-<a class="jxr_linenumber" name="L496" href="#L496">496</a>         <strong class="jxr_keyword">return</strong> id;
-<a class="jxr_linenumber" name="L497" href="#L497">497</a>     }
-<a class="jxr_linenumber" name="L498" href="#L498">498</a> 
-<a class="jxr_linenumber" name="L499" href="#L499">499</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> DefaultIoUringIoRegistration <strong class="jxr_keyword">implements</strong> <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> {
-<a class="jxr_linenumber" name="L500" href="#L500">500</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> AtomicBoolean canceled = <strong class="jxr_keyword">new</strong> AtomicBoolean();
-<a class="jxr_linenumber" name="L501" href="#L501">501</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="ThreadAwareExecutor" href="../../../../io/netty/util/concurrent/ThreadAwareExecutor.html#ThreadAwareExecutor">ThreadAwareExecutor</a> executor;
-<a class="jxr_linenumber" name="L502" href="#L502">502</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IoUringIoEvent" href="../../../../io/netty/channel/uring/IoUringIoEvent.html#IoUringIoEvent">IoUringIoEvent</a> event = <strong class="jxr_keyword">new</strong> <a name="IoUringIoEvent" href="../../../../io/netty/channel/uring/IoUringIoEvent.html#IoUringIoEvent">IoUringIoEvent</a>(0, 0, (byte) 0, (<strong class="jxr_keyword">short</strong>) 0);
-<a class="jxr_linenumber" name="L503" href="#L503">503</a>         <strong class="jxr_keyword">final</strong> <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> handle;
-<a class="jxr_linenumber" name="L504" href="#L504">504</a> 
-<a class="jxr_linenumber" name="L505" href="#L505">505</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> removeLater;
-<a class="jxr_linenumber" name="L506" href="#L506">506</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> outstandingCompletions;
-<a class="jxr_linenumber" name="L507" href="#L507">507</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> id;
-<a class="jxr_linenumber" name="L508" href="#L508">508</a> 
-<a class="jxr_linenumber" name="L509" href="#L509">509</a>         DefaultIoUringIoRegistration(<a name="ThreadAwareExecutor" href="../../../../io/netty/util/concurrent/ThreadAwareExecutor.html#ThreadAwareExecutor">ThreadAwareExecutor</a> executor, <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> handle) {
-<a class="jxr_linenumber" name="L510" href="#L510">510</a>             <strong class="jxr_keyword">this</strong>.executor = executor;
-<a class="jxr_linenumber" name="L511" href="#L511">511</a>             <strong class="jxr_keyword">this</strong>.handle = handle;
-<a class="jxr_linenumber" name="L512" href="#L512">512</a>         }
-<a class="jxr_linenumber" name="L513" href="#L513">513</a> 
-<a class="jxr_linenumber" name="L514" href="#L514">514</a>         <strong class="jxr_keyword">void</strong> setId(<strong class="jxr_keyword">int</strong> id) {
-<a class="jxr_linenumber" name="L515" href="#L515">515</a>             <strong class="jxr_keyword">this</strong>.id = id;
-<a class="jxr_linenumber" name="L516" href="#L516">516</a>         }
-<a class="jxr_linenumber" name="L517" href="#L517">517</a> 
-<a class="jxr_linenumber" name="L518" href="#L518">518</a>         @Override
-<a class="jxr_linenumber" name="L519" href="#L519">519</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> submit(<a name="IoOps" href="../../../../io/netty/channel/IoOps.html#IoOps">IoOps</a> ops) {
-<a class="jxr_linenumber" name="L520" href="#L520">520</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ioOps = (<a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a>) ops;
-<a class="jxr_linenumber" name="L521" href="#L521">521</a>             <strong class="jxr_keyword">if</strong> (!isValid()) {
-<a class="jxr_linenumber" name="L522" href="#L522">522</a>                 <strong class="jxr_keyword">return</strong> INVALID_ID;
-<a class="jxr_linenumber" name="L523" href="#L523">523</a>             }
-<a class="jxr_linenumber" name="L524" href="#L524">524</a>             <strong class="jxr_keyword">if</strong> ((ioOps.flags() &amp; Native.IOSQE_CQE_SKIP_SUCCESS) != 0) {
-<a class="jxr_linenumber" name="L525" href="#L525">525</a>                 <em class="jxr_comment">// Because we expect at least 1 completion per submission we can't support IOSQE_CQE_SKIP_SUCCESS</em>
-<a class="jxr_linenumber" name="L526" href="#L526">526</a>                 <em class="jxr_comment">// as it will only produce a completion on failure.</em>
-<a class="jxr_linenumber" name="L527" href="#L527">527</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"IOSQE_CQE_SKIP_SUCCESS not supported"</span>);
-<a class="jxr_linenumber" name="L528" href="#L528">528</a>             }
-<a class="jxr_linenumber" name="L529" href="#L529">529</a>             <strong class="jxr_keyword">long</strong> udata = UserData.encode(id, ioOps.opcode(), ioOps.data());
-<a class="jxr_linenumber" name="L530" href="#L530">530</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
-<a class="jxr_linenumber" name="L531" href="#L531">531</a>                 submit0(ioOps, udata);
-<a class="jxr_linenumber" name="L532" href="#L532">532</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L533" href="#L533">533</a>                 executor.execute(() -&gt; submit0(ioOps, udata));
-<a class="jxr_linenumber" name="L534" href="#L534">534</a>             }
-<a class="jxr_linenumber" name="L535" href="#L535">535</a>             <strong class="jxr_keyword">return</strong> udata;
-<a class="jxr_linenumber" name="L536" href="#L536">536</a>         }
-<a class="jxr_linenumber" name="L537" href="#L537">537</a> 
-<a class="jxr_linenumber" name="L538" href="#L538">538</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> submit0(<a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ioOps, <strong class="jxr_keyword">long</strong> udata) {
-<a class="jxr_linenumber" name="L539" href="#L539">539</a>             ringBuffer.ioUringSubmissionQueue().enqueueSqe(ioOps.opcode(), ioOps.flags(), ioOps.ioPrio(),
-<a class="jxr_linenumber" name="L540" href="#L540">540</a>                     ioOps.fd(), ioOps.union1(), ioOps.union2(), ioOps.len(), ioOps.union3(), udata,
-<a class="jxr_linenumber" name="L541" href="#L541">541</a>                     ioOps.union4(), ioOps.personality(), ioOps.union5(), ioOps.union6()
-<a class="jxr_linenumber" name="L542" href="#L542">542</a>             );
-<a class="jxr_linenumber" name="L543" href="#L543">543</a>             outstandingCompletions++;
-<a class="jxr_linenumber" name="L544" href="#L544">544</a>         }
-<a class="jxr_linenumber" name="L545" href="#L545">545</a> 
-<a class="jxr_linenumber" name="L546" href="#L546">546</a>         @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L547" href="#L547">547</a>         @Override
-<a class="jxr_linenumber" name="L548" href="#L548">548</a>         <strong class="jxr_keyword">public</strong> &lt;T&gt; T attachment() {
-<a class="jxr_linenumber" name="L549" href="#L549">549</a>             <strong class="jxr_keyword">return</strong> (T) IoUringIoHandler.<strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L550" href="#L550">550</a>         }
-<a class="jxr_linenumber" name="L551" href="#L551">551</a> 
-<a class="jxr_linenumber" name="L552" href="#L552">552</a>         @Override
-<a class="jxr_linenumber" name="L553" href="#L553">553</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isValid() {
-<a class="jxr_linenumber" name="L554" href="#L554">554</a>             <strong class="jxr_keyword">return</strong> !canceled.get();
-<a class="jxr_linenumber" name="L555" href="#L555">555</a>         }
-<a class="jxr_linenumber" name="L556" href="#L556">556</a> 
-<a class="jxr_linenumber" name="L557" href="#L557">557</a>         @Override
-<a class="jxr_linenumber" name="L558" href="#L558">558</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel() {
-<a class="jxr_linenumber" name="L559" href="#L559">559</a>             <strong class="jxr_keyword">if</strong> (!canceled.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
-<a class="jxr_linenumber" name="L560" href="#L560">560</a>                 <em class="jxr_comment">// Already cancelled.</em>
-<a class="jxr_linenumber" name="L561" href="#L561">561</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L562" href="#L562">562</a>             }
-<a class="jxr_linenumber" name="L563" href="#L563">563</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
-<a class="jxr_linenumber" name="L564" href="#L564">564</a>                 tryRemove();
-<a class="jxr_linenumber" name="L565" href="#L565">565</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>                 executor.execute(<strong class="jxr_keyword">this</strong>::tryRemove);
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>             }
-<a class="jxr_linenumber" name="L568" href="#L568">568</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L569" href="#L569">569</a>         }
-<a class="jxr_linenumber" name="L570" href="#L570">570</a> 
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> tryRemove() {
-<a class="jxr_linenumber" name="L572" href="#L572">572</a>             <strong class="jxr_keyword">if</strong> (outstandingCompletions &gt; 0) {
-<a class="jxr_linenumber" name="L573" href="#L573">573</a>                 <em class="jxr_comment">// We have some completions outstanding, we will remove the id &lt;-&gt; registration mapping</em>
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>                 <em class="jxr_comment">// once these are done.</em>
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>                 removeLater = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L577" href="#L577">577</a>             }
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>             remove();
-<a class="jxr_linenumber" name="L579" href="#L579">579</a>         }
-<a class="jxr_linenumber" name="L580" href="#L580">580</a> 
-<a class="jxr_linenumber" name="L581" href="#L581">581</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> remove() {
-<a class="jxr_linenumber" name="L582" href="#L582">582</a>             DefaultIoUringIoRegistration old = registrations.remove(id);
-<a class="jxr_linenumber" name="L583" href="#L583">583</a>             assert old == <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L584" href="#L584">584</a>             handle.unregistered();
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>         }
-<a class="jxr_linenumber" name="L586" href="#L586">586</a> 
-<a class="jxr_linenumber" name="L587" href="#L587">587</a>         <strong class="jxr_keyword">void</strong> close() {
-<a class="jxr_linenumber" name="L588" href="#L588">588</a>             <em class="jxr_comment">// Closing the handle will also cancel the registration.</em>
-<a class="jxr_linenumber" name="L589" href="#L589">589</a>             <em class="jxr_comment">// It's important that we not manually cancel as close() might need to submit some work to the ring.</em>
-<a class="jxr_linenumber" name="L590" href="#L590">590</a>             assert executor.isExecutorThread(Thread.currentThread());
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L592" href="#L592">592</a>                 handle.close();
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="L594" href="#L594">594</a>                 logger.debug(<span class="jxr_string">"Exception during closing "</span> + handle, e);
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>             }
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>         }
-<a class="jxr_linenumber" name="L597" href="#L597">597</a> 
-<a class="jxr_linenumber" name="L598" href="#L598">598</a>         <strong class="jxr_keyword">void</strong> handle(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, byte op, <strong class="jxr_keyword">short</strong> data, ByteBuffer extraCqeData) {
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>             event.update(res, flags, op, data, extraCqeData);
-<a class="jxr_linenumber" name="L600" href="#L600">600</a>             handle.handle(<strong class="jxr_keyword">this</strong>, event);
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>             <em class="jxr_comment">// Only decrement outstandingCompletions if IORING_CQE_F_MORE is not set as otherwise we know that we will</em>
-<a class="jxr_linenumber" name="L602" href="#L602">602</a>             <em class="jxr_comment">// receive more completions for the intial request.</em>
-<a class="jxr_linenumber" name="L603" href="#L603">603</a>             <strong class="jxr_keyword">if</strong> ((flags &amp; Native.IORING_CQE_F_MORE) == 0 &amp;&amp; --outstandingCompletions == 0 &amp;&amp; removeLater) {
-<a class="jxr_linenumber" name="L604" href="#L604">604</a>                 <em class="jxr_comment">// No more outstanding completions, remove the fd &lt;-&gt; registration mapping now.</em>
-<a class="jxr_linenumber" name="L605" href="#L605">605</a>                 removeLater = false;
-<a class="jxr_linenumber" name="L606" href="#L606">606</a>                 remove();
-<a class="jxr_linenumber" name="L607" href="#L607">607</a>             }
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>         }
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>     }
-<a class="jxr_linenumber" name="L610" href="#L610">610</a> 
-<a class="jxr_linenumber" name="L611" href="#L611">611</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> <strong class="jxr_keyword">cast</strong>(<a name="IoHandle" href="../../../../io/netty/channel/IoHandle.html#IoHandle">IoHandle</a> handle) {
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>         <strong class="jxr_keyword">if</strong> (handle instanceof <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a>) {
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>             <strong class="jxr_keyword">return</strong> (<a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a>) handle;
-<a class="jxr_linenumber" name="L614" href="#L614">614</a>         }
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"IoHandle of type "</span> + StringUtil.simpleClassName(handle) + <span class="jxr_string">" not supported"</span>);
-<a class="jxr_linenumber" name="L616" href="#L616">616</a>     }
-<a class="jxr_linenumber" name="L617" href="#L617">617</a> 
-<a class="jxr_linenumber" name="L618" href="#L618">618</a>     @Override
-<a class="jxr_linenumber" name="L619" href="#L619">619</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> wakeup() {
-<a class="jxr_linenumber" name="L620" href="#L620">620</a>         <strong class="jxr_keyword">if</strong> (!executor.isExecutorThread(Thread.currentThread()) &amp;&amp;
-<a class="jxr_linenumber" name="L621" href="#L621">621</a>                 !eventfdAsyncNotify.getAndSet(<strong class="jxr_keyword">true</strong>)) {
-<a class="jxr_linenumber" name="L622" href="#L622">622</a>             <em class="jxr_comment">// write to the eventfd which will then trigger an eventfd read completion.</em>
-<a class="jxr_linenumber" name="L623" href="#L623">623</a>             Native.eventFdWrite(eventfd.intValue(), 1L);
-<a class="jxr_linenumber" name="L624" href="#L624">624</a>         }
-<a class="jxr_linenumber" name="L625" href="#L625">625</a>     }
-<a class="jxr_linenumber" name="L626" href="#L626">626</a> 
-<a class="jxr_linenumber" name="L627" href="#L627">627</a>     @Override
-<a class="jxr_linenumber" name="L628" href="#L628">628</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCompatible(Class&lt;? <strong class="jxr_keyword">extends</strong> IoHandle&gt; handleType) {
-<a class="jxr_linenumber" name="L629" href="#L629">629</a>         <strong class="jxr_keyword">return</strong> IoUringIoHandle.<strong class="jxr_keyword">class</strong>.isAssignableFrom(handleType);
-<a class="jxr_linenumber" name="L630" href="#L630">630</a>     }
-<a class="jxr_linenumber" name="L631" href="#L631">631</a> 
-<a class="jxr_linenumber" name="L632" href="#L632">632</a>     <a name="IovArray" href="../../../../io/netty/channel/unix/IovArray.html#IovArray">IovArray</a> iovArray() {
-<a class="jxr_linenumber" name="L633" href="#L633">633</a>         <strong class="jxr_keyword">if</strong> (iovArray.isFull()) {
-<a class="jxr_linenumber" name="L634" href="#L634">634</a>             <em class="jxr_comment">// Submit so we can reuse the iovArray.</em>
-<a class="jxr_linenumber" name="L635" href="#L635">635</a>             submitAndClearNow(ringBuffer.ioUringSubmissionQueue());
-<a class="jxr_linenumber" name="L636" href="#L636">636</a>         }
-<a class="jxr_linenumber" name="L637" href="#L637">637</a>         assert iovArray.count() == 0;
-<a class="jxr_linenumber" name="L638" href="#L638">638</a>         <strong class="jxr_keyword">return</strong> iovArray;
-<a class="jxr_linenumber" name="L639" href="#L639">639</a>     }
-<a class="jxr_linenumber" name="L640" href="#L640">640</a> 
-<a class="jxr_linenumber" name="L641" href="#L641">641</a>     <a name="MsgHdrMemoryArray" href="../../../../io/netty/channel/uring/MsgHdrMemoryArray.html#MsgHdrMemoryArray">MsgHdrMemoryArray</a> msgHdrMemoryArray() {
-<a class="jxr_linenumber" name="L642" href="#L642">642</a>         <strong class="jxr_keyword">if</strong> (msgHdrMemoryArray.isFull()) {
-<a class="jxr_linenumber" name="L643" href="#L643">643</a>             <em class="jxr_comment">// Submit so we can reuse the msgHdrArray.</em>
-<a class="jxr_linenumber" name="L644" href="#L644">644</a>             submitAndClearNow(ringBuffer.ioUringSubmissionQueue());
-<a class="jxr_linenumber" name="L645" href="#L645">645</a>         }
-<a class="jxr_linenumber" name="L646" href="#L646">646</a>         <strong class="jxr_keyword">return</strong> msgHdrMemoryArray;
-<a class="jxr_linenumber" name="L647" href="#L647">647</a>     }
-<a class="jxr_linenumber" name="L648" href="#L648">648</a> 
-<a class="jxr_linenumber" name="L649" href="#L649">649</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L650" href="#L650">650</a> <em class="jxr_javadoccomment">     * {@code byte[]} that can be used as temporary storage to encode the ipv4 address</em>
-<a class="jxr_linenumber" name="L651" href="#L651">651</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L652" href="#L652">652</a>     byte[] inet4AddressArray() {
-<a class="jxr_linenumber" name="L653" href="#L653">653</a>         <strong class="jxr_keyword">return</strong> inet4AddressArray;
-<a class="jxr_linenumber" name="L654" href="#L654">654</a>     }
-<a class="jxr_linenumber" name="L655" href="#L655">655</a> 
-<a class="jxr_linenumber" name="L656" href="#L656">656</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L657" href="#L657">657</a> <em class="jxr_javadoccomment">     * {@code byte[]} that can be used as temporary storage to encode the ipv6 address</em>
-<a class="jxr_linenumber" name="L658" href="#L658">658</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L659" href="#L659">659</a>     byte[] inet6AddressArray() {
-<a class="jxr_linenumber" name="L660" href="#L660">660</a>         <strong class="jxr_keyword">return</strong> inet6AddressArray;
-<a class="jxr_linenumber" name="L661" href="#L661">661</a>     }
-<a class="jxr_linenumber" name="L662" href="#L662">662</a> 
-<a class="jxr_linenumber" name="L663" href="#L663">663</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L664" href="#L664">664</a> <em class="jxr_javadoccomment">     * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.</em>
-<a class="jxr_linenumber" name="L665" href="#L665">665</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L666" href="#L666">666</a> <em class="jxr_javadoccomment">     * @return factory</em>
-<a class="jxr_linenumber" name="L667" href="#L667">667</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L668" href="#L668">668</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a> newFactory() {
-<a class="jxr_linenumber" name="L669" href="#L669">669</a>         <strong class="jxr_keyword">return</strong> newFactory(<strong class="jxr_keyword">new</strong> <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a>());
-<a class="jxr_linenumber" name="L670" href="#L670">670</a>     }
-<a class="jxr_linenumber" name="L671" href="#L671">671</a> 
-<a class="jxr_linenumber" name="L672" href="#L672">672</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L673" href="#L673">673</a> <em class="jxr_javadoccomment">     * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.</em>
-<a class="jxr_linenumber" name="L674" href="#L674">674</a> <em class="jxr_javadoccomment">     * Each {@link IoUringIoHandler} will use a ring of size {@code ringSize}.</em>
-<a class="jxr_linenumber" name="L675" href="#L675">675</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L676" href="#L676">676</a> <em class="jxr_javadoccomment">     * @param  ringSize     the size of the ring.</em>
-<a class="jxr_linenumber" name="L677" href="#L677">677</a> <em class="jxr_javadoccomment">     * @return              factory</em>
-<a class="jxr_linenumber" name="L678" href="#L678">678</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L679" href="#L679">679</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a> newFactory(<strong class="jxr_keyword">int</strong> ringSize) {
-<a class="jxr_linenumber" name="L680" href="#L680">680</a>         <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a> configuration = <strong class="jxr_keyword">new</strong> <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a>();
-<a class="jxr_linenumber" name="L681" href="#L681">681</a>         configuration.setRingSize(ringSize);
-<a class="jxr_linenumber" name="L682" href="#L682">682</a>         <strong class="jxr_keyword">return</strong> eventLoop -&gt; <strong class="jxr_keyword">new</strong> <a name="IoUringIoHandler" href="../../../../io/netty/channel/uring/IoUringIoHandler.html#IoUringIoHandler">IoUringIoHandler</a>(eventLoop, configuration);
-<a class="jxr_linenumber" name="L683" href="#L683">683</a>     }
-<a class="jxr_linenumber" name="L684" href="#L684">684</a> 
-<a class="jxr_linenumber" name="L685" href="#L685">685</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L686" href="#L686">686</a> <em class="jxr_javadoccomment">     * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.</em>
-<a class="jxr_linenumber" name="L687" href="#L687">687</a> <em class="jxr_javadoccomment">     * Each {@link IoUringIoHandler} will use same option</em>
-<a class="jxr_linenumber" name="L688" href="#L688">688</a> <em class="jxr_javadoccomment">     * @param config the io_uring configuration</em>
-<a class="jxr_linenumber" name="L689" href="#L689">689</a> <em class="jxr_javadoccomment">     * @return factory</em>
-<a class="jxr_linenumber" name="L690" href="#L690">690</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L691" href="#L691">691</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a> newFactory(<a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a> config) {
-<a class="jxr_linenumber" name="L692" href="#L692">692</a>         IoUring.ensureAvailability();
-<a class="jxr_linenumber" name="L693" href="#L693">693</a>         <strong class="jxr_keyword">final</strong> <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a> copy = ObjectUtil.checkNotNull(config, <span class="jxr_string">"config"</span>).verifyAndClone();
-<a class="jxr_linenumber" name="L694" href="#L694">694</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a>() {
-<a class="jxr_linenumber" name="L695" href="#L695">695</a>             @Override
-<a class="jxr_linenumber" name="L696" href="#L696">696</a>             <strong class="jxr_keyword">public</strong> <a name="IoHandler" href="../../../../io/netty/channel/IoHandler.html#IoHandler">IoHandler</a> newHandler(<a name="ThreadAwareExecutor" href="../../../../io/netty/util/concurrent/ThreadAwareExecutor.html#ThreadAwareExecutor">ThreadAwareExecutor</a> eventLoop) {
-<a class="jxr_linenumber" name="L697" href="#L697">697</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoUringIoHandler" href="../../../../io/netty/channel/uring/IoUringIoHandler.html#IoUringIoHandler">IoUringIoHandler</a>(eventLoop, copy);
-<a class="jxr_linenumber" name="L698" href="#L698">698</a>             }
-<a class="jxr_linenumber" name="L699" href="#L699">699</a> 
-<a class="jxr_linenumber" name="L700" href="#L700">700</a>             @Override
-<a class="jxr_linenumber" name="L701" href="#L701">701</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isChangingThreadSupported() {
-<a class="jxr_linenumber" name="L702" href="#L702">702</a>                 <strong class="jxr_keyword">return</strong> !copy.singleIssuer();
-<a class="jxr_linenumber" name="L703" href="#L703">703</a>             }
-<a class="jxr_linenumber" name="L704" href="#L704">704</a>         };
-<a class="jxr_linenumber" name="L705" href="#L705">705</a>     }
-<a class="jxr_linenumber" name="L706" href="#L706">706</a> }
+<a class="jxr_linenumber" name="L352" href="#L352">352</a>         <strong class="jxr_keyword">for</strong> (DefaultIoUringIoRegistration registration: copy) {
+<a class="jxr_linenumber" name="L353" href="#L353">353</a>             registration.close();
+<a class="jxr_linenumber" name="L354" href="#L354">354</a>         }
+<a class="jxr_linenumber" name="L355" href="#L355">355</a> 
+<a class="jxr_linenumber" name="L356" href="#L356">356</a>         <em class="jxr_comment">// Write to the eventfd to ensure that if we submitted a read for the eventfd we will see the completion event.</em>
+<a class="jxr_linenumber" name="L357" href="#L357">357</a>         Native.eventFdWrite(eventfd.intValue(), 1L);
+<a class="jxr_linenumber" name="L358" href="#L358">358</a> 
+<a class="jxr_linenumber" name="L359" href="#L359">359</a>         <em class="jxr_comment">// Ensure all previously submitted IOs get to complete before tearing down everything.</em>
+<a class="jxr_linenumber" name="L360" href="#L360">360</a>         <strong class="jxr_keyword">long</strong> udata = UserData.encode(RINGFD_ID, Native.IORING_OP_NOP, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L361" href="#L361">361</a>         submissionQueue.addNop((byte) Native.IOSQE_IO_DRAIN, udata);
+<a class="jxr_linenumber" name="L362" href="#L362">362</a> 
+<a class="jxr_linenumber" name="L363" href="#L363">363</a>         <em class="jxr_comment">// Submit everything and wait until we could drain i.</em>
+<a class="jxr_linenumber" name="L364" href="#L364">364</a>         submissionQueue.submitAndGet();
+<a class="jxr_linenumber" name="L365" href="#L365">365</a> 
+<a class="jxr_linenumber" name="L366" href="#L366">366</a>         <strong class="jxr_keyword">while</strong> (completionQueue.hasCompletions()) {
+<a class="jxr_linenumber" name="L367" href="#L367">367</a>             processCompletionsAndHandleOverflow(submissionQueue, completionQueue, <strong class="jxr_keyword">this</strong>::handle);
+<a class="jxr_linenumber" name="L368" href="#L368">368</a>             <strong class="jxr_keyword">if</strong> (submissionQueue.count() &gt; 0) {
+<a class="jxr_linenumber" name="L369" href="#L369">369</a>                 submissionQueue.submitAndGetNow();
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>             }
+<a class="jxr_linenumber" name="L371" href="#L371">371</a>         }
+<a class="jxr_linenumber" name="L372" href="#L372">372</a>     }
+<a class="jxr_linenumber" name="L373" href="#L373">373</a> 
+<a class="jxr_linenumber" name="L374" href="#L374">374</a>     @Override
+<a class="jxr_linenumber" name="L375" href="#L375">375</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> destroy() {
+<a class="jxr_linenumber" name="L376" href="#L376">376</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>         <a name="CompletionQueue" href="../../../../io/netty/channel/uring/CompletionQueue.html#CompletionQueue">CompletionQueue</a> completionQueue = ringBuffer.ioUringCompletionQueue();
+<a class="jxr_linenumber" name="L378" href="#L378">378</a>         drainEventFd();
+<a class="jxr_linenumber" name="L379" href="#L379">379</a>         <strong class="jxr_keyword">if</strong> (submissionQueue.remaining() &lt; 2) {
+<a class="jxr_linenumber" name="L380" href="#L380">380</a>             <em class="jxr_comment">// We need to submit 2 linked operations. Since they are linked, we cannot allow a submit-call to</em>
+<a class="jxr_linenumber" name="L381" href="#L381">381</a>             <em class="jxr_comment">// separate them. We don't have enough room (&lt; 2) in the queue, so we submit now to make more room.</em>
+<a class="jxr_linenumber" name="L382" href="#L382">382</a>             submissionQueue.submit();
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>         }
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>         <em class="jxr_comment">// Try to drain all the IO from the queue first...</em>
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>         <strong class="jxr_keyword">long</strong> udata = UserData.encode(RINGFD_ID, Native.IORING_OP_NOP, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>         <em class="jxr_comment">// We need to also specify the Native.IOSQE_LINK flag for it to work as otherwise it is not correctly linked</em>
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>         <em class="jxr_comment">// with the timeout.</em>
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>         <em class="jxr_comment">// See:</em>
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>         <em class="jxr_comment">// - https://man7.org/linux/man-pages/man2/io_uring_enter.2.html</em>
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>         <em class="jxr_comment">// - https://git.kernel.dk/cgit/liburing/commit/?h=link-timeout&amp;id=bc1bd5e97e2c758d6fd975bd35843b9b2c770c5a</em>
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>         submissionQueue.addNop((byte) (Native.IOSQE_IO_DRAIN | Native.IOSQE_LINK), udata);
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>         <em class="jxr_comment">// ... but only wait for 200 milliseconds on this</em>
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>         submitAndWaitWithTimeout(submissionQueue, <strong class="jxr_keyword">true</strong>, TimeUnit.MILLISECONDS.toNanos(200));
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>         completionQueue.process(<strong class="jxr_keyword">this</strong>::handle);
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>         <strong class="jxr_keyword">for</strong> (<a name="IoUringBufferRing" href="../../../../io/netty/channel/uring/IoUringBufferRing.html#IoUringBufferRing">IoUringBufferRing</a> ioUringBufferRing : registeredIoUringBufferRing.values()) {
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>             ioUringBufferRing.close();
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>         }
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>         completeRingClose();
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>     }
+<a class="jxr_linenumber" name="L400" href="#L400">400</a> 
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>     <em class="jxr_comment">// We need to prevent the race condition where a wakeup event is submitted to a file descriptor that has</em>
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>     <em class="jxr_comment">// already been freed (and potentially reallocated by the OS). Because submitted events is gated on the</em>
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>     <em class="jxr_comment">// `eventfdAsyncNotify` flag we can close the gate but may need to read any outstanding events that have</em>
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>     <em class="jxr_comment">// (or will) be written.</em>
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> drainEventFd() {
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>         <a name="CompletionQueue" href="../../../../io/netty/channel/uring/CompletionQueue.html#CompletionQueue">CompletionQueue</a> completionQueue = ringBuffer.ioUringCompletionQueue();
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>         <a name="SubmissionQueue" href="../../../../io/netty/channel/uring/SubmissionQueue.html#SubmissionQueue">SubmissionQueue</a> submissionQueue = ringBuffer.ioUringSubmissionQueue();
+<a class="jxr_linenumber" name="L408" href="#L408">408</a>         assert !eventFdClosing;
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>         eventFdClosing = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>         <strong class="jxr_keyword">boolean</strong> eventPending = eventfdAsyncNotify.getAndSet(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>         <strong class="jxr_keyword">if</strong> (eventPending) {
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>             <em class="jxr_comment">// There is an event that has been or will be written by another thread, so we must wait for the event.</em>
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>             <em class="jxr_comment">// Make sure we're actually listening for writes to the event fd.</em>
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>             <strong class="jxr_keyword">while</strong> (eventfdReadSubmitted == 0) {
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>                 submitEventFdRead();
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                 submissionQueue.submit();
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>             }
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>             <em class="jxr_comment">// Drain the eventfd of the pending wakup.</em>
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>             <strong class="jxr_keyword">class</strong> DrainFdEventCallback <strong class="jxr_keyword">implements</strong> <a name="CompletionCallback" href="../../../../io/netty/channel/uring/CompletionCallback.html#CompletionCallback">CompletionCallback</a> {
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>                 <strong class="jxr_keyword">boolean</strong> eventFdDrained;
+<a class="jxr_linenumber" name="L421" href="#L421">421</a> 
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>                 @Override
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handle(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, <strong class="jxr_keyword">long</strong> udata, ByteBuffer extraCqeData) {
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>                     <strong class="jxr_keyword">if</strong> (UserData.decodeId(udata) == EVENTFD_ID) {
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>                         eventFdDrained = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>                     }
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>                     IoUringIoHandler.<strong class="jxr_keyword">this</strong>.handle(res, flags, udata, extraCqeData);
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>                 }
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>             }
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>             <strong class="jxr_keyword">final</strong> DrainFdEventCallback handler = <strong class="jxr_keyword">new</strong> DrainFdEventCallback();
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>             completionQueue.process(handler);
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>             <strong class="jxr_keyword">while</strong> (!handler.eventFdDrained) {
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>                 submissionQueue.submitAndGet();
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>                 processCompletionsAndHandleOverflow(submissionQueue, completionQueue, handler);
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>             }
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         }
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>         <em class="jxr_comment">// We've consumed any pending eventfd read and `eventfdAsyncNotify` should never</em>
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>         <em class="jxr_comment">// transition back to false, thus we should never have any more events written.</em>
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>         <em class="jxr_comment">// So, if we have a read event pending, we can cancel it.</em>
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>         <strong class="jxr_keyword">if</strong> (eventfdReadSubmitted != 0) {
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>             <strong class="jxr_keyword">long</strong> udata = UserData.encode(EVENTFD_ID, Native.IORING_OP_ASYNC_CANCEL, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>             submissionQueue.addCancel(eventfdReadSubmitted, udata);
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>             eventfdReadSubmitted = 0;
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>             submissionQueue.submit();
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>         }
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>     }
+<a class="jxr_linenumber" name="L447" href="#L447">447</a> 
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> completeRingClose() {
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>         <strong class="jxr_keyword">if</strong> (closeCompleted) {
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>             <em class="jxr_comment">// already done.</em>
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>         }
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>         closeCompleted = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>         ringBuffer.close();
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             eventfd.close();
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>         } <strong class="jxr_keyword">catch</strong> (IOException e) {
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>             logger.warn(<span class="jxr_string">"Failed to close eventfd"</span>, e);
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>         }
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>         eventfdReadBufCleanable.clean();
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>         timeoutMemoryCleanable.clean();
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>         iovArray.release();
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>         msgHdrMemoryArray.release();
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>     }
+<a class="jxr_linenumber" name="L465" href="#L465">465</a> 
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>     @Override
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>     <strong class="jxr_keyword">public</strong> <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> register(<a name="IoHandle" href="../../../../io/netty/channel/IoHandle.html#IoHandle">IoHandle</a> handle) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>         <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> ioHandle = <strong class="jxr_keyword">cast</strong>(handle);
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>         <strong class="jxr_keyword">if</strong> (shuttingDown) {
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"IoUringIoHandler is shutting down"</span>);
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>         }
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>         DefaultIoUringIoRegistration registration = <strong class="jxr_keyword">new</strong> DefaultIoUringIoRegistration(executor, ioHandle);
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>         <strong class="jxr_keyword">for</strong> (;;) {
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>             <strong class="jxr_keyword">int</strong> id = nextRegistrationId();
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>             DefaultIoUringIoRegistration old = registrations.put(id, registration);
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <strong class="jxr_keyword">if</strong> (old != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>                 assert old.handle != registration.handle;
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>                 registrations.put(id, old);
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>                 registration.setId(id);
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>                 ioHandle.registered();
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>                 <strong class="jxr_keyword">break</strong>;
+<a class="jxr_linenumber" name="L483" href="#L483">483</a>             }
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>         }
+<a class="jxr_linenumber" name="L485" href="#L485">485</a> 
+<a class="jxr_linenumber" name="L486" href="#L486">486</a>         <strong class="jxr_keyword">return</strong> registration;
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>     }
+<a class="jxr_linenumber" name="L488" href="#L488">488</a> 
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> nextRegistrationId() {
+<a class="jxr_linenumber" name="L490" href="#L490">490</a>         <strong class="jxr_keyword">int</strong> id;
+<a class="jxr_linenumber" name="L491" href="#L491">491</a>         <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L492" href="#L492">492</a>             id = nextRegistrationId++;
+<a class="jxr_linenumber" name="L493" href="#L493">493</a>         } <strong class="jxr_keyword">while</strong> (id == RINGFD_ID || id == EVENTFD_ID || id == INVALID_ID);
+<a class="jxr_linenumber" name="L494" href="#L494">494</a>         <strong class="jxr_keyword">return</strong> id;
+<a class="jxr_linenumber" name="L495" href="#L495">495</a>     }
+<a class="jxr_linenumber" name="L496" href="#L496">496</a> 
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> DefaultIoUringIoRegistration <strong class="jxr_keyword">implements</strong> <a name="IoRegistration" href="../../../../io/netty/channel/IoRegistration.html#IoRegistration">IoRegistration</a> {
+<a class="jxr_linenumber" name="L498" href="#L498">498</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> AtomicBoolean canceled = <strong class="jxr_keyword">new</strong> AtomicBoolean();
+<a class="jxr_linenumber" name="L499" href="#L499">499</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="ThreadAwareExecutor" href="../../../../io/netty/util/concurrent/ThreadAwareExecutor.html#ThreadAwareExecutor">ThreadAwareExecutor</a> executor;
+<a class="jxr_linenumber" name="L500" href="#L500">500</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <a name="IoUringIoEvent" href="../../../../io/netty/channel/uring/IoUringIoEvent.html#IoUringIoEvent">IoUringIoEvent</a> event = <strong class="jxr_keyword">new</strong> <a name="IoUringIoEvent" href="../../../../io/netty/channel/uring/IoUringIoEvent.html#IoUringIoEvent">IoUringIoEvent</a>(0, 0, (byte) 0, (<strong class="jxr_keyword">short</strong>) 0);
+<a class="jxr_linenumber" name="L501" href="#L501">501</a>         <strong class="jxr_keyword">final</strong> <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> handle;
+<a class="jxr_linenumber" name="L502" href="#L502">502</a> 
+<a class="jxr_linenumber" name="L503" href="#L503">503</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> removeLater;
+<a class="jxr_linenumber" name="L504" href="#L504">504</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> outstandingCompletions;
+<a class="jxr_linenumber" name="L505" href="#L505">505</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> id;
+<a class="jxr_linenumber" name="L506" href="#L506">506</a> 
+<a class="jxr_linenumber" name="L507" href="#L507">507</a>         DefaultIoUringIoRegistration(<a name="ThreadAwareExecutor" href="../../../../io/netty/util/concurrent/ThreadAwareExecutor.html#ThreadAwareExecutor">ThreadAwareExecutor</a> executor, <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> handle) {
+<a class="jxr_linenumber" name="L508" href="#L508">508</a>             <strong class="jxr_keyword">this</strong>.executor = executor;
+<a class="jxr_linenumber" name="L509" href="#L509">509</a>             <strong class="jxr_keyword">this</strong>.handle = handle;
+<a class="jxr_linenumber" name="L510" href="#L510">510</a>         }
+<a class="jxr_linenumber" name="L511" href="#L511">511</a> 
+<a class="jxr_linenumber" name="L512" href="#L512">512</a>         <strong class="jxr_keyword">void</strong> setId(<strong class="jxr_keyword">int</strong> id) {
+<a class="jxr_linenumber" name="L513" href="#L513">513</a>             <strong class="jxr_keyword">this</strong>.id = id;
+<a class="jxr_linenumber" name="L514" href="#L514">514</a>         }
+<a class="jxr_linenumber" name="L515" href="#L515">515</a> 
+<a class="jxr_linenumber" name="L516" href="#L516">516</a>         @Override
+<a class="jxr_linenumber" name="L517" href="#L517">517</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">long</strong> submit(<a name="IoOps" href="../../../../io/netty/channel/IoOps.html#IoOps">IoOps</a> ops) {
+<a class="jxr_linenumber" name="L518" href="#L518">518</a>             <a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ioOps = (<a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a>) ops;
+<a class="jxr_linenumber" name="L519" href="#L519">519</a>             <strong class="jxr_keyword">if</strong> (!isValid()) {
+<a class="jxr_linenumber" name="L520" href="#L520">520</a>                 <strong class="jxr_keyword">return</strong> INVALID_ID;
+<a class="jxr_linenumber" name="L521" href="#L521">521</a>             }
+<a class="jxr_linenumber" name="L522" href="#L522">522</a>             <strong class="jxr_keyword">if</strong> ((ioOps.flags() &amp; Native.IOSQE_CQE_SKIP_SUCCESS) != 0) {
+<a class="jxr_linenumber" name="L523" href="#L523">523</a>                 <em class="jxr_comment">// Because we expect at least 1 completion per submission we can't support IOSQE_CQE_SKIP_SUCCESS</em>
+<a class="jxr_linenumber" name="L524" href="#L524">524</a>                 <em class="jxr_comment">// as it will only produce a completion on failure.</em>
+<a class="jxr_linenumber" name="L525" href="#L525">525</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"IOSQE_CQE_SKIP_SUCCESS not supported"</span>);
+<a class="jxr_linenumber" name="L526" href="#L526">526</a>             }
+<a class="jxr_linenumber" name="L527" href="#L527">527</a>             <strong class="jxr_keyword">long</strong> udata = UserData.encode(id, ioOps.opcode(), ioOps.data());
+<a class="jxr_linenumber" name="L528" href="#L528">528</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
+<a class="jxr_linenumber" name="L529" href="#L529">529</a>                 submit0(ioOps, udata);
+<a class="jxr_linenumber" name="L530" href="#L530">530</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L531" href="#L531">531</a>                 executor.execute(() -&gt; submit0(ioOps, udata));
+<a class="jxr_linenumber" name="L532" href="#L532">532</a>             }
+<a class="jxr_linenumber" name="L533" href="#L533">533</a>             <strong class="jxr_keyword">return</strong> udata;
+<a class="jxr_linenumber" name="L534" href="#L534">534</a>         }
+<a class="jxr_linenumber" name="L535" href="#L535">535</a> 
+<a class="jxr_linenumber" name="L536" href="#L536">536</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> submit0(<a name="IoUringIoOps" href="../../../../io/netty/channel/uring/IoUringIoOps.html#IoUringIoOps">IoUringIoOps</a> ioOps, <strong class="jxr_keyword">long</strong> udata) {
+<a class="jxr_linenumber" name="L537" href="#L537">537</a>             ringBuffer.ioUringSubmissionQueue().enqueueSqe(ioOps.opcode(), ioOps.flags(), ioOps.ioPrio(),
+<a class="jxr_linenumber" name="L538" href="#L538">538</a>                     ioOps.fd(), ioOps.union1(), ioOps.union2(), ioOps.len(), ioOps.union3(), udata,
+<a class="jxr_linenumber" name="L539" href="#L539">539</a>                     ioOps.union4(), ioOps.personality(), ioOps.union5(), ioOps.union6()
+<a class="jxr_linenumber" name="L540" href="#L540">540</a>             );
+<a class="jxr_linenumber" name="L541" href="#L541">541</a>             outstandingCompletions++;
+<a class="jxr_linenumber" name="L542" href="#L542">542</a>         }
+<a class="jxr_linenumber" name="L543" href="#L543">543</a> 
+<a class="jxr_linenumber" name="L544" href="#L544">544</a>         @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="L545" href="#L545">545</a>         @Override
+<a class="jxr_linenumber" name="L546" href="#L546">546</a>         <strong class="jxr_keyword">public</strong> &lt;T&gt; T attachment() {
+<a class="jxr_linenumber" name="L547" href="#L547">547</a>             <strong class="jxr_keyword">return</strong> (T) IoUringIoHandler.<strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L548" href="#L548">548</a>         }
+<a class="jxr_linenumber" name="L549" href="#L549">549</a> 
+<a class="jxr_linenumber" name="L550" href="#L550">550</a>         @Override
+<a class="jxr_linenumber" name="L551" href="#L551">551</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isValid() {
+<a class="jxr_linenumber" name="L552" href="#L552">552</a>             <strong class="jxr_keyword">return</strong> !canceled.get();
+<a class="jxr_linenumber" name="L553" href="#L553">553</a>         }
+<a class="jxr_linenumber" name="L554" href="#L554">554</a> 
+<a class="jxr_linenumber" name="L555" href="#L555">555</a>         @Override
+<a class="jxr_linenumber" name="L556" href="#L556">556</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel() {
+<a class="jxr_linenumber" name="L557" href="#L557">557</a>             <strong class="jxr_keyword">if</strong> (!canceled.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="L558" href="#L558">558</a>                 <em class="jxr_comment">// Already cancelled.</em>
+<a class="jxr_linenumber" name="L559" href="#L559">559</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L560" href="#L560">560</a>             }
+<a class="jxr_linenumber" name="L561" href="#L561">561</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
+<a class="jxr_linenumber" name="L562" href="#L562">562</a>                 tryRemove();
+<a class="jxr_linenumber" name="L563" href="#L563">563</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L564" href="#L564">564</a>                 executor.execute(<strong class="jxr_keyword">this</strong>::tryRemove);
+<a class="jxr_linenumber" name="L565" href="#L565">565</a>             }
+<a class="jxr_linenumber" name="L566" href="#L566">566</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L567" href="#L567">567</a>         }
+<a class="jxr_linenumber" name="L568" href="#L568">568</a> 
+<a class="jxr_linenumber" name="L569" href="#L569">569</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> tryRemove() {
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>             <strong class="jxr_keyword">if</strong> (outstandingCompletions &gt; 0) {
+<a class="jxr_linenumber" name="L571" href="#L571">571</a>                 <em class="jxr_comment">// We have some completions outstanding, we will remove the id &lt;-&gt; registration mapping</em>
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>                 <em class="jxr_comment">// once these are done.</em>
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>                 removeLater = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>             }
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>             remove();
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>         }
+<a class="jxr_linenumber" name="L578" href="#L578">578</a> 
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> remove() {
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>             DefaultIoUringIoRegistration old = registrations.remove(id);
+<a class="jxr_linenumber" name="L581" href="#L581">581</a>             assert old == <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>             handle.unregistered();
+<a class="jxr_linenumber" name="L583" href="#L583">583</a>         }
+<a class="jxr_linenumber" name="L584" href="#L584">584</a> 
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>         <strong class="jxr_keyword">void</strong> close() {
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>             <em class="jxr_comment">// Closing the handle will also cancel the registration.</em>
+<a class="jxr_linenumber" name="L587" href="#L587">587</a>             <em class="jxr_comment">// It's important that we not manually cancel as close() might need to submit some work to the ring.</em>
+<a class="jxr_linenumber" name="L588" href="#L588">588</a>             assert executor.isExecutorThread(Thread.currentThread());
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L590" href="#L590">590</a>                 handle.close();
+<a class="jxr_linenumber" name="L591" href="#L591">591</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L592" href="#L592">592</a>                 logger.debug(<span class="jxr_string">"Exception during closing "</span> + handle, e);
+<a class="jxr_linenumber" name="L593" href="#L593">593</a>             }
+<a class="jxr_linenumber" name="L594" href="#L594">594</a>         }
+<a class="jxr_linenumber" name="L595" href="#L595">595</a> 
+<a class="jxr_linenumber" name="L596" href="#L596">596</a>         <strong class="jxr_keyword">void</strong> handle(<strong class="jxr_keyword">int</strong> res, <strong class="jxr_keyword">int</strong> flags, byte op, <strong class="jxr_keyword">short</strong> data, ByteBuffer extraCqeData) {
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>             event.update(res, flags, op, data, extraCqeData);
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>             handle.handle(<strong class="jxr_keyword">this</strong>, event);
+<a class="jxr_linenumber" name="L599" href="#L599">599</a>             <em class="jxr_comment">// Only decrement outstandingCompletions if IORING_CQE_F_MORE is not set as otherwise we know that we will</em>
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>             <em class="jxr_comment">// receive more completions for the intial request.</em>
+<a class="jxr_linenumber" name="L601" href="#L601">601</a>             <strong class="jxr_keyword">if</strong> ((flags &amp; Native.IORING_CQE_F_MORE) == 0 &amp;&amp; --outstandingCompletions == 0 &amp;&amp; removeLater) {
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>                 <em class="jxr_comment">// No more outstanding completions, remove the fd &lt;-&gt; registration mapping now.</em>
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>                 removeLater = false;
+<a class="jxr_linenumber" name="L604" href="#L604">604</a>                 remove();
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>             }
+<a class="jxr_linenumber" name="L606" href="#L606">606</a>         }
+<a class="jxr_linenumber" name="L607" href="#L607">607</a>     }
+<a class="jxr_linenumber" name="L608" href="#L608">608</a> 
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a> <strong class="jxr_keyword">cast</strong>(<a name="IoHandle" href="../../../../io/netty/channel/IoHandle.html#IoHandle">IoHandle</a> handle) {
+<a class="jxr_linenumber" name="L610" href="#L610">610</a>         <strong class="jxr_keyword">if</strong> (handle instanceof <a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a>) {
+<a class="jxr_linenumber" name="L611" href="#L611">611</a>             <strong class="jxr_keyword">return</strong> (<a name="IoUringIoHandle" href="../../../../io/netty/channel/uring/IoUringIoHandle.html#IoUringIoHandle">IoUringIoHandle</a>) handle;
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>         }
+<a class="jxr_linenumber" name="L613" href="#L613">613</a>         <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalArgumentException(<span class="jxr_string">"IoHandle of type "</span> + StringUtil.simpleClassName(handle) + <span class="jxr_string">" not supported"</span>);
+<a class="jxr_linenumber" name="L614" href="#L614">614</a>     }
+<a class="jxr_linenumber" name="L615" href="#L615">615</a> 
+<a class="jxr_linenumber" name="L616" href="#L616">616</a>     @Override
+<a class="jxr_linenumber" name="L617" href="#L617">617</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> wakeup() {
+<a class="jxr_linenumber" name="L618" href="#L618">618</a>         <strong class="jxr_keyword">if</strong> (!executor.isExecutorThread(Thread.currentThread()) &amp;&amp;
+<a class="jxr_linenumber" name="L619" href="#L619">619</a>                 !eventfdAsyncNotify.getAndSet(<strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="L620" href="#L620">620</a>             <em class="jxr_comment">// write to the eventfd which will then trigger an eventfd read completion.</em>
+<a class="jxr_linenumber" name="L621" href="#L621">621</a>             Native.eventFdWrite(eventfd.intValue(), 1L);
+<a class="jxr_linenumber" name="L622" href="#L622">622</a>         }
+<a class="jxr_linenumber" name="L623" href="#L623">623</a>     }
+<a class="jxr_linenumber" name="L624" href="#L624">624</a> 
+<a class="jxr_linenumber" name="L625" href="#L625">625</a>     @Override
+<a class="jxr_linenumber" name="L626" href="#L626">626</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isCompatible(Class&lt;? <strong class="jxr_keyword">extends</strong> IoHandle&gt; handleType) {
+<a class="jxr_linenumber" name="L627" href="#L627">627</a>         <strong class="jxr_keyword">return</strong> IoUringIoHandle.<strong class="jxr_keyword">class</strong>.isAssignableFrom(handleType);
+<a class="jxr_linenumber" name="L628" href="#L628">628</a>     }
+<a class="jxr_linenumber" name="L629" href="#L629">629</a> 
+<a class="jxr_linenumber" name="L630" href="#L630">630</a>     <a name="IovArray" href="../../../../io/netty/channel/unix/IovArray.html#IovArray">IovArray</a> iovArray() {
+<a class="jxr_linenumber" name="L631" href="#L631">631</a>         <strong class="jxr_keyword">if</strong> (iovArray.isFull()) {
+<a class="jxr_linenumber" name="L632" href="#L632">632</a>             <em class="jxr_comment">// Submit so we can reuse the iovArray.</em>
+<a class="jxr_linenumber" name="L633" href="#L633">633</a>             submitAndClearNow(ringBuffer.ioUringSubmissionQueue());
+<a class="jxr_linenumber" name="L634" href="#L634">634</a>         }
+<a class="jxr_linenumber" name="L635" href="#L635">635</a>         assert iovArray.count() == 0;
+<a class="jxr_linenumber" name="L636" href="#L636">636</a>         <strong class="jxr_keyword">return</strong> iovArray;
+<a class="jxr_linenumber" name="L637" href="#L637">637</a>     }
+<a class="jxr_linenumber" name="L638" href="#L638">638</a> 
+<a class="jxr_linenumber" name="L639" href="#L639">639</a>     <a name="MsgHdrMemoryArray" href="../../../../io/netty/channel/uring/MsgHdrMemoryArray.html#MsgHdrMemoryArray">MsgHdrMemoryArray</a> msgHdrMemoryArray() {
+<a class="jxr_linenumber" name="L640" href="#L640">640</a>         <strong class="jxr_keyword">if</strong> (msgHdrMemoryArray.isFull()) {
+<a class="jxr_linenumber" name="L641" href="#L641">641</a>             <em class="jxr_comment">// Submit so we can reuse the msgHdrArray.</em>
+<a class="jxr_linenumber" name="L642" href="#L642">642</a>             submitAndClearNow(ringBuffer.ioUringSubmissionQueue());
+<a class="jxr_linenumber" name="L643" href="#L643">643</a>         }
+<a class="jxr_linenumber" name="L644" href="#L644">644</a>         <strong class="jxr_keyword">return</strong> msgHdrMemoryArray;
+<a class="jxr_linenumber" name="L645" href="#L645">645</a>     }
+<a class="jxr_linenumber" name="L646" href="#L646">646</a> 
+<a class="jxr_linenumber" name="L647" href="#L647">647</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L648" href="#L648">648</a> <em class="jxr_javadoccomment">     * {@code byte[]} that can be used as temporary storage to encode the ipv4 address</em>
+<a class="jxr_linenumber" name="L649" href="#L649">649</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L650" href="#L650">650</a>     byte[] inet4AddressArray() {
+<a class="jxr_linenumber" name="L651" href="#L651">651</a>         <strong class="jxr_keyword">return</strong> inet4AddressArray;
+<a class="jxr_linenumber" name="L652" href="#L652">652</a>     }
+<a class="jxr_linenumber" name="L653" href="#L653">653</a> 
+<a class="jxr_linenumber" name="L654" href="#L654">654</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L655" href="#L655">655</a> <em class="jxr_javadoccomment">     * {@code byte[]} that can be used as temporary storage to encode the ipv6 address</em>
+<a class="jxr_linenumber" name="L656" href="#L656">656</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L657" href="#L657">657</a>     byte[] inet6AddressArray() {
+<a class="jxr_linenumber" name="L658" href="#L658">658</a>         <strong class="jxr_keyword">return</strong> inet6AddressArray;
+<a class="jxr_linenumber" name="L659" href="#L659">659</a>     }
+<a class="jxr_linenumber" name="L660" href="#L660">660</a> 
+<a class="jxr_linenumber" name="L661" href="#L661">661</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L662" href="#L662">662</a> <em class="jxr_javadoccomment">     * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.</em>
+<a class="jxr_linenumber" name="L663" href="#L663">663</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L664" href="#L664">664</a> <em class="jxr_javadoccomment">     * @return factory</em>
+<a class="jxr_linenumber" name="L665" href="#L665">665</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L666" href="#L666">666</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a> newFactory() {
+<a class="jxr_linenumber" name="L667" href="#L667">667</a>         <strong class="jxr_keyword">return</strong> newFactory(<strong class="jxr_keyword">new</strong> <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a>());
+<a class="jxr_linenumber" name="L668" href="#L668">668</a>     }
+<a class="jxr_linenumber" name="L669" href="#L669">669</a> 
+<a class="jxr_linenumber" name="L670" href="#L670">670</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L671" href="#L671">671</a> <em class="jxr_javadoccomment">     * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.</em>
+<a class="jxr_linenumber" name="L672" href="#L672">672</a> <em class="jxr_javadoccomment">     * Each {@link IoUringIoHandler} will use a ring of size {@code ringSize}.</em>
+<a class="jxr_linenumber" name="L673" href="#L673">673</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L674" href="#L674">674</a> <em class="jxr_javadoccomment">     * @param  ringSize     the size of the ring.</em>
+<a class="jxr_linenumber" name="L675" href="#L675">675</a> <em class="jxr_javadoccomment">     * @return              factory</em>
+<a class="jxr_linenumber" name="L676" href="#L676">676</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L677" href="#L677">677</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a> newFactory(<strong class="jxr_keyword">int</strong> ringSize) {
+<a class="jxr_linenumber" name="L678" href="#L678">678</a>         <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a> configuration = <strong class="jxr_keyword">new</strong> <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a>();
+<a class="jxr_linenumber" name="L679" href="#L679">679</a>         configuration.setRingSize(ringSize);
+<a class="jxr_linenumber" name="L680" href="#L680">680</a>         <strong class="jxr_keyword">return</strong> eventLoop -&gt; <strong class="jxr_keyword">new</strong> <a name="IoUringIoHandler" href="../../../../io/netty/channel/uring/IoUringIoHandler.html#IoUringIoHandler">IoUringIoHandler</a>(eventLoop, configuration);
+<a class="jxr_linenumber" name="L681" href="#L681">681</a>     }
+<a class="jxr_linenumber" name="L682" href="#L682">682</a> 
+<a class="jxr_linenumber" name="L683" href="#L683">683</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L684" href="#L684">684</a> <em class="jxr_javadoccomment">     * Create a new {@link IoHandlerFactory} that can be used to create {@link IoUringIoHandler}s.</em>
+<a class="jxr_linenumber" name="L685" href="#L685">685</a> <em class="jxr_javadoccomment">     * Each {@link IoUringIoHandler} will use same option</em>
+<a class="jxr_linenumber" name="L686" href="#L686">686</a> <em class="jxr_javadoccomment">     * @param config the io_uring configuration</em>
+<a class="jxr_linenumber" name="L687" href="#L687">687</a> <em class="jxr_javadoccomment">     * @return factory</em>
+<a class="jxr_linenumber" name="L688" href="#L688">688</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L689" href="#L689">689</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">static</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a> newFactory(<a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a> config) {
+<a class="jxr_linenumber" name="L690" href="#L690">690</a>         IoUring.ensureAvailability();
+<a class="jxr_linenumber" name="L691" href="#L691">691</a>         <strong class="jxr_keyword">final</strong> <a name="IoUringIoHandlerConfig" href="../../../../io/netty/channel/uring/IoUringIoHandlerConfig.html#IoUringIoHandlerConfig">IoUringIoHandlerConfig</a> copy = ObjectUtil.checkNotNull(config, <span class="jxr_string">"config"</span>).verifyAndClone();
+<a class="jxr_linenumber" name="L692" href="#L692">692</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoHandlerFactory" href="../../../../io/netty/channel/IoHandlerFactory.html#IoHandlerFactory">IoHandlerFactory</a>() {
+<a class="jxr_linenumber" name="L693" href="#L693">693</a>             @Override
+<a class="jxr_linenumber" name="L694" href="#L694">694</a>             <strong class="jxr_keyword">public</strong> <a name="IoHandler" href="../../../../io/netty/channel/IoHandler.html#IoHandler">IoHandler</a> newHandler(<a name="ThreadAwareExecutor" href="../../../../io/netty/util/concurrent/ThreadAwareExecutor.html#ThreadAwareExecutor">ThreadAwareExecutor</a> eventLoop) {
+<a class="jxr_linenumber" name="L695" href="#L695">695</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="IoUringIoHandler" href="../../../../io/netty/channel/uring/IoUringIoHandler.html#IoUringIoHandler">IoUringIoHandler</a>(eventLoop, copy);
+<a class="jxr_linenumber" name="L696" href="#L696">696</a>             }
+<a class="jxr_linenumber" name="L697" href="#L697">697</a> 
+<a class="jxr_linenumber" name="L698" href="#L698">698</a>             @Override
+<a class="jxr_linenumber" name="L699" href="#L699">699</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isChangingThreadSupported() {
+<a class="jxr_linenumber" name="L700" href="#L700">700</a>                 <strong class="jxr_keyword">return</strong> !copy.singleIssuer();
+<a class="jxr_linenumber" name="L701" href="#L701">701</a>             }
+<a class="jxr_linenumber" name="L702" href="#L702">702</a>         };
+<a class="jxr_linenumber" name="L703" href="#L703">703</a>     }
+<a class="jxr_linenumber" name="L704" href="#L704">704</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>

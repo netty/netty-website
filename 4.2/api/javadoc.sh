@@ -1,1 +1,1 @@
-/Users/norman/.sdkman/candidates/java/11.0.22-zulu/zulu-11.jdk/Contents/Home/bin/javadoc -J-Duser.language= -J-Duser.country= @options @argfile
+/Users/norman/.sdkman/candidates/java/25.0.1-zulu/zulu-25.jdk/Contents/Home/bin/javadoc -J-Duser.language= -J-Duser.country= @options @argfile

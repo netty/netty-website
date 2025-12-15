@@ -324,7 +324,7 @@
 <a class="jxr_linenumber" name="L316" href="#L316">316</a> 
 <a class="jxr_linenumber" name="L317" href="#L317">317</a>             <em class="jxr_comment">// Payload</em>
 <a class="jxr_linenumber" name="L318" href="#L318">318</a>             <strong class="jxr_keyword">for</strong> (<a name="MqttTopicSubscription" href="../../../../../io/netty/handler/codec/mqtt/MqttTopicSubscription.html#MqttTopicSubscription">MqttTopicSubscription</a> topic : payload.topicSubscriptions()) {
-<a class="jxr_linenumber" name="L319" href="#L319">319</a>                 writeUnsafeUTF8String(buf, topic.topicName());
+<a class="jxr_linenumber" name="L319" href="#L319">319</a>                 writeEagerUTF8String(buf, topic.topicName());
 <a class="jxr_linenumber" name="L320" href="#L320">320</a>                 <strong class="jxr_keyword">if</strong> (mqttVersion == MqttVersion.MQTT_3_1_1 || mqttVersion == MqttVersion.MQTT_3_1) {
 <a class="jxr_linenumber" name="L321" href="#L321">321</a>                     buf.writeByte(topic.qualityOfService().value());
 <a class="jxr_linenumber" name="L322" href="#L322">322</a>                 } <strong class="jxr_keyword">else</strong> {
@@ -384,7 +384,7 @@
 <a class="jxr_linenumber" name="L376" href="#L376">376</a> 
 <a class="jxr_linenumber" name="L377" href="#L377">377</a>             <em class="jxr_comment">// Payload</em>
 <a class="jxr_linenumber" name="L378" href="#L378">378</a>             <strong class="jxr_keyword">for</strong> (String topicName : payload.topics()) {
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 writeUnsafeUTF8String(buf, topicName);
+<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 writeEagerUTF8String(buf, topicName);
 <a class="jxr_linenumber" name="L380" href="#L380">380</a>             }
 <a class="jxr_linenumber" name="L381" href="#L381">381</a> 
 <a class="jxr_linenumber" name="L382" href="#L382">382</a>             <strong class="jxr_keyword">return</strong> buf;
@@ -757,29 +757,20 @@
 <a class="jxr_linenumber" name="L749" href="#L749">749</a>         buf.setShort(writerIndex, utf8Length);
 <a class="jxr_linenumber" name="L750" href="#L750">750</a>     }
 <a class="jxr_linenumber" name="L751" href="#L751">751</a> 
-<a class="jxr_linenumber" name="L752" href="#L752">752</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeUnsafeUTF8String(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, String s) {
-<a class="jxr_linenumber" name="L753" href="#L753">753</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> writerIndex = buf.writerIndex();
-<a class="jxr_linenumber" name="L754" href="#L754">754</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> startUtf8String = writerIndex + 2;
-<a class="jxr_linenumber" name="L755" href="#L755">755</a>         <em class="jxr_comment">// no need to reserve any capacity here, already done earlier: that's why is Unsafe</em>
-<a class="jxr_linenumber" name="L756" href="#L756">756</a>         buf.writerIndex(startUtf8String);
-<a class="jxr_linenumber" name="L757" href="#L757">757</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> utf8Length = s != <strong class="jxr_keyword">null</strong>? reserveAndWriteUtf8(buf, s, 0) : 0;
-<a class="jxr_linenumber" name="L758" href="#L758">758</a>         buf.setShort(writerIndex, utf8Length);
-<a class="jxr_linenumber" name="L759" href="#L759">759</a>     }
-<a class="jxr_linenumber" name="L760" href="#L760">760</a> 
-<a class="jxr_linenumber" name="L761" href="#L761">761</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getVariableLengthInt(<strong class="jxr_keyword">int</strong> num) {
-<a class="jxr_linenumber" name="L762" href="#L762">762</a>         <strong class="jxr_keyword">if</strong> (num &lt; 128) {
-<a class="jxr_linenumber" name="L763" href="#L763">763</a>             <strong class="jxr_keyword">return</strong> 1;
-<a class="jxr_linenumber" name="L764" href="#L764">764</a>         }
-<a class="jxr_linenumber" name="L765" href="#L765">765</a>         <strong class="jxr_keyword">if</strong> (num &lt; 16_384) { <em class="jxr_comment">// 128 * 128</em>
-<a class="jxr_linenumber" name="L766" href="#L766">766</a>             <strong class="jxr_keyword">return</strong> 2;
-<a class="jxr_linenumber" name="L767" href="#L767">767</a>         }
-<a class="jxr_linenumber" name="L768" href="#L768">768</a>         <strong class="jxr_keyword">if</strong> (num &lt; 2_097_152) { <em class="jxr_comment">// 128 * 128 * 128</em>
-<a class="jxr_linenumber" name="L769" href="#L769">769</a>             <strong class="jxr_keyword">return</strong> 3;
-<a class="jxr_linenumber" name="L770" href="#L770">770</a>         }
-<a class="jxr_linenumber" name="L771" href="#L771">771</a>         <strong class="jxr_keyword">return</strong> 4;
-<a class="jxr_linenumber" name="L772" href="#L772">772</a>     }
-<a class="jxr_linenumber" name="L773" href="#L773">773</a> 
-<a class="jxr_linenumber" name="L774" href="#L774">774</a> }
+<a class="jxr_linenumber" name="L752" href="#L752">752</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> getVariableLengthInt(<strong class="jxr_keyword">int</strong> num) {
+<a class="jxr_linenumber" name="L753" href="#L753">753</a>         <strong class="jxr_keyword">if</strong> (num &lt; 128) {
+<a class="jxr_linenumber" name="L754" href="#L754">754</a>             <strong class="jxr_keyword">return</strong> 1;
+<a class="jxr_linenumber" name="L755" href="#L755">755</a>         }
+<a class="jxr_linenumber" name="L756" href="#L756">756</a>         <strong class="jxr_keyword">if</strong> (num &lt; 16_384) { <em class="jxr_comment">// 128 * 128</em>
+<a class="jxr_linenumber" name="L757" href="#L757">757</a>             <strong class="jxr_keyword">return</strong> 2;
+<a class="jxr_linenumber" name="L758" href="#L758">758</a>         }
+<a class="jxr_linenumber" name="L759" href="#L759">759</a>         <strong class="jxr_keyword">if</strong> (num &lt; 2_097_152) { <em class="jxr_comment">// 128 * 128 * 128</em>
+<a class="jxr_linenumber" name="L760" href="#L760">760</a>             <strong class="jxr_keyword">return</strong> 3;
+<a class="jxr_linenumber" name="L761" href="#L761">761</a>         }
+<a class="jxr_linenumber" name="L762" href="#L762">762</a>         <strong class="jxr_keyword">return</strong> 4;
+<a class="jxr_linenumber" name="L763" href="#L763">763</a>     }
+<a class="jxr_linenumber" name="L764" href="#L764">764</a> 
+<a class="jxr_linenumber" name="L765" href="#L765">765</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
