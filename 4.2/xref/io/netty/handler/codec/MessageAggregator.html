@@ -231,254 +231,251 @@
 <a class="jxr_linenumber" name="L223" href="#L223">223</a>                 <em class="jxr_comment">// Cache the write listener for reuse.</em>
 <a class="jxr_linenumber" name="L224" href="#L224">224</a>                 <a name="ChannelFutureListener" href="../../../../io/netty/channel/ChannelFutureListener.html#ChannelFutureListener">ChannelFutureListener</a> listener = continueResponseWriteListener;
 <a class="jxr_linenumber" name="L225" href="#L225">225</a>                 <strong class="jxr_keyword">if</strong> (listener == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L226" href="#L226">226</a>                     continueResponseWriteListener = listener = <strong class="jxr_keyword">new</strong> <a name="ChannelFutureListener" href="../../../../io/netty/channel/ChannelFutureListener.html#ChannelFutureListener">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="L227" href="#L227">227</a>                         @Override
-<a class="jxr_linenumber" name="L228" href="#L228">228</a>                         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a name="ChannelFuture" href="../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L229" href="#L229">229</a>                             <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
-<a class="jxr_linenumber" name="L230" href="#L230">230</a>                                 ctx.fireExceptionCaught(future.cause());
-<a class="jxr_linenumber" name="L231" href="#L231">231</a>                             }
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>                         }
-<a class="jxr_linenumber" name="L233" href="#L233">233</a>                     };
-<a class="jxr_linenumber" name="L234" href="#L234">234</a>                 }
-<a class="jxr_linenumber" name="L235" href="#L235">235</a> 
-<a class="jxr_linenumber" name="L236" href="#L236">236</a>                 <em class="jxr_comment">// Make sure to call this before writing, otherwise reference counts may be invalid.</em>
-<a class="jxr_linenumber" name="L237" href="#L237">237</a>                 <strong class="jxr_keyword">boolean</strong> closeAfterWrite = closeAfterContinueResponse(continueResponse);
-<a class="jxr_linenumber" name="L238" href="#L238">238</a>                 handlingOversizedMessage = ignoreContentAfterContinueResponse(continueResponse);
-<a class="jxr_linenumber" name="L239" href="#L239">239</a> 
-<a class="jxr_linenumber" name="L240" href="#L240">240</a>                 <strong class="jxr_keyword">final</strong> <a name="ChannelFuture" href="../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> future = ctx.writeAndFlush(continueResponse).addListener(listener);
-<a class="jxr_linenumber" name="L241" href="#L241">241</a> 
-<a class="jxr_linenumber" name="L242" href="#L242">242</a>                 <strong class="jxr_keyword">if</strong> (closeAfterWrite) {
-<a class="jxr_linenumber" name="L243" href="#L243">243</a>                     handleIncompleteAggregateDuringClose = false;
-<a class="jxr_linenumber" name="L244" href="#L244">244</a>                     future.addListener(ChannelFutureListener.CLOSE);
+<a class="jxr_linenumber" name="L226" href="#L226">226</a>                     continueResponseWriteListener = listener = future -&gt; {
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>                         <strong class="jxr_keyword">if</strong> (!future.isSuccess()) {
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>                             ctx.fireExceptionCaught(future.cause());
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>                         }
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>                     };
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>                 }
+<a class="jxr_linenumber" name="L232" href="#L232">232</a> 
+<a class="jxr_linenumber" name="L233" href="#L233">233</a>                 <em class="jxr_comment">// Make sure to call this before writing, otherwise reference counts may be invalid.</em>
+<a class="jxr_linenumber" name="L234" href="#L234">234</a>                 <strong class="jxr_keyword">boolean</strong> closeAfterWrite = closeAfterContinueResponse(continueResponse);
+<a class="jxr_linenumber" name="L235" href="#L235">235</a>                 handlingOversizedMessage = ignoreContentAfterContinueResponse(continueResponse);
+<a class="jxr_linenumber" name="L236" href="#L236">236</a> 
+<a class="jxr_linenumber" name="L237" href="#L237">237</a>                 <strong class="jxr_keyword">final</strong> <a name="ChannelFuture" href="../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> future = ctx.writeAndFlush(continueResponse).addListener(listener);
+<a class="jxr_linenumber" name="L238" href="#L238">238</a> 
+<a class="jxr_linenumber" name="L239" href="#L239">239</a>                 <strong class="jxr_keyword">if</strong> (closeAfterWrite) {
+<a class="jxr_linenumber" name="L240" href="#L240">240</a>                     handleIncompleteAggregateDuringClose = false;
+<a class="jxr_linenumber" name="L241" href="#L241">241</a>                     future.addListener(ChannelFutureListener.CLOSE);
+<a class="jxr_linenumber" name="L242" href="#L242">242</a>                     <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L243" href="#L243">243</a>                 }
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>                 <strong class="jxr_keyword">if</strong> (handlingOversizedMessage) {
 <a class="jxr_linenumber" name="L245" href="#L245">245</a>                     <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L246" href="#L246">246</a>                 }
-<a class="jxr_linenumber" name="L247" href="#L247">247</a>                 <strong class="jxr_keyword">if</strong> (handlingOversizedMessage) {
-<a class="jxr_linenumber" name="L248" href="#L248">248</a>                     <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L249" href="#L249">249</a>                 }
-<a class="jxr_linenumber" name="L250" href="#L250">250</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (isContentLengthInvalid(m, maxContentLength)) {
-<a class="jxr_linenumber" name="L251" href="#L251">251</a>                 <em class="jxr_comment">// if content length is set, preemptively close if it's too large</em>
-<a class="jxr_linenumber" name="L252" href="#L252">252</a>                 invokeHandleOversizedMessage(ctx, m);
-<a class="jxr_linenumber" name="L253" href="#L253">253</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L254" href="#L254">254</a>             }
-<a class="jxr_linenumber" name="L255" href="#L255">255</a> 
-<a class="jxr_linenumber" name="L256" href="#L256">256</a>             <strong class="jxr_keyword">if</strong> (m instanceof <a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a> &amp;&amp; !((<a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) m).decoderResult().isSuccess()) {
-<a class="jxr_linenumber" name="L257" href="#L257">257</a>                 O aggregated;
-<a class="jxr_linenumber" name="L258" href="#L258">258</a>                 <strong class="jxr_keyword">if</strong> (m instanceof <a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) {
-<a class="jxr_linenumber" name="L259" href="#L259">259</a>                     aggregated = beginAggregation(m, ((<a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) m).content().retain());
-<a class="jxr_linenumber" name="L260" href="#L260">260</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L261" href="#L261">261</a>                     aggregated = beginAggregation(m, EMPTY_BUFFER);
-<a class="jxr_linenumber" name="L262" href="#L262">262</a>                 }
-<a class="jxr_linenumber" name="L263" href="#L263">263</a>                 finishAggregation0(aggregated);
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>                 out.add(aggregated);
-<a class="jxr_linenumber" name="L265" href="#L265">265</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L266" href="#L266">266</a>             }
-<a class="jxr_linenumber" name="L267" href="#L267">267</a> 
-<a class="jxr_linenumber" name="L268" href="#L268">268</a>             <em class="jxr_comment">// A streamed message - initialize the cumulative buffer, and wait for incoming chunks.</em>
-<a class="jxr_linenumber" name="L269" href="#L269">269</a>             <a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a> content = ctx.alloc().compositeBuffer(maxCumulationBufferComponents);
-<a class="jxr_linenumber" name="L270" href="#L270">270</a>             <strong class="jxr_keyword">if</strong> (m instanceof <a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) {
-<a class="jxr_linenumber" name="L271" href="#L271">271</a>                 appendPartialContent(content, ((<a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) m).content());
-<a class="jxr_linenumber" name="L272" href="#L272">272</a>             }
-<a class="jxr_linenumber" name="L273" href="#L273">273</a>             currentMessage = beginAggregation(m, content);
-<a class="jxr_linenumber" name="L274" href="#L274">274</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (isContentMessage(msg)) {
-<a class="jxr_linenumber" name="L275" href="#L275">275</a>             <strong class="jxr_keyword">if</strong> (currentMessage == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L276" href="#L276">276</a>                 <em class="jxr_comment">// it is possible that a TooLongFrameException was already thrown but we can still discard data</em>
-<a class="jxr_linenumber" name="L277" href="#L277">277</a>                 <em class="jxr_comment">// until the begging of the next request/response.</em>
-<a class="jxr_linenumber" name="L278" href="#L278">278</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L279" href="#L279">279</a>             }
+<a class="jxr_linenumber" name="L247" href="#L247">247</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (isContentLengthInvalid(m, maxContentLength)) {
+<a class="jxr_linenumber" name="L248" href="#L248">248</a>                 <em class="jxr_comment">// if content length is set, preemptively close if it's too large</em>
+<a class="jxr_linenumber" name="L249" href="#L249">249</a>                 invokeHandleOversizedMessage(ctx, m);
+<a class="jxr_linenumber" name="L250" href="#L250">250</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L251" href="#L251">251</a>             }
+<a class="jxr_linenumber" name="L252" href="#L252">252</a> 
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>             <strong class="jxr_keyword">if</strong> (m instanceof <a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a> &amp;&amp; !((<a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) m).decoderResult().isSuccess()) {
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>                 O aggregated;
+<a class="jxr_linenumber" name="L255" href="#L255">255</a>                 <strong class="jxr_keyword">if</strong> (m instanceof <a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) {
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>                     aggregated = beginAggregation(m, ((<a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) m).content().retain());
+<a class="jxr_linenumber" name="L257" href="#L257">257</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>                     aggregated = beginAggregation(m, EMPTY_BUFFER);
+<a class="jxr_linenumber" name="L259" href="#L259">259</a>                 }
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>                 finishAggregation0(aggregated);
+<a class="jxr_linenumber" name="L261" href="#L261">261</a>                 out.add(aggregated);
+<a class="jxr_linenumber" name="L262" href="#L262">262</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L263" href="#L263">263</a>             }
+<a class="jxr_linenumber" name="L264" href="#L264">264</a> 
+<a class="jxr_linenumber" name="L265" href="#L265">265</a>             <em class="jxr_comment">// A streamed message - initialize the cumulative buffer, and wait for incoming chunks.</em>
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>             <a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a> content = ctx.alloc().compositeBuffer(maxCumulationBufferComponents);
+<a class="jxr_linenumber" name="L267" href="#L267">267</a>             <strong class="jxr_keyword">if</strong> (m instanceof <a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) {
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>                 appendPartialContent(content, ((<a name="ByteBufHolder" href="../../../../io/netty/buffer/ByteBufHolder.html#ByteBufHolder">ByteBufHolder</a>) m).content());
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>             }
+<a class="jxr_linenumber" name="L270" href="#L270">270</a>             currentMessage = beginAggregation(m, content);
+<a class="jxr_linenumber" name="L271" href="#L271">271</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (isContentMessage(msg)) {
+<a class="jxr_linenumber" name="L272" href="#L272">272</a>             <strong class="jxr_keyword">if</strong> (currentMessage == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L273" href="#L273">273</a>                 <em class="jxr_comment">// it is possible that a TooLongFrameException was already thrown but we can still discard data</em>
+<a class="jxr_linenumber" name="L274" href="#L274">274</a>                 <em class="jxr_comment">// until the begging of the next request/response.</em>
+<a class="jxr_linenumber" name="L275" href="#L275">275</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L276" href="#L276">276</a>             }
+<a class="jxr_linenumber" name="L277" href="#L277">277</a> 
+<a class="jxr_linenumber" name="L278" href="#L278">278</a>             <em class="jxr_comment">// Merge the received chunk into the content of the current message.</em>
+<a class="jxr_linenumber" name="L279" href="#L279">279</a>             <a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a> content = (<a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a>) currentMessage.content();
 <a class="jxr_linenumber" name="L280" href="#L280">280</a> 
-<a class="jxr_linenumber" name="L281" href="#L281">281</a>             <em class="jxr_comment">// Merge the received chunk into the content of the current message.</em>
-<a class="jxr_linenumber" name="L282" href="#L282">282</a>             <a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a> content = (<a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a>) currentMessage.content();
-<a class="jxr_linenumber" name="L283" href="#L283">283</a> 
-<a class="jxr_linenumber" name="L284" href="#L284">284</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L285" href="#L285">285</a>             <strong class="jxr_keyword">final</strong> C m = (C) msg;
-<a class="jxr_linenumber" name="L286" href="#L286">286</a>             <em class="jxr_comment">// Handle oversized message.</em>
-<a class="jxr_linenumber" name="L287" href="#L287">287</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - m.content().readableBytes()) {
-<a class="jxr_linenumber" name="L288" href="#L288">288</a>                 <em class="jxr_comment">// By convention, full message type extends first message type.</em>
-<a class="jxr_linenumber" name="L289" href="#L289">289</a>                 @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
-<a class="jxr_linenumber" name="L290" href="#L290">290</a>                 S s = (S) currentMessage;
-<a class="jxr_linenumber" name="L291" href="#L291">291</a>                 invokeHandleOversizedMessage(ctx, s);
-<a class="jxr_linenumber" name="L292" href="#L292">292</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L293" href="#L293">293</a>             }
+<a class="jxr_linenumber" name="L281" href="#L281">281</a>             @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="L282" href="#L282">282</a>             <strong class="jxr_keyword">final</strong> C m = (C) msg;
+<a class="jxr_linenumber" name="L283" href="#L283">283</a>             <em class="jxr_comment">// Handle oversized message.</em>
+<a class="jxr_linenumber" name="L284" href="#L284">284</a>             <strong class="jxr_keyword">if</strong> (content.readableBytes() &gt; maxContentLength - m.content().readableBytes()) {
+<a class="jxr_linenumber" name="L285" href="#L285">285</a>                 <em class="jxr_comment">// By convention, full message type extends first message type.</em>
+<a class="jxr_linenumber" name="L286" href="#L286">286</a>                 @SuppressWarnings(<span class="jxr_string">"unchecked"</span>)
+<a class="jxr_linenumber" name="L287" href="#L287">287</a>                 S s = (S) currentMessage;
+<a class="jxr_linenumber" name="L288" href="#L288">288</a>                 invokeHandleOversizedMessage(ctx, s);
+<a class="jxr_linenumber" name="L289" href="#L289">289</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L290" href="#L290">290</a>             }
+<a class="jxr_linenumber" name="L291" href="#L291">291</a> 
+<a class="jxr_linenumber" name="L292" href="#L292">292</a>             <em class="jxr_comment">// Append the content of the chunk.</em>
+<a class="jxr_linenumber" name="L293" href="#L293">293</a>             appendPartialContent(content, m.content());
 <a class="jxr_linenumber" name="L294" href="#L294">294</a> 
-<a class="jxr_linenumber" name="L295" href="#L295">295</a>             <em class="jxr_comment">// Append the content of the chunk.</em>
-<a class="jxr_linenumber" name="L296" href="#L296">296</a>             appendPartialContent(content, m.content());
+<a class="jxr_linenumber" name="L295" href="#L295">295</a>             <em class="jxr_comment">// Give the subtypes a chance to merge additional information such as trailing headers.</em>
+<a class="jxr_linenumber" name="L296" href="#L296">296</a>             aggregate(currentMessage, m);
 <a class="jxr_linenumber" name="L297" href="#L297">297</a> 
-<a class="jxr_linenumber" name="L298" href="#L298">298</a>             <em class="jxr_comment">// Give the subtypes a chance to merge additional information such as trailing headers.</em>
-<a class="jxr_linenumber" name="L299" href="#L299">299</a>             aggregate(currentMessage, m);
-<a class="jxr_linenumber" name="L300" href="#L300">300</a> 
-<a class="jxr_linenumber" name="L301" href="#L301">301</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> last;
-<a class="jxr_linenumber" name="L302" href="#L302">302</a>             <strong class="jxr_keyword">if</strong> (m instanceof <a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) {
-<a class="jxr_linenumber" name="L303" href="#L303">303</a>                 <a name="DecoderResult" href="../../../../io/netty/handler/codec/DecoderResult.html#DecoderResult">DecoderResult</a> decoderResult = ((<a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) m).decoderResult();
-<a class="jxr_linenumber" name="L304" href="#L304">304</a>                 <strong class="jxr_keyword">if</strong> (!decoderResult.isSuccess()) {
-<a class="jxr_linenumber" name="L305" href="#L305">305</a>                     <strong class="jxr_keyword">if</strong> (currentMessage instanceof <a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) {
-<a class="jxr_linenumber" name="L306" href="#L306">306</a>                         ((<a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) currentMessage).setDecoderResult(
-<a class="jxr_linenumber" name="L307" href="#L307">307</a>                                 DecoderResult.failure(decoderResult.cause()));
-<a class="jxr_linenumber" name="L308" href="#L308">308</a>                     }
-<a class="jxr_linenumber" name="L309" href="#L309">309</a>                     last = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L310" href="#L310">310</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L311" href="#L311">311</a>                     last = isLastContentMessage(m);
-<a class="jxr_linenumber" name="L312" href="#L312">312</a>                 }
-<a class="jxr_linenumber" name="L313" href="#L313">313</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L314" href="#L314">314</a>                 last = isLastContentMessage(m);
-<a class="jxr_linenumber" name="L315" href="#L315">315</a>             }
+<a class="jxr_linenumber" name="L298" href="#L298">298</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">boolean</strong> last;
+<a class="jxr_linenumber" name="L299" href="#L299">299</a>             <strong class="jxr_keyword">if</strong> (m instanceof <a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) {
+<a class="jxr_linenumber" name="L300" href="#L300">300</a>                 <a name="DecoderResult" href="../../../../io/netty/handler/codec/DecoderResult.html#DecoderResult">DecoderResult</a> decoderResult = ((<a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) m).decoderResult();
+<a class="jxr_linenumber" name="L301" href="#L301">301</a>                 <strong class="jxr_keyword">if</strong> (!decoderResult.isSuccess()) {
+<a class="jxr_linenumber" name="L302" href="#L302">302</a>                     <strong class="jxr_keyword">if</strong> (currentMessage instanceof <a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) {
+<a class="jxr_linenumber" name="L303" href="#L303">303</a>                         ((<a name="DecoderResultProvider" href="../../../../io/netty/handler/codec/DecoderResultProvider.html#DecoderResultProvider">DecoderResultProvider</a>) currentMessage).setDecoderResult(
+<a class="jxr_linenumber" name="L304" href="#L304">304</a>                                 DecoderResult.failure(decoderResult.cause()));
+<a class="jxr_linenumber" name="L305" href="#L305">305</a>                     }
+<a class="jxr_linenumber" name="L306" href="#L306">306</a>                     last = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L307" href="#L307">307</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L308" href="#L308">308</a>                     last = isLastContentMessage(m);
+<a class="jxr_linenumber" name="L309" href="#L309">309</a>                 }
+<a class="jxr_linenumber" name="L310" href="#L310">310</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L311" href="#L311">311</a>                 last = isLastContentMessage(m);
+<a class="jxr_linenumber" name="L312" href="#L312">312</a>             }
+<a class="jxr_linenumber" name="L313" href="#L313">313</a> 
+<a class="jxr_linenumber" name="L314" href="#L314">314</a>             <strong class="jxr_keyword">if</strong> (last) {
+<a class="jxr_linenumber" name="L315" href="#L315">315</a>                 finishAggregation0(currentMessage);
 <a class="jxr_linenumber" name="L316" href="#L316">316</a> 
-<a class="jxr_linenumber" name="L317" href="#L317">317</a>             <strong class="jxr_keyword">if</strong> (last) {
-<a class="jxr_linenumber" name="L318" href="#L318">318</a>                 finishAggregation0(currentMessage);
-<a class="jxr_linenumber" name="L319" href="#L319">319</a> 
-<a class="jxr_linenumber" name="L320" href="#L320">320</a>                 <em class="jxr_comment">// All done</em>
-<a class="jxr_linenumber" name="L321" href="#L321">321</a>                 out.add(currentMessage);
-<a class="jxr_linenumber" name="L322" href="#L322">322</a>                 currentMessage = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L323" href="#L323">323</a>             }
-<a class="jxr_linenumber" name="L324" href="#L324">324</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L325" href="#L325">325</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="MessageAggregationException" href="../../../../io/netty/handler/codec/MessageAggregationException.html#MessageAggregationException">MessageAggregationException</a>();
-<a class="jxr_linenumber" name="L326" href="#L326">326</a>         }
-<a class="jxr_linenumber" name="L327" href="#L327">327</a>     }
-<a class="jxr_linenumber" name="L328" href="#L328">328</a> 
-<a class="jxr_linenumber" name="L329" href="#L329">329</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> appendPartialContent(<a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a> content, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> partialContent) {
-<a class="jxr_linenumber" name="L330" href="#L330">330</a>         <strong class="jxr_keyword">if</strong> (partialContent.isReadable()) {
-<a class="jxr_linenumber" name="L331" href="#L331">331</a>             content.addComponent(<strong class="jxr_keyword">true</strong>, partialContent.retain());
-<a class="jxr_linenumber" name="L332" href="#L332">332</a>         }
-<a class="jxr_linenumber" name="L333" href="#L333">333</a>     }
-<a class="jxr_linenumber" name="L334" href="#L334">334</a> 
-<a class="jxr_linenumber" name="L335" href="#L335">335</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L336" href="#L336">336</a> <em class="jxr_javadoccomment">     * Determine if the message {@code start}'s content length is known, and if it greater than</em>
-<a class="jxr_linenumber" name="L337" href="#L337">337</a> <em class="jxr_javadoccomment">     * {@code maxContentLength}.</em>
-<a class="jxr_linenumber" name="L338" href="#L338">338</a> <em class="jxr_javadoccomment">     * @param start The message which may indicate the content length.</em>
-<a class="jxr_linenumber" name="L339" href="#L339">339</a> <em class="jxr_javadoccomment">     * @param maxContentLength The maximum allowed content length.</em>
-<a class="jxr_linenumber" name="L340" href="#L340">340</a> <em class="jxr_javadoccomment">     * @return {@code true} if the message {@code start}'s content length is known, and if it greater than</em>
-<a class="jxr_linenumber" name="L341" href="#L341">341</a> <em class="jxr_javadoccomment">     * {@code maxContentLength}. {@code false} otherwise.</em>
-<a class="jxr_linenumber" name="L342" href="#L342">342</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L343" href="#L343">343</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isContentLengthInvalid(S start, <strong class="jxr_keyword">int</strong> maxContentLength) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L344" href="#L344">344</a> 
-<a class="jxr_linenumber" name="L345" href="#L345">345</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L346" href="#L346">346</a> <em class="jxr_javadoccomment">     * Returns the 'continue response' for the specified start message if necessary. For example, this method is</em>
-<a class="jxr_linenumber" name="L347" href="#L347">347</a> <em class="jxr_javadoccomment">     * useful to handle an HTTP 100-continue header.</em>
-<a class="jxr_linenumber" name="L348" href="#L348">348</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L349" href="#L349">349</a> <em class="jxr_javadoccomment">     * @return the 'continue response', or {@code null} if there's no message to send</em>
-<a class="jxr_linenumber" name="L350" href="#L350">350</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L351" href="#L351">351</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> Object newContinueResponse(S start, <strong class="jxr_keyword">int</strong> maxContentLength, <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline)
-<a class="jxr_linenumber" name="L352" href="#L352">352</a>             <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L353" href="#L353">353</a> 
-<a class="jxr_linenumber" name="L354" href="#L354">354</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L355" href="#L355">355</a> <em class="jxr_javadoccomment">     * Determine if the channel should be closed after the result of</em>
-<a class="jxr_linenumber" name="L356" href="#L356">356</a> <em class="jxr_javadoccomment">     * {@link #newContinueResponse(Object, int, ChannelPipeline)} is written.</em>
-<a class="jxr_linenumber" name="L357" href="#L357">357</a> <em class="jxr_javadoccomment">     * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.</em>
-<a class="jxr_linenumber" name="L358" href="#L358">358</a> <em class="jxr_javadoccomment">     * @return {@code true} if the channel should be closed after the result of</em>
-<a class="jxr_linenumber" name="L359" href="#L359">359</a> <em class="jxr_javadoccomment">     * {@link #newContinueResponse(Object, int, ChannelPipeline)} is written. {@code false} otherwise.</em>
-<a class="jxr_linenumber" name="L360" href="#L360">360</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L361" href="#L361">361</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> closeAfterContinueResponse(Object msg) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L362" href="#L362">362</a> 
-<a class="jxr_linenumber" name="L363" href="#L363">363</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L364" href="#L364">364</a> <em class="jxr_javadoccomment">     * Determine if all objects for the current request/response should be ignored or not.</em>
-<a class="jxr_linenumber" name="L365" href="#L365">365</a> <em class="jxr_javadoccomment">     * Messages will stop being ignored the next time {@link #isContentMessage(Object)} returns {@code true}.</em>
-<a class="jxr_linenumber" name="L366" href="#L366">366</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L367" href="#L367">367</a> <em class="jxr_javadoccomment">     * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.</em>
-<a class="jxr_linenumber" name="L368" href="#L368">368</a> <em class="jxr_javadoccomment">     * @return {@code true} if all objects for the current request/response should be ignored or not.</em>
-<a class="jxr_linenumber" name="L369" href="#L369">369</a> <em class="jxr_javadoccomment">     * {@code false} otherwise.</em>
-<a class="jxr_linenumber" name="L370" href="#L370">370</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L371" href="#L371">371</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> ignoreContentAfterContinueResponse(Object msg) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L372" href="#L372">372</a> 
-<a class="jxr_linenumber" name="L373" href="#L373">373</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L374" href="#L374">374</a> <em class="jxr_javadoccomment">     * Creates a new aggregated message from the specified start message and the specified content.  If the start</em>
-<a class="jxr_linenumber" name="L375" href="#L375">375</a> <em class="jxr_javadoccomment">     * message implements {@link ByteBufHolder}, its content is appended to the specified {@code content}.</em>
-<a class="jxr_linenumber" name="L376" href="#L376">376</a> <em class="jxr_javadoccomment">     * This aggregator will continue to append the received content to the specified {@code content}.</em>
-<a class="jxr_linenumber" name="L377" href="#L377">377</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L378" href="#L378">378</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> O beginAggregation(S start, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L379" href="#L379">379</a> 
-<a class="jxr_linenumber" name="L380" href="#L380">380</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L381" href="#L381">381</a> <em class="jxr_javadoccomment">     * Transfers the information provided by the specified content message to the specified aggregated message.</em>
-<a class="jxr_linenumber" name="L382" href="#L382">382</a> <em class="jxr_javadoccomment">     * Note that the content of the specified content message has been appended to the content of the specified</em>
-<a class="jxr_linenumber" name="L383" href="#L383">383</a> <em class="jxr_javadoccomment">     * aggregated message already, so that you don't need to.  Use this method to transfer the additional information</em>
-<a class="jxr_linenumber" name="L384" href="#L384">384</a> <em class="jxr_javadoccomment">     * that the content message provides to {@code aggregated}.</em>
-<a class="jxr_linenumber" name="L385" href="#L385">385</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L386" href="#L386">386</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> aggregate(O aggregated, C content) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="L387" href="#L387">387</a> 
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> finishAggregation0(O aggregated) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L389" href="#L389">389</a>         aggregating = false;
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>         finishAggregation(aggregated);
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>     }
-<a class="jxr_linenumber" name="L392" href="#L392">392</a> 
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L394" href="#L394">394</a> <em class="jxr_javadoccomment">     * Invoked when the specified {@code aggregated} message is about to be passed to the next handler in the pipeline.</em>
-<a class="jxr_linenumber" name="L395" href="#L395">395</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> finishAggregation(O aggregated) <strong class="jxr_keyword">throws</strong> Exception { }
-<a class="jxr_linenumber" name="L397" href="#L397">397</a> 
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> invokeHandleOversizedMessage(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, S oversized) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L399" href="#L399">399</a>         handlingOversizedMessage = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>         currentMessage = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>         handleIncompleteAggregateDuringClose = false;
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>             handleOversizedMessage(ctx, oversized);
-<a class="jxr_linenumber" name="L404" href="#L404">404</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>             <em class="jxr_comment">// Release the message in case it is a full one.</em>
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>             ReferenceCountUtil.release(oversized);
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>         }
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>     }
-<a class="jxr_linenumber" name="L409" href="#L409">409</a> 
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L411" href="#L411">411</a> <em class="jxr_javadoccomment">     * Invoked when an incoming request exceeds the maximum content length.  The default behvaior is to trigger an</em>
-<a class="jxr_linenumber" name="L412" href="#L412">412</a> <em class="jxr_javadoccomment">     * {@code exceptionCaught()} event with a {@link TooLongFrameException}.</em>
-<a class="jxr_linenumber" name="L413" href="#L413">413</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L414" href="#L414">414</a> <em class="jxr_javadoccomment">     * @param ctx the {@link ChannelHandlerContext}</em>
-<a class="jxr_linenumber" name="L415" href="#L415">415</a> <em class="jxr_javadoccomment">     * @param oversized the accumulated message up to this point, whose type is {@code S} or {@code O}</em>
-<a class="jxr_linenumber" name="L416" href="#L416">416</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handleOversizedMessage(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, S oversized) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>         ctx.fireExceptionCaught(
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>                 <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(<span class="jxr_string">"content length exceeded "</span> + maxContentLength() + <span class="jxr_string">" bytes."</span>));
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>     }
-<a class="jxr_linenumber" name="L421" href="#L421">421</a> 
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>     @Override
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadComplete(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>         <em class="jxr_comment">// We might need keep reading the channel until the full message is aggregated.</em>
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>         <em class="jxr_comment">//</em>
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/6583</em>
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong> &amp;&amp; !ctx.channel().config().isAutoRead()) {
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>             ctx.read();
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>         }
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>         ctx.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>     }
-<a class="jxr_linenumber" name="L432" href="#L432">432</a> 
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>     @Override
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <strong class="jxr_keyword">if</strong> (aggregating &amp;&amp; handleIncompleteAggregateDuringClose) {
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>             ctx.fireExceptionCaught(
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>                     <strong class="jxr_keyword">new</strong> <a name="PrematureChannelClosureException" href="../../../../io/netty/handler/codec/PrematureChannelClosureException.html#PrematureChannelClosureException">PrematureChannelClosureException</a>(<span class="jxr_string">"Channel closed while still aggregating message"</span>));
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>         }
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over</em>
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>             <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>             releaseCurrentMessage();
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>         }
-<a class="jxr_linenumber" name="L445" href="#L445">445</a>     }
-<a class="jxr_linenumber" name="L446" href="#L446">446</a> 
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>     @Override
-<a class="jxr_linenumber" name="L448" href="#L448">448</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>     }
-<a class="jxr_linenumber" name="L451" href="#L451">451</a> 
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>     @Override
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>             <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over as there is not much more we can do in</em>
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <em class="jxr_comment">// this case</em>
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>             releaseCurrentMessage();
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>         }
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>     }
-<a class="jxr_linenumber" name="L462" href="#L462">462</a> 
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> releaseCurrentMessage() {
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>             currentMessage.release();
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>             currentMessage = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>         }
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>         handlingOversizedMessage = false;
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>         aggregating = false;
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>     }
-<a class="jxr_linenumber" name="L471" href="#L471">471</a> }
+<a class="jxr_linenumber" name="L317" href="#L317">317</a>                 <em class="jxr_comment">// All done</em>
+<a class="jxr_linenumber" name="L318" href="#L318">318</a>                 out.add(currentMessage);
+<a class="jxr_linenumber" name="L319" href="#L319">319</a>                 currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L320" href="#L320">320</a>             }
+<a class="jxr_linenumber" name="L321" href="#L321">321</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L322" href="#L322">322</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="MessageAggregationException" href="../../../../io/netty/handler/codec/MessageAggregationException.html#MessageAggregationException">MessageAggregationException</a>();
+<a class="jxr_linenumber" name="L323" href="#L323">323</a>         }
+<a class="jxr_linenumber" name="L324" href="#L324">324</a>     }
+<a class="jxr_linenumber" name="L325" href="#L325">325</a> 
+<a class="jxr_linenumber" name="L326" href="#L326">326</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> appendPartialContent(<a name="CompositeByteBuf" href="../../../../io/netty/buffer/CompositeByteBuf.html#CompositeByteBuf">CompositeByteBuf</a> content, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> partialContent) {
+<a class="jxr_linenumber" name="L327" href="#L327">327</a>         <strong class="jxr_keyword">if</strong> (partialContent.isReadable()) {
+<a class="jxr_linenumber" name="L328" href="#L328">328</a>             content.addComponent(<strong class="jxr_keyword">true</strong>, partialContent.retain());
+<a class="jxr_linenumber" name="L329" href="#L329">329</a>         }
+<a class="jxr_linenumber" name="L330" href="#L330">330</a>     }
+<a class="jxr_linenumber" name="L331" href="#L331">331</a> 
+<a class="jxr_linenumber" name="L332" href="#L332">332</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L333" href="#L333">333</a> <em class="jxr_javadoccomment">     * Determine if the message {@code start}'s content length is known, and if it greater than</em>
+<a class="jxr_linenumber" name="L334" href="#L334">334</a> <em class="jxr_javadoccomment">     * {@code maxContentLength}.</em>
+<a class="jxr_linenumber" name="L335" href="#L335">335</a> <em class="jxr_javadoccomment">     * @param start The message which may indicate the content length.</em>
+<a class="jxr_linenumber" name="L336" href="#L336">336</a> <em class="jxr_javadoccomment">     * @param maxContentLength The maximum allowed content length.</em>
+<a class="jxr_linenumber" name="L337" href="#L337">337</a> <em class="jxr_javadoccomment">     * @return {@code true} if the message {@code start}'s content length is known, and if it greater than</em>
+<a class="jxr_linenumber" name="L338" href="#L338">338</a> <em class="jxr_javadoccomment">     * {@code maxContentLength}. {@code false} otherwise.</em>
+<a class="jxr_linenumber" name="L339" href="#L339">339</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L340" href="#L340">340</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> isContentLengthInvalid(S start, <strong class="jxr_keyword">int</strong> maxContentLength) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L341" href="#L341">341</a> 
+<a class="jxr_linenumber" name="L342" href="#L342">342</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L343" href="#L343">343</a> <em class="jxr_javadoccomment">     * Returns the 'continue response' for the specified start message if necessary. For example, this method is</em>
+<a class="jxr_linenumber" name="L344" href="#L344">344</a> <em class="jxr_javadoccomment">     * useful to handle an HTTP 100-continue header.</em>
+<a class="jxr_linenumber" name="L345" href="#L345">345</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L346" href="#L346">346</a> <em class="jxr_javadoccomment">     * @return the 'continue response', or {@code null} if there's no message to send</em>
+<a class="jxr_linenumber" name="L347" href="#L347">347</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L348" href="#L348">348</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> Object newContinueResponse(S start, <strong class="jxr_keyword">int</strong> maxContentLength, <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline)
+<a class="jxr_linenumber" name="L349" href="#L349">349</a>             <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L350" href="#L350">350</a> 
+<a class="jxr_linenumber" name="L351" href="#L351">351</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L352" href="#L352">352</a> <em class="jxr_javadoccomment">     * Determine if the channel should be closed after the result of</em>
+<a class="jxr_linenumber" name="L353" href="#L353">353</a> <em class="jxr_javadoccomment">     * {@link #newContinueResponse(Object, int, ChannelPipeline)} is written.</em>
+<a class="jxr_linenumber" name="L354" href="#L354">354</a> <em class="jxr_javadoccomment">     * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.</em>
+<a class="jxr_linenumber" name="L355" href="#L355">355</a> <em class="jxr_javadoccomment">     * @return {@code true} if the channel should be closed after the result of</em>
+<a class="jxr_linenumber" name="L356" href="#L356">356</a> <em class="jxr_javadoccomment">     * {@link #newContinueResponse(Object, int, ChannelPipeline)} is written. {@code false} otherwise.</em>
+<a class="jxr_linenumber" name="L357" href="#L357">357</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L358" href="#L358">358</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> closeAfterContinueResponse(Object msg) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L359" href="#L359">359</a> 
+<a class="jxr_linenumber" name="L360" href="#L360">360</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L361" href="#L361">361</a> <em class="jxr_javadoccomment">     * Determine if all objects for the current request/response should be ignored or not.</em>
+<a class="jxr_linenumber" name="L362" href="#L362">362</a> <em class="jxr_javadoccomment">     * Messages will stop being ignored the next time {@link #isContentMessage(Object)} returns {@code true}.</em>
+<a class="jxr_linenumber" name="L363" href="#L363">363</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L364" href="#L364">364</a> <em class="jxr_javadoccomment">     * @param msg The return value from {@link #newContinueResponse(Object, int, ChannelPipeline)}.</em>
+<a class="jxr_linenumber" name="L365" href="#L365">365</a> <em class="jxr_javadoccomment">     * @return {@code true} if all objects for the current request/response should be ignored or not.</em>
+<a class="jxr_linenumber" name="L366" href="#L366">366</a> <em class="jxr_javadoccomment">     * {@code false} otherwise.</em>
+<a class="jxr_linenumber" name="L367" href="#L367">367</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L368" href="#L368">368</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">boolean</strong> ignoreContentAfterContinueResponse(Object msg) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L369" href="#L369">369</a> 
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L371" href="#L371">371</a> <em class="jxr_javadoccomment">     * Creates a new aggregated message from the specified start message and the specified content.  If the start</em>
+<a class="jxr_linenumber" name="L372" href="#L372">372</a> <em class="jxr_javadoccomment">     * message implements {@link ByteBufHolder}, its content is appended to the specified {@code content}.</em>
+<a class="jxr_linenumber" name="L373" href="#L373">373</a> <em class="jxr_javadoccomment">     * This aggregator will continue to append the received content to the specified {@code content}.</em>
+<a class="jxr_linenumber" name="L374" href="#L374">374</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L375" href="#L375">375</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> O beginAggregation(S start, <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> content) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L376" href="#L376">376</a> 
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L378" href="#L378">378</a> <em class="jxr_javadoccomment">     * Transfers the information provided by the specified content message to the specified aggregated message.</em>
+<a class="jxr_linenumber" name="L379" href="#L379">379</a> <em class="jxr_javadoccomment">     * Note that the content of the specified content message has been appended to the content of the specified</em>
+<a class="jxr_linenumber" name="L380" href="#L380">380</a> <em class="jxr_javadoccomment">     * aggregated message already, so that you don't need to.  Use this method to transfer the additional information</em>
+<a class="jxr_linenumber" name="L381" href="#L381">381</a> <em class="jxr_javadoccomment">     * that the content message provides to {@code aggregated}.</em>
+<a class="jxr_linenumber" name="L382" href="#L382">382</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> aggregate(O aggregated, C content) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="L384" href="#L384">384</a> 
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> finishAggregation0(O aggregated) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>         aggregating = false;
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>         finishAggregation(aggregated);
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>     }
+<a class="jxr_linenumber" name="L389" href="#L389">389</a> 
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L391" href="#L391">391</a> <em class="jxr_javadoccomment">     * Invoked when the specified {@code aggregated} message is about to be passed to the next handler in the pipeline.</em>
+<a class="jxr_linenumber" name="L392" href="#L392">392</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> finishAggregation(O aggregated) <strong class="jxr_keyword">throws</strong> Exception { }
+<a class="jxr_linenumber" name="L394" href="#L394">394</a> 
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> invokeHandleOversizedMessage(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, S oversized) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>         handlingOversizedMessage = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>         currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>         handleIncompleteAggregateDuringClose = false;
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>             handleOversizedMessage(ctx, oversized);
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>             <em class="jxr_comment">// Release the message in case it is a full one.</em>
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>             ReferenceCountUtil.release(oversized);
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>         }
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>     }
+<a class="jxr_linenumber" name="L406" href="#L406">406</a> 
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L408" href="#L408">408</a> <em class="jxr_javadoccomment">     * Invoked when an incoming request exceeds the maximum content length.  The default behvaior is to trigger an</em>
+<a class="jxr_linenumber" name="L409" href="#L409">409</a> <em class="jxr_javadoccomment">     * {@code exceptionCaught()} event with a {@link TooLongFrameException}.</em>
+<a class="jxr_linenumber" name="L410" href="#L410">410</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L411" href="#L411">411</a> <em class="jxr_javadoccomment">     * @param ctx the {@link ChannelHandlerContext}</em>
+<a class="jxr_linenumber" name="L412" href="#L412">412</a> <em class="jxr_javadoccomment">     * @param oversized the accumulated message up to this point, whose type is {@code S} or {@code O}</em>
+<a class="jxr_linenumber" name="L413" href="#L413">413</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> handleOversizedMessage(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, S oversized) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>         ctx.fireExceptionCaught(
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                 <strong class="jxr_keyword">new</strong> <a name="TooLongFrameException" href="../../../../io/netty/handler/codec/TooLongFrameException.html#TooLongFrameException">TooLongFrameException</a>(<span class="jxr_string">"content length exceeded "</span> + maxContentLength() + <span class="jxr_string">" bytes."</span>));
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>     }
+<a class="jxr_linenumber" name="L418" href="#L418">418</a> 
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>     @Override
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelReadComplete(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>         <em class="jxr_comment">// We might need keep reading the channel until the full message is aggregated.</em>
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>         <em class="jxr_comment">//</em>
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>         <em class="jxr_comment">// See https://github.com/netty/netty/issues/6583</em>
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong> &amp;&amp; !ctx.channel().config().isAutoRead()) {
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>             ctx.read();
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>         }
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>         ctx.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>     }
+<a class="jxr_linenumber" name="L429" href="#L429">429</a> 
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>     @Override
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>         <strong class="jxr_keyword">if</strong> (aggregating &amp;&amp; handleIncompleteAggregateDuringClose) {
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>             ctx.fireExceptionCaught(
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>                     <strong class="jxr_keyword">new</strong> <a name="PrematureChannelClosureException" href="../../../../io/netty/handler/codec/PrematureChannelClosureException.html#PrematureChannelClosureException">PrematureChannelClosureException</a>(<span class="jxr_string">"Channel closed while still aggregating message"</span>));
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         }
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over</em>
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>             <strong class="jxr_keyword">super</strong>.channelInactive(ctx);
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>             releaseCurrentMessage();
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>         }
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>     }
+<a class="jxr_linenumber" name="L443" href="#L443">443</a> 
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>     @Override
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>     }
+<a class="jxr_linenumber" name="L448" href="#L448">448</a> 
+<a class="jxr_linenumber" name="L449" href="#L449">449</a>     @Override
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerRemoved(<a name="ChannelHandlerContext" href="../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>             <strong class="jxr_keyword">super</strong>.handlerRemoved(ctx);
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>             <em class="jxr_comment">// release current message if it is not null as it may be a left-over as there is not much more we can do in</em>
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>             <em class="jxr_comment">// this case</em>
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>             releaseCurrentMessage();
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>         }
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>     }
+<a class="jxr_linenumber" name="L459" href="#L459">459</a> 
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">void</strong> releaseCurrentMessage() {
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>         <strong class="jxr_keyword">if</strong> (currentMessage != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>             currentMessage.release();
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>             currentMessage = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>         }
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>         handlingOversizedMessage = false;
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>         aggregating = false;
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>     }
+<a class="jxr_linenumber" name="L468" href="#L468">468</a> }
 </pre>
 <hr/>
-<div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
+<div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
 </body>
 </html>

@@ -345,73 +345,70 @@
 <a class="jxr_linenumber" name="L337" href="#L337">337</a>                 }
 <a class="jxr_linenumber" name="L338" href="#L338">338</a>             }, THREAD_POOL_DELAY_SECONDS, TimeUnit.SECONDS);
 <a class="jxr_linenumber" name="L339" href="#L339">339</a> 
-<a class="jxr_linenumber" name="L340" href="#L340">340</a>             f.addListener(<strong class="jxr_keyword">new</strong> <a name="ChannelFutureListener" href="../../../../../io/netty/channel/ChannelFutureListener.html#ChannelFutureListener">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="L341" href="#L341">341</a>                 @Override
-<a class="jxr_linenumber" name="L342" href="#L342">342</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a name="ChannelFuture" href="../../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> f) {
-<a class="jxr_linenumber" name="L343" href="#L343">343</a>                     <em class="jxr_comment">// Cancel the scheduled timeout.</em>
-<a class="jxr_linenumber" name="L344" href="#L344">344</a>                     future.cancel(<strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L345" href="#L345">345</a>                     <strong class="jxr_keyword">if</strong> (!promise.isDone()) {
-<a class="jxr_linenumber" name="L346" href="#L346">346</a>                         ctx.close(promise);
-<a class="jxr_linenumber" name="L347" href="#L347">347</a>                     }
-<a class="jxr_linenumber" name="L348" href="#L348">348</a>                 }
-<a class="jxr_linenumber" name="L349" href="#L349">349</a>             });
-<a class="jxr_linenumber" name="L350" href="#L350">350</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L351" href="#L351">351</a>             ctx.close(promise);
-<a class="jxr_linenumber" name="L352" href="#L352">352</a>         }
-<a class="jxr_linenumber" name="L353" href="#L353">353</a>     }
-<a class="jxr_linenumber" name="L354" href="#L354">354</a> 
-<a class="jxr_linenumber" name="L355" href="#L355">355</a>     <strong class="jxr_keyword">private</strong> <a name="ChannelFuture" href="../../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> finishEncode(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ChannelPromise" href="../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="L356" href="#L356">356</a>         <strong class="jxr_keyword">if</strong> (finished) {
-<a class="jxr_linenumber" name="L357" href="#L357">357</a>             promise.setSuccess();
-<a class="jxr_linenumber" name="L358" href="#L358">358</a>             <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="L359" href="#L359">359</a>         }
-<a class="jxr_linenumber" name="L360" href="#L360">360</a>         finished = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L361" href="#L361">361</a> 
-<a class="jxr_linenumber" name="L362" href="#L362">362</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> footer;
-<a class="jxr_linenumber" name="L363" href="#L363">363</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L364" href="#L364">364</a>             <em class="jxr_comment">// Configure input.</em>
-<a class="jxr_linenumber" name="L365" href="#L365">365</a>             z.next_in = EmptyArrays.EMPTY_BYTES;
-<a class="jxr_linenumber" name="L366" href="#L366">366</a>             z.next_in_index = 0;
-<a class="jxr_linenumber" name="L367" href="#L367">367</a>             z.avail_in = 0;
-<a class="jxr_linenumber" name="L368" href="#L368">368</a> 
-<a class="jxr_linenumber" name="L369" href="#L369">369</a>             <em class="jxr_comment">// Configure output.</em>
-<a class="jxr_linenumber" name="L370" href="#L370">370</a>             byte[] out = <strong class="jxr_keyword">new</strong> byte[32]; <em class="jxr_comment">// room for ADLER32 + ZLIB / CRC32 + GZIP header</em>
-<a class="jxr_linenumber" name="L371" href="#L371">371</a>             z.next_out = out;
-<a class="jxr_linenumber" name="L372" href="#L372">372</a>             z.next_out_index = 0;
-<a class="jxr_linenumber" name="L373" href="#L373">373</a>             z.avail_out = out.length;
-<a class="jxr_linenumber" name="L374" href="#L374">374</a> 
-<a class="jxr_linenumber" name="L375" href="#L375">375</a>             <em class="jxr_comment">// Write the ADLER32 checksum (stream footer).</em>
-<a class="jxr_linenumber" name="L376" href="#L376">376</a>             <strong class="jxr_keyword">int</strong> resultCode = z.deflate(JZlib.Z_FINISH);
-<a class="jxr_linenumber" name="L377" href="#L377">377</a>             <strong class="jxr_keyword">if</strong> (resultCode != JZlib.Z_OK &amp;&amp; resultCode != JZlib.Z_STREAM_END) {
-<a class="jxr_linenumber" name="L378" href="#L378">378</a>                 promise.setFailure(ZlibUtil.deflaterException(z, <span class="jxr_string">"compression failure"</span>, resultCode));
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 <strong class="jxr_keyword">return</strong> promise;
-<a class="jxr_linenumber" name="L380" href="#L380">380</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (z.next_out_index != 0) {
-<a class="jxr_linenumber" name="L381" href="#L381">381</a>                 <em class="jxr_comment">// Suppressed a warning above to be on the safe side</em>
-<a class="jxr_linenumber" name="L382" href="#L382">382</a>                 <em class="jxr_comment">// even if z.next_out_index seems to be always 0 here</em>
-<a class="jxr_linenumber" name="L383" href="#L383">383</a>                 footer = Unpooled.wrappedBuffer(out, 0, z.next_out_index);
-<a class="jxr_linenumber" name="L384" href="#L384">384</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L385" href="#L385">385</a>                 footer = Unpooled.EMPTY_BUFFER;
-<a class="jxr_linenumber" name="L386" href="#L386">386</a>             }
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>             z.deflateEnd();
-<a class="jxr_linenumber" name="L389" href="#L389">389</a> 
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>             <em class="jxr_comment">// Deference the external references explicitly to tell the VM that</em>
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>             <em class="jxr_comment">// the allocated byte arrays are temporary so that the call stack</em>
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>             <em class="jxr_comment">// can be utilized.</em>
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>             <em class="jxr_comment">// I'm not sure if the modern VMs do this optimization though.</em>
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>             z.next_in = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>             z.next_out = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>         }
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>         <strong class="jxr_keyword">return</strong> ctx.writeAndFlush(footer, promise);
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>     }
-<a class="jxr_linenumber" name="L399" href="#L399">399</a> 
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>     @Override
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>     }
-<a class="jxr_linenumber" name="L404" href="#L404">404</a> }
+<a class="jxr_linenumber" name="L340" href="#L340">340</a>             f.addListener(f1 -&gt; {
+<a class="jxr_linenumber" name="L341" href="#L341">341</a>                 <em class="jxr_comment">// Cancel the scheduled timeout.</em>
+<a class="jxr_linenumber" name="L342" href="#L342">342</a>                 future.cancel(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L343" href="#L343">343</a>                 <strong class="jxr_keyword">if</strong> (!promise.isDone()) {
+<a class="jxr_linenumber" name="L344" href="#L344">344</a>                     ctx.close(promise);
+<a class="jxr_linenumber" name="L345" href="#L345">345</a>                 }
+<a class="jxr_linenumber" name="L346" href="#L346">346</a>             });
+<a class="jxr_linenumber" name="L347" href="#L347">347</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L348" href="#L348">348</a>             ctx.close(promise);
+<a class="jxr_linenumber" name="L349" href="#L349">349</a>         }
+<a class="jxr_linenumber" name="L350" href="#L350">350</a>     }
+<a class="jxr_linenumber" name="L351" href="#L351">351</a> 
+<a class="jxr_linenumber" name="L352" href="#L352">352</a>     <strong class="jxr_keyword">private</strong> <a name="ChannelFuture" href="../../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> finishEncode(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ChannelPromise" href="../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="L353" href="#L353">353</a>         <strong class="jxr_keyword">if</strong> (finished) {
+<a class="jxr_linenumber" name="L354" href="#L354">354</a>             promise.setSuccess();
+<a class="jxr_linenumber" name="L355" href="#L355">355</a>             <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="L356" href="#L356">356</a>         }
+<a class="jxr_linenumber" name="L357" href="#L357">357</a>         finished = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L358" href="#L358">358</a> 
+<a class="jxr_linenumber" name="L359" href="#L359">359</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> footer;
+<a class="jxr_linenumber" name="L360" href="#L360">360</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L361" href="#L361">361</a>             <em class="jxr_comment">// Configure input.</em>
+<a class="jxr_linenumber" name="L362" href="#L362">362</a>             z.next_in = EmptyArrays.EMPTY_BYTES;
+<a class="jxr_linenumber" name="L363" href="#L363">363</a>             z.next_in_index = 0;
+<a class="jxr_linenumber" name="L364" href="#L364">364</a>             z.avail_in = 0;
+<a class="jxr_linenumber" name="L365" href="#L365">365</a> 
+<a class="jxr_linenumber" name="L366" href="#L366">366</a>             <em class="jxr_comment">// Configure output.</em>
+<a class="jxr_linenumber" name="L367" href="#L367">367</a>             byte[] out = <strong class="jxr_keyword">new</strong> byte[32]; <em class="jxr_comment">// room for ADLER32 + ZLIB / CRC32 + GZIP header</em>
+<a class="jxr_linenumber" name="L368" href="#L368">368</a>             z.next_out = out;
+<a class="jxr_linenumber" name="L369" href="#L369">369</a>             z.next_out_index = 0;
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>             z.avail_out = out.length;
+<a class="jxr_linenumber" name="L371" href="#L371">371</a> 
+<a class="jxr_linenumber" name="L372" href="#L372">372</a>             <em class="jxr_comment">// Write the ADLER32 checksum (stream footer).</em>
+<a class="jxr_linenumber" name="L373" href="#L373">373</a>             <strong class="jxr_keyword">int</strong> resultCode = z.deflate(JZlib.Z_FINISH);
+<a class="jxr_linenumber" name="L374" href="#L374">374</a>             <strong class="jxr_keyword">if</strong> (resultCode != JZlib.Z_OK &amp;&amp; resultCode != JZlib.Z_STREAM_END) {
+<a class="jxr_linenumber" name="L375" href="#L375">375</a>                 promise.setFailure(ZlibUtil.deflaterException(z, <span class="jxr_string">"compression failure"</span>, resultCode));
+<a class="jxr_linenumber" name="L376" href="#L376">376</a>                 <strong class="jxr_keyword">return</strong> promise;
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>             } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (z.next_out_index != 0) {
+<a class="jxr_linenumber" name="L378" href="#L378">378</a>                 <em class="jxr_comment">// Suppressed a warning above to be on the safe side</em>
+<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 <em class="jxr_comment">// even if z.next_out_index seems to be always 0 here</em>
+<a class="jxr_linenumber" name="L380" href="#L380">380</a>                 footer = Unpooled.wrappedBuffer(out, 0, z.next_out_index);
+<a class="jxr_linenumber" name="L381" href="#L381">381</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L382" href="#L382">382</a>                 footer = Unpooled.EMPTY_BUFFER;
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>             }
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>             z.deflateEnd();
+<a class="jxr_linenumber" name="L386" href="#L386">386</a> 
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>             <em class="jxr_comment">// Deference the external references explicitly to tell the VM that</em>
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>             <em class="jxr_comment">// the allocated byte arrays are temporary so that the call stack</em>
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>             <em class="jxr_comment">// can be utilized.</em>
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>             <em class="jxr_comment">// I'm not sure if the modern VMs do this optimization though.</em>
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>             z.next_in = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>             z.next_out = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>         }
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>         <strong class="jxr_keyword">return</strong> ctx.writeAndFlush(footer, promise);
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>     }
+<a class="jxr_linenumber" name="L396" href="#L396">396</a> 
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>     @Override
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> handlerAdded(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <strong class="jxr_keyword">this</strong>.ctx = ctx;
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>     }
+<a class="jxr_linenumber" name="L401" href="#L401">401</a> }
 </pre>
 <hr/>
-<div id="footer">© 2008–2025 <a href="https://netty.io/">The Netty Project</a></div>
+<div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
 </body>
 </html>
