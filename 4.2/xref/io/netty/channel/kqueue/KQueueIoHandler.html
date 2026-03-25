@@ -463,67 +463,68 @@
 <a class="jxr_linenumber" name="L455" href="#L455">455</a>             <strong class="jxr_keyword">short</strong> filter = kQueueIoOps.filter();
 <a class="jxr_linenumber" name="L456" href="#L456">456</a>             <strong class="jxr_keyword">short</strong> flags = kQueueIoOps.flags();
 <a class="jxr_linenumber" name="L457" href="#L457">457</a>             <strong class="jxr_keyword">int</strong> fflags = kQueueIoOps.fflags();
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>                 evSet(filter, flags, fflags);
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>                 executor.execute(() -&gt; evSet(filter, flags, fflags));
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>             }
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>             <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>         }
-<a class="jxr_linenumber" name="L465" href="#L465">465</a> 
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>         <strong class="jxr_keyword">void</strong> handle(<strong class="jxr_keyword">int</strong> ident, <strong class="jxr_keyword">short</strong> filter, <strong class="jxr_keyword">short</strong> flags, <strong class="jxr_keyword">int</strong> fflags, <strong class="jxr_keyword">long</strong> data, <strong class="jxr_keyword">long</strong> udata) {
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>             <strong class="jxr_keyword">if</strong> (cancellationPending) {
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>                 <em class="jxr_comment">// This registration was already cancelled but not removed from the map yet, just ignore.</em>
-<a class="jxr_linenumber" name="L469" href="#L469">469</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>             }
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>             event.update(ident, filter, flags, fflags, data, udata);
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>             handle.handle(<strong class="jxr_keyword">this</strong>, event);
-<a class="jxr_linenumber" name="L473" href="#L473">473</a>         }
-<a class="jxr_linenumber" name="L474" href="#L474">474</a> 
-<a class="jxr_linenumber" name="L475" href="#L475">475</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> evSet(<strong class="jxr_keyword">short</strong> filter, <strong class="jxr_keyword">short</strong> flags, <strong class="jxr_keyword">int</strong> fflags) {
-<a class="jxr_linenumber" name="L476" href="#L476">476</a>             <strong class="jxr_keyword">if</strong> (cancellationPending) {
-<a class="jxr_linenumber" name="L477" href="#L477">477</a>                 <em class="jxr_comment">// This registration was already cancelled but not removed from the map yet, just ignore.</em>
-<a class="jxr_linenumber" name="L478" href="#L478">478</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L479" href="#L479">479</a>             }
-<a class="jxr_linenumber" name="L480" href="#L480">480</a>             changeList.evSet(handle.ident(), filter, flags, fflags, 0, id);
-<a class="jxr_linenumber" name="L481" href="#L481">481</a>         }
-<a class="jxr_linenumber" name="L482" href="#L482">482</a> 
-<a class="jxr_linenumber" name="L483" href="#L483">483</a>         @Override
-<a class="jxr_linenumber" name="L484" href="#L484">484</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isValid() {
-<a class="jxr_linenumber" name="L485" href="#L485">485</a>             <strong class="jxr_keyword">return</strong> !canceled.get();
-<a class="jxr_linenumber" name="L486" href="#L486">486</a>         }
-<a class="jxr_linenumber" name="L487" href="#L487">487</a> 
-<a class="jxr_linenumber" name="L488" href="#L488">488</a>         @Override
-<a class="jxr_linenumber" name="L489" href="#L489">489</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel() {
-<a class="jxr_linenumber" name="L490" href="#L490">490</a>             <strong class="jxr_keyword">if</strong> (!canceled.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
-<a class="jxr_linenumber" name="L491" href="#L491">491</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L492" href="#L492">492</a>             }
-<a class="jxr_linenumber" name="L493" href="#L493">493</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
-<a class="jxr_linenumber" name="L494" href="#L494">494</a>                 cancel0();
-<a class="jxr_linenumber" name="L495" href="#L495">495</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L496" href="#L496">496</a>                 executor.execute(<strong class="jxr_keyword">this</strong>::cancel0);
-<a class="jxr_linenumber" name="L497" href="#L497">497</a>             }
-<a class="jxr_linenumber" name="L498" href="#L498">498</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L499" href="#L499">499</a>         }
-<a class="jxr_linenumber" name="L500" href="#L500">500</a> 
-<a class="jxr_linenumber" name="L501" href="#L501">501</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cancel0() {
-<a class="jxr_linenumber" name="L502" href="#L502">502</a>             <em class="jxr_comment">// Let's add the registration to our cancelledRegistrations queue so we will process it</em>
-<a class="jxr_linenumber" name="L503" href="#L503">503</a>             <em class="jxr_comment">// after we processed all events. This is needed as otherwise we might end up removing it</em>
-<a class="jxr_linenumber" name="L504" href="#L504">504</a>             <em class="jxr_comment">// from the registration map while we still have some unprocessed events.</em>
-<a class="jxr_linenumber" name="L505" href="#L505">505</a>             cancellationPending = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L506" href="#L506">506</a>             cancelledRegistrations.offer(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="L507" href="#L507">507</a>         }
-<a class="jxr_linenumber" name="L508" href="#L508">508</a> 
-<a class="jxr_linenumber" name="L509" href="#L509">509</a>         <strong class="jxr_keyword">void</strong> close() {
-<a class="jxr_linenumber" name="L510" href="#L510">510</a>             cancel();
-<a class="jxr_linenumber" name="L511" href="#L511">511</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L512" href="#L512">512</a>                 handle.close();
-<a class="jxr_linenumber" name="L513" href="#L513">513</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
-<a class="jxr_linenumber" name="L514" href="#L514">514</a>                 logger.debug(<span class="jxr_string">"Exception during closing "</span> + handle, e);
-<a class="jxr_linenumber" name="L515" href="#L515">515</a>             }
-<a class="jxr_linenumber" name="L516" href="#L516">516</a>         }
-<a class="jxr_linenumber" name="L517" href="#L517">517</a>     }
-<a class="jxr_linenumber" name="L518" href="#L518">518</a> }
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">long</strong> data = kQueueIoOps.data();
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>                 evSet(filter, flags, fflags, data);
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>                 executor.execute(() -&gt; evSet(filter, flags, fflags, data));
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>             }
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>             <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>         }
+<a class="jxr_linenumber" name="L466" href="#L466">466</a> 
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>         <strong class="jxr_keyword">void</strong> handle(<strong class="jxr_keyword">int</strong> ident, <strong class="jxr_keyword">short</strong> filter, <strong class="jxr_keyword">short</strong> flags, <strong class="jxr_keyword">int</strong> fflags, <strong class="jxr_keyword">long</strong> data, <strong class="jxr_keyword">long</strong> udata) {
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>             <strong class="jxr_keyword">if</strong> (cancellationPending) {
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>                 <em class="jxr_comment">// This registration was already cancelled but not removed from the map yet, just ignore.</em>
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>             }
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>             event.update(ident, filter, flags, fflags, data, udata);
+<a class="jxr_linenumber" name="L473" href="#L473">473</a>             handle.handle(<strong class="jxr_keyword">this</strong>, event);
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>         }
+<a class="jxr_linenumber" name="L475" href="#L475">475</a> 
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> evSet(<strong class="jxr_keyword">short</strong> filter, <strong class="jxr_keyword">short</strong> flags, <strong class="jxr_keyword">int</strong> fflags, <strong class="jxr_keyword">long</strong> data) {
+<a class="jxr_linenumber" name="L477" href="#L477">477</a>             <strong class="jxr_keyword">if</strong> (cancellationPending) {
+<a class="jxr_linenumber" name="L478" href="#L478">478</a>                 <em class="jxr_comment">// This registration was already cancelled but not removed from the map yet, just ignore.</em>
+<a class="jxr_linenumber" name="L479" href="#L479">479</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L480" href="#L480">480</a>             }
+<a class="jxr_linenumber" name="L481" href="#L481">481</a>             changeList.evSet(handle.ident(), filter, flags, fflags, data, id);
+<a class="jxr_linenumber" name="L482" href="#L482">482</a>         }
+<a class="jxr_linenumber" name="L483" href="#L483">483</a> 
+<a class="jxr_linenumber" name="L484" href="#L484">484</a>         @Override
+<a class="jxr_linenumber" name="L485" href="#L485">485</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isValid() {
+<a class="jxr_linenumber" name="L486" href="#L486">486</a>             <strong class="jxr_keyword">return</strong> !canceled.get();
+<a class="jxr_linenumber" name="L487" href="#L487">487</a>         }
+<a class="jxr_linenumber" name="L488" href="#L488">488</a> 
+<a class="jxr_linenumber" name="L489" href="#L489">489</a>         @Override
+<a class="jxr_linenumber" name="L490" href="#L490">490</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> cancel() {
+<a class="jxr_linenumber" name="L491" href="#L491">491</a>             <strong class="jxr_keyword">if</strong> (!canceled.compareAndSet(false, <strong class="jxr_keyword">true</strong>)) {
+<a class="jxr_linenumber" name="L492" href="#L492">492</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L493" href="#L493">493</a>             }
+<a class="jxr_linenumber" name="L494" href="#L494">494</a>             <strong class="jxr_keyword">if</strong> (executor.isExecutorThread(Thread.currentThread())) {
+<a class="jxr_linenumber" name="L495" href="#L495">495</a>                 cancel0();
+<a class="jxr_linenumber" name="L496" href="#L496">496</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L497" href="#L497">497</a>                 executor.execute(<strong class="jxr_keyword">this</strong>::cancel0);
+<a class="jxr_linenumber" name="L498" href="#L498">498</a>             }
+<a class="jxr_linenumber" name="L499" href="#L499">499</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L500" href="#L500">500</a>         }
+<a class="jxr_linenumber" name="L501" href="#L501">501</a> 
+<a class="jxr_linenumber" name="L502" href="#L502">502</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> cancel0() {
+<a class="jxr_linenumber" name="L503" href="#L503">503</a>             <em class="jxr_comment">// Let's add the registration to our cancelledRegistrations queue so we will process it</em>
+<a class="jxr_linenumber" name="L504" href="#L504">504</a>             <em class="jxr_comment">// after we processed all events. This is needed as otherwise we might end up removing it</em>
+<a class="jxr_linenumber" name="L505" href="#L505">505</a>             <em class="jxr_comment">// from the registration map while we still have some unprocessed events.</em>
+<a class="jxr_linenumber" name="L506" href="#L506">506</a>             cancellationPending = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L507" href="#L507">507</a>             cancelledRegistrations.offer(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L508" href="#L508">508</a>         }
+<a class="jxr_linenumber" name="L509" href="#L509">509</a> 
+<a class="jxr_linenumber" name="L510" href="#L510">510</a>         <strong class="jxr_keyword">void</strong> close() {
+<a class="jxr_linenumber" name="L511" href="#L511">511</a>             cancel();
+<a class="jxr_linenumber" name="L512" href="#L512">512</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L513" href="#L513">513</a>                 handle.close();
+<a class="jxr_linenumber" name="L514" href="#L514">514</a>             } <strong class="jxr_keyword">catch</strong> (Exception e) {
+<a class="jxr_linenumber" name="L515" href="#L515">515</a>                 logger.debug(<span class="jxr_string">"Exception during closing "</span> + handle, e);
+<a class="jxr_linenumber" name="L516" href="#L516">516</a>             }
+<a class="jxr_linenumber" name="L517" href="#L517">517</a>         }
+<a class="jxr_linenumber" name="L518" href="#L518">518</a>     }
+<a class="jxr_linenumber" name="L519" href="#L519">519</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

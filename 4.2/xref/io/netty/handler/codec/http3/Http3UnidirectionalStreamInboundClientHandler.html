@@ -37,35 +37,37 @@
 <a class="jxr_linenumber" name="L29" href="#L29">29</a>  
 <a class="jxr_linenumber" name="L30" href="#L30">30</a>      <a name="Http3UnidirectionalStreamInboundClientHandler" href="../../../../../io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundClientHandler.html#Http3UnidirectionalStreamInboundClientHandler">Http3UnidirectionalStreamInboundClientHandler</a>(
 <a class="jxr_linenumber" name="L31" href="#L31">31</a>              Http3FrameCodecFactory codecFactory,
-<a class="jxr_linenumber" name="L32" href="#L32">32</a>              <a name="Http3ControlStreamInboundHandler" href="../../../../../io/netty/handler/codec/http3/Http3ControlStreamInboundHandler.html#Http3ControlStreamInboundHandler">Http3ControlStreamInboundHandler</a> localControlStreamHandler,
-<a class="jxr_linenumber" name="L33" href="#L33">33</a>              <a name="Http3ControlStreamOutboundHandler" href="../../../../../io/netty/handler/codec/http3/Http3ControlStreamOutboundHandler.html#Http3ControlStreamOutboundHandler">Http3ControlStreamOutboundHandler</a> remoteControlStreamHandler,
-<a class="jxr_linenumber" name="L34" href="#L34">34</a>              @Nullable LongFunction&lt;ChannelHandler&gt; unknownStreamHandlerFactory,
-<a class="jxr_linenumber" name="L35" href="#L35">35</a>              @Nullable LongFunction&lt;ChannelHandler&gt; pushStreamHandlerFactory,
-<a class="jxr_linenumber" name="L36" href="#L36">36</a>              Supplier&lt;ChannelHandler&gt; qpackEncoderHandlerFactory, Supplier&lt;ChannelHandler&gt; qpackDecoderHandlerFactory) {
-<a class="jxr_linenumber" name="L37" href="#L37">37</a>          <strong class="jxr_keyword">super</strong>(codecFactory, localControlStreamHandler, remoteControlStreamHandler, unknownStreamHandlerFactory,
-<a class="jxr_linenumber" name="L38" href="#L38">38</a>                  qpackEncoderHandlerFactory, qpackDecoderHandlerFactory);
-<a class="jxr_linenumber" name="L39" href="#L39">39</a>          <strong class="jxr_keyword">this</strong>.pushStreamHandlerFactory = pushStreamHandlerFactory == <strong class="jxr_keyword">null</strong> ? __ -&gt; ReleaseHandler.INSTANCE :
-<a class="jxr_linenumber" name="L40" href="#L40">40</a>                  pushStreamHandlerFactory;
-<a class="jxr_linenumber" name="L41" href="#L41">41</a>      }
-<a class="jxr_linenumber" name="L42" href="#L42">42</a>  
-<a class="jxr_linenumber" name="L43" href="#L43">43</a>      @Override
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>      <strong class="jxr_keyword">void</strong> initPushStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> pushId) {
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>          <em class="jxr_comment">// See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-4.4</em>
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>          Long maxPushId = remoteControlStreamHandler.sentMaxPushId();
-<a class="jxr_linenumber" name="L47" href="#L47">47</a>          <strong class="jxr_keyword">if</strong> (maxPushId == <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L48" href="#L48">48</a>              Http3CodecUtils.connectionError(ctx, Http3ErrorCode.H3_ID_ERROR,
-<a class="jxr_linenumber" name="L49" href="#L49">49</a>                      <span class="jxr_string">"Received push stream before sending MAX_PUSH_ID frame."</span>, false);
-<a class="jxr_linenumber" name="L50" href="#L50">50</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (maxPushId &lt; pushId) {
-<a class="jxr_linenumber" name="L51" href="#L51">51</a>              Http3CodecUtils.connectionError(ctx, Http3ErrorCode.H3_ID_ERROR,
-<a class="jxr_linenumber" name="L52" href="#L52">52</a>                      <span class="jxr_string">"Received push stream with ID "</span> + pushId + <span class="jxr_string">" greater than the max push ID "</span> + maxPushId
-<a class="jxr_linenumber" name="L53" href="#L53">53</a>                              + '.', false);
-<a class="jxr_linenumber" name="L54" href="#L54">54</a>          } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L55" href="#L55">55</a>              <em class="jxr_comment">// Replace this handler with the actual push stream handlers.</em>
-<a class="jxr_linenumber" name="L56" href="#L56">56</a>              <strong class="jxr_keyword">final</strong> <a name="ChannelHandler" href="../../../../../io/netty/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a> pushStreamHandler = pushStreamHandlerFactory.apply(pushId);
-<a class="jxr_linenumber" name="L57" href="#L57">57</a>              ctx.pipeline().replace(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, pushStreamHandler);
-<a class="jxr_linenumber" name="L58" href="#L58">58</a>          }
-<a class="jxr_linenumber" name="L59" href="#L59">59</a>      }
-<a class="jxr_linenumber" name="L60" href="#L60">60</a>  }
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>              Http3Settings.NonStandardHttp3SettingsValidator nonStandardSettingsValidator,
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>              <a name="Http3ControlStreamInboundHandler" href="../../../../../io/netty/handler/codec/http3/Http3ControlStreamInboundHandler.html#Http3ControlStreamInboundHandler">Http3ControlStreamInboundHandler</a> localControlStreamHandler,
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>              <a name="Http3ControlStreamOutboundHandler" href="../../../../../io/netty/handler/codec/http3/Http3ControlStreamOutboundHandler.html#Http3ControlStreamOutboundHandler">Http3ControlStreamOutboundHandler</a> remoteControlStreamHandler,
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>              @Nullable LongFunction&lt;ChannelHandler&gt; unknownStreamHandlerFactory,
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>              @Nullable LongFunction&lt;ChannelHandler&gt; pushStreamHandlerFactory,
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>              Supplier&lt;ChannelHandler&gt; qpackEncoderHandlerFactory, Supplier&lt;ChannelHandler&gt; qpackDecoderHandlerFactory) {
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>          <strong class="jxr_keyword">super</strong>(codecFactory, nonStandardSettingsValidator,
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>                  localControlStreamHandler, remoteControlStreamHandler, unknownStreamHandlerFactory,
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>                  qpackEncoderHandlerFactory, qpackDecoderHandlerFactory);
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>          <strong class="jxr_keyword">this</strong>.pushStreamHandlerFactory = pushStreamHandlerFactory == <strong class="jxr_keyword">null</strong> ? __ -&gt; ReleaseHandler.INSTANCE :
+<a class="jxr_linenumber" name="L42" href="#L42">42</a>                  pushStreamHandlerFactory;
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>      }
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>  
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>      @Override
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>      <strong class="jxr_keyword">void</strong> initPushStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> pushId) {
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>          <em class="jxr_comment">// See https://tools.ietf.org/html/draft-ietf-quic-http-32#section-4.4</em>
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>          Long maxPushId = remoteControlStreamHandler.sentMaxPushId();
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>          <strong class="jxr_keyword">if</strong> (maxPushId == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>              Http3CodecUtils.connectionError(ctx, Http3ErrorCode.H3_ID_ERROR,
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>                      <span class="jxr_string">"Received push stream before sending MAX_PUSH_ID frame."</span>, false);
+<a class="jxr_linenumber" name="L52" href="#L52">52</a>          } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (maxPushId &lt; pushId) {
+<a class="jxr_linenumber" name="L53" href="#L53">53</a>              Http3CodecUtils.connectionError(ctx, Http3ErrorCode.H3_ID_ERROR,
+<a class="jxr_linenumber" name="L54" href="#L54">54</a>                      <span class="jxr_string">"Received push stream with ID "</span> + pushId + <span class="jxr_string">" greater than the max push ID "</span> + maxPushId
+<a class="jxr_linenumber" name="L55" href="#L55">55</a>                              + '.', false);
+<a class="jxr_linenumber" name="L56" href="#L56">56</a>          } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L57" href="#L57">57</a>              <em class="jxr_comment">// Replace this handler with the actual push stream handlers.</em>
+<a class="jxr_linenumber" name="L58" href="#L58">58</a>              <strong class="jxr_keyword">final</strong> <a name="ChannelHandler" href="../../../../../io/netty/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a> pushStreamHandler = pushStreamHandlerFactory.apply(pushId);
+<a class="jxr_linenumber" name="L59" href="#L59">59</a>              ctx.pipeline().replace(<strong class="jxr_keyword">this</strong>, <strong class="jxr_keyword">null</strong>, pushStreamHandler);
+<a class="jxr_linenumber" name="L60" href="#L60">60</a>          }
+<a class="jxr_linenumber" name="L61" href="#L61">61</a>      }
+<a class="jxr_linenumber" name="L62" href="#L62">62</a>  }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

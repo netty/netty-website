@@ -381,84 +381,88 @@
 <a class="jxr_linenumber" name="L373" href="#L373">373</a>             assertNotNull(suspendedLoop, <span class="jxr_string">"Could not find a suspended executor to test."</span>);
 <a class="jxr_linenumber" name="L374" href="#L374">374</a> 
 <a class="jxr_linenumber" name="L375" href="#L375">375</a>             <em class="jxr_comment">// Submit a task directly to the suspended loop, this should trigger the wake-up mechanism.</em>
-<a class="jxr_linenumber" name="L376" href="#L376">376</a>             Future&lt;?&gt; future = suspendedLoop.submit(() -&gt; { });
-<a class="jxr_linenumber" name="L377" href="#L377">377</a>             future.syncUninterruptibly();
-<a class="jxr_linenumber" name="L378" href="#L378">378</a> 
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>             assertFalse(suspendedLoop.isSuspended(), <span class="jxr_string">"Executor should wake up after task submission."</span>);
-<a class="jxr_linenumber" name="L380" href="#L380">380</a>             assertEquals(SCALING_MAX_THREADS, countActiveExecutors(group),
-<a class="jxr_linenumber" name="L381" href="#L381">381</a>                          <span class="jxr_string">"Active executor count should increase after wake-up."</span>);
-<a class="jxr_linenumber" name="L382" href="#L382">382</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L383" href="#L383">383</a>             group.shutdownGracefully().syncUninterruptibly();
-<a class="jxr_linenumber" name="L384" href="#L384">384</a>         }
-<a class="jxr_linenumber" name="L385" href="#L385">385</a>     }
-<a class="jxr_linenumber" name="L386" href="#L386">386</a> 
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> countActiveExecutors(<a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group) {
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>         <strong class="jxr_keyword">int</strong> activeCount = 0;
-<a class="jxr_linenumber" name="L389" href="#L389">389</a>         <strong class="jxr_keyword">for</strong> (<a name="EventExecutor" href="../../../../io/netty/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> executor : group) {
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>             <strong class="jxr_keyword">if</strong> (!executor.isSuspended()) {
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>                 activeCount++;
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>             }
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>         }
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>         <strong class="jxr_keyword">return</strong> activeCount;
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>     }
-<a class="jxr_linenumber" name="L396" href="#L396">396</a> 
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> startAllExecutors(<a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group) <strong class="jxr_keyword">throws</strong> InterruptedException {
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>         CountDownLatch startLatch = <strong class="jxr_keyword">new</strong> CountDownLatch(SCALING_MAX_THREADS);
-<a class="jxr_linenumber" name="L399" href="#L399">399</a>         <strong class="jxr_keyword">for</strong> (<a name="EventExecutor" href="../../../../io/netty/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> executor : group) {
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>             executor.execute(startLatch::countDown);
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>         }
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>         startLatch.await();
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>     }
-<a class="jxr_linenumber" name="L404" href="#L404">404</a> 
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> runBlockingOn(<a name="EventLoop" href="../../../../io/netty/channel/EventLoop.html#EventLoop">EventLoop</a> eventLoop, <strong class="jxr_keyword">final</strong> Runnable action) {
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>         <strong class="jxr_keyword">final</strong> Promise&lt;Void&gt; promise = eventLoop.newPromise();
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>             eventLoop.execute(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>                 @Override
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>                     <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>                         action.run();
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>                         promise.setSuccess(<strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>                         promise.tryFailure(t);
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>                     }
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>                 }
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>             });
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>             promise.await();
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(e);
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>         }
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>         Throwable cause = promise.cause();
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>         <strong class="jxr_keyword">if</strong> (cause != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>             <strong class="jxr_keyword">if</strong> (cause instanceof RuntimeException) {
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>                 <strong class="jxr_keyword">throw</strong> (RuntimeException) cause;
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>             }
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(cause);
-<a class="jxr_linenumber" name="L429" href="#L429">429</a>         }
-<a class="jxr_linenumber" name="L430" href="#L430">430</a>     }
-<a class="jxr_linenumber" name="L431" href="#L431">431</a> 
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> Runnable NOOP = <strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>         @Override
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() { }
-<a class="jxr_linenumber" name="L435" href="#L435">435</a>     };
-<a class="jxr_linenumber" name="L436" href="#L436">436</a> 
-<a class="jxr_linenumber" name="L437" href="#L437">437</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> assertRejection(<a name="EventExecutor" href="../../../../io/netty/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> loop) {
-<a class="jxr_linenumber" name="L438" href="#L438">438</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>             loop.execute(NOOP);
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>             fail(<span class="jxr_string">"A task must be rejected after shutdown() is called."</span>);
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>         } <strong class="jxr_keyword">catch</strong> (RejectedExecutionException e) {
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>             <em class="jxr_comment">// Expected</em>
-<a class="jxr_linenumber" name="L443" href="#L443">443</a>         }
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>     }
-<a class="jxr_linenumber" name="L445" href="#L445">445</a> 
-<a class="jxr_linenumber" name="L446" href="#L446">446</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> supportsChannelIteration() {
-<a class="jxr_linenumber" name="L447" href="#L447">447</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L376" href="#L376">376</a>             <strong class="jxr_keyword">int</strong> i = 0;
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>             <strong class="jxr_keyword">boolean</strong> isSuspended;
+<a class="jxr_linenumber" name="L378" href="#L378">378</a>             <strong class="jxr_keyword">do</strong> {
+<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 Future&lt;?&gt; future = suspendedLoop.submit(() -&gt; { });
+<a class="jxr_linenumber" name="L380" href="#L380">380</a>                 future.sync();
+<a class="jxr_linenumber" name="L381" href="#L381">381</a>             } <strong class="jxr_keyword">while</strong> ((isSuspended = suspendedLoop.isSuspended()) &amp;&amp; i++ &lt; 10);
+<a class="jxr_linenumber" name="L382" href="#L382">382</a> 
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>             assertFalse(isSuspended, <span class="jxr_string">"Executor should wake up after task submission."</span>);
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>             assertEquals(SCALING_MAX_THREADS, countActiveExecutors(group),
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>                          <span class="jxr_string">"Active executor count should increase after wake-up."</span>);
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>             group.shutdownGracefully().sync();
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>         }
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>     }
+<a class="jxr_linenumber" name="L390" href="#L390">390</a> 
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> countActiveExecutors(<a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group) {
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>         <strong class="jxr_keyword">int</strong> activeCount = 0;
+<a class="jxr_linenumber" name="L393" href="#L393">393</a>         <strong class="jxr_keyword">for</strong> (<a name="EventExecutor" href="../../../../io/netty/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> executor : group) {
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>             <strong class="jxr_keyword">if</strong> (!executor.isSuspended()) {
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>                 activeCount++;
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>             }
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>         }
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>         <strong class="jxr_keyword">return</strong> activeCount;
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>     }
+<a class="jxr_linenumber" name="L400" href="#L400">400</a> 
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> startAllExecutors(<a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> group) <strong class="jxr_keyword">throws</strong> InterruptedException {
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>         CountDownLatch startLatch = <strong class="jxr_keyword">new</strong> CountDownLatch(SCALING_MAX_THREADS);
+<a class="jxr_linenumber" name="L403" href="#L403">403</a>         <strong class="jxr_keyword">for</strong> (<a name="EventExecutor" href="../../../../io/netty/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> executor : group) {
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>             executor.execute(startLatch::countDown);
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>         }
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>         startLatch.await();
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>     }
+<a class="jxr_linenumber" name="L408" href="#L408">408</a> 
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> runBlockingOn(<a name="EventLoop" href="../../../../io/netty/channel/EventLoop.html#EventLoop">EventLoop</a> eventLoop, <strong class="jxr_keyword">final</strong> Runnable action) {
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>         <strong class="jxr_keyword">final</strong> Promise&lt;Void&gt; promise = eventLoop.newPromise();
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>             eventLoop.execute(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>                 @Override
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>                     <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>                         action.run();
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                         promise.setSuccess(<strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>                     } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>                         promise.tryFailure(t);
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>                     }
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>                 }
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>             });
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>             promise.await();
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>         } <strong class="jxr_keyword">catch</strong> (InterruptedException e) {
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(e);
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>         }
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>         Throwable cause = promise.cause();
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>         <strong class="jxr_keyword">if</strong> (cause != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>             <strong class="jxr_keyword">if</strong> (cause instanceof RuntimeException) {
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>                 <strong class="jxr_keyword">throw</strong> (RuntimeException) cause;
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>             }
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> RuntimeException(cause);
+<a class="jxr_linenumber" name="L433" href="#L433">433</a>         }
+<a class="jxr_linenumber" name="L434" href="#L434">434</a>     }
+<a class="jxr_linenumber" name="L435" href="#L435">435</a> 
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> Runnable NOOP = <strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>         @Override
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() { }
+<a class="jxr_linenumber" name="L439" href="#L439">439</a>     };
+<a class="jxr_linenumber" name="L440" href="#L440">440</a> 
+<a class="jxr_linenumber" name="L441" href="#L441">441</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> assertRejection(<a name="EventExecutor" href="../../../../io/netty/util/concurrent/EventExecutor.html#EventExecutor">EventExecutor</a> loop) {
+<a class="jxr_linenumber" name="L442" href="#L442">442</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>             loop.execute(NOOP);
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>             fail(<span class="jxr_string">"A task must be rejected after shutdown() is called."</span>);
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>         } <strong class="jxr_keyword">catch</strong> (RejectedExecutionException e) {
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>             <em class="jxr_comment">// Expected</em>
+<a class="jxr_linenumber" name="L447" href="#L447">447</a>         }
 <a class="jxr_linenumber" name="L448" href="#L448">448</a>     }
-<a class="jxr_linenumber" name="L449" href="#L449">449</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> newEventLoopGroup();
-<a class="jxr_linenumber" name="L450" href="#L450">450</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> newAutoScalingEventLoopGroup();
-<a class="jxr_linenumber" name="L451" href="#L451">451</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a name="Channel" href="../../../../io/netty/channel/Channel.html#Channel">Channel</a> newChannel();
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> Class&lt;? <strong class="jxr_keyword">extends</strong> ServerChannel&gt; serverChannelClass();
-<a class="jxr_linenumber" name="L453" href="#L453">453</a> }
+<a class="jxr_linenumber" name="L449" href="#L449">449</a> 
+<a class="jxr_linenumber" name="L450" href="#L450">450</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> supportsChannelIteration() {
+<a class="jxr_linenumber" name="L451" href="#L451">451</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L452" href="#L452">452</a>     }
+<a class="jxr_linenumber" name="L453" href="#L453">453</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> newEventLoopGroup();
+<a class="jxr_linenumber" name="L454" href="#L454">454</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a name="EventLoopGroup" href="../../../../io/netty/channel/EventLoopGroup.html#EventLoopGroup">EventLoopGroup</a> newAutoScalingEventLoopGroup();
+<a class="jxr_linenumber" name="L455" href="#L455">455</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <a name="Channel" href="../../../../io/netty/channel/Channel.html#Channel">Channel</a> newChannel();
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> Class&lt;? <strong class="jxr_keyword">extends</strong> ServerChannel&gt; serverChannelClass();
+<a class="jxr_linenumber" name="L457" href="#L457">457</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

@@ -68,35 +68,62 @@
 <a class="jxr_linenumber" name="L60" href="#L60">60</a>                                          @Nullable <a name="ChannelHandler" href="../../../../../io/netty/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a> inboundControlStreamHandler,
 <a class="jxr_linenumber" name="L61" href="#L61">61</a>                                          @Nullable LongFunction&lt;ChannelHandler&gt; unknownInboundStreamHandlerFactory,
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>                                          @Nullable <a name="Http3SettingsFrame" href="../../../../../io/netty/handler/codec/http3/Http3SettingsFrame.html#Http3SettingsFrame">Http3SettingsFrame</a> localSettings, <strong class="jxr_keyword">boolean</strong> disableQpackDynamicTable) {
-<a class="jxr_linenumber" name="L63" href="#L63">63</a>          <strong class="jxr_keyword">super</strong>(<strong class="jxr_keyword">true</strong>, inboundControlStreamHandler, unknownInboundStreamHandlerFactory, localSettings,
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>                  disableQpackDynamicTable);
-<a class="jxr_linenumber" name="L65" href="#L65">65</a>          <strong class="jxr_keyword">this</strong>.requestStreamHandler = ObjectUtil.checkNotNull(requestStreamHandler, <span class="jxr_string">"requestStreamHandler"</span>);
-<a class="jxr_linenumber" name="L66" href="#L66">66</a>      }
-<a class="jxr_linenumber" name="L67" href="#L67">67</a>  
-<a class="jxr_linenumber" name="L68" href="#L68">68</a>      @Override
-<a class="jxr_linenumber" name="L69" href="#L69">69</a>      <strong class="jxr_keyword">void</strong> initBidirectionalStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="QuicStreamChannel" href="../../../../../io/netty/handler/codec/quic/QuicStreamChannel.html#QuicStreamChannel">QuicStreamChannel</a> streamChannel) {
-<a class="jxr_linenumber" name="L70" href="#L70">70</a>          <a name="ChannelPipeline" href="../../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = streamChannel.pipeline();
-<a class="jxr_linenumber" name="L71" href="#L71">71</a>          <a name="Http3RequestStreamEncodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamEncodeStateValidator.html#Http3RequestStreamEncodeStateValidator">Http3RequestStreamEncodeStateValidator</a> encodeStateValidator = <strong class="jxr_keyword">new</strong> <a name="Http3RequestStreamEncodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamEncodeStateValidator.html#Http3RequestStreamEncodeStateValidator">Http3RequestStreamEncodeStateValidator</a>();
-<a class="jxr_linenumber" name="L72" href="#L72">72</a>          <a name="Http3RequestStreamDecodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamDecodeStateValidator.html#Http3RequestStreamDecodeStateValidator">Http3RequestStreamDecodeStateValidator</a> decodeStateValidator = <strong class="jxr_keyword">new</strong> <a name="Http3RequestStreamDecodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamDecodeStateValidator.html#Http3RequestStreamDecodeStateValidator">Http3RequestStreamDecodeStateValidator</a>();
-<a class="jxr_linenumber" name="L73" href="#L73">73</a>          <em class="jxr_comment">// Add the encoder and decoder in the pipeline so we can handle Http3Frames</em>
-<a class="jxr_linenumber" name="L74" href="#L74">74</a>          pipeline.addLast(newCodec(encodeStateValidator, decodeStateValidator));
-<a class="jxr_linenumber" name="L75" href="#L75">75</a>          pipeline.addLast(encodeStateValidator);
-<a class="jxr_linenumber" name="L76" href="#L76">76</a>          pipeline.addLast(decodeStateValidator);
-<a class="jxr_linenumber" name="L77" href="#L77">77</a>          pipeline.addLast(newRequestStreamValidationHandler(streamChannel, encodeStateValidator, decodeStateValidator));
-<a class="jxr_linenumber" name="L78" href="#L78">78</a>          pipeline.addLast(requestStreamHandler);
-<a class="jxr_linenumber" name="L79" href="#L79">79</a>      }
-<a class="jxr_linenumber" name="L80" href="#L80">80</a>  
-<a class="jxr_linenumber" name="L81" href="#L81">81</a>      @Override
-<a class="jxr_linenumber" name="L82" href="#L82">82</a>      <strong class="jxr_keyword">void</strong> initUnidirectionalStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="QuicStreamChannel" href="../../../../../io/netty/handler/codec/quic/QuicStreamChannel.html#QuicStreamChannel">QuicStreamChannel</a> streamChannel) {
-<a class="jxr_linenumber" name="L83" href="#L83">83</a>          <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> maxTableCapacity = maxTableCapacity();
-<a class="jxr_linenumber" name="L84" href="#L84">84</a>          streamChannel.pipeline().addLast(
-<a class="jxr_linenumber" name="L85" href="#L85">85</a>                  <strong class="jxr_keyword">new</strong> <a name="Http3UnidirectionalStreamInboundServerHandler" href="../../../../../io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundServerHandler.html#Http3UnidirectionalStreamInboundServerHandler">Http3UnidirectionalStreamInboundServerHandler</a>(codecFactory,
-<a class="jxr_linenumber" name="L86" href="#L86">86</a>                          localControlStreamHandler, remoteControlStreamHandler,
-<a class="jxr_linenumber" name="L87" href="#L87">87</a>                          unknownInboundStreamHandlerFactory,
-<a class="jxr_linenumber" name="L88" href="#L88">88</a>                          () -&gt; <strong class="jxr_keyword">new</strong> <a name="QpackEncoderHandler" href="../../../../../io/netty/handler/codec/http3/QpackEncoderHandler.html#QpackEncoderHandler">QpackEncoderHandler</a>(maxTableCapacity, qpackDecoder),
-<a class="jxr_linenumber" name="L89" href="#L89">89</a>                          () -&gt; <strong class="jxr_keyword">new</strong> <a name="QpackDecoderHandler" href="../../../../../io/netty/handler/codec/http3/QpackDecoderHandler.html#QpackDecoderHandler">QpackDecoderHandler</a>(qpackEncoder)));
-<a class="jxr_linenumber" name="L90" href="#L90">90</a>      }
-<a class="jxr_linenumber" name="L91" href="#L91">91</a>  }
+<a class="jxr_linenumber" name="L63" href="#L63">63</a>          <strong class="jxr_keyword">this</strong>(requestStreamHandler, inboundControlStreamHandler, unknownInboundStreamHandlerFactory,
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>                  localSettings, disableQpackDynamicTable, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="L65" href="#L65">65</a>      }
+<a class="jxr_linenumber" name="L66" href="#L66">66</a>  
+<a class="jxr_linenumber" name="L67" href="#L67">67</a>      <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L68" href="#L68">68</a>  <em class="jxr_javadoccomment">     * Create a new instance.</em>
+<a class="jxr_linenumber" name="L69" href="#L69">69</a>  <em class="jxr_javadoccomment">     * @param requestStreamHandler                  the {@link ChannelHandler} that is used for each new request stream.</em>
+<a class="jxr_linenumber" name="L70" href="#L70">70</a>  <em class="jxr_javadoccomment">     *                                              This handler will receive {@link Http3HeadersFrame} and</em>
+<a class="jxr_linenumber" name="L71" href="#L71">71</a>  <em class="jxr_javadoccomment">     *                                              {@link Http3DataFrame}s.</em>
+<a class="jxr_linenumber" name="L72" href="#L72">72</a>  <em class="jxr_javadoccomment">     * @param inboundControlStreamHandler           the {@link ChannelHandler} which will be notified about</em>
+<a class="jxr_linenumber" name="L73" href="#L73">73</a>  <em class="jxr_javadoccomment">     *                                              {@link Http3RequestStreamFrame}s or {@code null} if the user is not</em>
+<a class="jxr_linenumber" name="L74" href="#L74">74</a>  <em class="jxr_javadoccomment">     *                                              interested in these.</em>
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>  <em class="jxr_javadoccomment">     * @param unknownInboundStreamHandlerFactory    the {@link LongFunction} that will provide a custom</em>
+<a class="jxr_linenumber" name="L76" href="#L76">76</a>  <em class="jxr_javadoccomment">     *                                              {@link ChannelHandler} for unknown inbound stream types or</em>
+<a class="jxr_linenumber" name="L77" href="#L77">77</a>  <em class="jxr_javadoccomment">     *                                              {@code null} if no special handling should be done.</em>
+<a class="jxr_linenumber" name="L78" href="#L78">78</a>  <em class="jxr_javadoccomment">     * @param localSettings                         the local {@link Http3SettingsFrame} that should be sent to the</em>
+<a class="jxr_linenumber" name="L79" href="#L79">79</a>  <em class="jxr_javadoccomment">     *                                              remote peer or {@code null} if the default settings should be used.</em>
+<a class="jxr_linenumber" name="L80" href="#L80">80</a>  <em class="jxr_javadoccomment">     * @param disableQpackDynamicTable              If QPACK dynamic table should be disabled.</em>
+<a class="jxr_linenumber" name="L81" href="#L81">81</a>  <em class="jxr_javadoccomment">     * @param nonStandardSettingsValidator          the {@link Http3Settings.NonStandardHttp3SettingsValidator} to</em>
+<a class="jxr_linenumber" name="L82" href="#L82">82</a>  <em class="jxr_javadoccomment">     *                                              use when validating settings that are non-standard.</em>
+<a class="jxr_linenumber" name="L83" href="#L83">83</a>  <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L84" href="#L84">84</a>      <strong class="jxr_keyword">public</strong> <a name="Http3ServerConnectionHandler" href="../../../../../io/netty/handler/codec/http3/Http3ServerConnectionHandler.html#Http3ServerConnectionHandler">Http3ServerConnectionHandler</a>(<a name="ChannelHandler" href="../../../../../io/netty/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a> requestStreamHandler,
+<a class="jxr_linenumber" name="L85" href="#L85">85</a>                                          @Nullable <a name="ChannelHandler" href="../../../../../io/netty/channel/ChannelHandler.html#ChannelHandler">ChannelHandler</a> inboundControlStreamHandler,
+<a class="jxr_linenumber" name="L86" href="#L86">86</a>                                          @Nullable LongFunction&lt;ChannelHandler&gt; unknownInboundStreamHandlerFactory,
+<a class="jxr_linenumber" name="L87" href="#L87">87</a>                                          @Nullable <a name="Http3SettingsFrame" href="../../../../../io/netty/handler/codec/http3/Http3SettingsFrame.html#Http3SettingsFrame">Http3SettingsFrame</a> localSettings, <strong class="jxr_keyword">boolean</strong> disableQpackDynamicTable,
+<a class="jxr_linenumber" name="L88" href="#L88">88</a>                                          @Nullable Http3Settings.NonStandardHttp3SettingsValidator
+<a class="jxr_linenumber" name="L89" href="#L89">89</a>                                                  nonStandardSettingsValidator) {
+<a class="jxr_linenumber" name="L90" href="#L90">90</a>          <strong class="jxr_keyword">super</strong>(<strong class="jxr_keyword">true</strong>, inboundControlStreamHandler, unknownInboundStreamHandlerFactory, localSettings,
+<a class="jxr_linenumber" name="L91" href="#L91">91</a>                  disableQpackDynamicTable, nonStandardSettingsValidator);
+<a class="jxr_linenumber" name="L92" href="#L92">92</a>          <strong class="jxr_keyword">this</strong>.requestStreamHandler = ObjectUtil.checkNotNull(requestStreamHandler, <span class="jxr_string">"requestStreamHandler"</span>);
+<a class="jxr_linenumber" name="L93" href="#L93">93</a>      }
+<a class="jxr_linenumber" name="L94" href="#L94">94</a>  
+<a class="jxr_linenumber" name="L95" href="#L95">95</a>      @Override
+<a class="jxr_linenumber" name="L96" href="#L96">96</a>      <strong class="jxr_keyword">void</strong> initBidirectionalStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="QuicStreamChannel" href="../../../../../io/netty/handler/codec/quic/QuicStreamChannel.html#QuicStreamChannel">QuicStreamChannel</a> streamChannel) {
+<a class="jxr_linenumber" name="L97" href="#L97">97</a>          <a name="ChannelPipeline" href="../../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = streamChannel.pipeline();
+<a class="jxr_linenumber" name="L98" href="#L98">98</a>          <a name="Http3RequestStreamEncodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamEncodeStateValidator.html#Http3RequestStreamEncodeStateValidator">Http3RequestStreamEncodeStateValidator</a> encodeStateValidator = <strong class="jxr_keyword">new</strong> <a name="Http3RequestStreamEncodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamEncodeStateValidator.html#Http3RequestStreamEncodeStateValidator">Http3RequestStreamEncodeStateValidator</a>();
+<a class="jxr_linenumber" name="L99" href="#L99">99</a>          <a name="Http3RequestStreamDecodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamDecodeStateValidator.html#Http3RequestStreamDecodeStateValidator">Http3RequestStreamDecodeStateValidator</a> decodeStateValidator = <strong class="jxr_keyword">new</strong> <a name="Http3RequestStreamDecodeStateValidator" href="../../../../../io/netty/handler/codec/http3/Http3RequestStreamDecodeStateValidator.html#Http3RequestStreamDecodeStateValidator">Http3RequestStreamDecodeStateValidator</a>();
+<a class="jxr_linenumber" name="L100" href="#L100">100</a>         <em class="jxr_comment">// Add the encoder and decoder in the pipeline so we can handle Http3Frames</em>
+<a class="jxr_linenumber" name="L101" href="#L101">101</a>         pipeline.addLast(newCodec(encodeStateValidator, decodeStateValidator));
+<a class="jxr_linenumber" name="L102" href="#L102">102</a>         pipeline.addLast(encodeStateValidator);
+<a class="jxr_linenumber" name="L103" href="#L103">103</a>         pipeline.addLast(decodeStateValidator);
+<a class="jxr_linenumber" name="L104" href="#L104">104</a>         pipeline.addLast(newRequestStreamValidationHandler(streamChannel, encodeStateValidator, decodeStateValidator));
+<a class="jxr_linenumber" name="L105" href="#L105">105</a>         pipeline.addLast(requestStreamHandler);
+<a class="jxr_linenumber" name="L106" href="#L106">106</a>     }
+<a class="jxr_linenumber" name="L107" href="#L107">107</a> 
+<a class="jxr_linenumber" name="L108" href="#L108">108</a>     @Override
+<a class="jxr_linenumber" name="L109" href="#L109">109</a>     <strong class="jxr_keyword">void</strong> initUnidirectionalStream(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="QuicStreamChannel" href="../../../../../io/netty/handler/codec/quic/QuicStreamChannel.html#QuicStreamChannel">QuicStreamChannel</a> streamChannel) {
+<a class="jxr_linenumber" name="L110" href="#L110">110</a>         <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">long</strong> maxTableCapacity = maxTableCapacity();
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>         streamChannel.pipeline().addLast(
+<a class="jxr_linenumber" name="L112" href="#L112">112</a>                 <strong class="jxr_keyword">new</strong> <a name="Http3UnidirectionalStreamInboundServerHandler" href="../../../../../io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundServerHandler.html#Http3UnidirectionalStreamInboundServerHandler">Http3UnidirectionalStreamInboundServerHandler</a>(codecFactory, nonStandardSettingsValidator,
+<a class="jxr_linenumber" name="L113" href="#L113">113</a>                         localControlStreamHandler, remoteControlStreamHandler,
+<a class="jxr_linenumber" name="L114" href="#L114">114</a>                         unknownInboundStreamHandlerFactory,
+<a class="jxr_linenumber" name="L115" href="#L115">115</a>                         () -&gt; <strong class="jxr_keyword">new</strong> <a name="QpackEncoderHandler" href="../../../../../io/netty/handler/codec/http3/QpackEncoderHandler.html#QpackEncoderHandler">QpackEncoderHandler</a>(maxTableCapacity, qpackDecoder),
+<a class="jxr_linenumber" name="L116" href="#L116">116</a>                         () -&gt; <strong class="jxr_keyword">new</strong> <a name="QpackDecoderHandler" href="../../../../../io/netty/handler/codec/http3/QpackDecoderHandler.html#QpackDecoderHandler">QpackDecoderHandler</a>(qpackEncoder)));
+<a class="jxr_linenumber" name="L117" href="#L117">117</a>     }
+<a class="jxr_linenumber" name="L118" href="#L118">118</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

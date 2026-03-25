@@ -24,35 +24,39 @@
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.handler.codec.compression;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
 <a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.buffer.ByteBuf;
-<a class="jxr_linenumber" name="L19" href="#L19">19</a>  
-<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> java.nio.ByteBuffer;
-<a class="jxr_linenumber" name="L21" href="#L21">21</a>  
-<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="CompressionUtil" href="../../../../../io/netty/handler/codec/compression/CompressionUtil.html#CompressionUtil">CompressionUtil</a> {
-<a class="jxr_linenumber" name="L23" href="#L23">23</a>  
-<a class="jxr_linenumber" name="L24" href="#L24">24</a>      <strong class="jxr_keyword">private</strong> <a name="CompressionUtil" href="../../../../../io/netty/handler/codec/compression/CompressionUtil.html#CompressionUtil">CompressionUtil</a>() { }
-<a class="jxr_linenumber" name="L25" href="#L25">25</a>  
-<a class="jxr_linenumber" name="L26" href="#L26">26</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> checkChecksum(<a name="ByteBufChecksum" href="../../../../../io/netty/handler/codec/compression/ByteBufChecksum.html#ByteBufChecksum">ByteBufChecksum</a> checksum, <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> uncompressed, <strong class="jxr_keyword">int</strong> currentChecksum) {
-<a class="jxr_linenumber" name="L27" href="#L27">27</a>          checksum.reset();
-<a class="jxr_linenumber" name="L28" href="#L28">28</a>          checksum.update(uncompressed,
-<a class="jxr_linenumber" name="L29" href="#L29">29</a>                  uncompressed.readerIndex(), uncompressed.readableBytes());
-<a class="jxr_linenumber" name="L30" href="#L30">30</a>  
-<a class="jxr_linenumber" name="L31" href="#L31">31</a>          <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> checksumResult = (<strong class="jxr_keyword">int</strong>) checksum.getValue();
-<a class="jxr_linenumber" name="L32" href="#L32">32</a>          <strong class="jxr_keyword">if</strong> (checksumResult != currentChecksum) {
-<a class="jxr_linenumber" name="L33" href="#L33">33</a>              <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="DecompressionException" href="../../../../../io/netty/handler/codec/compression/DecompressionException.html#DecompressionException">DecompressionException</a>(String.format(
-<a class="jxr_linenumber" name="L34" href="#L34">34</a>                      <span class="jxr_string">"stream corrupted: mismatching checksum: %d (expected: %d)"</span>,
-<a class="jxr_linenumber" name="L35" href="#L35">35</a>                      checksumResult, currentChecksum));
-<a class="jxr_linenumber" name="L36" href="#L36">36</a>          }
-<a class="jxr_linenumber" name="L37" href="#L37">37</a>      }
-<a class="jxr_linenumber" name="L38" href="#L38">38</a>  
-<a class="jxr_linenumber" name="L39" href="#L39">39</a>      <strong class="jxr_keyword">static</strong> ByteBuffer safeReadableNioBuffer(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
-<a class="jxr_linenumber" name="L40" href="#L40">40</a>          <strong class="jxr_keyword">return</strong> safeNioBuffer(buffer, buffer.readerIndex(), buffer.readableBytes());
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.SystemPropertyUtil;
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> java.nio.ByteBuffer;
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="CompressionUtil" href="../../../../../io/netty/handler/codec/compression/CompressionUtil.html#CompressionUtil">CompressionUtil</a> {
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> DEFAULT_MAX_FORWARD_BYTES = SystemPropertyUtil.getInt(
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>              <span class="jxr_string">"io.netty.compression.defaultMaxForwardBytes"</span>, 64 * 1024);
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>      <strong class="jxr_keyword">private</strong> <a name="CompressionUtil" href="../../../../../io/netty/handler/codec/compression/CompressionUtil.html#CompressionUtil">CompressionUtil</a>() { }
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>  
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>      <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> checkChecksum(<a name="ByteBufChecksum" href="../../../../../io/netty/handler/codec/compression/ByteBufChecksum.html#ByteBufChecksum">ByteBufChecksum</a> checksum, <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> uncompressed, <strong class="jxr_keyword">int</strong> currentChecksum) {
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>          checksum.reset();
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>          checksum.update(uncompressed,
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>                  uncompressed.readerIndex(), uncompressed.readableBytes());
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>  
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>          <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> checksumResult = (<strong class="jxr_keyword">int</strong>) checksum.getValue();
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>          <strong class="jxr_keyword">if</strong> (checksumResult != currentChecksum) {
+<a class="jxr_linenumber" name="L37" href="#L37">37</a>              <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="DecompressionException" href="../../../../../io/netty/handler/codec/compression/DecompressionException.html#DecompressionException">DecompressionException</a>(String.format(
+<a class="jxr_linenumber" name="L38" href="#L38">38</a>                      <span class="jxr_string">"stream corrupted: mismatching checksum: %d (expected: %d)"</span>,
+<a class="jxr_linenumber" name="L39" href="#L39">39</a>                      checksumResult, currentChecksum));
+<a class="jxr_linenumber" name="L40" href="#L40">40</a>          }
 <a class="jxr_linenumber" name="L41" href="#L41">41</a>      }
 <a class="jxr_linenumber" name="L42" href="#L42">42</a>  
-<a class="jxr_linenumber" name="L43" href="#L43">43</a>      <strong class="jxr_keyword">static</strong> ByteBuffer safeNioBuffer(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer, <strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>          <strong class="jxr_keyword">return</strong> buffer.nioBufferCount() == 1 ? buffer.internalNioBuffer(index, length)
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>                  : buffer.nioBuffer(index, length);
-<a class="jxr_linenumber" name="L46" href="#L46">46</a>      }
-<a class="jxr_linenumber" name="L47" href="#L47">47</a>  }
+<a class="jxr_linenumber" name="L43" href="#L43">43</a>      <strong class="jxr_keyword">static</strong> ByteBuffer safeReadableNioBuffer(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer) {
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>          <strong class="jxr_keyword">return</strong> safeNioBuffer(buffer, buffer.readerIndex(), buffer.readableBytes());
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>      }
+<a class="jxr_linenumber" name="L46" href="#L46">46</a>  
+<a class="jxr_linenumber" name="L47" href="#L47">47</a>      <strong class="jxr_keyword">static</strong> ByteBuffer safeNioBuffer(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer, <strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L48" href="#L48">48</a>          <strong class="jxr_keyword">return</strong> buffer.nioBufferCount() == 1 ? buffer.internalNioBuffer(index, length)
+<a class="jxr_linenumber" name="L49" href="#L49">49</a>                  : buffer.nioBuffer(index, length);
+<a class="jxr_linenumber" name="L50" href="#L50">50</a>      }
+<a class="jxr_linenumber" name="L51" href="#L51">51</a>  }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

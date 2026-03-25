@@ -369,116 +369,120 @@
 <a class="jxr_linenumber" name="L361" href="#L361">361</a>                         buf.release();
 <a class="jxr_linenumber" name="L362" href="#L362">362</a>                         <strong class="jxr_keyword">return</strong>;
 <a class="jxr_linenumber" name="L363" href="#L363">363</a>                     }
-<a class="jxr_linenumber" name="L364" href="#L364">364</a>                     incrementDecompressedBytes(buf.readableBytes());
-<a class="jxr_linenumber" name="L365" href="#L365">365</a>                     <em class="jxr_comment">// Immediately return the bytes back to the flow controller. ConsumedBytesConverter will convert</em>
-<a class="jxr_linenumber" name="L366" href="#L366">366</a>                     <em class="jxr_comment">// from the decompressed amount which the user knows about to the compressed amount which flow</em>
-<a class="jxr_linenumber" name="L367" href="#L367">367</a>                     <em class="jxr_comment">// control knows about.</em>
-<a class="jxr_linenumber" name="L368" href="#L368">368</a>                     connection.local().flowController().consumeBytes(stream,
-<a class="jxr_linenumber" name="L369" href="#L369">369</a>                             listener.onDataRead(targetCtx, stream.id(), buf, padding, false));
-<a class="jxr_linenumber" name="L370" href="#L370">370</a>                     padding = 0; <em class="jxr_comment">// Padding is only communicated once on the first iteration.</em>
-<a class="jxr_linenumber" name="L371" href="#L371">371</a>                     buf.release();
-<a class="jxr_linenumber" name="L372" href="#L372">372</a> 
-<a class="jxr_linenumber" name="L373" href="#L373">373</a>                     dataDecompressed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L374" href="#L374">374</a>                 }
-<a class="jxr_linenumber" name="L375" href="#L375">375</a> 
-<a class="jxr_linenumber" name="L376" href="#L376">376</a>                 @Override
-<a class="jxr_linenumber" name="L377" href="#L377">377</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L378" href="#L378">378</a>                     listener.onDataRead(targetCtx, stream.id(), Unpooled.EMPTY_BUFFER, padding, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 }
-<a class="jxr_linenumber" name="L380" href="#L380">380</a>             });
-<a class="jxr_linenumber" name="L381" href="#L381">381</a>         }
-<a class="jxr_linenumber" name="L382" href="#L382">382</a> 
-<a class="jxr_linenumber" name="L383" href="#L383">383</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L384" href="#L384">384</a> <em class="jxr_javadoccomment">         * Release remaining content from the {@link EmbeddedChannel}.</em>
-<a class="jxr_linenumber" name="L385" href="#L385">385</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L386" href="#L386">386</a>         <strong class="jxr_keyword">void</strong> cleanup() {
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>             decompressor.finishAndReleaseAll();
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>         }
-<a class="jxr_linenumber" name="L389" href="#L389">389</a> 
-<a class="jxr_linenumber" name="L390" href="#L390">390</a>         <strong class="jxr_keyword">int</strong> decompress(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="Http2Stream" href="../../../../../io/netty/handler/codec/http2/Http2Stream.html#Http2Stream">Http2Stream</a> stream, <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> data, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream)
-<a class="jxr_linenumber" name="L391" href="#L391">391</a>                 <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L392" href="#L392">392</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> compressedBytes = data.readableBytes() + padding;
-<a class="jxr_linenumber" name="L393" href="#L393">393</a>             incrementCompressedBytes(compressedBytes);
-<a class="jxr_linenumber" name="L394" href="#L394">394</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L395" href="#L395">395</a>                 <strong class="jxr_keyword">this</strong>.stream = stream;
-<a class="jxr_linenumber" name="L396" href="#L396">396</a>                 <strong class="jxr_keyword">this</strong>.padding = padding;
-<a class="jxr_linenumber" name="L397" href="#L397">397</a>                 <strong class="jxr_keyword">this</strong>.dataDecompressed = false;
-<a class="jxr_linenumber" name="L398" href="#L398">398</a>                 <strong class="jxr_keyword">this</strong>.targetCtx = ctx;
-<a class="jxr_linenumber" name="L399" href="#L399">399</a> 
-<a class="jxr_linenumber" name="L400" href="#L400">400</a>                 <em class="jxr_comment">// call retain here as it will call release after its written to the channel</em>
-<a class="jxr_linenumber" name="L401" href="#L401">401</a>                 decompressor.writeInbound(data.retain());
-<a class="jxr_linenumber" name="L402" href="#L402">402</a>                 <strong class="jxr_keyword">if</strong> (endOfStream) {
-<a class="jxr_linenumber" name="L403" href="#L403">403</a>                     decompressor.finish();
-<a class="jxr_linenumber" name="L404" href="#L404">404</a> 
-<a class="jxr_linenumber" name="L405" href="#L405">405</a>                     <strong class="jxr_keyword">if</strong> (!dataDecompressed) {
-<a class="jxr_linenumber" name="L406" href="#L406">406</a>                         <em class="jxr_comment">// No new decompressed data was extracted from the compressed data. This means the application</em>
-<a class="jxr_linenumber" name="L407" href="#L407">407</a>                         <em class="jxr_comment">// could not be provided with data and thus could not return how many bytes were processed.</em>
-<a class="jxr_linenumber" name="L408" href="#L408">408</a>                         <em class="jxr_comment">// We will assume there is more data coming which will complete the decompression block.</em>
-<a class="jxr_linenumber" name="L409" href="#L409">409</a>                         <em class="jxr_comment">// To allow for more data we return all bytes to the flow control window (so the peer can</em>
-<a class="jxr_linenumber" name="L410" href="#L410">410</a>                         <em class="jxr_comment">// send more data).</em>
-<a class="jxr_linenumber" name="L411" href="#L411">411</a>                         incrementDecompressedBytes(compressedBytes);
-<a class="jxr_linenumber" name="L412" href="#L412">412</a>                         <strong class="jxr_keyword">return</strong> compressedBytes;
-<a class="jxr_linenumber" name="L413" href="#L413">413</a>                     }
-<a class="jxr_linenumber" name="L414" href="#L414">414</a>                 }
-<a class="jxr_linenumber" name="L415" href="#L415">415</a>                 <em class="jxr_comment">// We consume bytes each time we call the listener to ensure if multiple frames are decompressed</em>
-<a class="jxr_linenumber" name="L416" href="#L416">416</a>                 <em class="jxr_comment">// that the bytes are accounted for immediately. Otherwise the user may see an inconsistent state of</em>
-<a class="jxr_linenumber" name="L417" href="#L417">417</a>                 <em class="jxr_comment">// flow control.</em>
-<a class="jxr_linenumber" name="L418" href="#L418">418</a>                 <strong class="jxr_keyword">return</strong> 0;
-<a class="jxr_linenumber" name="L419" href="#L419">419</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="L420" href="#L420">420</a>                 <em class="jxr_comment">// Http2Exception might be thrown by writeInbound(...) or finish().</em>
-<a class="jxr_linenumber" name="L421" href="#L421">421</a>                 <strong class="jxr_keyword">if</strong> (t instanceof <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a>) {
-<a class="jxr_linenumber" name="L422" href="#L422">422</a>                     <strong class="jxr_keyword">throw</strong> (<a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a>) t;
-<a class="jxr_linenumber" name="L423" href="#L423">423</a>                 }
-<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 <strong class="jxr_keyword">throw</strong> streamError(stream.id(), INTERNAL_ERROR, t,
-<a class="jxr_linenumber" name="L425" href="#L425">425</a>                         <span class="jxr_string">"Decompressor error detected while delegating data read on streamId %d"</span>, stream.id());
-<a class="jxr_linenumber" name="L426" href="#L426">426</a>             }
-<a class="jxr_linenumber" name="L427" href="#L427">427</a>         }
-<a class="jxr_linenumber" name="L428" href="#L428">428</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L429" href="#L429">429</a> <em class="jxr_javadoccomment">         * Increment the number of bytes received prior to doing any decompression.</em>
-<a class="jxr_linenumber" name="L430" href="#L430">430</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L431" href="#L431">431</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> incrementCompressedBytes(<strong class="jxr_keyword">int</strong> delta) {
-<a class="jxr_linenumber" name="L432" href="#L432">432</a>             assert delta &gt;= 0;
-<a class="jxr_linenumber" name="L433" href="#L433">433</a>             compressed += delta;
-<a class="jxr_linenumber" name="L434" href="#L434">434</a>         }
-<a class="jxr_linenumber" name="L435" href="#L435">435</a> 
-<a class="jxr_linenumber" name="L436" href="#L436">436</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L437" href="#L437">437</a> <em class="jxr_javadoccomment">         * Increment the number of bytes after the decompression process.</em>
-<a class="jxr_linenumber" name="L438" href="#L438">438</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L439" href="#L439">439</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> incrementDecompressedBytes(<strong class="jxr_keyword">int</strong> delta) {
-<a class="jxr_linenumber" name="L440" href="#L440">440</a>             assert delta &gt;= 0;
-<a class="jxr_linenumber" name="L441" href="#L441">441</a>             decompressed += delta;
-<a class="jxr_linenumber" name="L442" href="#L442">442</a>         }
-<a class="jxr_linenumber" name="L443" href="#L443">443</a> 
-<a class="jxr_linenumber" name="L444" href="#L444">444</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L445" href="#L445">445</a> <em class="jxr_javadoccomment">         * Determines the ratio between {@code numBytes} and {@link Http2Decompressor#decompressed}.</em>
-<a class="jxr_linenumber" name="L446" href="#L446">446</a> <em class="jxr_javadoccomment">         * This ratio is used to decrement {@link Http2Decompressor#decompressed} and</em>
-<a class="jxr_linenumber" name="L447" href="#L447">447</a> <em class="jxr_javadoccomment">         * {@link Http2Decompressor#compressed}.</em>
-<a class="jxr_linenumber" name="L448" href="#L448">448</a> <em class="jxr_javadoccomment">         * @param streamId the stream ID</em>
-<a class="jxr_linenumber" name="L449" href="#L449">449</a> <em class="jxr_javadoccomment">         * @param decompressedBytes The number of post-decompressed bytes to return to flow control</em>
-<a class="jxr_linenumber" name="L450" href="#L450">450</a> <em class="jxr_javadoccomment">         * @return The number of pre-decompressed bytes that have been consumed.</em>
-<a class="jxr_linenumber" name="L451" href="#L451">451</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L452" href="#L452">452</a>         <strong class="jxr_keyword">int</strong> consumeBytes(<strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> decompressedBytes) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
-<a class="jxr_linenumber" name="L453" href="#L453">453</a>             checkPositiveOrZero(decompressedBytes, <span class="jxr_string">"decompressedBytes"</span>);
-<a class="jxr_linenumber" name="L454" href="#L454">454</a>             <strong class="jxr_keyword">if</strong> (decompressed - decompressedBytes &lt; 0) {
-<a class="jxr_linenumber" name="L455" href="#L455">455</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, INTERNAL_ERROR,
-<a class="jxr_linenumber" name="L456" href="#L456">456</a>                         <span class="jxr_string">"Attempting to return too many bytes for stream %d. decompressed: %d "</span> +
-<a class="jxr_linenumber" name="L457" href="#L457">457</a>                                 <span class="jxr_string">"decompressedBytes: %d"</span>, streamId, decompressed, decompressedBytes);
-<a class="jxr_linenumber" name="L458" href="#L458">458</a>             }
-<a class="jxr_linenumber" name="L459" href="#L459">459</a>             <strong class="jxr_keyword">double</strong> consumedRatio = decompressedBytes / (<strong class="jxr_keyword">double</strong>) decompressed;
-<a class="jxr_linenumber" name="L460" href="#L460">460</a>             <strong class="jxr_keyword">int</strong> consumedCompressed = Math.min(compressed, (<strong class="jxr_keyword">int</strong>) Math.ceil(compressed * consumedRatio));
-<a class="jxr_linenumber" name="L461" href="#L461">461</a>             <strong class="jxr_keyword">if</strong> (compressed - consumedCompressed &lt; 0) {
-<a class="jxr_linenumber" name="L462" href="#L462">462</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, INTERNAL_ERROR,
-<a class="jxr_linenumber" name="L463" href="#L463">463</a>                         <span class="jxr_string">"overflow when converting decompressed bytes to compressed bytes for stream %d."</span> +
-<a class="jxr_linenumber" name="L464" href="#L464">464</a>                                 <span class="jxr_string">"decompressedBytes: %d decompressed: %d compressed: %d consumedCompressed: %d"</span>,
-<a class="jxr_linenumber" name="L465" href="#L465">465</a>                         streamId, decompressedBytes, decompressed, compressed, consumedCompressed);
-<a class="jxr_linenumber" name="L466" href="#L466">466</a>             }
-<a class="jxr_linenumber" name="L467" href="#L467">467</a>             decompressed -= decompressedBytes;
-<a class="jxr_linenumber" name="L468" href="#L468">468</a>             compressed -= consumedCompressed;
-<a class="jxr_linenumber" name="L469" href="#L469">469</a> 
-<a class="jxr_linenumber" name="L470" href="#L470">470</a>             <strong class="jxr_keyword">return</strong> consumedCompressed;
-<a class="jxr_linenumber" name="L471" href="#L471">471</a>         }
-<a class="jxr_linenumber" name="L472" href="#L472">472</a>     }
-<a class="jxr_linenumber" name="L473" href="#L473">473</a> }
+<a class="jxr_linenumber" name="L364" href="#L364">364</a> 
+<a class="jxr_linenumber" name="L365" href="#L365">365</a>                     <em class="jxr_comment">// Also take padding into account.</em>
+<a class="jxr_linenumber" name="L366" href="#L366">366</a>                     incrementDecompressedBytes(padding);
+<a class="jxr_linenumber" name="L367" href="#L367">367</a> 
+<a class="jxr_linenumber" name="L368" href="#L368">368</a>                     incrementDecompressedBytes(buf.readableBytes());
+<a class="jxr_linenumber" name="L369" href="#L369">369</a>                     <em class="jxr_comment">// Immediately return the bytes back to the flow controller. ConsumedBytesConverter will convert</em>
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>                     <em class="jxr_comment">// from the decompressed amount which the user knows about to the compressed amount which flow</em>
+<a class="jxr_linenumber" name="L371" href="#L371">371</a>                     <em class="jxr_comment">// control knows about.</em>
+<a class="jxr_linenumber" name="L372" href="#L372">372</a>                     connection.local().flowController().consumeBytes(stream,
+<a class="jxr_linenumber" name="L373" href="#L373">373</a>                             listener.onDataRead(targetCtx, stream.id(), buf, padding, false));
+<a class="jxr_linenumber" name="L374" href="#L374">374</a>                     padding = 0; <em class="jxr_comment">// Padding is only communicated once on the first iteration.</em>
+<a class="jxr_linenumber" name="L375" href="#L375">375</a>                     buf.release();
+<a class="jxr_linenumber" name="L376" href="#L376">376</a> 
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>                     dataDecompressed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L378" href="#L378">378</a>                 }
+<a class="jxr_linenumber" name="L379" href="#L379">379</a> 
+<a class="jxr_linenumber" name="L380" href="#L380">380</a>                 @Override
+<a class="jxr_linenumber" name="L381" href="#L381">381</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> channelInactive(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L382" href="#L382">382</a>                     listener.onDataRead(targetCtx, stream.id(), Unpooled.EMPTY_BUFFER, padding, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>                 }
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>             });
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>         }
+<a class="jxr_linenumber" name="L386" href="#L386">386</a> 
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L388" href="#L388">388</a> <em class="jxr_javadoccomment">         * Release remaining content from the {@link EmbeddedChannel}.</em>
+<a class="jxr_linenumber" name="L389" href="#L389">389</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>         <strong class="jxr_keyword">void</strong> cleanup() {
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>             decompressor.finishAndReleaseAll();
+<a class="jxr_linenumber" name="L392" href="#L392">392</a>         }
+<a class="jxr_linenumber" name="L393" href="#L393">393</a> 
+<a class="jxr_linenumber" name="L394" href="#L394">394</a>         <strong class="jxr_keyword">int</strong> decompress(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="Http2Stream" href="../../../../../io/netty/handler/codec/http2/Http2Stream.html#Http2Stream">Http2Stream</a> stream, <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> data, <strong class="jxr_keyword">int</strong> padding, <strong class="jxr_keyword">boolean</strong> endOfStream)
+<a class="jxr_linenumber" name="L395" href="#L395">395</a>                 <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L396" href="#L396">396</a>             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> compressedBytes = data.readableBytes() + padding;
+<a class="jxr_linenumber" name="L397" href="#L397">397</a>             incrementCompressedBytes(compressedBytes);
+<a class="jxr_linenumber" name="L398" href="#L398">398</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L399" href="#L399">399</a>                 <strong class="jxr_keyword">this</strong>.stream = stream;
+<a class="jxr_linenumber" name="L400" href="#L400">400</a>                 <strong class="jxr_keyword">this</strong>.padding = padding;
+<a class="jxr_linenumber" name="L401" href="#L401">401</a>                 <strong class="jxr_keyword">this</strong>.dataDecompressed = false;
+<a class="jxr_linenumber" name="L402" href="#L402">402</a>                 <strong class="jxr_keyword">this</strong>.targetCtx = ctx;
+<a class="jxr_linenumber" name="L403" href="#L403">403</a> 
+<a class="jxr_linenumber" name="L404" href="#L404">404</a>                 <em class="jxr_comment">// call retain here as it will call release after its written to the channel</em>
+<a class="jxr_linenumber" name="L405" href="#L405">405</a>                 decompressor.writeInbound(data.retain());
+<a class="jxr_linenumber" name="L406" href="#L406">406</a>                 <strong class="jxr_keyword">if</strong> (endOfStream) {
+<a class="jxr_linenumber" name="L407" href="#L407">407</a>                     decompressor.finish();
+<a class="jxr_linenumber" name="L408" href="#L408">408</a> 
+<a class="jxr_linenumber" name="L409" href="#L409">409</a>                     <strong class="jxr_keyword">if</strong> (!dataDecompressed) {
+<a class="jxr_linenumber" name="L410" href="#L410">410</a>                         <em class="jxr_comment">// No new decompressed data was extracted from the compressed data. This means the application</em>
+<a class="jxr_linenumber" name="L411" href="#L411">411</a>                         <em class="jxr_comment">// could not be provided with data and thus could not return how many bytes were processed.</em>
+<a class="jxr_linenumber" name="L412" href="#L412">412</a>                         <em class="jxr_comment">// We will assume there is more data coming which will complete the decompression block.</em>
+<a class="jxr_linenumber" name="L413" href="#L413">413</a>                         <em class="jxr_comment">// To allow for more data we return all bytes to the flow control window (so the peer can</em>
+<a class="jxr_linenumber" name="L414" href="#L414">414</a>                         <em class="jxr_comment">// send more data).</em>
+<a class="jxr_linenumber" name="L415" href="#L415">415</a>                         incrementDecompressedBytes(compressedBytes);
+<a class="jxr_linenumber" name="L416" href="#L416">416</a>                         <strong class="jxr_keyword">return</strong> compressedBytes;
+<a class="jxr_linenumber" name="L417" href="#L417">417</a>                     }
+<a class="jxr_linenumber" name="L418" href="#L418">418</a>                 }
+<a class="jxr_linenumber" name="L419" href="#L419">419</a>                 <em class="jxr_comment">// We consume bytes each time we call the listener to ensure if multiple frames are decompressed</em>
+<a class="jxr_linenumber" name="L420" href="#L420">420</a>                 <em class="jxr_comment">// that the bytes are accounted for immediately. Otherwise the user may see an inconsistent state of</em>
+<a class="jxr_linenumber" name="L421" href="#L421">421</a>                 <em class="jxr_comment">// flow control.</em>
+<a class="jxr_linenumber" name="L422" href="#L422">422</a>                 <strong class="jxr_keyword">return</strong> 0;
+<a class="jxr_linenumber" name="L423" href="#L423">423</a>             } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="L424" href="#L424">424</a>                 <em class="jxr_comment">// Http2Exception might be thrown by writeInbound(...) or finish().</em>
+<a class="jxr_linenumber" name="L425" href="#L425">425</a>                 <strong class="jxr_keyword">if</strong> (t instanceof <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a>) {
+<a class="jxr_linenumber" name="L426" href="#L426">426</a>                     <strong class="jxr_keyword">throw</strong> (<a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a>) t;
+<a class="jxr_linenumber" name="L427" href="#L427">427</a>                 }
+<a class="jxr_linenumber" name="L428" href="#L428">428</a>                 <strong class="jxr_keyword">throw</strong> streamError(stream.id(), INTERNAL_ERROR, t,
+<a class="jxr_linenumber" name="L429" href="#L429">429</a>                         <span class="jxr_string">"Decompressor error detected while delegating data read on streamId %d"</span>, stream.id());
+<a class="jxr_linenumber" name="L430" href="#L430">430</a>             }
+<a class="jxr_linenumber" name="L431" href="#L431">431</a>         }
+<a class="jxr_linenumber" name="L432" href="#L432">432</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L433" href="#L433">433</a> <em class="jxr_javadoccomment">         * Increment the number of bytes received prior to doing any decompression.</em>
+<a class="jxr_linenumber" name="L434" href="#L434">434</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L435" href="#L435">435</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> incrementCompressedBytes(<strong class="jxr_keyword">int</strong> delta) {
+<a class="jxr_linenumber" name="L436" href="#L436">436</a>             assert delta &gt;= 0;
+<a class="jxr_linenumber" name="L437" href="#L437">437</a>             compressed += delta;
+<a class="jxr_linenumber" name="L438" href="#L438">438</a>         }
+<a class="jxr_linenumber" name="L439" href="#L439">439</a> 
+<a class="jxr_linenumber" name="L440" href="#L440">440</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L441" href="#L441">441</a> <em class="jxr_javadoccomment">         * Increment the number of bytes after the decompression process.</em>
+<a class="jxr_linenumber" name="L442" href="#L442">442</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L443" href="#L443">443</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">void</strong> incrementDecompressedBytes(<strong class="jxr_keyword">int</strong> delta) {
+<a class="jxr_linenumber" name="L444" href="#L444">444</a>             assert delta &gt;= 0;
+<a class="jxr_linenumber" name="L445" href="#L445">445</a>             decompressed += delta;
+<a class="jxr_linenumber" name="L446" href="#L446">446</a>         }
+<a class="jxr_linenumber" name="L447" href="#L447">447</a> 
+<a class="jxr_linenumber" name="L448" href="#L448">448</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L449" href="#L449">449</a> <em class="jxr_javadoccomment">         * Determines the ratio between {@code numBytes} and {@link Http2Decompressor#decompressed}.</em>
+<a class="jxr_linenumber" name="L450" href="#L450">450</a> <em class="jxr_javadoccomment">         * This ratio is used to decrement {@link Http2Decompressor#decompressed} and</em>
+<a class="jxr_linenumber" name="L451" href="#L451">451</a> <em class="jxr_javadoccomment">         * {@link Http2Decompressor#compressed}.</em>
+<a class="jxr_linenumber" name="L452" href="#L452">452</a> <em class="jxr_javadoccomment">         * @param streamId the stream ID</em>
+<a class="jxr_linenumber" name="L453" href="#L453">453</a> <em class="jxr_javadoccomment">         * @param decompressedBytes The number of post-decompressed bytes to return to flow control</em>
+<a class="jxr_linenumber" name="L454" href="#L454">454</a> <em class="jxr_javadoccomment">         * @return The number of pre-decompressed bytes that have been consumed.</em>
+<a class="jxr_linenumber" name="L455" href="#L455">455</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L456" href="#L456">456</a>         <strong class="jxr_keyword">int</strong> consumeBytes(<strong class="jxr_keyword">int</strong> streamId, <strong class="jxr_keyword">int</strong> decompressedBytes) <strong class="jxr_keyword">throws</strong> <a name="Http2Exception" href="../../../../../io/netty/handler/codec/http2/Http2Exception.html#Http2Exception">Http2Exception</a> {
+<a class="jxr_linenumber" name="L457" href="#L457">457</a>             checkPositiveOrZero(decompressedBytes, <span class="jxr_string">"decompressedBytes"</span>);
+<a class="jxr_linenumber" name="L458" href="#L458">458</a>             <strong class="jxr_keyword">if</strong> (decompressed - decompressedBytes &lt; 0) {
+<a class="jxr_linenumber" name="L459" href="#L459">459</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, INTERNAL_ERROR,
+<a class="jxr_linenumber" name="L460" href="#L460">460</a>                         <span class="jxr_string">"Attempting to return too many bytes for stream %d. decompressed: %d "</span> +
+<a class="jxr_linenumber" name="L461" href="#L461">461</a>                                 <span class="jxr_string">"decompressedBytes: %d"</span>, streamId, decompressed, decompressedBytes);
+<a class="jxr_linenumber" name="L462" href="#L462">462</a>             }
+<a class="jxr_linenumber" name="L463" href="#L463">463</a>             <strong class="jxr_keyword">double</strong> consumedRatio = decompressedBytes / (<strong class="jxr_keyword">double</strong>) decompressed;
+<a class="jxr_linenumber" name="L464" href="#L464">464</a>             <strong class="jxr_keyword">int</strong> consumedCompressed = Math.min(compressed, (<strong class="jxr_keyword">int</strong>) Math.ceil(compressed * consumedRatio));
+<a class="jxr_linenumber" name="L465" href="#L465">465</a>             <strong class="jxr_keyword">if</strong> (compressed - consumedCompressed &lt; 0) {
+<a class="jxr_linenumber" name="L466" href="#L466">466</a>                 <strong class="jxr_keyword">throw</strong> streamError(streamId, INTERNAL_ERROR,
+<a class="jxr_linenumber" name="L467" href="#L467">467</a>                         <span class="jxr_string">"overflow when converting decompressed bytes to compressed bytes for stream %d."</span> +
+<a class="jxr_linenumber" name="L468" href="#L468">468</a>                                 <span class="jxr_string">"decompressedBytes: %d decompressed: %d compressed: %d consumedCompressed: %d"</span>,
+<a class="jxr_linenumber" name="L469" href="#L469">469</a>                         streamId, decompressedBytes, decompressed, compressed, consumedCompressed);
+<a class="jxr_linenumber" name="L470" href="#L470">470</a>             }
+<a class="jxr_linenumber" name="L471" href="#L471">471</a>             decompressed -= decompressedBytes;
+<a class="jxr_linenumber" name="L472" href="#L472">472</a>             compressed -= consumedCompressed;
+<a class="jxr_linenumber" name="L473" href="#L473">473</a> 
+<a class="jxr_linenumber" name="L474" href="#L474">474</a>             <strong class="jxr_keyword">return</strong> consumedCompressed;
+<a class="jxr_linenumber" name="L475" href="#L475">475</a>         }
+<a class="jxr_linenumber" name="L476" href="#L476">476</a>     }
+<a class="jxr_linenumber" name="L477" href="#L477">477</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2026 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

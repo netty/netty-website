@@ -569,61 +569,72 @@
 <a class="jxr_linenumber" name="L561" href="#L561">561</a>     }
 <a class="jxr_linenumber" name="L562" href="#L562">562</a> 
 <a class="jxr_linenumber" name="L563" href="#L563">563</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> addEncodedLengthHex(<a name="ChannelHandlerContext" href="../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <strong class="jxr_keyword">long</strong> contentLength, List&lt;Object&gt; out) {
-<a class="jxr_linenumber" name="L564" href="#L564">564</a>         String lengthHex = Long.toHexString(contentLength);
-<a class="jxr_linenumber" name="L565" href="#L565">565</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = ctx.alloc().buffer(lengthHex.length() + 2);
-<a class="jxr_linenumber" name="L566" href="#L566">566</a>         buf.writeCharSequence(lengthHex, CharsetUtil.US_ASCII);
-<a class="jxr_linenumber" name="L567" href="#L567">567</a>         ByteBufUtil.writeShortBE(buf, CRLF_SHORT);
-<a class="jxr_linenumber" name="L568" href="#L568">568</a>         out.add(buf);
-<a class="jxr_linenumber" name="L569" href="#L569">569</a>     }
-<a class="jxr_linenumber" name="L570" href="#L570">570</a> 
-<a class="jxr_linenumber" name="L571" href="#L571">571</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L572" href="#L572">572</a> <em class="jxr_javadoccomment">     * Allows to sanitize headers of the message before encoding these.</em>
-<a class="jxr_linenumber" name="L573" href="#L573">573</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L574" href="#L574">574</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> sanitizeHeadersBeforeEncode(@SuppressWarnings(<span class="jxr_string">"unused"</span>) H msg, <strong class="jxr_keyword">boolean</strong> isAlwaysEmpty) {
-<a class="jxr_linenumber" name="L575" href="#L575">575</a>         <em class="jxr_comment">// noop</em>
-<a class="jxr_linenumber" name="L576" href="#L576">576</a>     }
-<a class="jxr_linenumber" name="L577" href="#L577">577</a> 
-<a class="jxr_linenumber" name="L578" href="#L578">578</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L579" href="#L579">579</a> <em class="jxr_javadoccomment">     * Determine whether a message has a content or not. Some message may have headers indicating</em>
-<a class="jxr_linenumber" name="L580" href="#L580">580</a> <em class="jxr_javadoccomment">     * a content without having an actual content, e.g the response to an HEAD or CONNECT request.</em>
-<a class="jxr_linenumber" name="L581" href="#L581">581</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L582" href="#L582">582</a> <em class="jxr_javadoccomment">     * @param msg the message to test</em>
-<a class="jxr_linenumber" name="L583" href="#L583">583</a> <em class="jxr_javadoccomment">     * @return {@code true} to signal the message has no content</em>
+<a class="jxr_linenumber" name="L564" href="#L564">564</a>         <em class="jxr_comment">// logic is from Long.toHexString() but we want to avoid creating a String</em>
+<a class="jxr_linenumber" name="L565" href="#L565">565</a>         <strong class="jxr_keyword">int</strong> hexLen = contentLength == 0 ? 1 : (Long.SIZE - Long.numberOfLeadingZeros(contentLength) + 3) &gt;&gt;&gt; 2;
+<a class="jxr_linenumber" name="L566" href="#L566">566</a>         <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf = ctx.alloc().buffer(hexLen + 2); <em class="jxr_comment">// +2 for CRLF</em>
+<a class="jxr_linenumber" name="L567" href="#L567">567</a>         writeHexAscii(buf, contentLength, hexLen);
+<a class="jxr_linenumber" name="L568" href="#L568">568</a>         ByteBufUtil.writeShortBE(buf, CRLF_SHORT);
+<a class="jxr_linenumber" name="L569" href="#L569">569</a>         out.add(buf);
+<a class="jxr_linenumber" name="L570" href="#L570">570</a>     }
+<a class="jxr_linenumber" name="L571" href="#L571">571</a> 
+<a class="jxr_linenumber" name="L572" href="#L572">572</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> byte[] HEX = {
+<a class="jxr_linenumber" name="L573" href="#L573">573</a>             '0', '1', '2', '3', '4', '5', '6', '7',
+<a class="jxr_linenumber" name="L574" href="#L574">574</a>             '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+<a class="jxr_linenumber" name="L575" href="#L575">575</a>     };
+<a class="jxr_linenumber" name="L576" href="#L576">576</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> writeHexAscii(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> out, <strong class="jxr_keyword">long</strong> contentLength, <strong class="jxr_keyword">int</strong> hexLen) {
+<a class="jxr_linenumber" name="L577" href="#L577">577</a>         <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> shift = (hexLen - 1) &lt;&lt; 2; shift &gt;= 0; shift -= 4) {
+<a class="jxr_linenumber" name="L578" href="#L578">578</a>             out.writeByte(HEX[(<strong class="jxr_keyword">int</strong>) ((contentLength &gt;&gt;&gt; shift) &amp; 0xF)]);
+<a class="jxr_linenumber" name="L579" href="#L579">579</a>         }
+<a class="jxr_linenumber" name="L580" href="#L580">580</a>     }
+<a class="jxr_linenumber" name="L581" href="#L581">581</a> 
+<a class="jxr_linenumber" name="L582" href="#L582">582</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L583" href="#L583">583</a> <em class="jxr_javadoccomment">     * Allows to sanitize headers of the message before encoding these.</em>
 <a class="jxr_linenumber" name="L584" href="#L584">584</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L585" href="#L585">585</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isContentAlwaysEmpty(@SuppressWarnings(<span class="jxr_string">"unused"</span>) H msg) {
-<a class="jxr_linenumber" name="L586" href="#L586">586</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L585" href="#L585">585</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> sanitizeHeadersBeforeEncode(@SuppressWarnings(<span class="jxr_string">"unused"</span>) H msg, <strong class="jxr_keyword">boolean</strong> isAlwaysEmpty) {
+<a class="jxr_linenumber" name="L586" href="#L586">586</a>         <em class="jxr_comment">// noop</em>
 <a class="jxr_linenumber" name="L587" href="#L587">587</a>     }
 <a class="jxr_linenumber" name="L588" href="#L588">588</a> 
-<a class="jxr_linenumber" name="L589" href="#L589">589</a>     @Override
-<a class="jxr_linenumber" name="L590" href="#L590">590</a>     @SuppressWarnings(<span class="jxr_string">"ConditionCoveredByFurtherCondition"</span>)
-<a class="jxr_linenumber" name="L591" href="#L591">591</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> acceptOutboundMessage(Object msg) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L592" href="#L592">592</a>         <strong class="jxr_keyword">return</strong> msg == Unpooled.EMPTY_BUFFER ||
-<a class="jxr_linenumber" name="L593" href="#L593">593</a>                 msg == LastHttpContent.EMPTY_LAST_CONTENT ||
-<a class="jxr_linenumber" name="L594" href="#L594">594</a>                 msg instanceof <a name="FullHttpMessage" href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html#FullHttpMessage">FullHttpMessage</a> ||
-<a class="jxr_linenumber" name="L595" href="#L595">595</a>                 msg instanceof <a name="HttpMessage" href="../../../../../io/netty/handler/codec/http/HttpMessage.html#HttpMessage">HttpMessage</a> ||
-<a class="jxr_linenumber" name="L596" href="#L596">596</a>                 msg instanceof <a name="LastHttpContent" href="../../../../../io/netty/handler/codec/http/LastHttpContent.html#LastHttpContent">LastHttpContent</a> ||
-<a class="jxr_linenumber" name="L597" href="#L597">597</a>                 msg instanceof <a name="HttpContent" href="../../../../../io/netty/handler/codec/http/HttpContent.html#HttpContent">HttpContent</a> ||
-<a class="jxr_linenumber" name="L598" href="#L598">598</a>                 msg instanceof <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> || msg instanceof FileRegion;
-<a class="jxr_linenumber" name="L599" href="#L599">599</a>     }
-<a class="jxr_linenumber" name="L600" href="#L600">600</a> 
-<a class="jxr_linenumber" name="L601" href="#L601">601</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L602" href="#L602">602</a> <em class="jxr_javadoccomment">     * Add some additional overhead to the buffer. The rational is that it is better to slightly over allocate and waste</em>
-<a class="jxr_linenumber" name="L603" href="#L603">603</a> <em class="jxr_javadoccomment">     * some memory, rather than under allocate and require a resize/copy.</em>
-<a class="jxr_linenumber" name="L604" href="#L604">604</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L605" href="#L605">605</a> <em class="jxr_javadoccomment">     * @param readableBytes The readable bytes in the buffer.</em>
-<a class="jxr_linenumber" name="L606" href="#L606">606</a> <em class="jxr_javadoccomment">     * @return The {@code readableBytes} with some additional padding.</em>
-<a class="jxr_linenumber" name="L607" href="#L607">607</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L608" href="#L608">608</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> padSizeForAccumulation(<strong class="jxr_keyword">int</strong> readableBytes) {
-<a class="jxr_linenumber" name="L609" href="#L609">609</a>         <strong class="jxr_keyword">return</strong> (readableBytes &lt;&lt; 2) / 3;
+<a class="jxr_linenumber" name="L589" href="#L589">589</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L590" href="#L590">590</a> <em class="jxr_javadoccomment">     * Determine whether a message has a content or not. Some message may have headers indicating</em>
+<a class="jxr_linenumber" name="L591" href="#L591">591</a> <em class="jxr_javadoccomment">     * a content without having an actual content, e.g the response to an HEAD or CONNECT request.</em>
+<a class="jxr_linenumber" name="L592" href="#L592">592</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L593" href="#L593">593</a> <em class="jxr_javadoccomment">     * @param msg the message to test</em>
+<a class="jxr_linenumber" name="L594" href="#L594">594</a> <em class="jxr_javadoccomment">     * @return {@code true} to signal the message has no content</em>
+<a class="jxr_linenumber" name="L595" href="#L595">595</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L596" href="#L596">596</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> isContentAlwaysEmpty(@SuppressWarnings(<span class="jxr_string">"unused"</span>) H msg) {
+<a class="jxr_linenumber" name="L597" href="#L597">597</a>         <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L598" href="#L598">598</a>     }
+<a class="jxr_linenumber" name="L599" href="#L599">599</a> 
+<a class="jxr_linenumber" name="L600" href="#L600">600</a>     @Override
+<a class="jxr_linenumber" name="L601" href="#L601">601</a>     @SuppressWarnings(<span class="jxr_string">"ConditionCoveredByFurtherCondition"</span>)
+<a class="jxr_linenumber" name="L602" href="#L602">602</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> acceptOutboundMessage(Object msg) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L603" href="#L603">603</a>         <strong class="jxr_keyword">return</strong> msg == Unpooled.EMPTY_BUFFER ||
+<a class="jxr_linenumber" name="L604" href="#L604">604</a>                 msg == LastHttpContent.EMPTY_LAST_CONTENT ||
+<a class="jxr_linenumber" name="L605" href="#L605">605</a>                 msg instanceof <a name="FullHttpMessage" href="../../../../../io/netty/handler/codec/http/FullHttpMessage.html#FullHttpMessage">FullHttpMessage</a> ||
+<a class="jxr_linenumber" name="L606" href="#L606">606</a>                 msg instanceof <a name="HttpMessage" href="../../../../../io/netty/handler/codec/http/HttpMessage.html#HttpMessage">HttpMessage</a> ||
+<a class="jxr_linenumber" name="L607" href="#L607">607</a>                 msg instanceof <a name="LastHttpContent" href="../../../../../io/netty/handler/codec/http/LastHttpContent.html#LastHttpContent">LastHttpContent</a> ||
+<a class="jxr_linenumber" name="L608" href="#L608">608</a>                 msg instanceof <a name="HttpContent" href="../../../../../io/netty/handler/codec/http/HttpContent.html#HttpContent">HttpContent</a> ||
+<a class="jxr_linenumber" name="L609" href="#L609">609</a>                 msg instanceof <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> || msg instanceof FileRegion;
 <a class="jxr_linenumber" name="L610" href="#L610">610</a>     }
 <a class="jxr_linenumber" name="L611" href="#L611">611</a> 
-<a class="jxr_linenumber" name="L612" href="#L612">612</a>     @Deprecated
-<a class="jxr_linenumber" name="L613" href="#L613">613</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeAscii(String s, <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf) {
-<a class="jxr_linenumber" name="L614" href="#L614">614</a>         buf.writeCharSequence(s, CharsetUtil.US_ASCII);
-<a class="jxr_linenumber" name="L615" href="#L615">615</a>     }
-<a class="jxr_linenumber" name="L616" href="#L616">616</a> 
-<a class="jxr_linenumber" name="L617" href="#L617">617</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> encodeInitialLine(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, H message) <strong class="jxr_keyword">throws</strong> Exception;
-<a class="jxr_linenumber" name="L618" href="#L618">618</a> }
+<a class="jxr_linenumber" name="L612" href="#L612">612</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L613" href="#L613">613</a> <em class="jxr_javadoccomment">     * Add some additional overhead to the buffer. The rational is that it is better to slightly over allocate and waste</em>
+<a class="jxr_linenumber" name="L614" href="#L614">614</a> <em class="jxr_javadoccomment">     * some memory, rather than under allocate and require a resize/copy.</em>
+<a class="jxr_linenumber" name="L615" href="#L615">615</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L616" href="#L616">616</a> <em class="jxr_javadoccomment">     * @param readableBytes The readable bytes in the buffer.</em>
+<a class="jxr_linenumber" name="L617" href="#L617">617</a> <em class="jxr_javadoccomment">     * @return The {@code readableBytes} with some additional padding.</em>
+<a class="jxr_linenumber" name="L618" href="#L618">618</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L619" href="#L619">619</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">int</strong> padSizeForAccumulation(<strong class="jxr_keyword">int</strong> readableBytes) {
+<a class="jxr_linenumber" name="L620" href="#L620">620</a>         <strong class="jxr_keyword">return</strong> (readableBytes &lt;&lt; 2) / 3;
+<a class="jxr_linenumber" name="L621" href="#L621">621</a>     }
+<a class="jxr_linenumber" name="L622" href="#L622">622</a> 
+<a class="jxr_linenumber" name="L623" href="#L623">623</a>     @Deprecated
+<a class="jxr_linenumber" name="L624" href="#L624">624</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> encodeAscii(String s, <a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf) {
+<a class="jxr_linenumber" name="L625" href="#L625">625</a>         buf.writeCharSequence(s, CharsetUtil.US_ASCII);
+<a class="jxr_linenumber" name="L626" href="#L626">626</a>     }
+<a class="jxr_linenumber" name="L627" href="#L627">627</a> 
+<a class="jxr_linenumber" name="L628" href="#L628">628</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">abstract</strong> <strong class="jxr_keyword">void</strong> encodeInitialLine(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, H message) <strong class="jxr_keyword">throws</strong> Exception;
+<a class="jxr_linenumber" name="L629" href="#L629">629</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
