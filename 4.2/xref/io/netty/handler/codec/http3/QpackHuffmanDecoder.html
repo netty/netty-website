@@ -4657,72 +4657,78 @@
 <a class="jxr_linenumber" name="L4649" href="#L4649">4649</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="QpackException" href="../../../../../io/netty/handler/codec/http3/QpackException.html#QpackException">QpackException</a> BAD_ENCODING =  QpackException.newStatic(QpackHuffmanDecoder.<strong class="jxr_keyword">class</strong>,
 <a class="jxr_linenumber" name="L4650" href="#L4650">4650</a>             <span class="jxr_string">"decode(...)"</span>, <span class="jxr_string">"QPACK - Bad Encoding"</span>);
 <a class="jxr_linenumber" name="L4651" href="#L4651">4651</a> 
-<a class="jxr_linenumber" name="L4652" href="#L4652">4652</a>     <strong class="jxr_keyword">private</strong> byte[] dest;
-<a class="jxr_linenumber" name="L4653" href="#L4653">4653</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> k;
-<a class="jxr_linenumber" name="L4654" href="#L4654">4654</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> state;
-<a class="jxr_linenumber" name="L4655" href="#L4655">4655</a> 
-<a class="jxr_linenumber" name="L4656" href="#L4656">4656</a>     <a name="QpackHuffmanDecoder" href="../../../../../io/netty/handler/codec/http3/QpackHuffmanDecoder.html#QpackHuffmanDecoder">QpackHuffmanDecoder</a>() { }
-<a class="jxr_linenumber" name="L4657" href="#L4657">4657</a> 
-<a class="jxr_linenumber" name="L4658" href="#L4658">4658</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L4659" href="#L4659">4659</a> <em class="jxr_javadoccomment">     * Decompresses the given Huffman coded string literal.</em>
-<a class="jxr_linenumber" name="L4660" href="#L4660">4660</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L4661" href="#L4661">4661</a> <em class="jxr_javadoccomment">     * @param buf the string literal to be decoded</em>
-<a class="jxr_linenumber" name="L4662" href="#L4662">4662</a> <em class="jxr_javadoccomment">     * @return the output stream for the compressed data</em>
-<a class="jxr_linenumber" name="L4663" href="#L4663">4663</a> <em class="jxr_javadoccomment">     * @throws QpackException EOS Decoded</em>
-<a class="jxr_linenumber" name="L4664" href="#L4664">4664</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L4665" href="#L4665">4665</a>     <strong class="jxr_keyword">public</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a> decode(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> length) <strong class="jxr_keyword">throws</strong> <a name="QpackException" href="../../../../../io/netty/handler/codec/http3/QpackException.html#QpackException">QpackException</a> {
-<a class="jxr_linenumber" name="L4666" href="#L4666">4666</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
-<a class="jxr_linenumber" name="L4667" href="#L4667">4667</a>             <strong class="jxr_keyword">return</strong> AsciiString.EMPTY_STRING;
-<a class="jxr_linenumber" name="L4668" href="#L4668">4668</a>         }
-<a class="jxr_linenumber" name="L4669" href="#L4669">4669</a>         dest = <strong class="jxr_keyword">new</strong> byte[length * 8 / 5];
-<a class="jxr_linenumber" name="L4670" href="#L4670">4670</a>         <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L4671" href="#L4671">4671</a>             <strong class="jxr_keyword">int</strong> readerIndex = buf.readerIndex();
-<a class="jxr_linenumber" name="L4672" href="#L4672">4672</a>             <em class="jxr_comment">// Using ByteProcessor to reduce bounds-checking and reference-count checking during byte-by-byte</em>
-<a class="jxr_linenumber" name="L4673" href="#L4673">4673</a>             <em class="jxr_comment">// processing of the ByteBuf.</em>
-<a class="jxr_linenumber" name="L4674" href="#L4674">4674</a>             <strong class="jxr_keyword">int</strong> endIndex = buf.forEachByte(readerIndex, length, <strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="L4675" href="#L4675">4675</a>             <strong class="jxr_keyword">if</strong> (endIndex == -1) {
-<a class="jxr_linenumber" name="L4676" href="#L4676">4676</a>                 <em class="jxr_comment">// We did consume the requested length</em>
-<a class="jxr_linenumber" name="L4677" href="#L4677">4677</a>                 buf.readerIndex(readerIndex + length);
-<a class="jxr_linenumber" name="L4678" href="#L4678">4678</a>                 <strong class="jxr_keyword">if</strong> ((state &amp; HUFFMAN_COMPLETE_SHIFT) != HUFFMAN_COMPLETE_SHIFT) {
-<a class="jxr_linenumber" name="L4679" href="#L4679">4679</a>                     <strong class="jxr_keyword">throw</strong> BAD_ENCODING;
-<a class="jxr_linenumber" name="L4680" href="#L4680">4680</a>                 }
-<a class="jxr_linenumber" name="L4681" href="#L4681">4681</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a>(dest, 0, k, false);
-<a class="jxr_linenumber" name="L4682" href="#L4682">4682</a>             }
-<a class="jxr_linenumber" name="L4683" href="#L4683">4683</a> 
-<a class="jxr_linenumber" name="L4684" href="#L4684">4684</a>             <em class="jxr_comment">// The process(...) method returned before the requested length was requested. This means there</em>
-<a class="jxr_linenumber" name="L4685" href="#L4685">4685</a>             <em class="jxr_comment">// was a bad encoding detected.</em>
-<a class="jxr_linenumber" name="L4686" href="#L4686">4686</a>             buf.readerIndex(endIndex);
-<a class="jxr_linenumber" name="L4687" href="#L4687">4687</a>             <strong class="jxr_keyword">throw</strong> BAD_ENCODING;
-<a class="jxr_linenumber" name="L4688" href="#L4688">4688</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L4689" href="#L4689">4689</a>             dest = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L4690" href="#L4690">4690</a>             k = 0;
-<a class="jxr_linenumber" name="L4691" href="#L4691">4691</a>             state = 0;
-<a class="jxr_linenumber" name="L4692" href="#L4692">4692</a>         }
-<a class="jxr_linenumber" name="L4693" href="#L4693">4693</a>     }
-<a class="jxr_linenumber" name="L4694" href="#L4694">4694</a> 
-<a class="jxr_linenumber" name="L4695" href="#L4695">4695</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L4696" href="#L4696">4696</a> <em class="jxr_javadoccomment">     * &lt;strong&gt;This should never be called from anything but this class itself!&lt;/strong&gt;</em>
-<a class="jxr_linenumber" name="L4697" href="#L4697">4697</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L4698" href="#L4698">4698</a>     @Override
-<a class="jxr_linenumber" name="L4699" href="#L4699">4699</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte input) {
-<a class="jxr_linenumber" name="L4700" href="#L4700">4700</a>         <strong class="jxr_keyword">return</strong> processNibble(input &gt;&gt; 4) &amp;&amp; processNibble(input);
-<a class="jxr_linenumber" name="L4701" href="#L4701">4701</a>     }
-<a class="jxr_linenumber" name="L4702" href="#L4702">4702</a> 
-<a class="jxr_linenumber" name="L4703" href="#L4703">4703</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> processNibble(<strong class="jxr_keyword">int</strong> input) {
-<a class="jxr_linenumber" name="L4704" href="#L4704">4704</a>         <em class="jxr_comment">// The high nibble of the flags byte of each row is always zero</em>
-<a class="jxr_linenumber" name="L4705" href="#L4705">4705</a>         <em class="jxr_comment">// (low nibble after shifting row by 12), since there are only 3 flag bits</em>
-<a class="jxr_linenumber" name="L4706" href="#L4706">4706</a>         <strong class="jxr_keyword">int</strong> index = state &gt;&gt; 12 | (input &amp; 0x0F);
-<a class="jxr_linenumber" name="L4707" href="#L4707">4707</a>         state = HUFFS[index];
-<a class="jxr_linenumber" name="L4708" href="#L4708">4708</a>         <strong class="jxr_keyword">if</strong> ((state &amp; HUFFMAN_FAIL_SHIFT) != 0) {
-<a class="jxr_linenumber" name="L4709" href="#L4709">4709</a>             <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L4710" href="#L4710">4710</a>         }
-<a class="jxr_linenumber" name="L4711" href="#L4711">4711</a>         <strong class="jxr_keyword">if</strong> ((state &amp; HUFFMAN_EMIT_SYMBOL_SHIFT) != 0) {
-<a class="jxr_linenumber" name="L4712" href="#L4712">4712</a>             <em class="jxr_comment">// state is always positive so can cast without mask here</em>
-<a class="jxr_linenumber" name="L4713" href="#L4713">4713</a>             dest[k++] = (byte) state;
-<a class="jxr_linenumber" name="L4714" href="#L4714">4714</a>         }
-<a class="jxr_linenumber" name="L4715" href="#L4715">4715</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L4716" href="#L4716">4716</a>     }
-<a class="jxr_linenumber" name="L4717" href="#L4717">4717</a> }
+<a class="jxr_linenumber" name="L4652" href="#L4652">4652</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <a name="QpackException" href="../../../../../io/netty/handler/codec/http3/QpackException.html#QpackException">QpackException</a> INVALID_LENGTH =  QpackException.newStatic(QpackHuffmanDecoder.<strong class="jxr_keyword">class</strong>,
+<a class="jxr_linenumber" name="L4653" href="#L4653">4653</a>             <span class="jxr_string">"decode(...)"</span>, <span class="jxr_string">"QPACK - Invalid length"</span>);
+<a class="jxr_linenumber" name="L4654" href="#L4654">4654</a> 
+<a class="jxr_linenumber" name="L4655" href="#L4655">4655</a>     <strong class="jxr_keyword">private</strong> byte[] dest;
+<a class="jxr_linenumber" name="L4656" href="#L4656">4656</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> k;
+<a class="jxr_linenumber" name="L4657" href="#L4657">4657</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> state;
+<a class="jxr_linenumber" name="L4658" href="#L4658">4658</a> 
+<a class="jxr_linenumber" name="L4659" href="#L4659">4659</a>     <a name="QpackHuffmanDecoder" href="../../../../../io/netty/handler/codec/http3/QpackHuffmanDecoder.html#QpackHuffmanDecoder">QpackHuffmanDecoder</a>() { }
+<a class="jxr_linenumber" name="L4660" href="#L4660">4660</a> 
+<a class="jxr_linenumber" name="L4661" href="#L4661">4661</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L4662" href="#L4662">4662</a> <em class="jxr_javadoccomment">     * Decompresses the given Huffman coded string literal.</em>
+<a class="jxr_linenumber" name="L4663" href="#L4663">4663</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L4664" href="#L4664">4664</a> <em class="jxr_javadoccomment">     * @param buf the string literal to be decoded</em>
+<a class="jxr_linenumber" name="L4665" href="#L4665">4665</a> <em class="jxr_javadoccomment">     * @return the output stream for the compressed data</em>
+<a class="jxr_linenumber" name="L4666" href="#L4666">4666</a> <em class="jxr_javadoccomment">     * @throws QpackException EOS Decoded</em>
+<a class="jxr_linenumber" name="L4667" href="#L4667">4667</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L4668" href="#L4668">4668</a>     <strong class="jxr_keyword">public</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a> decode(<a name="ByteBuf" href="../../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buf, <strong class="jxr_keyword">int</strong> length) <strong class="jxr_keyword">throws</strong> <a name="QpackException" href="../../../../../io/netty/handler/codec/http3/QpackException.html#QpackException">QpackException</a> {
+<a class="jxr_linenumber" name="L4669" href="#L4669">4669</a>         <strong class="jxr_keyword">if</strong> (length == 0) {
+<a class="jxr_linenumber" name="L4670" href="#L4670">4670</a>             <strong class="jxr_keyword">return</strong> AsciiString.EMPTY_STRING;
+<a class="jxr_linenumber" name="L4671" href="#L4671">4671</a>         }
+<a class="jxr_linenumber" name="L4672" href="#L4672">4672</a>         <strong class="jxr_keyword">if</strong> (buf.readableBytes() &lt; length) {
+<a class="jxr_linenumber" name="L4673" href="#L4673">4673</a>             <strong class="jxr_keyword">throw</strong> INVALID_LENGTH;
+<a class="jxr_linenumber" name="L4674" href="#L4674">4674</a>         }
+<a class="jxr_linenumber" name="L4675" href="#L4675">4675</a>         dest = <strong class="jxr_keyword">new</strong> byte[length * 8 / 5];
+<a class="jxr_linenumber" name="L4676" href="#L4676">4676</a>         <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L4677" href="#L4677">4677</a>             <strong class="jxr_keyword">int</strong> readerIndex = buf.readerIndex();
+<a class="jxr_linenumber" name="L4678" href="#L4678">4678</a>             <em class="jxr_comment">// Using ByteProcessor to reduce bounds-checking and reference-count checking during byte-by-byte</em>
+<a class="jxr_linenumber" name="L4679" href="#L4679">4679</a>             <em class="jxr_comment">// processing of the ByteBuf.</em>
+<a class="jxr_linenumber" name="L4680" href="#L4680">4680</a>             <strong class="jxr_keyword">int</strong> endIndex = buf.forEachByte(readerIndex, length, <strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L4681" href="#L4681">4681</a>             <strong class="jxr_keyword">if</strong> (endIndex == -1) {
+<a class="jxr_linenumber" name="L4682" href="#L4682">4682</a>                 <em class="jxr_comment">// We did consume the requested length</em>
+<a class="jxr_linenumber" name="L4683" href="#L4683">4683</a>                 buf.readerIndex(readerIndex + length);
+<a class="jxr_linenumber" name="L4684" href="#L4684">4684</a>                 <strong class="jxr_keyword">if</strong> ((state &amp; HUFFMAN_COMPLETE_SHIFT) != HUFFMAN_COMPLETE_SHIFT) {
+<a class="jxr_linenumber" name="L4685" href="#L4685">4685</a>                     <strong class="jxr_keyword">throw</strong> BAD_ENCODING;
+<a class="jxr_linenumber" name="L4686" href="#L4686">4686</a>                 }
+<a class="jxr_linenumber" name="L4687" href="#L4687">4687</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="AsciiString" href="../../../../../io/netty/util/AsciiString.html#AsciiString">AsciiString</a>(dest, 0, k, false);
+<a class="jxr_linenumber" name="L4688" href="#L4688">4688</a>             }
+<a class="jxr_linenumber" name="L4689" href="#L4689">4689</a> 
+<a class="jxr_linenumber" name="L4690" href="#L4690">4690</a>             <em class="jxr_comment">// The process(...) method returned before the requested length was requested. This means there</em>
+<a class="jxr_linenumber" name="L4691" href="#L4691">4691</a>             <em class="jxr_comment">// was a bad encoding detected.</em>
+<a class="jxr_linenumber" name="L4692" href="#L4692">4692</a>             buf.readerIndex(endIndex);
+<a class="jxr_linenumber" name="L4693" href="#L4693">4693</a>             <strong class="jxr_keyword">throw</strong> BAD_ENCODING;
+<a class="jxr_linenumber" name="L4694" href="#L4694">4694</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L4695" href="#L4695">4695</a>             dest = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L4696" href="#L4696">4696</a>             k = 0;
+<a class="jxr_linenumber" name="L4697" href="#L4697">4697</a>             state = 0;
+<a class="jxr_linenumber" name="L4698" href="#L4698">4698</a>         }
+<a class="jxr_linenumber" name="L4699" href="#L4699">4699</a>     }
+<a class="jxr_linenumber" name="L4700" href="#L4700">4700</a> 
+<a class="jxr_linenumber" name="L4701" href="#L4701">4701</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L4702" href="#L4702">4702</a> <em class="jxr_javadoccomment">     * &lt;strong&gt;This should never be called from anything but this class itself!&lt;/strong&gt;</em>
+<a class="jxr_linenumber" name="L4703" href="#L4703">4703</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L4704" href="#L4704">4704</a>     @Override
+<a class="jxr_linenumber" name="L4705" href="#L4705">4705</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> process(byte input) {
+<a class="jxr_linenumber" name="L4706" href="#L4706">4706</a>         <strong class="jxr_keyword">return</strong> processNibble(input &gt;&gt; 4) &amp;&amp; processNibble(input);
+<a class="jxr_linenumber" name="L4707" href="#L4707">4707</a>     }
+<a class="jxr_linenumber" name="L4708" href="#L4708">4708</a> 
+<a class="jxr_linenumber" name="L4709" href="#L4709">4709</a>     <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">boolean</strong> processNibble(<strong class="jxr_keyword">int</strong> input) {
+<a class="jxr_linenumber" name="L4710" href="#L4710">4710</a>         <em class="jxr_comment">// The high nibble of the flags byte of each row is always zero</em>
+<a class="jxr_linenumber" name="L4711" href="#L4711">4711</a>         <em class="jxr_comment">// (low nibble after shifting row by 12), since there are only 3 flag bits</em>
+<a class="jxr_linenumber" name="L4712" href="#L4712">4712</a>         <strong class="jxr_keyword">int</strong> index = state &gt;&gt; 12 | (input &amp; 0x0F);
+<a class="jxr_linenumber" name="L4713" href="#L4713">4713</a>         state = HUFFS[index];
+<a class="jxr_linenumber" name="L4714" href="#L4714">4714</a>         <strong class="jxr_keyword">if</strong> ((state &amp; HUFFMAN_FAIL_SHIFT) != 0) {
+<a class="jxr_linenumber" name="L4715" href="#L4715">4715</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L4716" href="#L4716">4716</a>         }
+<a class="jxr_linenumber" name="L4717" href="#L4717">4717</a>         <strong class="jxr_keyword">if</strong> ((state &amp; HUFFMAN_EMIT_SYMBOL_SHIFT) != 0) {
+<a class="jxr_linenumber" name="L4718" href="#L4718">4718</a>             <em class="jxr_comment">// state is always positive so can cast without mask here</em>
+<a class="jxr_linenumber" name="L4719" href="#L4719">4719</a>             dest[k++] = (byte) state;
+<a class="jxr_linenumber" name="L4720" href="#L4720">4720</a>         }
+<a class="jxr_linenumber" name="L4721" href="#L4721">4721</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L4722" href="#L4722">4722</a>     }
+<a class="jxr_linenumber" name="L4723" href="#L4723">4723</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

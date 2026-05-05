@@ -116,7 +116,7 @@
 <a class="jxr_linenumber" name="L108" href="#L108">108</a>                 <strong class="jxr_keyword">new</strong> Match(CHUNK_EXT_VAL_QUOTED).chars(<span class="jxr_string">"\&quot;"</span>),
 <a class="jxr_linenumber" name="L109" href="#L109">109</a>                 <strong class="jxr_keyword">new</strong> Match(CHUNK_EXT_VAL_TOKEN)
 <a class="jxr_linenumber" name="L110" href="#L110">110</a>                         .range(0x21, 0x7E)
-<a class="jxr_linenumber" name="L111" href="#L111">111</a>                         .chars(<span class="jxr_string">"(),/:&lt;=&gt;?@[&#92;&#92;]{}"</span>, false)),
+<a class="jxr_linenumber" name="L111" href="#L111">111</a>                         .chars(<span class="jxr_string">"(),/:&lt;=&gt;?@[&#92;&#92;]{}\&quot;"</span>, false)),
 <a class="jxr_linenumber" name="L112" href="#L112">112</a>         ChunkExtValQuoted(
 <a class="jxr_linenumber" name="L113" href="#L113">113</a>                 <strong class="jxr_keyword">new</strong> Match(CHUNK_EXT_VAL_QUOTED_ESCAPE).chars(<span class="jxr_string">"&#92;&#92;"</span>),
 <a class="jxr_linenumber" name="L114" href="#L114">114</a>                 <strong class="jxr_keyword">new</strong> Match(CHUNK_EXT_VAL_QUOTED_END).chars(<span class="jxr_string">"\&quot;"</span>),
@@ -136,7 +136,7 @@
 <a class="jxr_linenumber" name="L128" href="#L128">128</a>         ChunkExtValToken(
 <a class="jxr_linenumber" name="L129" href="#L129">129</a>                 <strong class="jxr_keyword">new</strong> Match(CHUNK_EXT_VAL_TOKEN)
 <a class="jxr_linenumber" name="L130" href="#L130">130</a>                         .range(0x21, 0x7E, <strong class="jxr_keyword">true</strong>)
-<a class="jxr_linenumber" name="L131" href="#L131">131</a>                         .chars(<span class="jxr_string">"(),/:&lt;=&gt;?@[&#92;&#92;]{}"</span>, false),
+<a class="jxr_linenumber" name="L131" href="#L131">131</a>                         .chars(<span class="jxr_string">"(),/:&lt;=&gt;?@[&#92;&#92;]{};"</span>, false),
 <a class="jxr_linenumber" name="L132" href="#L132">132</a>                 <strong class="jxr_keyword">new</strong> Match(CHUNK_EXT_NAME).chars(<span class="jxr_string">";"</span>)),
 <a class="jxr_linenumber" name="L133" href="#L133">133</a>         ;
 <a class="jxr_linenumber" name="L134" href="#L134">134</a> 
@@ -171,11 +171,19 @@
 <a class="jxr_linenumber" name="L163" href="#L163">163</a>     }
 <a class="jxr_linenumber" name="L164" href="#L164">164</a> 
 <a class="jxr_linenumber" name="L165" href="#L165">165</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> finish() {
-<a class="jxr_linenumber" name="L166" href="#L166">166</a>         <strong class="jxr_keyword">if</strong> (state != State.Size &amp;&amp; state != State.ChunkExtName &amp;&amp; state != State.ChunkExtValQuotedEnd) {
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>             <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="InvalidChunkExtensionException" href="../../../../../io/netty/handler/codec/http/InvalidChunkExtensionException.html#InvalidChunkExtensionException">InvalidChunkExtensionException</a>(<span class="jxr_string">"Invalid chunk extension"</span>);
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>         }
-<a class="jxr_linenumber" name="L169" href="#L169">169</a>     }
-<a class="jxr_linenumber" name="L170" href="#L170">170</a> }
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>         <strong class="jxr_keyword">switch</strong> (state) {
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>             <strong class="jxr_keyword">case</strong> ChunkExtValQuoted:
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>             <strong class="jxr_keyword">case</strong> ChunkExtValQuotedEscape:
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>             <strong class="jxr_keyword">case</strong> ChunkExtValStart:
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> <a name="InvalidChunkExtensionException" href="../../../../../io/netty/handler/codec/http/InvalidChunkExtensionException.html#InvalidChunkExtensionException">InvalidChunkExtensionException</a>(<span class="jxr_string">"Invalid chunk extension"</span>);
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>         }
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>         <em class="jxr_comment">// Exhaustiveness check</em>
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>         assert state == State.Size ||
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>                 state == State.ChunkExtName ||
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>                 state == State.ChunkExtValQuotedEnd ||
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>                 state == State.ChunkExtValToken;
+<a class="jxr_linenumber" name="L177" href="#L177">177</a>     }
+<a class="jxr_linenumber" name="L178" href="#L178">178</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
