@@ -24,33 +24,33 @@
 <a class="jxr_linenumber" name="L16" href="#L16">16</a>  <strong class="jxr_keyword">package</strong> io.netty.resolver.dns;
 <a class="jxr_linenumber" name="L17" href="#L17">17</a>  
 <a class="jxr_linenumber" name="L18" href="#L18">18</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.MathUtil;
-<a class="jxr_linenumber" name="L19" href="#L19">19</a>  <strong class="jxr_keyword">import</strong> io.netty.util.internal.PlatformDependent;
-<a class="jxr_linenumber" name="L20" href="#L20">20</a>  
-<a class="jxr_linenumber" name="L21" href="#L21">21</a>  <strong class="jxr_keyword">import</strong> java.util.Random;
-<a class="jxr_linenumber" name="L22" href="#L22">22</a>  
-<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <em class="jxr_javadoccomment"> * Special data-structure that will allow to retrieve the next query id to use, while still guarantee some sort</em>
-<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <em class="jxr_javadoccomment"> * of randomness.</em>
-<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <em class="jxr_javadoccomment"> * The query id will be between 0 (inclusive) and 65535 (inclusive) as defined by the RFC.</em>
-<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <em class="jxr_javadoccomment"> */</em>
-<a class="jxr_linenumber" name="L28" href="#L28">28</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="DnsQueryIdSpace" href="../../../../io/netty/resolver/dns/DnsQueryIdSpace.html#DnsQueryIdSpace">DnsQueryIdSpace</a> {
-<a class="jxr_linenumber" name="L29" href="#L29">29</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> MAX_ID = 65535;
-<a class="jxr_linenumber" name="L30" href="#L30">30</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BUCKETS = 4;
-<a class="jxr_linenumber" name="L31" href="#L31">31</a>      <em class="jxr_comment">// Each bucket is 16kb of size.</em>
-<a class="jxr_linenumber" name="L32" href="#L32">32</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BUCKET_SIZE = (MAX_ID + 1) / BUCKETS;
-<a class="jxr_linenumber" name="L33" href="#L33">33</a>  
-<a class="jxr_linenumber" name="L34" href="#L34">34</a>      <em class="jxr_comment">// If there are other buckets left that have at least 500 usable ids we will drop an unused bucket.</em>
-<a class="jxr_linenumber" name="L35" href="#L35">35</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BUCKET_DROP_THRESHOLD = 500;
-<a class="jxr_linenumber" name="L36" href="#L36">36</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> DnsQueryIdRange[] idBuckets = <strong class="jxr_keyword">new</strong> DnsQueryIdRange[BUCKETS];
+<a class="jxr_linenumber" name="L19" href="#L19">19</a>  
+<a class="jxr_linenumber" name="L20" href="#L20">20</a>  <strong class="jxr_keyword">import</strong> java.security.SecureRandom;
+<a class="jxr_linenumber" name="L21" href="#L21">21</a>  
+<a class="jxr_linenumber" name="L22" href="#L22">22</a>  <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L23" href="#L23">23</a>  <em class="jxr_javadoccomment"> * Special data-structure that will allow to retrieve the next query id to use, while still guarantee some sort</em>
+<a class="jxr_linenumber" name="L24" href="#L24">24</a>  <em class="jxr_javadoccomment"> * of randomness.</em>
+<a class="jxr_linenumber" name="L25" href="#L25">25</a>  <em class="jxr_javadoccomment"> * The query id will be between 0 (inclusive) and 65535 (inclusive) as defined by the RFC.</em>
+<a class="jxr_linenumber" name="L26" href="#L26">26</a>  <em class="jxr_javadoccomment"> */</em>
+<a class="jxr_linenumber" name="L27" href="#L27">27</a>  <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">class</strong> <a name="DnsQueryIdSpace" href="../../../../io/netty/resolver/dns/DnsQueryIdSpace.html#DnsQueryIdSpace">DnsQueryIdSpace</a> {
+<a class="jxr_linenumber" name="L28" href="#L28">28</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> MAX_ID = 65535;
+<a class="jxr_linenumber" name="L29" href="#L29">29</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BUCKETS = 4;
+<a class="jxr_linenumber" name="L30" href="#L30">30</a>      <em class="jxr_comment">// Each bucket is 16kb of size.</em>
+<a class="jxr_linenumber" name="L31" href="#L31">31</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BUCKET_SIZE = (MAX_ID + 1) / BUCKETS;
+<a class="jxr_linenumber" name="L32" href="#L32">32</a>  
+<a class="jxr_linenumber" name="L33" href="#L33">33</a>      <em class="jxr_comment">// If there are other buckets left that have at least 500 usable ids we will drop an unused bucket.</em>
+<a class="jxr_linenumber" name="L34" href="#L34">34</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> BUCKET_DROP_THRESHOLD = 500;
+<a class="jxr_linenumber" name="L35" href="#L35">35</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> DnsQueryIdRange[] idBuckets = <strong class="jxr_keyword">new</strong> DnsQueryIdRange[BUCKETS];
+<a class="jxr_linenumber" name="L36" href="#L36">36</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> SecureRandom random = <strong class="jxr_keyword">new</strong> SecureRandom();
 <a class="jxr_linenumber" name="L37" href="#L37">37</a>  
 <a class="jxr_linenumber" name="L38" href="#L38">38</a>      <a name="DnsQueryIdSpace" href="../../../../io/netty/resolver/dns/DnsQueryIdSpace.html#DnsQueryIdSpace">DnsQueryIdSpace</a>() {
 <a class="jxr_linenumber" name="L39" href="#L39">39</a>          assert idBuckets.length == MathUtil.findNextPositivePowerOfTwo(idBuckets.length);
 <a class="jxr_linenumber" name="L40" href="#L40">40</a>          <em class="jxr_comment">// We start with 1 bucket.</em>
-<a class="jxr_linenumber" name="L41" href="#L41">41</a>          idBuckets[0] = newBucket(0);
+<a class="jxr_linenumber" name="L41" href="#L41">41</a>          idBuckets[0] = newBucket(0, random);
 <a class="jxr_linenumber" name="L42" href="#L42">42</a>      }
 <a class="jxr_linenumber" name="L43" href="#L43">43</a>  
-<a class="jxr_linenumber" name="L44" href="#L44">44</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> DnsQueryIdRange newBucket(<strong class="jxr_keyword">int</strong> idBucketsIdx) {
-<a class="jxr_linenumber" name="L45" href="#L45">45</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> DnsQueryIdRange(BUCKET_SIZE, idBucketsIdx * BUCKET_SIZE);
+<a class="jxr_linenumber" name="L44" href="#L44">44</a>      <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">static</strong> DnsQueryIdRange newBucket(<strong class="jxr_keyword">int</strong> idBucketsIdx, SecureRandom random) {
+<a class="jxr_linenumber" name="L45" href="#L45">45</a>          <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> DnsQueryIdRange(BUCKET_SIZE, idBucketsIdx * BUCKET_SIZE, random);
 <a class="jxr_linenumber" name="L46" href="#L46">46</a>      }
 <a class="jxr_linenumber" name="L47" href="#L47">47</a>  
 <a class="jxr_linenumber" name="L48" href="#L48">48</a>      <em class="jxr_javadoccomment">/**</em>
@@ -69,7 +69,7 @@
 <a class="jxr_linenumber" name="L61" href="#L61">61</a>                  }
 <a class="jxr_linenumber" name="L62" href="#L62">62</a>              } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (freeIdx == -1 ||
 <a class="jxr_linenumber" name="L63" href="#L63">63</a>                      <em class="jxr_comment">// Let's make it somehow random which free slot is used.</em>
-<a class="jxr_linenumber" name="L64" href="#L64">64</a>                      PlatformDependent.threadLocalRandom().nextBoolean()) {
+<a class="jxr_linenumber" name="L64" href="#L64">64</a>                      random.nextBoolean()) {
 <a class="jxr_linenumber" name="L65" href="#L65">65</a>                  <em class="jxr_comment">// We have a slot that we can use to create a new bucket if we need to.</em>
 <a class="jxr_linenumber" name="L66" href="#L66">66</a>                  freeIdx = bucketIdx;
 <a class="jxr_linenumber" name="L67" href="#L67">67</a>              }
@@ -80,7 +80,7 @@
 <a class="jxr_linenumber" name="L72" href="#L72">72</a>          }
 <a class="jxr_linenumber" name="L73" href="#L73">73</a>  
 <a class="jxr_linenumber" name="L74" href="#L74">74</a>          <em class="jxr_comment">// We still have some slots free to store a new bucket. Let's do this now and use it to generate the next id.</em>
-<a class="jxr_linenumber" name="L75" href="#L75">75</a>          DnsQueryIdRange bucket = newBucket(freeIdx);
+<a class="jxr_linenumber" name="L75" href="#L75">75</a>          DnsQueryIdRange bucket = newBucket(freeIdx, random);
 <a class="jxr_linenumber" name="L76" href="#L76">76</a>          idBuckets[freeIdx] = bucket;
 <a class="jxr_linenumber" name="L77" href="#L77">77</a>          <strong class="jxr_keyword">int</strong> id = bucket.nextId();
 <a class="jxr_linenumber" name="L78" href="#L78">78</a>          assert id &gt;= 0;
@@ -149,75 +149,76 @@
 <a class="jxr_linenumber" name="L141" href="#L141">141</a>         <em class="jxr_comment">// Holds all possible ids which are stored as unsigned shorts</em>
 <a class="jxr_linenumber" name="L142" href="#L142">142</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">short</strong>[] ids;
 <a class="jxr_linenumber" name="L143" href="#L143">143</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> startId;
-<a class="jxr_linenumber" name="L144" href="#L144">144</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> count;
-<a class="jxr_linenumber" name="L145" href="#L145">145</a> 
-<a class="jxr_linenumber" name="L146" href="#L146">146</a>         DnsQueryIdRange(<strong class="jxr_keyword">int</strong> bucketSize, <strong class="jxr_keyword">int</strong> startId) {
-<a class="jxr_linenumber" name="L147" href="#L147">147</a>             <strong class="jxr_keyword">this</strong>.ids = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">short</strong>[bucketSize];
-<a class="jxr_linenumber" name="L148" href="#L148">148</a>             <strong class="jxr_keyword">this</strong>.startId = startId;
-<a class="jxr_linenumber" name="L149" href="#L149">149</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> v = startId; v &lt; bucketSize + startId; v++) {
-<a class="jxr_linenumber" name="L150" href="#L150">150</a>                 pushId(v);
-<a class="jxr_linenumber" name="L151" href="#L151">151</a>             }
-<a class="jxr_linenumber" name="L152" href="#L152">152</a>         }
-<a class="jxr_linenumber" name="L153" href="#L153">153</a> 
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L155" href="#L155">155</a> <em class="jxr_javadoccomment">         * Returns the next ID to use for a query or {@code -1} if there is none left to use.</em>
-<a class="jxr_linenumber" name="L156" href="#L156">156</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="L157" href="#L157">157</a> <em class="jxr_javadoccomment">         * @return next id to use.</em>
-<a class="jxr_linenumber" name="L158" href="#L158">158</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>         <strong class="jxr_keyword">int</strong> nextId() {
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>             assert count &gt;= 0;
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>             <strong class="jxr_keyword">if</strong> (count == 0) {
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>                 <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="L163" href="#L163">163</a>             }
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>             <strong class="jxr_keyword">short</strong> id = ids[count - 1];
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>             count--;
-<a class="jxr_linenumber" name="L166" href="#L166">166</a> 
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>             <strong class="jxr_keyword">return</strong> id &amp; 0xFFFF;
-<a class="jxr_linenumber" name="L168" href="#L168">168</a>         }
-<a class="jxr_linenumber" name="L169" href="#L169">169</a> 
-<a class="jxr_linenumber" name="L170" href="#L170">170</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L171" href="#L171">171</a> <em class="jxr_javadoccomment">         * Push back the id, so it can be used again for the next query.</em>
-<a class="jxr_linenumber" name="L172" href="#L172">172</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="L173" href="#L173">173</a> <em class="jxr_javadoccomment">         * @param id the id.</em>
-<a class="jxr_linenumber" name="L174" href="#L174">174</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>         <strong class="jxr_keyword">void</strong> pushId(<strong class="jxr_keyword">int</strong> id) {
-<a class="jxr_linenumber" name="L176" href="#L176">176</a>             <strong class="jxr_keyword">if</strong> (count == ids.length) {
-<a class="jxr_linenumber" name="L177" href="#L177">177</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"overflow"</span>);
-<a class="jxr_linenumber" name="L178" href="#L178">178</a>             }
-<a class="jxr_linenumber" name="L179" href="#L179">179</a>             assert id &lt;= startId + ids.length &amp;&amp; id &gt;= startId;
-<a class="jxr_linenumber" name="L180" href="#L180">180</a>             <em class="jxr_comment">// pick a slot for our index, and whatever was in that slot before will get moved to the tail.</em>
-<a class="jxr_linenumber" name="L181" href="#L181">181</a>             Random random = PlatformDependent.threadLocalRandom();
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>             <strong class="jxr_keyword">int</strong> insertionPosition = random.nextInt(count + 1);
-<a class="jxr_linenumber" name="L183" href="#L183">183</a>             <strong class="jxr_keyword">short</strong> moveId = ids[insertionPosition];
-<a class="jxr_linenumber" name="L184" href="#L184">184</a>             <strong class="jxr_keyword">short</strong> insertId = (<strong class="jxr_keyword">short</strong>) id;
-<a class="jxr_linenumber" name="L185" href="#L185">185</a> 
-<a class="jxr_linenumber" name="L186" href="#L186">186</a>             <em class="jxr_comment">// Assert that the ids are different or its the same index.</em>
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>             assert moveId != insertId || insertionPosition == count;
-<a class="jxr_linenumber" name="L188" href="#L188">188</a> 
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>             ids[count] = moveId;
-<a class="jxr_linenumber" name="L190" href="#L190">190</a>             ids[insertionPosition] = insertId;
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>             count++;
-<a class="jxr_linenumber" name="L192" href="#L192">192</a>         }
-<a class="jxr_linenumber" name="L193" href="#L193">193</a> 
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L195" href="#L195">195</a> <em class="jxr_javadoccomment">         * Return how much more usable ids are left.</em>
-<a class="jxr_linenumber" name="L196" href="#L196">196</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="L197" href="#L197">197</a> <em class="jxr_javadoccomment">         * @return the number of ids that are left for usage.</em>
-<a class="jxr_linenumber" name="L198" href="#L198">198</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>         <strong class="jxr_keyword">int</strong> usableIds() {
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>             <strong class="jxr_keyword">return</strong> count;
-<a class="jxr_linenumber" name="L201" href="#L201">201</a>         }
-<a class="jxr_linenumber" name="L202" href="#L202">202</a> 
-<a class="jxr_linenumber" name="L203" href="#L203">203</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L204" href="#L204">204</a> <em class="jxr_javadoccomment">         * Return the maximum number of ids that are supported.</em>
-<a class="jxr_linenumber" name="L205" href="#L205">205</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="L206" href="#L206">206</a> <em class="jxr_javadoccomment">         * @return the maximum number of ids.</em>
-<a class="jxr_linenumber" name="L207" href="#L207">207</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L208" href="#L208">208</a>         <strong class="jxr_keyword">int</strong> maxUsableIds() {
-<a class="jxr_linenumber" name="L209" href="#L209">209</a>             <strong class="jxr_keyword">return</strong> ids.length;
-<a class="jxr_linenumber" name="L210" href="#L210">210</a>         }
-<a class="jxr_linenumber" name="L211" href="#L211">211</a>     }
-<a class="jxr_linenumber" name="L212" href="#L212">212</a> }
+<a class="jxr_linenumber" name="L144" href="#L144">144</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">final</strong> SecureRandom random;
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> count;
+<a class="jxr_linenumber" name="L146" href="#L146">146</a> 
+<a class="jxr_linenumber" name="L147" href="#L147">147</a>         DnsQueryIdRange(<strong class="jxr_keyword">int</strong> bucketSize, <strong class="jxr_keyword">int</strong> startId, SecureRandom random) {
+<a class="jxr_linenumber" name="L148" href="#L148">148</a>             <strong class="jxr_keyword">this</strong>.ids = <strong class="jxr_keyword">new</strong> <strong class="jxr_keyword">short</strong>[bucketSize];
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>             <strong class="jxr_keyword">this</strong>.startId = startId;
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>             <strong class="jxr_keyword">this</strong>.random = random;
+<a class="jxr_linenumber" name="L151" href="#L151">151</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> v = startId; v &lt; bucketSize + startId; v++) {
+<a class="jxr_linenumber" name="L152" href="#L152">152</a>                 pushId(v);
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>             }
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>         }
+<a class="jxr_linenumber" name="L155" href="#L155">155</a> 
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L157" href="#L157">157</a> <em class="jxr_javadoccomment">         * Returns the next ID to use for a query or {@code -1} if there is none left to use.</em>
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="L159" href="#L159">159</a> <em class="jxr_javadoccomment">         * @return next id to use.</em>
+<a class="jxr_linenumber" name="L160" href="#L160">160</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>         <strong class="jxr_keyword">int</strong> nextId() {
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>             assert count &gt;= 0;
+<a class="jxr_linenumber" name="L163" href="#L163">163</a>             <strong class="jxr_keyword">if</strong> (count == 0) {
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>                 <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>             }
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>             <strong class="jxr_keyword">short</strong> id = ids[count - 1];
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>             count--;
+<a class="jxr_linenumber" name="L168" href="#L168">168</a> 
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>             <strong class="jxr_keyword">return</strong> id &amp; 0xFFFF;
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>         }
+<a class="jxr_linenumber" name="L171" href="#L171">171</a> 
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L173" href="#L173">173</a> <em class="jxr_javadoccomment">         * Push back the id, so it can be used again for the next query.</em>
+<a class="jxr_linenumber" name="L174" href="#L174">174</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="L175" href="#L175">175</a> <em class="jxr_javadoccomment">         * @param id the id.</em>
+<a class="jxr_linenumber" name="L176" href="#L176">176</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L177" href="#L177">177</a>         <strong class="jxr_keyword">void</strong> pushId(<strong class="jxr_keyword">int</strong> id) {
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>             <strong class="jxr_keyword">if</strong> (count == ids.length) {
+<a class="jxr_linenumber" name="L179" href="#L179">179</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> IllegalStateException(<span class="jxr_string">"overflow"</span>);
+<a class="jxr_linenumber" name="L180" href="#L180">180</a>             }
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>             assert id &lt;= startId + ids.length &amp;&amp; id &gt;= startId;
+<a class="jxr_linenumber" name="L182" href="#L182">182</a>             <em class="jxr_comment">// pick a slot for our index, and whatever was in that slot before will get moved to the tail.</em>
+<a class="jxr_linenumber" name="L183" href="#L183">183</a>             <strong class="jxr_keyword">int</strong> insertionPosition = random.nextInt(count + 1);
+<a class="jxr_linenumber" name="L184" href="#L184">184</a>             <strong class="jxr_keyword">short</strong> moveId = ids[insertionPosition];
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>             <strong class="jxr_keyword">short</strong> insertId = (<strong class="jxr_keyword">short</strong>) id;
+<a class="jxr_linenumber" name="L186" href="#L186">186</a> 
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>             <em class="jxr_comment">// Assert that the ids are different or its the same index.</em>
+<a class="jxr_linenumber" name="L188" href="#L188">188</a>             assert moveId != insertId || insertionPosition == count;
+<a class="jxr_linenumber" name="L189" href="#L189">189</a> 
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>             ids[count] = moveId;
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>             ids[insertionPosition] = insertId;
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>             count++;
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>         }
+<a class="jxr_linenumber" name="L194" href="#L194">194</a> 
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L196" href="#L196">196</a> <em class="jxr_javadoccomment">         * Return how much more usable ids are left.</em>
+<a class="jxr_linenumber" name="L197" href="#L197">197</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="L198" href="#L198">198</a> <em class="jxr_javadoccomment">         * @return the number of ids that are left for usage.</em>
+<a class="jxr_linenumber" name="L199" href="#L199">199</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L200" href="#L200">200</a>         <strong class="jxr_keyword">int</strong> usableIds() {
+<a class="jxr_linenumber" name="L201" href="#L201">201</a>             <strong class="jxr_keyword">return</strong> count;
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>         }
+<a class="jxr_linenumber" name="L203" href="#L203">203</a> 
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L205" href="#L205">205</a> <em class="jxr_javadoccomment">         * Return the maximum number of ids that are supported.</em>
+<a class="jxr_linenumber" name="L206" href="#L206">206</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="L207" href="#L207">207</a> <em class="jxr_javadoccomment">         * @return the maximum number of ids.</em>
+<a class="jxr_linenumber" name="L208" href="#L208">208</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L209" href="#L209">209</a>         <strong class="jxr_keyword">int</strong> maxUsableIds() {
+<a class="jxr_linenumber" name="L210" href="#L210">210</a>             <strong class="jxr_keyword">return</strong> ids.length;
+<a class="jxr_linenumber" name="L211" href="#L211">211</a>         }
+<a class="jxr_linenumber" name="L212" href="#L212">212</a>     }
+<a class="jxr_linenumber" name="L213" href="#L213">213</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2026 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>
