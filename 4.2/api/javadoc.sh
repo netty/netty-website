@@ -1,1 +1,1 @@
-/Library/Java/JavaVirtualMachines/applejdk-11.0.31.11.1.jdk/Contents/Home/bin/javadoc -J-Duser.language= -J-Duser.country= @options @argfile
+/Library/Java/JavaVirtualMachines/applejdk-26.0.1.8.2.jdk/Contents/Home/bin/javadoc -J-Duser.language= -J-Duser.country= @options @argfile
