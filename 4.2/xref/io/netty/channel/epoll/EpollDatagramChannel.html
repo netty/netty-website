@@ -805,36 +805,38 @@
 <a class="jxr_linenumber" name="L797" href="#L797">797</a>                     processPacket(pipeline(), allocHandle, datagramSize, packet);
 <a class="jxr_linenumber" name="L798" href="#L798">798</a>                     <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
 <a class="jxr_linenumber" name="L799" href="#L799">799</a>                 }
-<a class="jxr_linenumber" name="L800" href="#L800">800</a>             }
-<a class="jxr_linenumber" name="L801" href="#L801">801</a>             <em class="jxr_comment">// Its important that we process all received data out of the NativeDatagramPacketArray</em>
-<a class="jxr_linenumber" name="L802" href="#L802">802</a>             <em class="jxr_comment">// before we call fireChannelRead(...). This is because the user may call flush()</em>
-<a class="jxr_linenumber" name="L803" href="#L803">803</a>             <em class="jxr_comment">// in a channelRead(...) method and so may re-use the NativeDatagramPacketArray again.</em>
-<a class="jxr_linenumber" name="L804" href="#L804">804</a>             datagramPackets = RecyclableArrayList.newInstance();
-<a class="jxr_linenumber" name="L805" href="#L805">805</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; received; i++) {
-<a class="jxr_linenumber" name="L806" href="#L806">806</a>                 <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a> packet = packets[i].newDatagramPacket(byteBuf, local);
-<a class="jxr_linenumber" name="L807" href="#L807">807</a> 
-<a class="jxr_linenumber" name="L808" href="#L808">808</a>                 <em class="jxr_comment">// We need to skip the maximum datagram size to ensure we have the readerIndex in the right position</em>
-<a class="jxr_linenumber" name="L809" href="#L809">809</a>                 <em class="jxr_comment">// for the next one.</em>
-<a class="jxr_linenumber" name="L810" href="#L810">810</a>                 byteBuf.skipBytes(datagramSize);
-<a class="jxr_linenumber" name="L811" href="#L811">811</a>                 addDatagramPacketToOut(packet, datagramPackets);
-<a class="jxr_linenumber" name="L812" href="#L812">812</a>             }
-<a class="jxr_linenumber" name="L813" href="#L813">813</a>             <em class="jxr_comment">// Ass we did use readRetainedSlice(...) before we should now release the byteBuf and null it out.</em>
-<a class="jxr_linenumber" name="L814" href="#L814">814</a>             byteBuf.release();
-<a class="jxr_linenumber" name="L815" href="#L815">815</a>             byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L816" href="#L816">816</a> 
-<a class="jxr_linenumber" name="L817" href="#L817">817</a>             processPacketList(pipeline(), allocHandle, bytesReceived, datagramPackets);
-<a class="jxr_linenumber" name="L818" href="#L818">818</a>             datagramPackets.recycle();
-<a class="jxr_linenumber" name="L819" href="#L819">819</a>             datagramPackets = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L820" href="#L820">820</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L821" href="#L821">821</a>         } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L822" href="#L822">822</a>             releaseAndRecycle(byteBuf, datagramPackets);
-<a class="jxr_linenumber" name="L823" href="#L823">823</a>         }
-<a class="jxr_linenumber" name="L824" href="#L824">824</a>     }
-<a class="jxr_linenumber" name="L825" href="#L825">825</a> 
-<a class="jxr_linenumber" name="L826" href="#L826">826</a>     <strong class="jxr_keyword">private</strong> <a name="NativeDatagramPacketArray" href="../../../../io/netty/channel/epoll/NativeDatagramPacketArray.html#NativeDatagramPacketArray">NativeDatagramPacketArray</a> cleanDatagramPacketArray() {
-<a class="jxr_linenumber" name="L827" href="#L827">827</a>         <strong class="jxr_keyword">return</strong> ((<a name="NativeArrays" href="../../../../io/netty/channel/epoll/NativeArrays.html#NativeArrays">NativeArrays</a>) registration().attachment()).cleanDatagramPacketArray();
-<a class="jxr_linenumber" name="L828" href="#L828">828</a>     }
-<a class="jxr_linenumber" name="L829" href="#L829">829</a> }
+<a class="jxr_linenumber" name="L800" href="#L800">800</a>                 <em class="jxr_comment">// A UDP_GRO batch is split up by the loop below, which creates the packet again, so release this one.</em>
+<a class="jxr_linenumber" name="L801" href="#L801">801</a>                 packet.release();
+<a class="jxr_linenumber" name="L802" href="#L802">802</a>             }
+<a class="jxr_linenumber" name="L803" href="#L803">803</a>             <em class="jxr_comment">// Its important that we process all received data out of the NativeDatagramPacketArray</em>
+<a class="jxr_linenumber" name="L804" href="#L804">804</a>             <em class="jxr_comment">// before we call fireChannelRead(...). This is because the user may call flush()</em>
+<a class="jxr_linenumber" name="L805" href="#L805">805</a>             <em class="jxr_comment">// in a channelRead(...) method and so may re-use the NativeDatagramPacketArray again.</em>
+<a class="jxr_linenumber" name="L806" href="#L806">806</a>             datagramPackets = RecyclableArrayList.newInstance();
+<a class="jxr_linenumber" name="L807" href="#L807">807</a>             <strong class="jxr_keyword">for</strong> (<strong class="jxr_keyword">int</strong> i = 0; i &lt; received; i++) {
+<a class="jxr_linenumber" name="L808" href="#L808">808</a>                 <a name="DatagramPacket" href="../../../../io/netty/channel/socket/DatagramPacket.html#DatagramPacket">DatagramPacket</a> packet = packets[i].newDatagramPacket(byteBuf, local);
+<a class="jxr_linenumber" name="L809" href="#L809">809</a> 
+<a class="jxr_linenumber" name="L810" href="#L810">810</a>                 <em class="jxr_comment">// We need to skip the maximum datagram size to ensure we have the readerIndex in the right position</em>
+<a class="jxr_linenumber" name="L811" href="#L811">811</a>                 <em class="jxr_comment">// for the next one.</em>
+<a class="jxr_linenumber" name="L812" href="#L812">812</a>                 byteBuf.skipBytes(datagramSize);
+<a class="jxr_linenumber" name="L813" href="#L813">813</a>                 addDatagramPacketToOut(packet, datagramPackets);
+<a class="jxr_linenumber" name="L814" href="#L814">814</a>             }
+<a class="jxr_linenumber" name="L815" href="#L815">815</a>             <em class="jxr_comment">// Ass we did use readRetainedSlice(...) before we should now release the byteBuf and null it out.</em>
+<a class="jxr_linenumber" name="L816" href="#L816">816</a>             byteBuf.release();
+<a class="jxr_linenumber" name="L817" href="#L817">817</a>             byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L818" href="#L818">818</a> 
+<a class="jxr_linenumber" name="L819" href="#L819">819</a>             processPacketList(pipeline(), allocHandle, bytesReceived, datagramPackets);
+<a class="jxr_linenumber" name="L820" href="#L820">820</a>             datagramPackets.recycle();
+<a class="jxr_linenumber" name="L821" href="#L821">821</a>             datagramPackets = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L822" href="#L822">822</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L823" href="#L823">823</a>         } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L824" href="#L824">824</a>             releaseAndRecycle(byteBuf, datagramPackets);
+<a class="jxr_linenumber" name="L825" href="#L825">825</a>         }
+<a class="jxr_linenumber" name="L826" href="#L826">826</a>     }
+<a class="jxr_linenumber" name="L827" href="#L827">827</a> 
+<a class="jxr_linenumber" name="L828" href="#L828">828</a>     <strong class="jxr_keyword">private</strong> <a name="NativeDatagramPacketArray" href="../../../../io/netty/channel/epoll/NativeDatagramPacketArray.html#NativeDatagramPacketArray">NativeDatagramPacketArray</a> cleanDatagramPacketArray() {
+<a class="jxr_linenumber" name="L829" href="#L829">829</a>         <strong class="jxr_keyword">return</strong> ((<a name="NativeArrays" href="../../../../io/netty/channel/epoll/NativeArrays.html#NativeArrays">NativeArrays</a>) registration().attachment()).cleanDatagramPacketArray();
+<a class="jxr_linenumber" name="L830" href="#L830">830</a>     }
+<a class="jxr_linenumber" name="L831" href="#L831">831</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

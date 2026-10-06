@@ -2467,7 +2467,7 @@
 <a class="jxr_linenumber" name="L2459" href="#L2459">2459</a>                 ByteBuffer dstBuffer = rootParent()._internalNioBuffer();
 <a class="jxr_linenumber" name="L2460" href="#L2460">2460</a>                 PlatformDependent.absolutePut(dstBuffer, idx(index), src, srcIndex, length);
 <a class="jxr_linenumber" name="L2461" href="#L2461">2461</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2462" href="#L2462">2462</a>                 ByteBuffer tmp = (ByteBuffer) internalNioBuffer().clear().position(index);
+<a class="jxr_linenumber" name="L2462" href="#L2462">2462</a>                 ByteBuffer tmp = (ByteBuffer) internalNioBuffer().position(index);
 <a class="jxr_linenumber" name="L2463" href="#L2463">2463</a>                 tmp.put(src, srcIndex, length);
 <a class="jxr_linenumber" name="L2464" href="#L2464">2464</a>             }
 <a class="jxr_linenumber" name="L2465" href="#L2465">2465</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
@@ -2494,203 +2494,208 @@
 <a class="jxr_linenumber" name="L2486" href="#L2486">2486</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> setBytes(<strong class="jxr_keyword">int</strong> index, ByteBuffer src) {
 <a class="jxr_linenumber" name="L2487" href="#L2487">2487</a>             <strong class="jxr_keyword">int</strong> length = src.remaining();
 <a class="jxr_linenumber" name="L2488" href="#L2488">2488</a>             checkIndex(index, length);
-<a class="jxr_linenumber" name="L2489" href="#L2489">2489</a>             ByteBuffer tmp = internalNioBuffer();
-<a class="jxr_linenumber" name="L2490" href="#L2490">2490</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.javaVersion() &gt;= 16) {
-<a class="jxr_linenumber" name="L2491" href="#L2491">2491</a>                 <strong class="jxr_keyword">int</strong> offset = src.position();
-<a class="jxr_linenumber" name="L2492" href="#L2492">2492</a>                 PlatformDependent.absolutePut(tmp, index, src, offset, length);
-<a class="jxr_linenumber" name="L2493" href="#L2493">2493</a>                 src.position(offset + length);
-<a class="jxr_linenumber" name="L2494" href="#L2494">2494</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2495" href="#L2495">2495</a>                 tmp.position(index);
-<a class="jxr_linenumber" name="L2496" href="#L2496">2496</a>                 tmp.put(src);
-<a class="jxr_linenumber" name="L2497" href="#L2497">2497</a>             }
-<a class="jxr_linenumber" name="L2498" href="#L2498">2498</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L2499" href="#L2499">2499</a>         }
-<a class="jxr_linenumber" name="L2500" href="#L2500">2500</a> 
-<a class="jxr_linenumber" name="L2501" href="#L2501">2501</a>         @Override
-<a class="jxr_linenumber" name="L2502" href="#L2502">2502</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> getBytes(<strong class="jxr_keyword">int</strong> index, OutputStream out, <strong class="jxr_keyword">int</strong> length)
-<a class="jxr_linenumber" name="L2503" href="#L2503">2503</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L2504" href="#L2504">2504</a>             checkIndex(index, length);
-<a class="jxr_linenumber" name="L2505" href="#L2505">2505</a>             <strong class="jxr_keyword">if</strong> (length != 0) {
-<a class="jxr_linenumber" name="L2506" href="#L2506">2506</a>                 ByteBuffer tmp = internalNioBuffer();
-<a class="jxr_linenumber" name="L2507" href="#L2507">2507</a>                 ByteBufUtil.readBytes(alloc(), tmp.hasArray() ? tmp : tmp.duplicate(), index, length, out);
-<a class="jxr_linenumber" name="L2508" href="#L2508">2508</a>             }
-<a class="jxr_linenumber" name="L2509" href="#L2509">2509</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L2510" href="#L2510">2510</a>         }
-<a class="jxr_linenumber" name="L2511" href="#L2511">2511</a> 
-<a class="jxr_linenumber" name="L2512" href="#L2512">2512</a>         @Override
-<a class="jxr_linenumber" name="L2513" href="#L2513">2513</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getBytes(<strong class="jxr_keyword">int</strong> index, GatheringByteChannel out, <strong class="jxr_keyword">int</strong> length)
-<a class="jxr_linenumber" name="L2514" href="#L2514">2514</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L2515" href="#L2515">2515</a>             ByteBuffer buf = internalNioBuffer().duplicate();
-<a class="jxr_linenumber" name="L2516" href="#L2516">2516</a>             buf.clear().position(index).limit(index + length);
-<a class="jxr_linenumber" name="L2517" href="#L2517">2517</a>             <strong class="jxr_keyword">return</strong> out.write(buf);
-<a class="jxr_linenumber" name="L2518" href="#L2518">2518</a>         }
-<a class="jxr_linenumber" name="L2519" href="#L2519">2519</a> 
-<a class="jxr_linenumber" name="L2520" href="#L2520">2520</a>         @Override
-<a class="jxr_linenumber" name="L2521" href="#L2521">2521</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getBytes(<strong class="jxr_keyword">int</strong> index, FileChannel out, <strong class="jxr_keyword">long</strong> position, <strong class="jxr_keyword">int</strong> length)
-<a class="jxr_linenumber" name="L2522" href="#L2522">2522</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L2523" href="#L2523">2523</a>             ByteBuffer buf = internalNioBuffer().duplicate();
-<a class="jxr_linenumber" name="L2524" href="#L2524">2524</a>             buf.clear().position(index).limit(index + length);
-<a class="jxr_linenumber" name="L2525" href="#L2525">2525</a>             <strong class="jxr_keyword">return</strong> out.write(buf, position);
-<a class="jxr_linenumber" name="L2526" href="#L2526">2526</a>         }
-<a class="jxr_linenumber" name="L2527" href="#L2527">2527</a> 
-<a class="jxr_linenumber" name="L2528" href="#L2528">2528</a>         @Override
-<a class="jxr_linenumber" name="L2529" href="#L2529">2529</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setBytes(<strong class="jxr_keyword">int</strong> index, InputStream in, <strong class="jxr_keyword">int</strong> length)
-<a class="jxr_linenumber" name="L2530" href="#L2530">2530</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L2531" href="#L2531">2531</a>             checkIndex(index, length);
-<a class="jxr_linenumber" name="L2532" href="#L2532">2532</a>             <strong class="jxr_keyword">final</strong> <a name="AbstractByteBuf" href="../../../io/netty/buffer/AbstractByteBuf.html#AbstractByteBuf">AbstractByteBuf</a> rootParent = rootParent();
-<a class="jxr_linenumber" name="L2533" href="#L2533">2533</a>             <strong class="jxr_keyword">if</strong> (rootParent.hasArray()) {
-<a class="jxr_linenumber" name="L2534" href="#L2534">2534</a>                 <strong class="jxr_keyword">return</strong> rootParent.setBytes(idx(index), in, length);
-<a class="jxr_linenumber" name="L2535" href="#L2535">2535</a>             }
-<a class="jxr_linenumber" name="L2536" href="#L2536">2536</a>             byte[] tmp = ByteBufUtil.threadLocalTempArray(length);
-<a class="jxr_linenumber" name="L2537" href="#L2537">2537</a>             <strong class="jxr_keyword">int</strong> readBytes = in.read(tmp, 0, length);
-<a class="jxr_linenumber" name="L2538" href="#L2538">2538</a>             <strong class="jxr_keyword">if</strong> (readBytes &lt;= 0) {
-<a class="jxr_linenumber" name="L2539" href="#L2539">2539</a>                 <strong class="jxr_keyword">return</strong> readBytes;
+<a class="jxr_linenumber" name="L2489" href="#L2489">2489</a>             <strong class="jxr_keyword">if</strong> (src == tmpNioBuf) {
+<a class="jxr_linenumber" name="L2490" href="#L2490">2490</a>                 src = src.duplicate();
+<a class="jxr_linenumber" name="L2491" href="#L2491">2491</a>             }
+<a class="jxr_linenumber" name="L2492" href="#L2492">2492</a>             ByteBuffer tmp = internalNioBuffer();
+<a class="jxr_linenumber" name="L2493" href="#L2493">2493</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.javaVersion() &gt;= 16) {
+<a class="jxr_linenumber" name="L2494" href="#L2494">2494</a>                 <strong class="jxr_keyword">int</strong> offset = src.position();
+<a class="jxr_linenumber" name="L2495" href="#L2495">2495</a>                 PlatformDependent.absolutePut(tmp, index, src, offset, length);
+<a class="jxr_linenumber" name="L2496" href="#L2496">2496</a>                 src.position(offset + length);
+<a class="jxr_linenumber" name="L2497" href="#L2497">2497</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2498" href="#L2498">2498</a>                 tmp.position(index);
+<a class="jxr_linenumber" name="L2499" href="#L2499">2499</a>                 tmp.put(src);
+<a class="jxr_linenumber" name="L2500" href="#L2500">2500</a>             }
+<a class="jxr_linenumber" name="L2501" href="#L2501">2501</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L2502" href="#L2502">2502</a>         }
+<a class="jxr_linenumber" name="L2503" href="#L2503">2503</a> 
+<a class="jxr_linenumber" name="L2504" href="#L2504">2504</a>         @Override
+<a class="jxr_linenumber" name="L2505" href="#L2505">2505</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> getBytes(<strong class="jxr_keyword">int</strong> index, OutputStream out, <strong class="jxr_keyword">int</strong> length)
+<a class="jxr_linenumber" name="L2506" href="#L2506">2506</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L2507" href="#L2507">2507</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2508" href="#L2508">2508</a>             <strong class="jxr_keyword">if</strong> (length != 0) {
+<a class="jxr_linenumber" name="L2509" href="#L2509">2509</a>                 ByteBuffer tmp = internalNioBuffer();
+<a class="jxr_linenumber" name="L2510" href="#L2510">2510</a>                 ByteBufUtil.readBytes(alloc(), tmp.hasArray() ? tmp : tmp.duplicate(), index, length, out);
+<a class="jxr_linenumber" name="L2511" href="#L2511">2511</a>             }
+<a class="jxr_linenumber" name="L2512" href="#L2512">2512</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L2513" href="#L2513">2513</a>         }
+<a class="jxr_linenumber" name="L2514" href="#L2514">2514</a> 
+<a class="jxr_linenumber" name="L2515" href="#L2515">2515</a>         @Override
+<a class="jxr_linenumber" name="L2516" href="#L2516">2516</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getBytes(<strong class="jxr_keyword">int</strong> index, GatheringByteChannel out, <strong class="jxr_keyword">int</strong> length)
+<a class="jxr_linenumber" name="L2517" href="#L2517">2517</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L2518" href="#L2518">2518</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2519" href="#L2519">2519</a>             ByteBuffer buf = internalNioBuffer().duplicate();
+<a class="jxr_linenumber" name="L2520" href="#L2520">2520</a>             buf.position(index).limit(index + length);
+<a class="jxr_linenumber" name="L2521" href="#L2521">2521</a>             <strong class="jxr_keyword">return</strong> out.write(buf);
+<a class="jxr_linenumber" name="L2522" href="#L2522">2522</a>         }
+<a class="jxr_linenumber" name="L2523" href="#L2523">2523</a> 
+<a class="jxr_linenumber" name="L2524" href="#L2524">2524</a>         @Override
+<a class="jxr_linenumber" name="L2525" href="#L2525">2525</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> getBytes(<strong class="jxr_keyword">int</strong> index, FileChannel out, <strong class="jxr_keyword">long</strong> position, <strong class="jxr_keyword">int</strong> length)
+<a class="jxr_linenumber" name="L2526" href="#L2526">2526</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L2527" href="#L2527">2527</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2528" href="#L2528">2528</a>             ByteBuffer buf = internalNioBuffer().duplicate();
+<a class="jxr_linenumber" name="L2529" href="#L2529">2529</a>             buf.position(index).limit(index + length);
+<a class="jxr_linenumber" name="L2530" href="#L2530">2530</a>             <strong class="jxr_keyword">return</strong> out.write(buf, position);
+<a class="jxr_linenumber" name="L2531" href="#L2531">2531</a>         }
+<a class="jxr_linenumber" name="L2532" href="#L2532">2532</a> 
+<a class="jxr_linenumber" name="L2533" href="#L2533">2533</a>         @Override
+<a class="jxr_linenumber" name="L2534" href="#L2534">2534</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setBytes(<strong class="jxr_keyword">int</strong> index, InputStream in, <strong class="jxr_keyword">int</strong> length)
+<a class="jxr_linenumber" name="L2535" href="#L2535">2535</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L2536" href="#L2536">2536</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2537" href="#L2537">2537</a>             <strong class="jxr_keyword">final</strong> <a name="AbstractByteBuf" href="../../../io/netty/buffer/AbstractByteBuf.html#AbstractByteBuf">AbstractByteBuf</a> rootParent = rootParent();
+<a class="jxr_linenumber" name="L2538" href="#L2538">2538</a>             <strong class="jxr_keyword">if</strong> (rootParent.hasArray()) {
+<a class="jxr_linenumber" name="L2539" href="#L2539">2539</a>                 <strong class="jxr_keyword">return</strong> rootParent.setBytes(idx(index), in, length);
 <a class="jxr_linenumber" name="L2540" href="#L2540">2540</a>             }
-<a class="jxr_linenumber" name="L2541" href="#L2541">2541</a>             setBytes(index, tmp, 0, readBytes);
-<a class="jxr_linenumber" name="L2542" href="#L2542">2542</a>             <strong class="jxr_keyword">return</strong> readBytes;
-<a class="jxr_linenumber" name="L2543" href="#L2543">2543</a>         }
-<a class="jxr_linenumber" name="L2544" href="#L2544">2544</a> 
-<a class="jxr_linenumber" name="L2545" href="#L2545">2545</a>         @Override
-<a class="jxr_linenumber" name="L2546" href="#L2546">2546</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setBytes(<strong class="jxr_keyword">int</strong> index, ScatteringByteChannel in, <strong class="jxr_keyword">int</strong> length)
-<a class="jxr_linenumber" name="L2547" href="#L2547">2547</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L2548" href="#L2548">2548</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L2549" href="#L2549">2549</a>                 <strong class="jxr_keyword">return</strong> in.read(internalNioBuffer(index, length));
-<a class="jxr_linenumber" name="L2550" href="#L2550">2550</a>             } <strong class="jxr_keyword">catch</strong> (ClosedChannelException ignored) {
-<a class="jxr_linenumber" name="L2551" href="#L2551">2551</a>                 <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="L2552" href="#L2552">2552</a>             }
-<a class="jxr_linenumber" name="L2553" href="#L2553">2553</a>         }
-<a class="jxr_linenumber" name="L2554" href="#L2554">2554</a> 
-<a class="jxr_linenumber" name="L2555" href="#L2555">2555</a>         @Override
-<a class="jxr_linenumber" name="L2556" href="#L2556">2556</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setBytes(<strong class="jxr_keyword">int</strong> index, FileChannel in, <strong class="jxr_keyword">long</strong> position, <strong class="jxr_keyword">int</strong> length)
-<a class="jxr_linenumber" name="L2557" href="#L2557">2557</a>                 <strong class="jxr_keyword">throws</strong> IOException {
-<a class="jxr_linenumber" name="L2558" href="#L2558">2558</a>             <strong class="jxr_keyword">try</strong> {
-<a class="jxr_linenumber" name="L2559" href="#L2559">2559</a>                 <strong class="jxr_keyword">return</strong> in.read(internalNioBuffer(index, length), position);
-<a class="jxr_linenumber" name="L2560" href="#L2560">2560</a>             } <strong class="jxr_keyword">catch</strong> (ClosedChannelException ignored) {
-<a class="jxr_linenumber" name="L2561" href="#L2561">2561</a>                 <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="L2562" href="#L2562">2562</a>             }
-<a class="jxr_linenumber" name="L2563" href="#L2563">2563</a>         }
-<a class="jxr_linenumber" name="L2564" href="#L2564">2564</a> 
-<a class="jxr_linenumber" name="L2565" href="#L2565">2565</a>         @Override
-<a class="jxr_linenumber" name="L2566" href="#L2566">2566</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setCharSequence(<strong class="jxr_keyword">int</strong> index, CharSequence sequence, Charset charset) {
-<a class="jxr_linenumber" name="L2567" href="#L2567">2567</a>             <strong class="jxr_keyword">return</strong> setCharSequence0(index, sequence, charset, false);
+<a class="jxr_linenumber" name="L2541" href="#L2541">2541</a>             byte[] tmp = ByteBufUtil.threadLocalTempArray(length);
+<a class="jxr_linenumber" name="L2542" href="#L2542">2542</a>             <strong class="jxr_keyword">int</strong> readBytes = in.read(tmp, 0, length);
+<a class="jxr_linenumber" name="L2543" href="#L2543">2543</a>             <strong class="jxr_keyword">if</strong> (readBytes &lt;= 0) {
+<a class="jxr_linenumber" name="L2544" href="#L2544">2544</a>                 <strong class="jxr_keyword">return</strong> readBytes;
+<a class="jxr_linenumber" name="L2545" href="#L2545">2545</a>             }
+<a class="jxr_linenumber" name="L2546" href="#L2546">2546</a>             setBytes(index, tmp, 0, readBytes);
+<a class="jxr_linenumber" name="L2547" href="#L2547">2547</a>             <strong class="jxr_keyword">return</strong> readBytes;
+<a class="jxr_linenumber" name="L2548" href="#L2548">2548</a>         }
+<a class="jxr_linenumber" name="L2549" href="#L2549">2549</a> 
+<a class="jxr_linenumber" name="L2550" href="#L2550">2550</a>         @Override
+<a class="jxr_linenumber" name="L2551" href="#L2551">2551</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setBytes(<strong class="jxr_keyword">int</strong> index, ScatteringByteChannel in, <strong class="jxr_keyword">int</strong> length)
+<a class="jxr_linenumber" name="L2552" href="#L2552">2552</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L2553" href="#L2553">2553</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L2554" href="#L2554">2554</a>                 <strong class="jxr_keyword">return</strong> in.read(internalNioBuffer(index, length));
+<a class="jxr_linenumber" name="L2555" href="#L2555">2555</a>             } <strong class="jxr_keyword">catch</strong> (ClosedChannelException ignored) {
+<a class="jxr_linenumber" name="L2556" href="#L2556">2556</a>                 <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="L2557" href="#L2557">2557</a>             }
+<a class="jxr_linenumber" name="L2558" href="#L2558">2558</a>         }
+<a class="jxr_linenumber" name="L2559" href="#L2559">2559</a> 
+<a class="jxr_linenumber" name="L2560" href="#L2560">2560</a>         @Override
+<a class="jxr_linenumber" name="L2561" href="#L2561">2561</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setBytes(<strong class="jxr_keyword">int</strong> index, FileChannel in, <strong class="jxr_keyword">long</strong> position, <strong class="jxr_keyword">int</strong> length)
+<a class="jxr_linenumber" name="L2562" href="#L2562">2562</a>                 <strong class="jxr_keyword">throws</strong> IOException {
+<a class="jxr_linenumber" name="L2563" href="#L2563">2563</a>             <strong class="jxr_keyword">try</strong> {
+<a class="jxr_linenumber" name="L2564" href="#L2564">2564</a>                 <strong class="jxr_keyword">return</strong> in.read(internalNioBuffer(index, length), position);
+<a class="jxr_linenumber" name="L2565" href="#L2565">2565</a>             } <strong class="jxr_keyword">catch</strong> (ClosedChannelException ignored) {
+<a class="jxr_linenumber" name="L2566" href="#L2566">2566</a>                 <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="L2567" href="#L2567">2567</a>             }
 <a class="jxr_linenumber" name="L2568" href="#L2568">2568</a>         }
 <a class="jxr_linenumber" name="L2569" href="#L2569">2569</a> 
-<a class="jxr_linenumber" name="L2570" href="#L2570">2570</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> setCharSequence0(<strong class="jxr_keyword">int</strong> index, CharSequence sequence, Charset charset, <strong class="jxr_keyword">boolean</strong> expand) {
-<a class="jxr_linenumber" name="L2571" href="#L2571">2571</a>             <strong class="jxr_keyword">if</strong> (charset.equals(CharsetUtil.UTF_8)) {
-<a class="jxr_linenumber" name="L2572" href="#L2572">2572</a>                 <strong class="jxr_keyword">int</strong> length = ByteBufUtil.utf8MaxBytes(sequence);
-<a class="jxr_linenumber" name="L2573" href="#L2573">2573</a>                 <strong class="jxr_keyword">if</strong> (expand) {
-<a class="jxr_linenumber" name="L2574" href="#L2574">2574</a>                     ensureWritable0(length);
-<a class="jxr_linenumber" name="L2575" href="#L2575">2575</a>                     checkIndex0(index, length);
-<a class="jxr_linenumber" name="L2576" href="#L2576">2576</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2577" href="#L2577">2577</a>                     checkIndex(index, length);
-<a class="jxr_linenumber" name="L2578" href="#L2578">2578</a>                 }
-<a class="jxr_linenumber" name="L2579" href="#L2579">2579</a>                 <strong class="jxr_keyword">return</strong> ByteBufUtil.writeUtf8(<strong class="jxr_keyword">this</strong>, index, length, sequence, sequence.length());
-<a class="jxr_linenumber" name="L2580" href="#L2580">2580</a>             }
-<a class="jxr_linenumber" name="L2581" href="#L2581">2581</a>             <strong class="jxr_keyword">if</strong> (charset.equals(CharsetUtil.US_ASCII) || charset.equals(CharsetUtil.ISO_8859_1)) {
-<a class="jxr_linenumber" name="L2582" href="#L2582">2582</a>                 <strong class="jxr_keyword">int</strong> length = sequence.length();
-<a class="jxr_linenumber" name="L2583" href="#L2583">2583</a>                 <strong class="jxr_keyword">if</strong> (expand) {
-<a class="jxr_linenumber" name="L2584" href="#L2584">2584</a>                     ensureWritable0(length);
-<a class="jxr_linenumber" name="L2585" href="#L2585">2585</a>                     checkIndex0(index, length);
-<a class="jxr_linenumber" name="L2586" href="#L2586">2586</a>                 } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L2587" href="#L2587">2587</a>                     checkIndex(index, length);
-<a class="jxr_linenumber" name="L2588" href="#L2588">2588</a>                 }
-<a class="jxr_linenumber" name="L2589" href="#L2589">2589</a>                 <strong class="jxr_keyword">return</strong> ByteBufUtil.writeAscii(<strong class="jxr_keyword">this</strong>, index, sequence, length);
-<a class="jxr_linenumber" name="L2590" href="#L2590">2590</a>             }
-<a class="jxr_linenumber" name="L2591" href="#L2591">2591</a>             byte[] bytes = sequence.toString().getBytes(charset);
-<a class="jxr_linenumber" name="L2592" href="#L2592">2592</a>             <strong class="jxr_keyword">if</strong> (expand) {
-<a class="jxr_linenumber" name="L2593" href="#L2593">2593</a>                 ensureWritable0(bytes.length);
-<a class="jxr_linenumber" name="L2594" href="#L2594">2594</a>                 <em class="jxr_comment">// setBytes(...) will take care of checking the indices.</em>
+<a class="jxr_linenumber" name="L2570" href="#L2570">2570</a>         @Override
+<a class="jxr_linenumber" name="L2571" href="#L2571">2571</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> setCharSequence(<strong class="jxr_keyword">int</strong> index, CharSequence sequence, Charset charset) {
+<a class="jxr_linenumber" name="L2572" href="#L2572">2572</a>             <strong class="jxr_keyword">return</strong> setCharSequence0(index, sequence, charset, false);
+<a class="jxr_linenumber" name="L2573" href="#L2573">2573</a>         }
+<a class="jxr_linenumber" name="L2574" href="#L2574">2574</a> 
+<a class="jxr_linenumber" name="L2575" href="#L2575">2575</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> setCharSequence0(<strong class="jxr_keyword">int</strong> index, CharSequence sequence, Charset charset, <strong class="jxr_keyword">boolean</strong> expand) {
+<a class="jxr_linenumber" name="L2576" href="#L2576">2576</a>             <strong class="jxr_keyword">if</strong> (charset.equals(CharsetUtil.UTF_8)) {
+<a class="jxr_linenumber" name="L2577" href="#L2577">2577</a>                 <strong class="jxr_keyword">int</strong> length = ByteBufUtil.utf8MaxBytes(sequence);
+<a class="jxr_linenumber" name="L2578" href="#L2578">2578</a>                 <strong class="jxr_keyword">if</strong> (expand) {
+<a class="jxr_linenumber" name="L2579" href="#L2579">2579</a>                     ensureWritable0(length);
+<a class="jxr_linenumber" name="L2580" href="#L2580">2580</a>                     checkIndex0(index, length);
+<a class="jxr_linenumber" name="L2581" href="#L2581">2581</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2582" href="#L2582">2582</a>                     checkIndex(index, length);
+<a class="jxr_linenumber" name="L2583" href="#L2583">2583</a>                 }
+<a class="jxr_linenumber" name="L2584" href="#L2584">2584</a>                 <strong class="jxr_keyword">return</strong> ByteBufUtil.writeUtf8(<strong class="jxr_keyword">this</strong>, index, length, sequence, sequence.length());
+<a class="jxr_linenumber" name="L2585" href="#L2585">2585</a>             }
+<a class="jxr_linenumber" name="L2586" href="#L2586">2586</a>             <strong class="jxr_keyword">if</strong> (charset.equals(CharsetUtil.US_ASCII) || charset.equals(CharsetUtil.ISO_8859_1)) {
+<a class="jxr_linenumber" name="L2587" href="#L2587">2587</a>                 <strong class="jxr_keyword">int</strong> length = sequence.length();
+<a class="jxr_linenumber" name="L2588" href="#L2588">2588</a>                 <strong class="jxr_keyword">if</strong> (expand) {
+<a class="jxr_linenumber" name="L2589" href="#L2589">2589</a>                     ensureWritable0(length);
+<a class="jxr_linenumber" name="L2590" href="#L2590">2590</a>                     checkIndex0(index, length);
+<a class="jxr_linenumber" name="L2591" href="#L2591">2591</a>                 } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L2592" href="#L2592">2592</a>                     checkIndex(index, length);
+<a class="jxr_linenumber" name="L2593" href="#L2593">2593</a>                 }
+<a class="jxr_linenumber" name="L2594" href="#L2594">2594</a>                 <strong class="jxr_keyword">return</strong> ByteBufUtil.writeAscii(<strong class="jxr_keyword">this</strong>, index, sequence, length);
 <a class="jxr_linenumber" name="L2595" href="#L2595">2595</a>             }
-<a class="jxr_linenumber" name="L2596" href="#L2596">2596</a>             setBytes(index, bytes);
-<a class="jxr_linenumber" name="L2597" href="#L2597">2597</a>             <strong class="jxr_keyword">return</strong> bytes.length;
-<a class="jxr_linenumber" name="L2598" href="#L2598">2598</a>         }
-<a class="jxr_linenumber" name="L2599" href="#L2599">2599</a> 
-<a class="jxr_linenumber" name="L2600" href="#L2600">2600</a>         @Override
-<a class="jxr_linenumber" name="L2601" href="#L2601">2601</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> writeCharSequence(CharSequence sequence, Charset charset) {
-<a class="jxr_linenumber" name="L2602" href="#L2602">2602</a>             <strong class="jxr_keyword">int</strong> written = setCharSequence0(writerIndex, sequence, charset, <strong class="jxr_keyword">true</strong>);
-<a class="jxr_linenumber" name="L2603" href="#L2603">2603</a>             writerIndex += written;
-<a class="jxr_linenumber" name="L2604" href="#L2604">2604</a>             <strong class="jxr_keyword">return</strong> written;
-<a class="jxr_linenumber" name="L2605" href="#L2605">2605</a>         }
-<a class="jxr_linenumber" name="L2606" href="#L2606">2606</a> 
-<a class="jxr_linenumber" name="L2607" href="#L2607">2607</a>         @Override
-<a class="jxr_linenumber" name="L2608" href="#L2608">2608</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> forEachByte(<strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length, <a name="ByteProcessor" href="../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> processor) {
-<a class="jxr_linenumber" name="L2609" href="#L2609">2609</a>             checkIndex(index, length);
-<a class="jxr_linenumber" name="L2610" href="#L2610">2610</a>             <strong class="jxr_keyword">int</strong> ret = rootParent().forEachByte(idx(index), length, processor);
-<a class="jxr_linenumber" name="L2611" href="#L2611">2611</a>             <strong class="jxr_keyword">return</strong> forEachResult(ret);
-<a class="jxr_linenumber" name="L2612" href="#L2612">2612</a>         }
-<a class="jxr_linenumber" name="L2613" href="#L2613">2613</a> 
-<a class="jxr_linenumber" name="L2614" href="#L2614">2614</a>         @Override
-<a class="jxr_linenumber" name="L2615" href="#L2615">2615</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> forEachByteDesc(<strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length, <a name="ByteProcessor" href="../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> processor) {
-<a class="jxr_linenumber" name="L2616" href="#L2616">2616</a>             checkIndex(index, length);
-<a class="jxr_linenumber" name="L2617" href="#L2617">2617</a>             <strong class="jxr_keyword">int</strong> ret = rootParent().forEachByteDesc(idx(index), length, processor);
-<a class="jxr_linenumber" name="L2618" href="#L2618">2618</a>             <strong class="jxr_keyword">return</strong> forEachResult(ret);
-<a class="jxr_linenumber" name="L2619" href="#L2619">2619</a>         }
-<a class="jxr_linenumber" name="L2620" href="#L2620">2620</a> 
-<a class="jxr_linenumber" name="L2621" href="#L2621">2621</a>         @Override
-<a class="jxr_linenumber" name="L2622" href="#L2622">2622</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> setZero(<strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L2623" href="#L2623">2623</a>             checkIndex(index, length);
-<a class="jxr_linenumber" name="L2624" href="#L2624">2624</a>             rootParent().setZero(idx(index), length);
-<a class="jxr_linenumber" name="L2625" href="#L2625">2625</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L2626" href="#L2626">2626</a>         }
-<a class="jxr_linenumber" name="L2627" href="#L2627">2627</a> 
-<a class="jxr_linenumber" name="L2628" href="#L2628">2628</a>         @Override
-<a class="jxr_linenumber" name="L2629" href="#L2629">2629</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> writeZero(<strong class="jxr_keyword">int</strong> length) {
-<a class="jxr_linenumber" name="L2630" href="#L2630">2630</a>             ensureWritable(length);
-<a class="jxr_linenumber" name="L2631" href="#L2631">2631</a>             rootParent().setZero(idx(writerIndex), length);
-<a class="jxr_linenumber" name="L2632" href="#L2632">2632</a>             writerIndex += length;
-<a class="jxr_linenumber" name="L2633" href="#L2633">2633</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
-<a class="jxr_linenumber" name="L2634" href="#L2634">2634</a>         }
-<a class="jxr_linenumber" name="L2635" href="#L2635">2635</a> 
-<a class="jxr_linenumber" name="L2636" href="#L2636">2636</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> forEachResult(<strong class="jxr_keyword">int</strong> ret) {
-<a class="jxr_linenumber" name="L2637" href="#L2637">2637</a>             <strong class="jxr_keyword">if</strong> (ret &lt; startIndex) {
-<a class="jxr_linenumber" name="L2638" href="#L2638">2638</a>                 <strong class="jxr_keyword">return</strong> -1;
-<a class="jxr_linenumber" name="L2639" href="#L2639">2639</a>             }
-<a class="jxr_linenumber" name="L2640" href="#L2640">2640</a>             <strong class="jxr_keyword">return</strong> ret - startIndex;
-<a class="jxr_linenumber" name="L2641" href="#L2641">2641</a>         }
-<a class="jxr_linenumber" name="L2642" href="#L2642">2642</a> 
-<a class="jxr_linenumber" name="L2643" href="#L2643">2643</a>         @Override
-<a class="jxr_linenumber" name="L2644" href="#L2644">2644</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isContiguous() {
-<a class="jxr_linenumber" name="L2645" href="#L2645">2645</a>             <strong class="jxr_keyword">return</strong> rootParent().isContiguous();
+<a class="jxr_linenumber" name="L2596" href="#L2596">2596</a>             byte[] bytes = sequence.toString().getBytes(charset);
+<a class="jxr_linenumber" name="L2597" href="#L2597">2597</a>             <strong class="jxr_keyword">if</strong> (expand) {
+<a class="jxr_linenumber" name="L2598" href="#L2598">2598</a>                 ensureWritable0(bytes.length);
+<a class="jxr_linenumber" name="L2599" href="#L2599">2599</a>                 <em class="jxr_comment">// setBytes(...) will take care of checking the indices.</em>
+<a class="jxr_linenumber" name="L2600" href="#L2600">2600</a>             }
+<a class="jxr_linenumber" name="L2601" href="#L2601">2601</a>             setBytes(index, bytes);
+<a class="jxr_linenumber" name="L2602" href="#L2602">2602</a>             <strong class="jxr_keyword">return</strong> bytes.length;
+<a class="jxr_linenumber" name="L2603" href="#L2603">2603</a>         }
+<a class="jxr_linenumber" name="L2604" href="#L2604">2604</a> 
+<a class="jxr_linenumber" name="L2605" href="#L2605">2605</a>         @Override
+<a class="jxr_linenumber" name="L2606" href="#L2606">2606</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> writeCharSequence(CharSequence sequence, Charset charset) {
+<a class="jxr_linenumber" name="L2607" href="#L2607">2607</a>             <strong class="jxr_keyword">int</strong> written = setCharSequence0(writerIndex, sequence, charset, <strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L2608" href="#L2608">2608</a>             writerIndex += written;
+<a class="jxr_linenumber" name="L2609" href="#L2609">2609</a>             <strong class="jxr_keyword">return</strong> written;
+<a class="jxr_linenumber" name="L2610" href="#L2610">2610</a>         }
+<a class="jxr_linenumber" name="L2611" href="#L2611">2611</a> 
+<a class="jxr_linenumber" name="L2612" href="#L2612">2612</a>         @Override
+<a class="jxr_linenumber" name="L2613" href="#L2613">2613</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> forEachByte(<strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length, <a name="ByteProcessor" href="../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> processor) {
+<a class="jxr_linenumber" name="L2614" href="#L2614">2614</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2615" href="#L2615">2615</a>             <strong class="jxr_keyword">int</strong> ret = rootParent().forEachByte(idx(index), length, processor);
+<a class="jxr_linenumber" name="L2616" href="#L2616">2616</a>             <strong class="jxr_keyword">return</strong> forEachResult(ret);
+<a class="jxr_linenumber" name="L2617" href="#L2617">2617</a>         }
+<a class="jxr_linenumber" name="L2618" href="#L2618">2618</a> 
+<a class="jxr_linenumber" name="L2619" href="#L2619">2619</a>         @Override
+<a class="jxr_linenumber" name="L2620" href="#L2620">2620</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">int</strong> forEachByteDesc(<strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length, <a name="ByteProcessor" href="../../../io/netty/util/ByteProcessor.html#ByteProcessor">ByteProcessor</a> processor) {
+<a class="jxr_linenumber" name="L2621" href="#L2621">2621</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2622" href="#L2622">2622</a>             <strong class="jxr_keyword">int</strong> ret = rootParent().forEachByteDesc(idx(index), length, processor);
+<a class="jxr_linenumber" name="L2623" href="#L2623">2623</a>             <strong class="jxr_keyword">return</strong> forEachResult(ret);
+<a class="jxr_linenumber" name="L2624" href="#L2624">2624</a>         }
+<a class="jxr_linenumber" name="L2625" href="#L2625">2625</a> 
+<a class="jxr_linenumber" name="L2626" href="#L2626">2626</a>         @Override
+<a class="jxr_linenumber" name="L2627" href="#L2627">2627</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> setZero(<strong class="jxr_keyword">int</strong> index, <strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L2628" href="#L2628">2628</a>             checkIndex(index, length);
+<a class="jxr_linenumber" name="L2629" href="#L2629">2629</a>             rootParent().setZero(idx(index), length);
+<a class="jxr_linenumber" name="L2630" href="#L2630">2630</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L2631" href="#L2631">2631</a>         }
+<a class="jxr_linenumber" name="L2632" href="#L2632">2632</a> 
+<a class="jxr_linenumber" name="L2633" href="#L2633">2633</a>         @Override
+<a class="jxr_linenumber" name="L2634" href="#L2634">2634</a>         <strong class="jxr_keyword">public</strong> <a name="ByteBuf" href="../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> writeZero(<strong class="jxr_keyword">int</strong> length) {
+<a class="jxr_linenumber" name="L2635" href="#L2635">2635</a>             ensureWritable(length);
+<a class="jxr_linenumber" name="L2636" href="#L2636">2636</a>             rootParent().setZero(idx(writerIndex), length);
+<a class="jxr_linenumber" name="L2637" href="#L2637">2637</a>             writerIndex += length;
+<a class="jxr_linenumber" name="L2638" href="#L2638">2638</a>             <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">this</strong>;
+<a class="jxr_linenumber" name="L2639" href="#L2639">2639</a>         }
+<a class="jxr_linenumber" name="L2640" href="#L2640">2640</a> 
+<a class="jxr_linenumber" name="L2641" href="#L2641">2641</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> forEachResult(<strong class="jxr_keyword">int</strong> ret) {
+<a class="jxr_linenumber" name="L2642" href="#L2642">2642</a>             <strong class="jxr_keyword">if</strong> (ret &lt; startIndex) {
+<a class="jxr_linenumber" name="L2643" href="#L2643">2643</a>                 <strong class="jxr_keyword">return</strong> -1;
+<a class="jxr_linenumber" name="L2644" href="#L2644">2644</a>             }
+<a class="jxr_linenumber" name="L2645" href="#L2645">2645</a>             <strong class="jxr_keyword">return</strong> ret - startIndex;
 <a class="jxr_linenumber" name="L2646" href="#L2646">2646</a>         }
 <a class="jxr_linenumber" name="L2647" href="#L2647">2647</a> 
-<a class="jxr_linenumber" name="L2648" href="#L2648">2648</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> idx(<strong class="jxr_keyword">int</strong> index) {
-<a class="jxr_linenumber" name="L2649" href="#L2649">2649</a>             <strong class="jxr_keyword">return</strong> index + startIndex;
-<a class="jxr_linenumber" name="L2650" href="#L2650">2650</a>         }
-<a class="jxr_linenumber" name="L2651" href="#L2651">2651</a> 
-<a class="jxr_linenumber" name="L2652" href="#L2652">2652</a>         @Override
-<a class="jxr_linenumber" name="L2653" href="#L2653">2653</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> deallocate() {
-<a class="jxr_linenumber" name="L2654" href="#L2654">2654</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.isJfrEnabled() &amp;&amp; FreeBufferEvent.isEventEnabled()) {
-<a class="jxr_linenumber" name="L2655" href="#L2655">2655</a>                 <a name="FreeBufferEvent" href="../../../io/netty/buffer/FreeBufferEvent.html#FreeBufferEvent">FreeBufferEvent</a> event = <strong class="jxr_keyword">new</strong> <a name="FreeBufferEvent" href="../../../io/netty/buffer/FreeBufferEvent.html#FreeBufferEvent">FreeBufferEvent</a>();
-<a class="jxr_linenumber" name="L2656" href="#L2656">2656</a>                 <strong class="jxr_keyword">if</strong> (event.shouldCommit()) {
-<a class="jxr_linenumber" name="L2657" href="#L2657">2657</a>                     event.fill(<strong class="jxr_keyword">this</strong>, AdaptiveByteBufAllocator.<strong class="jxr_keyword">class</strong>);
-<a class="jxr_linenumber" name="L2658" href="#L2658">2658</a>                     event.commit();
-<a class="jxr_linenumber" name="L2659" href="#L2659">2659</a>                 }
-<a class="jxr_linenumber" name="L2660" href="#L2660">2660</a>             }
-<a class="jxr_linenumber" name="L2661" href="#L2661">2661</a> 
-<a class="jxr_linenumber" name="L2662" href="#L2662">2662</a>             <strong class="jxr_keyword">if</strong> (chunk != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L2663" href="#L2663">2663</a>                 chunk.releaseSegment(startIndex, maxFastCapacity);
-<a class="jxr_linenumber" name="L2664" href="#L2664">2664</a>             }
-<a class="jxr_linenumber" name="L2665" href="#L2665">2665</a>             tmpNioBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L2666" href="#L2666">2666</a>             chunk = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L2667" href="#L2667">2667</a>             rootParent = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L2668" href="#L2668">2668</a>             handle.unguardedRecycle(<strong class="jxr_keyword">this</strong>);
-<a class="jxr_linenumber" name="L2669" href="#L2669">2669</a>         }
-<a class="jxr_linenumber" name="L2670" href="#L2670">2670</a>     }
-<a class="jxr_linenumber" name="L2671" href="#L2671">2671</a> 
-<a class="jxr_linenumber" name="L2672" href="#L2672">2672</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L2673" href="#L2673">2673</a> <em class="jxr_javadoccomment">     * The strategy for how {@link AdaptivePoolingAllocator} should allocate chunk buffers.</em>
-<a class="jxr_linenumber" name="L2674" href="#L2674">2674</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L2675" href="#L2675">2675</a>     <strong class="jxr_keyword">interface</strong> ChunkAllocator {
-<a class="jxr_linenumber" name="L2676" href="#L2676">2676</a>         <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L2677" href="#L2677">2677</a> <em class="jxr_javadoccomment">         * Allocate a buffer for a chunk. This can be any kind of {@link AbstractByteBuf} implementation.</em>
-<a class="jxr_linenumber" name="L2678" href="#L2678">2678</a> <em class="jxr_javadoccomment">         *</em>
-<a class="jxr_linenumber" name="L2679" href="#L2679">2679</a> <em class="jxr_javadoccomment">         * @param initialCapacity The initial capacity of the returned {@link AbstractByteBuf}.</em>
-<a class="jxr_linenumber" name="L2680" href="#L2680">2680</a> <em class="jxr_javadoccomment">         * @param maxCapacity     The maximum capacity of the returned {@link AbstractByteBuf}.</em>
-<a class="jxr_linenumber" name="L2681" href="#L2681">2681</a> <em class="jxr_javadoccomment">         * @return The buffer that represents the chunk memory.</em>
-<a class="jxr_linenumber" name="L2682" href="#L2682">2682</a> <em class="jxr_javadoccomment">         */</em>
-<a class="jxr_linenumber" name="L2683" href="#L2683">2683</a>         <a name="AbstractByteBuf" href="../../../io/netty/buffer/AbstractByteBuf.html#AbstractByteBuf">AbstractByteBuf</a> allocate(<strong class="jxr_keyword">int</strong> initialCapacity, <strong class="jxr_keyword">int</strong> maxCapacity);
-<a class="jxr_linenumber" name="L2684" href="#L2684">2684</a>     }
-<a class="jxr_linenumber" name="L2685" href="#L2685">2685</a> }
+<a class="jxr_linenumber" name="L2648" href="#L2648">2648</a>         @Override
+<a class="jxr_linenumber" name="L2649" href="#L2649">2649</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">boolean</strong> isContiguous() {
+<a class="jxr_linenumber" name="L2650" href="#L2650">2650</a>             <strong class="jxr_keyword">return</strong> rootParent().isContiguous();
+<a class="jxr_linenumber" name="L2651" href="#L2651">2651</a>         }
+<a class="jxr_linenumber" name="L2652" href="#L2652">2652</a> 
+<a class="jxr_linenumber" name="L2653" href="#L2653">2653</a>         <strong class="jxr_keyword">private</strong> <strong class="jxr_keyword">int</strong> idx(<strong class="jxr_keyword">int</strong> index) {
+<a class="jxr_linenumber" name="L2654" href="#L2654">2654</a>             <strong class="jxr_keyword">return</strong> index + startIndex;
+<a class="jxr_linenumber" name="L2655" href="#L2655">2655</a>         }
+<a class="jxr_linenumber" name="L2656" href="#L2656">2656</a> 
+<a class="jxr_linenumber" name="L2657" href="#L2657">2657</a>         @Override
+<a class="jxr_linenumber" name="L2658" href="#L2658">2658</a>         <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">void</strong> deallocate() {
+<a class="jxr_linenumber" name="L2659" href="#L2659">2659</a>             <strong class="jxr_keyword">if</strong> (PlatformDependent.isJfrEnabled() &amp;&amp; FreeBufferEvent.isEventEnabled()) {
+<a class="jxr_linenumber" name="L2660" href="#L2660">2660</a>                 <a name="FreeBufferEvent" href="../../../io/netty/buffer/FreeBufferEvent.html#FreeBufferEvent">FreeBufferEvent</a> event = <strong class="jxr_keyword">new</strong> <a name="FreeBufferEvent" href="../../../io/netty/buffer/FreeBufferEvent.html#FreeBufferEvent">FreeBufferEvent</a>();
+<a class="jxr_linenumber" name="L2661" href="#L2661">2661</a>                 <strong class="jxr_keyword">if</strong> (event.shouldCommit()) {
+<a class="jxr_linenumber" name="L2662" href="#L2662">2662</a>                     event.fill(<strong class="jxr_keyword">this</strong>, AdaptiveByteBufAllocator.<strong class="jxr_keyword">class</strong>);
+<a class="jxr_linenumber" name="L2663" href="#L2663">2663</a>                     event.commit();
+<a class="jxr_linenumber" name="L2664" href="#L2664">2664</a>                 }
+<a class="jxr_linenumber" name="L2665" href="#L2665">2665</a>             }
+<a class="jxr_linenumber" name="L2666" href="#L2666">2666</a> 
+<a class="jxr_linenumber" name="L2667" href="#L2667">2667</a>             <strong class="jxr_keyword">if</strong> (chunk != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L2668" href="#L2668">2668</a>                 chunk.releaseSegment(startIndex, maxFastCapacity);
+<a class="jxr_linenumber" name="L2669" href="#L2669">2669</a>             }
+<a class="jxr_linenumber" name="L2670" href="#L2670">2670</a>             tmpNioBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L2671" href="#L2671">2671</a>             chunk = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L2672" href="#L2672">2672</a>             rootParent = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L2673" href="#L2673">2673</a>             handle.unguardedRecycle(<strong class="jxr_keyword">this</strong>);
+<a class="jxr_linenumber" name="L2674" href="#L2674">2674</a>         }
+<a class="jxr_linenumber" name="L2675" href="#L2675">2675</a>     }
+<a class="jxr_linenumber" name="L2676" href="#L2676">2676</a> 
+<a class="jxr_linenumber" name="L2677" href="#L2677">2677</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L2678" href="#L2678">2678</a> <em class="jxr_javadoccomment">     * The strategy for how {@link AdaptivePoolingAllocator} should allocate chunk buffers.</em>
+<a class="jxr_linenumber" name="L2679" href="#L2679">2679</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L2680" href="#L2680">2680</a>     <strong class="jxr_keyword">interface</strong> ChunkAllocator {
+<a class="jxr_linenumber" name="L2681" href="#L2681">2681</a>         <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L2682" href="#L2682">2682</a> <em class="jxr_javadoccomment">         * Allocate a buffer for a chunk. This can be any kind of {@link AbstractByteBuf} implementation.</em>
+<a class="jxr_linenumber" name="L2683" href="#L2683">2683</a> <em class="jxr_javadoccomment">         *</em>
+<a class="jxr_linenumber" name="L2684" href="#L2684">2684</a> <em class="jxr_javadoccomment">         * @param initialCapacity The initial capacity of the returned {@link AbstractByteBuf}.</em>
+<a class="jxr_linenumber" name="L2685" href="#L2685">2685</a> <em class="jxr_javadoccomment">         * @param maxCapacity     The maximum capacity of the returned {@link AbstractByteBuf}.</em>
+<a class="jxr_linenumber" name="L2686" href="#L2686">2686</a> <em class="jxr_javadoccomment">         * @return The buffer that represents the chunk memory.</em>
+<a class="jxr_linenumber" name="L2687" href="#L2687">2687</a> <em class="jxr_javadoccomment">         */</em>
+<a class="jxr_linenumber" name="L2688" href="#L2688">2688</a>         <a name="AbstractByteBuf" href="../../../io/netty/buffer/AbstractByteBuf.html#AbstractByteBuf">AbstractByteBuf</a> allocate(<strong class="jxr_keyword">int</strong> initialCapacity, <strong class="jxr_keyword">int</strong> maxCapacity);
+<a class="jxr_linenumber" name="L2689" href="#L2689">2689</a>     }
+<a class="jxr_linenumber" name="L2690" href="#L2690">2690</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

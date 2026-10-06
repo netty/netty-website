@@ -249,39 +249,44 @@
 <a class="jxr_linenumber" name="L241" href="#L241">241</a>                 <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise = ctx.newPromise();
 <a class="jxr_linenumber" name="L242" href="#L242">242</a>                 closeSent(promise);
 <a class="jxr_linenumber" name="L243" href="#L243">243</a>                 handshaker.close(ctx, (<a name="CloseWebSocketFrame" href="../../../../../../io/netty/handler/codec/http/websocketx/CloseWebSocketFrame.html#CloseWebSocketFrame">CloseWebSocketFrame</a>) frame, promise);
-<a class="jxr_linenumber" name="L244" href="#L244">244</a>             } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L245" href="#L245">245</a>                 ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-<a class="jxr_linenumber" name="L246" href="#L246">246</a>             }
-<a class="jxr_linenumber" name="L247" href="#L247">247</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L248" href="#L248">248</a>         }
-<a class="jxr_linenumber" name="L249" href="#L249">249</a>         <strong class="jxr_keyword">super</strong>.decode(ctx, frame, out);
-<a class="jxr_linenumber" name="L250" href="#L250">250</a>     }
-<a class="jxr_linenumber" name="L251" href="#L251">251</a> 
-<a class="jxr_linenumber" name="L252" href="#L252">252</a>     @Override
-<a class="jxr_linenumber" name="L253" href="#L253">253</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a> buildHandshakeException(String message) {
-<a class="jxr_linenumber" name="L254" href="#L254">254</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a>(message);
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>                 <em class="jxr_comment">// handshaker.close() bypasses this handler's own write()/flush() overrides (it writes</em>
+<a class="jxr_linenumber" name="L245" href="#L245">245</a>                 <em class="jxr_comment">// directly on ctx), so the force-close timeout must be armed explicitly here. Doing so</em>
+<a class="jxr_linenumber" name="L246" href="#L246">246</a>                 <em class="jxr_comment">// after the close0() write-and-flush attempt above mirrors close()'s ordering and avoids</em>
+<a class="jxr_linenumber" name="L247" href="#L247">247</a>                 <em class="jxr_comment">// racing a write that completes synchronously.</em>
+<a class="jxr_linenumber" name="L248" href="#L248">248</a>                 applyCloseSentTimeout(ctx);
+<a class="jxr_linenumber" name="L249" href="#L249">249</a>             } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L250" href="#L250">250</a>                 ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+<a class="jxr_linenumber" name="L251" href="#L251">251</a>             }
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>         }
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>         <strong class="jxr_keyword">super</strong>.decode(ctx, frame, out);
 <a class="jxr_linenumber" name="L255" href="#L255">255</a>     }
 <a class="jxr_linenumber" name="L256" href="#L256">256</a> 
 <a class="jxr_linenumber" name="L257" href="#L257">257</a>     @Override
-<a class="jxr_linenumber" name="L258" href="#L258">258</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L259" href="#L259">259</a>         <strong class="jxr_keyword">if</strong> (cause instanceof <a name="WebSocketHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html#WebSocketHandshakeException">WebSocketHandshakeException</a>) {
-<a class="jxr_linenumber" name="L260" href="#L260">260</a>             <a name="FullHttpResponse" href="../../../../../../io/netty/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> response = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpResponse" href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html#DefaultFullHttpResponse">DefaultFullHttpResponse</a>(
-<a class="jxr_linenumber" name="L261" href="#L261">261</a>                     HTTP_1_1, HttpResponseStatus.BAD_REQUEST, Unpooled.wrappedBuffer(cause.getMessage().getBytes()));
-<a class="jxr_linenumber" name="L262" href="#L262">262</a>             ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-<a class="jxr_linenumber" name="L263" href="#L263">263</a>         } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>             ctx.fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="L265" href="#L265">265</a>             ctx.close();
-<a class="jxr_linenumber" name="L266" href="#L266">266</a>         }
-<a class="jxr_linenumber" name="L267" href="#L267">267</a>     }
-<a class="jxr_linenumber" name="L268" href="#L268">268</a> 
-<a class="jxr_linenumber" name="L269" href="#L269">269</a>     <strong class="jxr_keyword">static</strong> <a name="WebSocketServerHandshaker" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshaker.html#WebSocketServerHandshaker">WebSocketServerHandshaker</a> getHandshaker(<a name="Channel" href="../../../../../../io/netty/channel/Channel.html#Channel">Channel</a> channel) {
-<a class="jxr_linenumber" name="L270" href="#L270">270</a>         <strong class="jxr_keyword">return</strong> channel.attr(HANDSHAKER_ATTR_KEY).get();
-<a class="jxr_linenumber" name="L271" href="#L271">271</a>     }
-<a class="jxr_linenumber" name="L272" href="#L272">272</a> 
-<a class="jxr_linenumber" name="L273" href="#L273">273</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setHandshaker(<a name="Channel" href="../../../../../../io/netty/channel/Channel.html#Channel">Channel</a> channel, <a name="WebSocketServerHandshaker" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshaker.html#WebSocketServerHandshaker">WebSocketServerHandshaker</a> handshaker) {
-<a class="jxr_linenumber" name="L274" href="#L274">274</a>         channel.attr(HANDSHAKER_ATTR_KEY).set(handshaker);
-<a class="jxr_linenumber" name="L275" href="#L275">275</a>     }
-<a class="jxr_linenumber" name="L276" href="#L276">276</a> }
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a> buildHandshakeException(String message) {
+<a class="jxr_linenumber" name="L259" href="#L259">259</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketServerHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshakeException.html#WebSocketServerHandshakeException">WebSocketServerHandshakeException</a>(message);
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>     }
+<a class="jxr_linenumber" name="L261" href="#L261">261</a> 
+<a class="jxr_linenumber" name="L262" href="#L262">262</a>     @Override
+<a class="jxr_linenumber" name="L263" href="#L263">263</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>         <strong class="jxr_keyword">if</strong> (cause instanceof <a name="WebSocketHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html#WebSocketHandshakeException">WebSocketHandshakeException</a>) {
+<a class="jxr_linenumber" name="L265" href="#L265">265</a>             <a name="FullHttpResponse" href="../../../../../../io/netty/handler/codec/http/FullHttpResponse.html#FullHttpResponse">FullHttpResponse</a> response = <strong class="jxr_keyword">new</strong> <a name="DefaultFullHttpResponse" href="../../../../../../io/netty/handler/codec/http/DefaultFullHttpResponse.html#DefaultFullHttpResponse">DefaultFullHttpResponse</a>(
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>                     HTTP_1_1, HttpResponseStatus.BAD_REQUEST, Unpooled.wrappedBuffer(cause.getMessage().getBytes()));
+<a class="jxr_linenumber" name="L267" href="#L267">267</a>             ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>         } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>             ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="L270" href="#L270">270</a>             ctx.close();
+<a class="jxr_linenumber" name="L271" href="#L271">271</a>         }
+<a class="jxr_linenumber" name="L272" href="#L272">272</a>     }
+<a class="jxr_linenumber" name="L273" href="#L273">273</a> 
+<a class="jxr_linenumber" name="L274" href="#L274">274</a>     <strong class="jxr_keyword">static</strong> <a name="WebSocketServerHandshaker" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshaker.html#WebSocketServerHandshaker">WebSocketServerHandshaker</a> getHandshaker(<a name="Channel" href="../../../../../../io/netty/channel/Channel.html#Channel">Channel</a> channel) {
+<a class="jxr_linenumber" name="L275" href="#L275">275</a>         <strong class="jxr_keyword">return</strong> channel.attr(HANDSHAKER_ATTR_KEY).get();
+<a class="jxr_linenumber" name="L276" href="#L276">276</a>     }
+<a class="jxr_linenumber" name="L277" href="#L277">277</a> 
+<a class="jxr_linenumber" name="L278" href="#L278">278</a>     <strong class="jxr_keyword">static</strong> <strong class="jxr_keyword">void</strong> setHandshaker(<a name="Channel" href="../../../../../../io/netty/channel/Channel.html#Channel">Channel</a> channel, <a name="WebSocketServerHandshaker" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketServerHandshaker.html#WebSocketServerHandshaker">WebSocketServerHandshaker</a> handshaker) {
+<a class="jxr_linenumber" name="L279" href="#L279">279</a>         channel.attr(HANDSHAKER_ATTR_KEY).set(handshaker);
+<a class="jxr_linenumber" name="L280" href="#L280">280</a>     }
+<a class="jxr_linenumber" name="L281" href="#L281">281</a> }
 </pre>
 <hr/>
 <div id="footer">Copyright &#169; 2008&#x2013;2026 <a href="https://netty.io/">The Netty Project</a>. All rights reserved.</div>

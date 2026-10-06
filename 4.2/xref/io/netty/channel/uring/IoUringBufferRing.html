@@ -222,86 +222,118 @@
 <a class="jxr_linenumber" name="L214" href="#L214">214</a> <em class="jxr_javadoccomment">     * @param read          the number of bytes that could be read. This value might be larger then what a single</em>
 <a class="jxr_linenumber" name="L215" href="#L215">215</a> <em class="jxr_javadoccomment">     *                      {@link ByteBuf} can hold. Because of this, the caller should call</em>
 <a class="jxr_linenumber" name="L216" href="#L216">216</a> <em class="jxr_javadoccomment">     *                      @link #useBuffer(short, int, boolean)} in a loop (obtaining the next bid to use by calling</em>
-<a class="jxr_linenumber" name="L217" href="#L217">217</a> <em class="jxr_javadoccomment">     *                      {@link #nextBid(short)}) until all buffers could be obtained.</em>
-<a class="jxr_linenumber" name="L218" href="#L218">218</a> <em class="jxr_javadoccomment">     * @return              the buffer.</em>
-<a class="jxr_linenumber" name="L219" href="#L219">219</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L220" href="#L220">220</a>     <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> useBuffer(<strong class="jxr_keyword">short</strong> bid, <strong class="jxr_keyword">int</strong> read, <strong class="jxr_keyword">boolean</strong> more) {
-<a class="jxr_linenumber" name="L221" href="#L221">221</a>         assert read &gt; 0;
-<a class="jxr_linenumber" name="L222" href="#L222">222</a>         <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = buffers[bid];
-<a class="jxr_linenumber" name="L223" href="#L223">223</a> 
-<a class="jxr_linenumber" name="L224" href="#L224">224</a>         allocator.lastBytesRead(byteBuf.writableBytes(), read);
-<a class="jxr_linenumber" name="L225" href="#L225">225</a>         <em class="jxr_comment">// We always slice so the user will not mess up things later.</em>
-<a class="jxr_linenumber" name="L226" href="#L226">226</a>         <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer = byteBuf.retainedSlice(byteBuf.writerIndex(), read);
-<a class="jxr_linenumber" name="L227" href="#L227">227</a>         byteBuf.writerIndex(byteBuf.writerIndex() + read);
-<a class="jxr_linenumber" name="L228" href="#L228">228</a> 
-<a class="jxr_linenumber" name="L229" href="#L229">229</a>         <strong class="jxr_keyword">if</strong> (incremental &amp;&amp; more &amp;&amp; byteBuf.isWritable()) {
-<a class="jxr_linenumber" name="L230" href="#L230">230</a>             <em class="jxr_comment">// The buffer will be used later again, just slice out what we did read so far.</em>
-<a class="jxr_linenumber" name="L231" href="#L231">231</a>             <strong class="jxr_keyword">return</strong> buffer;
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>         }
+<a class="jxr_linenumber" name="L217" href="#L217">217</a> <em class="jxr_javadoccomment">     *                      {@link #nextBid(short, int)} with an {@link #allocatedBuffers()} snapshot taken before</em>
+<a class="jxr_linenumber" name="L218" href="#L218">218</a> <em class="jxr_javadoccomment">     *                      this call) until all buffers could be obtained.</em>
+<a class="jxr_linenumber" name="L219" href="#L219">219</a> <em class="jxr_javadoccomment">     * @return              the buffer.</em>
+<a class="jxr_linenumber" name="L220" href="#L220">220</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L221" href="#L221">221</a>     <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> useBuffer(<strong class="jxr_keyword">short</strong> bid, <strong class="jxr_keyword">int</strong> read, <strong class="jxr_keyword">boolean</strong> more) {
+<a class="jxr_linenumber" name="L222" href="#L222">222</a>         assert read &gt; 0;
+<a class="jxr_linenumber" name="L223" href="#L223">223</a>         <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf = buffers[bid];
+<a class="jxr_linenumber" name="L224" href="#L224">224</a> 
+<a class="jxr_linenumber" name="L225" href="#L225">225</a>         allocator.lastBytesRead(byteBuf.writableBytes(), read);
+<a class="jxr_linenumber" name="L226" href="#L226">226</a>         <em class="jxr_comment">// The kernel might report a bundle total (RECVSEND_BUNDLE) that spans more than this single ring</em>
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>         <em class="jxr_comment">// entry can hold. Clamp to what this entry can actually provide; the caller loops over the</em>
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>         <em class="jxr_comment">// remainder using the next bid (see nextBid(short, int)).</em>
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>         <strong class="jxr_keyword">int</strong> len = Math.min(read, byteBuf.writableBytes());
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>         <em class="jxr_comment">// We always slice so the user will not mess up things later.</em>
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>         <a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> buffer = byteBuf.retainedSlice(byteBuf.writerIndex(), len);
+<a class="jxr_linenumber" name="L232" href="#L232">232</a>         byteBuf.writerIndex(byteBuf.writerIndex() + len);
 <a class="jxr_linenumber" name="L233" href="#L233">233</a> 
-<a class="jxr_linenumber" name="L234" href="#L234">234</a>         <em class="jxr_comment">// The buffer is considered to be used, null out the slot.</em>
-<a class="jxr_linenumber" name="L235" href="#L235">235</a>         buffers[bid] = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L236" href="#L236">236</a>         byteBuf.release();
-<a class="jxr_linenumber" name="L237" href="#L237">237</a>         <strong class="jxr_keyword">if</strong> (--usableBuffers == 0) {
-<a class="jxr_linenumber" name="L238" href="#L238">238</a>             <strong class="jxr_keyword">int</strong> numBuffers = allocatedBuffers;
-<a class="jxr_linenumber" name="L239" href="#L239">239</a>             <strong class="jxr_keyword">if</strong> (needExpand) {
-<a class="jxr_linenumber" name="L240" href="#L240">240</a>                 <em class="jxr_comment">// We did get a signal that our buffer ring did not have enough buffers, let's see if we</em>
-<a class="jxr_linenumber" name="L241" href="#L241">241</a>                 <em class="jxr_comment">// can grow it.</em>
-<a class="jxr_linenumber" name="L242" href="#L242">242</a>                 needExpand = false;
-<a class="jxr_linenumber" name="L243" href="#L243">243</a>                 numBuffers += calculateNextBufferBatch();
-<a class="jxr_linenumber" name="L244" href="#L244">244</a>             }
-<a class="jxr_linenumber" name="L245" href="#L245">245</a>             fill((<strong class="jxr_keyword">short</strong>) 0, numBuffers);
-<a class="jxr_linenumber" name="L246" href="#L246">246</a>             allocatedBuffers = numBuffers;
-<a class="jxr_linenumber" name="L247" href="#L247">247</a>             assert allocatedBuffers % 2 == 0;
-<a class="jxr_linenumber" name="L248" href="#L248">248</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!batchAllocation) {
-<a class="jxr_linenumber" name="L249" href="#L249">249</a>             <em class="jxr_comment">// If we don'T do bulk allocations to refill the buffer ring we need to fill in the just used bid again</em>
-<a class="jxr_linenumber" name="L250" href="#L250">250</a>             <em class="jxr_comment">// if we didn't get a signal that we need expansion.</em>
-<a class="jxr_linenumber" name="L251" href="#L251">251</a>             fill(bid);
-<a class="jxr_linenumber" name="L252" href="#L252">252</a> 
-<a class="jxr_linenumber" name="L253" href="#L253">253</a>             <strong class="jxr_keyword">if</strong> (needExpand &amp;&amp; lastGeneratedBid == bid) {
-<a class="jxr_linenumber" name="L254" href="#L254">254</a>                 <em class="jxr_comment">// We did get a signal that our buffer ring did not have enough buffers and we just did add the last</em>
-<a class="jxr_linenumber" name="L255" href="#L255">255</a>                 <em class="jxr_comment">// generated bid at the tail of the ring. Now its safe to grow the buffer ring and still guarantee</em>
-<a class="jxr_linenumber" name="L256" href="#L256">256</a>                 <em class="jxr_comment">// sequential ordering which is needed for our RECVSEND_BUNDLE implementation.</em>
-<a class="jxr_linenumber" name="L257" href="#L257">257</a>                 needExpand = false;
-<a class="jxr_linenumber" name="L258" href="#L258">258</a>                 <strong class="jxr_keyword">int</strong> numBuffers = calculateNextBufferBatch();
-<a class="jxr_linenumber" name="L259" href="#L259">259</a>                 fill((<strong class="jxr_keyword">short</strong>) (bid + 1), numBuffers);
-<a class="jxr_linenumber" name="L260" href="#L260">260</a>                 allocatedBuffers += numBuffers;
-<a class="jxr_linenumber" name="L261" href="#L261">261</a>                 assert allocatedBuffers % 2 == 0;
-<a class="jxr_linenumber" name="L262" href="#L262">262</a>             }
-<a class="jxr_linenumber" name="L263" href="#L263">263</a>         }
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>         <strong class="jxr_keyword">return</strong> buffer;
-<a class="jxr_linenumber" name="L265" href="#L265">265</a>     }
-<a class="jxr_linenumber" name="L266" href="#L266">266</a> 
-<a class="jxr_linenumber" name="L267" href="#L267">267</a>     <strong class="jxr_keyword">short</strong> nextBid(<strong class="jxr_keyword">short</strong> bid) {
-<a class="jxr_linenumber" name="L268" href="#L268">268</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">short</strong>) ((bid + 1) &amp; allocatedBuffers - 1);
-<a class="jxr_linenumber" name="L269" href="#L269">269</a>     }
-<a class="jxr_linenumber" name="L270" href="#L270">270</a> 
-<a class="jxr_linenumber" name="L271" href="#L271">271</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L272" href="#L272">272</a> <em class="jxr_javadoccomment">     * The group id that is assigned to this buffer ring.</em>
-<a class="jxr_linenumber" name="L273" href="#L273">273</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="L274" href="#L274">274</a> <em class="jxr_javadoccomment">     * @return group id.</em>
-<a class="jxr_linenumber" name="L275" href="#L275">275</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L276" href="#L276">276</a>     <strong class="jxr_keyword">short</strong> bufferGroupId() {
-<a class="jxr_linenumber" name="L277" href="#L277">277</a>         <strong class="jxr_keyword">return</strong> bufferGroupId;
-<a class="jxr_linenumber" name="L278" href="#L278">278</a>     }
-<a class="jxr_linenumber" name="L279" href="#L279">279</a> 
-<a class="jxr_linenumber" name="L280" href="#L280">280</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L281" href="#L281">281</a> <em class="jxr_javadoccomment">     * Close this {@link IoUringBufferRing}, using it after this method is called will lead to undefined behaviour.</em>
+<a class="jxr_linenumber" name="L234" href="#L234">234</a>         <strong class="jxr_keyword">if</strong> (incremental &amp;&amp; more &amp;&amp; byteBuf.isWritable()) {
+<a class="jxr_linenumber" name="L235" href="#L235">235</a>             <em class="jxr_comment">// The buffer will be used later again, just slice out what we did read so far.</em>
+<a class="jxr_linenumber" name="L236" href="#L236">236</a>             <strong class="jxr_keyword">return</strong> buffer;
+<a class="jxr_linenumber" name="L237" href="#L237">237</a>         }
+<a class="jxr_linenumber" name="L238" href="#L238">238</a> 
+<a class="jxr_linenumber" name="L239" href="#L239">239</a>         <em class="jxr_comment">// The buffer is considered to be used, null out the slot.</em>
+<a class="jxr_linenumber" name="L240" href="#L240">240</a>         buffers[bid] = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L241" href="#L241">241</a>         byteBuf.release();
+<a class="jxr_linenumber" name="L242" href="#L242">242</a>         <strong class="jxr_keyword">if</strong> (--usableBuffers == 0) {
+<a class="jxr_linenumber" name="L243" href="#L243">243</a>             <strong class="jxr_keyword">int</strong> numBuffers = allocatedBuffers;
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>             <strong class="jxr_keyword">if</strong> (needExpand) {
+<a class="jxr_linenumber" name="L245" href="#L245">245</a>                 <em class="jxr_comment">// We did get a signal that our buffer ring did not have enough buffers, let's see if we</em>
+<a class="jxr_linenumber" name="L246" href="#L246">246</a>                 <em class="jxr_comment">// can grow it.</em>
+<a class="jxr_linenumber" name="L247" href="#L247">247</a>                 needExpand = false;
+<a class="jxr_linenumber" name="L248" href="#L248">248</a>                 numBuffers += calculateNextBufferBatch();
+<a class="jxr_linenumber" name="L249" href="#L249">249</a>             }
+<a class="jxr_linenumber" name="L250" href="#L250">250</a>             fill((<strong class="jxr_keyword">short</strong>) 0, numBuffers);
+<a class="jxr_linenumber" name="L251" href="#L251">251</a>             allocatedBuffers = numBuffers;
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>             assert allocatedBuffers % 2 == 0;
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>         } <strong class="jxr_keyword">else</strong> <strong class="jxr_keyword">if</strong> (!batchAllocation) {
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>             <em class="jxr_comment">// If we don'T do bulk allocations to refill the buffer ring we need to fill in the just used bid again</em>
+<a class="jxr_linenumber" name="L255" href="#L255">255</a>             <em class="jxr_comment">// if we didn't get a signal that we need expansion.</em>
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>             fill(bid);
+<a class="jxr_linenumber" name="L257" href="#L257">257</a> 
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>             <strong class="jxr_keyword">if</strong> (needExpand &amp;&amp; lastGeneratedBid == bid) {
+<a class="jxr_linenumber" name="L259" href="#L259">259</a>                 <em class="jxr_comment">// We did get a signal that our buffer ring did not have enough buffers and we just did add the last</em>
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>                 <em class="jxr_comment">// generated bid at the tail of the ring. Now its safe to grow the buffer ring and still guarantee</em>
+<a class="jxr_linenumber" name="L261" href="#L261">261</a>                 <em class="jxr_comment">// sequential ordering which is needed for our RECVSEND_BUNDLE implementation.</em>
+<a class="jxr_linenumber" name="L262" href="#L262">262</a>                 needExpand = false;
+<a class="jxr_linenumber" name="L263" href="#L263">263</a>                 <strong class="jxr_keyword">int</strong> numBuffers = calculateNextBufferBatch();
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>                 fill((<strong class="jxr_keyword">short</strong>) (bid + 1), numBuffers);
+<a class="jxr_linenumber" name="L265" href="#L265">265</a>                 allocatedBuffers += numBuffers;
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>                 assert allocatedBuffers % 2 == 0;
+<a class="jxr_linenumber" name="L267" href="#L267">267</a>             }
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>         }
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>         <strong class="jxr_keyword">return</strong> buffer;
+<a class="jxr_linenumber" name="L270" href="#L270">270</a>     }
+<a class="jxr_linenumber" name="L271" href="#L271">271</a> 
+<a class="jxr_linenumber" name="L272" href="#L272">272</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L273" href="#L273">273</a> <em class="jxr_javadoccomment">     * The number of buffers that are currently allocated (and so posted) in this buffer ring. This value can</em>
+<a class="jxr_linenumber" name="L274" href="#L274">274</a> <em class="jxr_javadoccomment">     * change every time {@link #useBuffer(short, int, boolean)} is called as it might grow the ring. Because of</em>
+<a class="jxr_linenumber" name="L275" href="#L275">275</a> <em class="jxr_javadoccomment">     * this, callers that need to walk a sequence of consecutive buffer ids that belong to the same completion</em>
+<a class="jxr_linenumber" name="L276" href="#L276">276</a> <em class="jxr_javadoccomment">     * (for example a {@code IORING_RECVSEND_BUNDLE} completion) must capture this value &lt;strong&gt;before&lt;/strong&gt;</em>
+<a class="jxr_linenumber" name="L277" href="#L277">277</a> <em class="jxr_javadoccomment">     * calling {@link #useBuffer(short, int, boolean)} and pass it to {@link #nextBid(short, int)} afterwards,</em>
+<a class="jxr_linenumber" name="L278" href="#L278">278</a> <em class="jxr_javadoccomment">     * so the wrap-around is computed using the size of the ring as the kernel observed it when it produced the</em>
+<a class="jxr_linenumber" name="L279" href="#L279">279</a> <em class="jxr_javadoccomment">     * bundle, not the (possibly already grown) size afterwards.</em>
+<a class="jxr_linenumber" name="L280" href="#L280">280</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L281" href="#L281">281</a> <em class="jxr_javadoccomment">     * @return the number of allocated buffers.</em>
 <a class="jxr_linenumber" name="L282" href="#L282">282</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L283" href="#L283">283</a>     <strong class="jxr_keyword">void</strong> close() {
-<a class="jxr_linenumber" name="L284" href="#L284">284</a>         <strong class="jxr_keyword">if</strong> (closed) {
-<a class="jxr_linenumber" name="L285" href="#L285">285</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L286" href="#L286">286</a>         }
-<a class="jxr_linenumber" name="L287" href="#L287">287</a>         closed = <strong class="jxr_keyword">true</strong>;
-<a class="jxr_linenumber" name="L288" href="#L288">288</a>         Native.ioUringUnRegisterBufRing(ringFd, Buffer.memoryAddress(ioUringBufRing), entries, bufferGroupId);
-<a class="jxr_linenumber" name="L289" href="#L289">289</a>         <strong class="jxr_keyword">for</strong> (<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf : buffers) {
-<a class="jxr_linenumber" name="L290" href="#L290">290</a>             <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L291" href="#L291">291</a>                 byteBuf.release();
-<a class="jxr_linenumber" name="L292" href="#L292">292</a>             }
-<a class="jxr_linenumber" name="L293" href="#L293">293</a>         }
-<a class="jxr_linenumber" name="L294" href="#L294">294</a>         Arrays.fill(buffers, <strong class="jxr_keyword">null</strong>);
-<a class="jxr_linenumber" name="L295" href="#L295">295</a>     }
-<a class="jxr_linenumber" name="L296" href="#L296">296</a> }
+<a class="jxr_linenumber" name="L283" href="#L283">283</a>     <strong class="jxr_keyword">int</strong> allocatedBuffers() {
+<a class="jxr_linenumber" name="L284" href="#L284">284</a>         <strong class="jxr_keyword">return</strong> allocatedBuffers;
+<a class="jxr_linenumber" name="L285" href="#L285">285</a>     }
+<a class="jxr_linenumber" name="L286" href="#L286">286</a> 
+<a class="jxr_linenumber" name="L287" href="#L287">287</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L288" href="#L288">288</a> <em class="jxr_javadoccomment">     * Return the next buffer id that follows {@code bid} in ring order, wrapping around after</em>
+<a class="jxr_linenumber" name="L289" href="#L289">289</a> <em class="jxr_javadoccomment">     * {@code allocatedBuffers} ids.</em>
+<a class="jxr_linenumber" name="L290" href="#L290">290</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L291" href="#L291">291</a> <em class="jxr_javadoccomment">     * @param bid               the current buffer id.</em>
+<a class="jxr_linenumber" name="L292" href="#L292">292</a> <em class="jxr_javadoccomment">     * @param allocatedBuffers  the number of allocated buffers to use for the wrap-around computation. This should</em>
+<a class="jxr_linenumber" name="L293" href="#L293">293</a> <em class="jxr_javadoccomment">     *                          be a value obtained from {@link #allocatedBuffers()} &lt;strong&gt;before&lt;/strong&gt; the</em>
+<a class="jxr_linenumber" name="L294" href="#L294">294</a> <em class="jxr_javadoccomment">     *                          corresponding {@link #useBuffer(short, int, boolean)} call for {@code bid}, as that</em>
+<a class="jxr_linenumber" name="L295" href="#L295">295</a> <em class="jxr_javadoccomment">     *                          call might have grown the ring already.</em>
+<a class="jxr_linenumber" name="L296" href="#L296">296</a> <em class="jxr_javadoccomment">     * @return the next buffer id.</em>
+<a class="jxr_linenumber" name="L297" href="#L297">297</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L298" href="#L298">298</a>     <strong class="jxr_keyword">short</strong> nextBid(<strong class="jxr_keyword">short</strong> bid, <strong class="jxr_keyword">int</strong> allocatedBuffers) {
+<a class="jxr_linenumber" name="L299" href="#L299">299</a>         <em class="jxr_comment">// Use the real modulo (and not a bitmask) as allocatedBuffers is not guaranteed to be a power of two.</em>
+<a class="jxr_linenumber" name="L300" href="#L300">300</a>         <strong class="jxr_keyword">return</strong> (<strong class="jxr_keyword">short</strong>) ((bid + 1) % allocatedBuffers);
+<a class="jxr_linenumber" name="L301" href="#L301">301</a>     }
+<a class="jxr_linenumber" name="L302" href="#L302">302</a> 
+<a class="jxr_linenumber" name="L303" href="#L303">303</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L304" href="#L304">304</a> <em class="jxr_javadoccomment">     * The group id that is assigned to this buffer ring.</em>
+<a class="jxr_linenumber" name="L305" href="#L305">305</a> <em class="jxr_javadoccomment">     *</em>
+<a class="jxr_linenumber" name="L306" href="#L306">306</a> <em class="jxr_javadoccomment">     * @return group id.</em>
+<a class="jxr_linenumber" name="L307" href="#L307">307</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L308" href="#L308">308</a>     <strong class="jxr_keyword">short</strong> bufferGroupId() {
+<a class="jxr_linenumber" name="L309" href="#L309">309</a>         <strong class="jxr_keyword">return</strong> bufferGroupId;
+<a class="jxr_linenumber" name="L310" href="#L310">310</a>     }
+<a class="jxr_linenumber" name="L311" href="#L311">311</a> 
+<a class="jxr_linenumber" name="L312" href="#L312">312</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L313" href="#L313">313</a> <em class="jxr_javadoccomment">     * Close this {@link IoUringBufferRing}, using it after this method is called will lead to undefined behaviour.</em>
+<a class="jxr_linenumber" name="L314" href="#L314">314</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L315" href="#L315">315</a>     <strong class="jxr_keyword">void</strong> close() {
+<a class="jxr_linenumber" name="L316" href="#L316">316</a>         <strong class="jxr_keyword">if</strong> (closed) {
+<a class="jxr_linenumber" name="L317" href="#L317">317</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L318" href="#L318">318</a>         }
+<a class="jxr_linenumber" name="L319" href="#L319">319</a>         closed = <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L320" href="#L320">320</a>         Native.ioUringUnRegisterBufRing(ringFd, Buffer.memoryAddress(ioUringBufRing), entries, bufferGroupId);
+<a class="jxr_linenumber" name="L321" href="#L321">321</a>         <strong class="jxr_keyword">for</strong> (<a name="ByteBuf" href="../../../../io/netty/buffer/ByteBuf.html#ByteBuf">ByteBuf</a> byteBuf : buffers) {
+<a class="jxr_linenumber" name="L322" href="#L322">322</a>             <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L323" href="#L323">323</a>                 byteBuf.release();
+<a class="jxr_linenumber" name="L324" href="#L324">324</a>             }
+<a class="jxr_linenumber" name="L325" href="#L325">325</a>         }
+<a class="jxr_linenumber" name="L326" href="#L326">326</a>         Arrays.fill(buffers, <strong class="jxr_keyword">null</strong>);
+<a class="jxr_linenumber" name="L327" href="#L327">327</a>     }
+<a class="jxr_linenumber" name="L328" href="#L328">328</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>

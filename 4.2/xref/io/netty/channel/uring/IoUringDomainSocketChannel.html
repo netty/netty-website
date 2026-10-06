@@ -231,68 +231,73 @@
 <a class="jxr_linenumber" name="L223" href="#L223">223</a>                 <strong class="jxr_keyword">final</strong> <a name="ChannelPipeline" href="../../../../io/netty/channel/ChannelPipeline.html#ChannelPipeline">ChannelPipeline</a> pipeline = pipeline();
 <a class="jxr_linenumber" name="L224" href="#L224">224</a>                 <strong class="jxr_keyword">try</strong> {
 <a class="jxr_linenumber" name="L225" href="#L225">225</a>                     <strong class="jxr_keyword">int</strong> nativeCallResult = res &gt;= 0 ? res : Errors.ioResult(<span class="jxr_string">"io_uring recvmsg"</span>, res);
-<a class="jxr_linenumber" name="L226" href="#L226">226</a>                     <strong class="jxr_keyword">int</strong> nativeFd = readMsgHdrMemory.getScmRightsFd();
-<a class="jxr_linenumber" name="L227" href="#L227">227</a>                     allocHandle.lastBytesRead(nativeFd);
-<a class="jxr_linenumber" name="L228" href="#L228">228</a>                     allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="L229" href="#L229">229</a>                     pipeline.fireChannelRead(<strong class="jxr_keyword">new</strong> <a name="FileDescriptor" href="../../../../io/netty/channel/unix/FileDescriptor.html#FileDescriptor">FileDescriptor</a>(nativeFd));
-<a class="jxr_linenumber" name="L230" href="#L230">230</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable throwable) {
-<a class="jxr_linenumber" name="L231" href="#L231">231</a>                     handleReadException(pipeline, <strong class="jxr_keyword">null</strong>, throwable, false, allocHandle);
-<a class="jxr_linenumber" name="L232" href="#L232">232</a>                 } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L233" href="#L233">233</a>                     allocHandle.readComplete();
-<a class="jxr_linenumber" name="L234" href="#L234">234</a>                     pipeline.fireChannelReadComplete();
-<a class="jxr_linenumber" name="L235" href="#L235">235</a>                 }
-<a class="jxr_linenumber" name="L236" href="#L236">236</a>                 <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L237" href="#L237">237</a>             }
-<a class="jxr_linenumber" name="L238" href="#L238">238</a>             <strong class="jxr_keyword">super</strong>.readComplete0(op, res, flags, data, outstanding);
-<a class="jxr_linenumber" name="L239" href="#L239">239</a>         }
-<a class="jxr_linenumber" name="L240" href="#L240">240</a> 
-<a class="jxr_linenumber" name="L241" href="#L241">241</a>         @Override
-<a class="jxr_linenumber" name="L242" href="#L242">242</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(SocketAddress remoteAddress, SocketAddress localAddress, <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
-<a class="jxr_linenumber" name="L243" href="#L243">243</a>             <em class="jxr_comment">// Make sure to assign local/remote first before triggering the callback, to prevent potential NPE issues.</em>
-<a class="jxr_linenumber" name="L244" href="#L244">244</a>             <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> channelPromise = newPromise().addListener(<strong class="jxr_keyword">new</strong> <a name="ChannelFutureListener" href="../../../../io/netty/channel/ChannelFutureListener.html#ChannelFutureListener">ChannelFutureListener</a>() {
-<a class="jxr_linenumber" name="L245" href="#L245">245</a>                 @Override
-<a class="jxr_linenumber" name="L246" href="#L246">246</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a name="ChannelFuture" href="../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L247" href="#L247">247</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
-<a class="jxr_linenumber" name="L248" href="#L248">248</a>                         local = localAddress != <strong class="jxr_keyword">null</strong>
-<a class="jxr_linenumber" name="L249" href="#L249">249</a>                                 ? (<a name="DomainSocketAddress" href="../../../../io/netty/channel/unix/DomainSocketAddress.html#DomainSocketAddress">DomainSocketAddress</a>) localAddress
-<a class="jxr_linenumber" name="L250" href="#L250">250</a>                                 : socket.localDomainSocketAddress();
-<a class="jxr_linenumber" name="L251" href="#L251">251</a>                         remote = (<a name="DomainSocketAddress" href="../../../../io/netty/channel/unix/DomainSocketAddress.html#DomainSocketAddress">DomainSocketAddress</a>) remoteAddress;
-<a class="jxr_linenumber" name="L252" href="#L252">252</a>                         promise.setSuccess();
-<a class="jxr_linenumber" name="L253" href="#L253">253</a>                     } <strong class="jxr_keyword">else</strong> {
-<a class="jxr_linenumber" name="L254" href="#L254">254</a>                         promise.setFailure(future.cause());
-<a class="jxr_linenumber" name="L255" href="#L255">255</a>                     }
-<a class="jxr_linenumber" name="L256" href="#L256">256</a>                 }
-<a class="jxr_linenumber" name="L257" href="#L257">257</a>             });
-<a class="jxr_linenumber" name="L258" href="#L258">258</a>             <strong class="jxr_keyword">super</strong>.connect(remoteAddress, localAddress, channelPromise);
-<a class="jxr_linenumber" name="L259" href="#L259">259</a>         }
-<a class="jxr_linenumber" name="L260" href="#L260">260</a> 
-<a class="jxr_linenumber" name="L261" href="#L261">261</a>         @Override
-<a class="jxr_linenumber" name="L262" href="#L262">262</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> unregistered() {
-<a class="jxr_linenumber" name="L263" href="#L263">263</a>             <strong class="jxr_keyword">super</strong>.unregistered();
-<a class="jxr_linenumber" name="L264" href="#L264">264</a>             <strong class="jxr_keyword">if</strong> (readMsgHdrMemory != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L265" href="#L265">265</a>                 readMsgHdrMemory.release();
-<a class="jxr_linenumber" name="L266" href="#L266">266</a>                 readMsgHdrMemory = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L267" href="#L267">267</a>             }
-<a class="jxr_linenumber" name="L268" href="#L268">268</a>             <strong class="jxr_keyword">if</strong> (writeMsgHdrMemory != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L269" href="#L269">269</a>                 writeMsgHdrMemory.release();
-<a class="jxr_linenumber" name="L270" href="#L270">270</a>                 writeMsgHdrMemory = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L271" href="#L271">271</a>             }
-<a class="jxr_linenumber" name="L272" href="#L272">272</a>         }
-<a class="jxr_linenumber" name="L273" href="#L273">273</a>     }
-<a class="jxr_linenumber" name="L274" href="#L274">274</a> 
-<a class="jxr_linenumber" name="L275" href="#L275">275</a>     @Override
-<a class="jxr_linenumber" name="L276" href="#L276">276</a>     <strong class="jxr_keyword">boolean</strong> isPollInFirst() {
-<a class="jxr_linenumber" name="L277" href="#L277">277</a>         <a name="DomainSocketReadMode" href="../../../../io/netty/channel/unix/DomainSocketReadMode.html#DomainSocketReadMode">DomainSocketReadMode</a> readMode = config.getReadMode();
-<a class="jxr_linenumber" name="L278" href="#L278">278</a>         <strong class="jxr_keyword">switch</strong> (readMode) {
-<a class="jxr_linenumber" name="L279" href="#L279">279</a>             <strong class="jxr_keyword">case</strong> BYTES:
-<a class="jxr_linenumber" name="L280" href="#L280">280</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.isPollInFirst();
-<a class="jxr_linenumber" name="L281" href="#L281">281</a>             <strong class="jxr_keyword">case</strong> FILE_DESCRIPTORS:
-<a class="jxr_linenumber" name="L282" href="#L282">282</a>                 <strong class="jxr_keyword">return</strong> false;
-<a class="jxr_linenumber" name="L283" href="#L283">283</a>             <strong class="jxr_keyword">default</strong>:
-<a class="jxr_linenumber" name="L284" href="#L284">284</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error(<span class="jxr_string">"Unexpected read mode: "</span> + readMode);
-<a class="jxr_linenumber" name="L285" href="#L285">285</a>         }
-<a class="jxr_linenumber" name="L286" href="#L286">286</a>     }
-<a class="jxr_linenumber" name="L287" href="#L287">287</a> }
+<a class="jxr_linenumber" name="L226" href="#L226">226</a>                     <strong class="jxr_keyword">if</strong> (nativeCallResult == 0) {
+<a class="jxr_linenumber" name="L227" href="#L227">227</a>                         <em class="jxr_comment">// EOF: the peer closed the connection, so there is no control message to inspect.</em>
+<a class="jxr_linenumber" name="L228" href="#L228">228</a>                         shutdownInput(<strong class="jxr_keyword">true</strong>);
+<a class="jxr_linenumber" name="L229" href="#L229">229</a>                         <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L230" href="#L230">230</a>                     }
+<a class="jxr_linenumber" name="L231" href="#L231">231</a>                     <strong class="jxr_keyword">int</strong> nativeFd = readMsgHdrMemory.getScmRightsFd();
+<a class="jxr_linenumber" name="L232" href="#L232">232</a>                     allocHandle.lastBytesRead(nativeFd);
+<a class="jxr_linenumber" name="L233" href="#L233">233</a>                     allocHandle.incMessagesRead(1);
+<a class="jxr_linenumber" name="L234" href="#L234">234</a>                     pipeline.fireChannelRead(<strong class="jxr_keyword">new</strong> <a name="FileDescriptor" href="../../../../io/netty/channel/unix/FileDescriptor.html#FileDescriptor">FileDescriptor</a>(nativeFd));
+<a class="jxr_linenumber" name="L235" href="#L235">235</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable throwable) {
+<a class="jxr_linenumber" name="L236" href="#L236">236</a>                     handleReadException(pipeline, <strong class="jxr_keyword">null</strong>, throwable, false, allocHandle);
+<a class="jxr_linenumber" name="L237" href="#L237">237</a>                 } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L238" href="#L238">238</a>                     allocHandle.readComplete();
+<a class="jxr_linenumber" name="L239" href="#L239">239</a>                     pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L240" href="#L240">240</a>                 }
+<a class="jxr_linenumber" name="L241" href="#L241">241</a>                 <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L242" href="#L242">242</a>             }
+<a class="jxr_linenumber" name="L243" href="#L243">243</a>             <strong class="jxr_keyword">super</strong>.readComplete0(op, res, flags, data, outstanding);
+<a class="jxr_linenumber" name="L244" href="#L244">244</a>         }
+<a class="jxr_linenumber" name="L245" href="#L245">245</a> 
+<a class="jxr_linenumber" name="L246" href="#L246">246</a>         @Override
+<a class="jxr_linenumber" name="L247" href="#L247">247</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(SocketAddress remoteAddress, SocketAddress localAddress, <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) {
+<a class="jxr_linenumber" name="L248" href="#L248">248</a>             <em class="jxr_comment">// Make sure to assign local/remote first before triggering the callback, to prevent potential NPE issues.</em>
+<a class="jxr_linenumber" name="L249" href="#L249">249</a>             <a name="ChannelPromise" href="../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> channelPromise = newPromise().addListener(<strong class="jxr_keyword">new</strong> <a name="ChannelFutureListener" href="../../../../io/netty/channel/ChannelFutureListener.html#ChannelFutureListener">ChannelFutureListener</a>() {
+<a class="jxr_linenumber" name="L250" href="#L250">250</a>                 @Override
+<a class="jxr_linenumber" name="L251" href="#L251">251</a>                 <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> operationComplete(<a name="ChannelFuture" href="../../../../io/netty/channel/ChannelFuture.html#ChannelFuture">ChannelFuture</a> future) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L252" href="#L252">252</a>                     <strong class="jxr_keyword">if</strong> (future.isSuccess()) {
+<a class="jxr_linenumber" name="L253" href="#L253">253</a>                         local = localAddress != <strong class="jxr_keyword">null</strong>
+<a class="jxr_linenumber" name="L254" href="#L254">254</a>                                 ? (<a name="DomainSocketAddress" href="../../../../io/netty/channel/unix/DomainSocketAddress.html#DomainSocketAddress">DomainSocketAddress</a>) localAddress
+<a class="jxr_linenumber" name="L255" href="#L255">255</a>                                 : socket.localDomainSocketAddress();
+<a class="jxr_linenumber" name="L256" href="#L256">256</a>                         remote = (<a name="DomainSocketAddress" href="../../../../io/netty/channel/unix/DomainSocketAddress.html#DomainSocketAddress">DomainSocketAddress</a>) remoteAddress;
+<a class="jxr_linenumber" name="L257" href="#L257">257</a>                         promise.setSuccess();
+<a class="jxr_linenumber" name="L258" href="#L258">258</a>                     } <strong class="jxr_keyword">else</strong> {
+<a class="jxr_linenumber" name="L259" href="#L259">259</a>                         promise.setFailure(future.cause());
+<a class="jxr_linenumber" name="L260" href="#L260">260</a>                     }
+<a class="jxr_linenumber" name="L261" href="#L261">261</a>                 }
+<a class="jxr_linenumber" name="L262" href="#L262">262</a>             });
+<a class="jxr_linenumber" name="L263" href="#L263">263</a>             <strong class="jxr_keyword">super</strong>.connect(remoteAddress, localAddress, channelPromise);
+<a class="jxr_linenumber" name="L264" href="#L264">264</a>         }
+<a class="jxr_linenumber" name="L265" href="#L265">265</a> 
+<a class="jxr_linenumber" name="L266" href="#L266">266</a>         @Override
+<a class="jxr_linenumber" name="L267" href="#L267">267</a>         <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> unregistered() {
+<a class="jxr_linenumber" name="L268" href="#L268">268</a>             <strong class="jxr_keyword">super</strong>.unregistered();
+<a class="jxr_linenumber" name="L269" href="#L269">269</a>             <strong class="jxr_keyword">if</strong> (readMsgHdrMemory != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L270" href="#L270">270</a>                 readMsgHdrMemory.release();
+<a class="jxr_linenumber" name="L271" href="#L271">271</a>                 readMsgHdrMemory = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L272" href="#L272">272</a>             }
+<a class="jxr_linenumber" name="L273" href="#L273">273</a>             <strong class="jxr_keyword">if</strong> (writeMsgHdrMemory != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L274" href="#L274">274</a>                 writeMsgHdrMemory.release();
+<a class="jxr_linenumber" name="L275" href="#L275">275</a>                 writeMsgHdrMemory = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L276" href="#L276">276</a>             }
+<a class="jxr_linenumber" name="L277" href="#L277">277</a>         }
+<a class="jxr_linenumber" name="L278" href="#L278">278</a>     }
+<a class="jxr_linenumber" name="L279" href="#L279">279</a> 
+<a class="jxr_linenumber" name="L280" href="#L280">280</a>     @Override
+<a class="jxr_linenumber" name="L281" href="#L281">281</a>     <strong class="jxr_keyword">boolean</strong> isPollInFirst() {
+<a class="jxr_linenumber" name="L282" href="#L282">282</a>         <a name="DomainSocketReadMode" href="../../../../io/netty/channel/unix/DomainSocketReadMode.html#DomainSocketReadMode">DomainSocketReadMode</a> readMode = config.getReadMode();
+<a class="jxr_linenumber" name="L283" href="#L283">283</a>         <strong class="jxr_keyword">switch</strong> (readMode) {
+<a class="jxr_linenumber" name="L284" href="#L284">284</a>             <strong class="jxr_keyword">case</strong> BYTES:
+<a class="jxr_linenumber" name="L285" href="#L285">285</a>                 <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">super</strong>.isPollInFirst();
+<a class="jxr_linenumber" name="L286" href="#L286">286</a>             <strong class="jxr_keyword">case</strong> FILE_DESCRIPTORS:
+<a class="jxr_linenumber" name="L287" href="#L287">287</a>                 <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L288" href="#L288">288</a>             <strong class="jxr_keyword">default</strong>:
+<a class="jxr_linenumber" name="L289" href="#L289">289</a>                 <strong class="jxr_keyword">throw</strong> <strong class="jxr_keyword">new</strong> Error(<span class="jxr_string">"Unexpected read mode: "</span> + readMode);
+<a class="jxr_linenumber" name="L290" href="#L290">290</a>         }
+<a class="jxr_linenumber" name="L291" href="#L291">291</a>     }
+<a class="jxr_linenumber" name="L292" href="#L292">292</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
