@@ -150,70 +150,84 @@
 <a class="jxr_linenumber" name="L142" href="#L142">142</a>         closeSent = promise;
 <a class="jxr_linenumber" name="L143" href="#L143">143</a>     }
 <a class="jxr_linenumber" name="L144" href="#L144">144</a> 
-<a class="jxr_linenumber" name="L145" href="#L145">145</a>     <strong class="jxr_keyword">void</strong> applyCloseSentTimeout(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) {
-<a class="jxr_linenumber" name="L146" href="#L146">146</a>         <strong class="jxr_keyword">if</strong> (forceCloseTimeoutTask != <strong class="jxr_keyword">null</strong> || closeSent.isDone() || forceCloseTimeoutMillis &lt; 0) {
-<a class="jxr_linenumber" name="L147" href="#L147">147</a>             <strong class="jxr_keyword">return</strong>;
-<a class="jxr_linenumber" name="L148" href="#L148">148</a>         }
-<a class="jxr_linenumber" name="L149" href="#L149">149</a> 
-<a class="jxr_linenumber" name="L150" href="#L150">150</a>         <strong class="jxr_keyword">final</strong> Future&lt;?&gt; timeoutTask = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
-<a class="jxr_linenumber" name="L151" href="#L151">151</a>             @Override
-<a class="jxr_linenumber" name="L152" href="#L152">152</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
-<a class="jxr_linenumber" name="L153" href="#L153">153</a>                 <strong class="jxr_keyword">if</strong> (!closeSent.isDone()) {
-<a class="jxr_linenumber" name="L154" href="#L154">154</a>                     closeSent.tryFailure(buildHandshakeException(<span class="jxr_string">"send close frame timed out"</span>));
-<a class="jxr_linenumber" name="L155" href="#L155">155</a>                     <em class="jxr_comment">// Do not rely on some other listener eventually closing the channel once closeSent</em>
-<a class="jxr_linenumber" name="L156" href="#L156">156</a>                     <em class="jxr_comment">// completes (e.g. write(CloseWebSocketFrame) without a subsequent close() call attaches</em>
-<a class="jxr_linenumber" name="L157" href="#L157">157</a>                     <em class="jxr_comment">// none): close it here so the deadline is enforced unconditionally.</em>
-<a class="jxr_linenumber" name="L158" href="#L158">158</a>                     ctx.close();
-<a class="jxr_linenumber" name="L159" href="#L159">159</a>                 }
-<a class="jxr_linenumber" name="L160" href="#L160">160</a>             }
-<a class="jxr_linenumber" name="L161" href="#L161">161</a>         }, forceCloseTimeoutMillis, TimeUnit.MILLISECONDS);
-<a class="jxr_linenumber" name="L162" href="#L162">162</a>         forceCloseTimeoutTask = timeoutTask;
+<a class="jxr_linenumber" name="L145" href="#L145">145</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L146" href="#L146">146</a> <em class="jxr_javadoccomment">     * If a close frame was already sent (or is still being sent), closes the channel once that write completes</em>
+<a class="jxr_linenumber" name="L147" href="#L147">147</a> <em class="jxr_javadoccomment">     * (or the force-close timeout fires) and returns {@code true}. Returns {@code false} otherwise.</em>
+<a class="jxr_linenumber" name="L148" href="#L148">148</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L149" href="#L149">149</a>     <strong class="jxr_keyword">boolean</strong> closeIfCloseSent(<strong class="jxr_keyword">final</strong> <a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L150" href="#L150">150</a>         <strong class="jxr_keyword">if</strong> (closeSent == <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L151" href="#L151">151</a>             <strong class="jxr_keyword">return</strong> false;
+<a class="jxr_linenumber" name="L152" href="#L152">152</a>         }
+<a class="jxr_linenumber" name="L153" href="#L153">153</a>         <em class="jxr_comment">// Flush through our own override so the force-close timeout is guaranteed to be armed.</em>
+<a class="jxr_linenumber" name="L154" href="#L154">154</a>         flush(ctx);
+<a class="jxr_linenumber" name="L155" href="#L155">155</a>         closeSent.addListener(future -&gt; ctx.close());
+<a class="jxr_linenumber" name="L156" href="#L156">156</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">true</strong>;
+<a class="jxr_linenumber" name="L157" href="#L157">157</a>     }
+<a class="jxr_linenumber" name="L158" href="#L158">158</a> 
+<a class="jxr_linenumber" name="L159" href="#L159">159</a>     <strong class="jxr_keyword">void</strong> applyCloseSentTimeout(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) {
+<a class="jxr_linenumber" name="L160" href="#L160">160</a>         <strong class="jxr_keyword">if</strong> (forceCloseTimeoutTask != <strong class="jxr_keyword">null</strong> || closeSent.isDone() || forceCloseTimeoutMillis &lt; 0) {
+<a class="jxr_linenumber" name="L161" href="#L161">161</a>             <strong class="jxr_keyword">return</strong>;
+<a class="jxr_linenumber" name="L162" href="#L162">162</a>         }
 <a class="jxr_linenumber" name="L163" href="#L163">163</a> 
-<a class="jxr_linenumber" name="L164" href="#L164">164</a>         closeSent.addListener(future -&gt; timeoutTask.cancel(false));
-<a class="jxr_linenumber" name="L165" href="#L165">165</a>     }
-<a class="jxr_linenumber" name="L166" href="#L166">166</a> 
-<a class="jxr_linenumber" name="L167" href="#L167">167</a>     <em class="jxr_javadoccomment">/**</em>
-<a class="jxr_linenumber" name="L168" href="#L168">168</a> <em class="jxr_javadoccomment">     * Returns a {@link WebSocketHandshakeException} that depends on which client or server pipeline</em>
-<a class="jxr_linenumber" name="L169" href="#L169">169</a> <em class="jxr_javadoccomment">     * this handler belongs. Should be overridden in implementation otherwise a default exception is used.</em>
-<a class="jxr_linenumber" name="L170" href="#L170">170</a> <em class="jxr_javadoccomment">     */</em>
-<a class="jxr_linenumber" name="L171" href="#L171">171</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html#WebSocketHandshakeException">WebSocketHandshakeException</a> buildHandshakeException(String message) {
-<a class="jxr_linenumber" name="L172" href="#L172">172</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html#WebSocketHandshakeException">WebSocketHandshakeException</a>(message);
-<a class="jxr_linenumber" name="L173" href="#L173">173</a>     }
-<a class="jxr_linenumber" name="L174" href="#L174">174</a> 
-<a class="jxr_linenumber" name="L175" href="#L175">175</a>     @Override
-<a class="jxr_linenumber" name="L176" href="#L176">176</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> bind(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, SocketAddress localAddress,
-<a class="jxr_linenumber" name="L177" href="#L177">177</a>                      <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L178" href="#L178">178</a>         ctx.bind(localAddress, promise);
+<a class="jxr_linenumber" name="L164" href="#L164">164</a>         <strong class="jxr_keyword">final</strong> Future&lt;?&gt; timeoutTask = ctx.executor().schedule(<strong class="jxr_keyword">new</strong> Runnable() {
+<a class="jxr_linenumber" name="L165" href="#L165">165</a>             @Override
+<a class="jxr_linenumber" name="L166" href="#L166">166</a>             <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> run() {
+<a class="jxr_linenumber" name="L167" href="#L167">167</a>                 <strong class="jxr_keyword">if</strong> (!closeSent.isDone()) {
+<a class="jxr_linenumber" name="L168" href="#L168">168</a>                     closeSent.tryFailure(buildHandshakeException(<span class="jxr_string">"send close frame timed out"</span>));
+<a class="jxr_linenumber" name="L169" href="#L169">169</a>                     <em class="jxr_comment">// Do not rely on some other listener eventually closing the channel once closeSent</em>
+<a class="jxr_linenumber" name="L170" href="#L170">170</a>                     <em class="jxr_comment">// completes (e.g. write(CloseWebSocketFrame) without a subsequent close() call attaches</em>
+<a class="jxr_linenumber" name="L171" href="#L171">171</a>                     <em class="jxr_comment">// none): close it here so the deadline is enforced unconditionally.</em>
+<a class="jxr_linenumber" name="L172" href="#L172">172</a>                     ctx.close();
+<a class="jxr_linenumber" name="L173" href="#L173">173</a>                 }
+<a class="jxr_linenumber" name="L174" href="#L174">174</a>             }
+<a class="jxr_linenumber" name="L175" href="#L175">175</a>         }, forceCloseTimeoutMillis, TimeUnit.MILLISECONDS);
+<a class="jxr_linenumber" name="L176" href="#L176">176</a>         forceCloseTimeoutTask = timeoutTask;
+<a class="jxr_linenumber" name="L177" href="#L177">177</a> 
+<a class="jxr_linenumber" name="L178" href="#L178">178</a>         closeSent.addListener(future -&gt; timeoutTask.cancel(false));
 <a class="jxr_linenumber" name="L179" href="#L179">179</a>     }
 <a class="jxr_linenumber" name="L180" href="#L180">180</a> 
-<a class="jxr_linenumber" name="L181" href="#L181">181</a>     @Override
-<a class="jxr_linenumber" name="L182" href="#L182">182</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, SocketAddress remoteAddress,
-<a class="jxr_linenumber" name="L183" href="#L183">183</a>                         SocketAddress localAddress, <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L184" href="#L184">184</a>         ctx.connect(remoteAddress, localAddress, promise);
-<a class="jxr_linenumber" name="L185" href="#L185">185</a>     }
-<a class="jxr_linenumber" name="L186" href="#L186">186</a> 
-<a class="jxr_linenumber" name="L187" href="#L187">187</a>     @Override
-<a class="jxr_linenumber" name="L188" href="#L188">188</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> disconnect(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise)
-<a class="jxr_linenumber" name="L189" href="#L189">189</a>             <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L190" href="#L190">190</a>         ctx.disconnect(promise);
-<a class="jxr_linenumber" name="L191" href="#L191">191</a>     }
-<a class="jxr_linenumber" name="L192" href="#L192">192</a> 
-<a class="jxr_linenumber" name="L193" href="#L193">193</a>     @Override
-<a class="jxr_linenumber" name="L194" href="#L194">194</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> deregister(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L195" href="#L195">195</a>         ctx.deregister(promise);
-<a class="jxr_linenumber" name="L196" href="#L196">196</a>     }
-<a class="jxr_linenumber" name="L197" href="#L197">197</a> 
-<a class="jxr_linenumber" name="L198" href="#L198">198</a>     @Override
-<a class="jxr_linenumber" name="L199" href="#L199">199</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L200" href="#L200">200</a>         ctx.read();
-<a class="jxr_linenumber" name="L201" href="#L201">201</a>     }
-<a class="jxr_linenumber" name="L202" href="#L202">202</a> 
-<a class="jxr_linenumber" name="L203" href="#L203">203</a>     @Override
-<a class="jxr_linenumber" name="L204" href="#L204">204</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
-<a class="jxr_linenumber" name="L205" href="#L205">205</a>         ctx.fireExceptionCaught(cause);
-<a class="jxr_linenumber" name="L206" href="#L206">206</a>         ctx.close();
-<a class="jxr_linenumber" name="L207" href="#L207">207</a>     }
-<a class="jxr_linenumber" name="L208" href="#L208">208</a> }
+<a class="jxr_linenumber" name="L181" href="#L181">181</a>     <em class="jxr_javadoccomment">/**</em>
+<a class="jxr_linenumber" name="L182" href="#L182">182</a> <em class="jxr_javadoccomment">     * Returns a {@link WebSocketHandshakeException} that depends on which client or server pipeline</em>
+<a class="jxr_linenumber" name="L183" href="#L183">183</a> <em class="jxr_javadoccomment">     * this handler belongs. Should be overridden in implementation otherwise a default exception is used.</em>
+<a class="jxr_linenumber" name="L184" href="#L184">184</a> <em class="jxr_javadoccomment">     */</em>
+<a class="jxr_linenumber" name="L185" href="#L185">185</a>     <strong class="jxr_keyword">protected</strong> <a name="WebSocketHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html#WebSocketHandshakeException">WebSocketHandshakeException</a> buildHandshakeException(String message) {
+<a class="jxr_linenumber" name="L186" href="#L186">186</a>         <strong class="jxr_keyword">return</strong> <strong class="jxr_keyword">new</strong> <a name="WebSocketHandshakeException" href="../../../../../../io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.html#WebSocketHandshakeException">WebSocketHandshakeException</a>(message);
+<a class="jxr_linenumber" name="L187" href="#L187">187</a>     }
+<a class="jxr_linenumber" name="L188" href="#L188">188</a> 
+<a class="jxr_linenumber" name="L189" href="#L189">189</a>     @Override
+<a class="jxr_linenumber" name="L190" href="#L190">190</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> bind(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, SocketAddress localAddress,
+<a class="jxr_linenumber" name="L191" href="#L191">191</a>                      <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L192" href="#L192">192</a>         ctx.bind(localAddress, promise);
+<a class="jxr_linenumber" name="L193" href="#L193">193</a>     }
+<a class="jxr_linenumber" name="L194" href="#L194">194</a> 
+<a class="jxr_linenumber" name="L195" href="#L195">195</a>     @Override
+<a class="jxr_linenumber" name="L196" href="#L196">196</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> connect(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, SocketAddress remoteAddress,
+<a class="jxr_linenumber" name="L197" href="#L197">197</a>                         SocketAddress localAddress, <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L198" href="#L198">198</a>         ctx.connect(remoteAddress, localAddress, promise);
+<a class="jxr_linenumber" name="L199" href="#L199">199</a>     }
+<a class="jxr_linenumber" name="L200" href="#L200">200</a> 
+<a class="jxr_linenumber" name="L201" href="#L201">201</a>     @Override
+<a class="jxr_linenumber" name="L202" href="#L202">202</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> disconnect(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise)
+<a class="jxr_linenumber" name="L203" href="#L203">203</a>             <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L204" href="#L204">204</a>         ctx.disconnect(promise);
+<a class="jxr_linenumber" name="L205" href="#L205">205</a>     }
+<a class="jxr_linenumber" name="L206" href="#L206">206</a> 
+<a class="jxr_linenumber" name="L207" href="#L207">207</a>     @Override
+<a class="jxr_linenumber" name="L208" href="#L208">208</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> deregister(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, <a name="ChannelPromise" href="../../../../../../io/netty/channel/ChannelPromise.html#ChannelPromise">ChannelPromise</a> promise) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L209" href="#L209">209</a>         ctx.deregister(promise);
+<a class="jxr_linenumber" name="L210" href="#L210">210</a>     }
+<a class="jxr_linenumber" name="L211" href="#L211">211</a> 
+<a class="jxr_linenumber" name="L212" href="#L212">212</a>     @Override
+<a class="jxr_linenumber" name="L213" href="#L213">213</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> read(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L214" href="#L214">214</a>         ctx.read();
+<a class="jxr_linenumber" name="L215" href="#L215">215</a>     }
+<a class="jxr_linenumber" name="L216" href="#L216">216</a> 
+<a class="jxr_linenumber" name="L217" href="#L217">217</a>     @Override
+<a class="jxr_linenumber" name="L218" href="#L218">218</a>     <strong class="jxr_keyword">public</strong> <strong class="jxr_keyword">void</strong> exceptionCaught(<a name="ChannelHandlerContext" href="../../../../../../io/netty/channel/ChannelHandlerContext.html#ChannelHandlerContext">ChannelHandlerContext</a> ctx, Throwable cause) <strong class="jxr_keyword">throws</strong> Exception {
+<a class="jxr_linenumber" name="L219" href="#L219">219</a>         ctx.fireExceptionCaught(cause);
+<a class="jxr_linenumber" name="L220" href="#L220">220</a>         ctx.close();
+<a class="jxr_linenumber" name="L221" href="#L221">221</a>     }
+<a class="jxr_linenumber" name="L222" href="#L222">222</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
