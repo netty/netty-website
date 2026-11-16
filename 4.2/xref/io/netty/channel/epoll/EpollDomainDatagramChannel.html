@@ -358,43 +358,46 @@
 <a class="jxr_linenumber" name="L350" href="#L350">350</a>                             <strong class="jxr_keyword">if</strong> (localAddress == <strong class="jxr_keyword">null</strong>) {
 <a class="jxr_linenumber" name="L351" href="#L351">351</a>                                 localAddress = (<a name="DomainSocketAddress" href="../../../../io/netty/channel/unix/DomainSocketAddress.html#DomainSocketAddress">DomainSocketAddress</a>) localAddress();
 <a class="jxr_linenumber" name="L352" href="#L352">352</a>                             }
-<a class="jxr_linenumber" name="L353" href="#L353">353</a>                             allocHandle.lastBytesRead(remoteAddress.receivedAmount());
-<a class="jxr_linenumber" name="L354" href="#L354">354</a>                             byteBuf.writerIndex(byteBuf.writerIndex() + allocHandle.lastBytesRead());
-<a class="jxr_linenumber" name="L355" href="#L355">355</a> 
-<a class="jxr_linenumber" name="L356" href="#L356">356</a>                             packet = <strong class="jxr_keyword">new</strong> <a name="DomainDatagramPacket" href="../../../../io/netty/channel/unix/DomainDatagramPacket.html#DomainDatagramPacket">DomainDatagramPacket</a>(byteBuf, localAddress, remoteAddress);
-<a class="jxr_linenumber" name="L357" href="#L357">357</a>                         }
+<a class="jxr_linenumber" name="L353" href="#L353">353</a>                             <strong class="jxr_keyword">final</strong> <strong class="jxr_keyword">int</strong> receivedAmount = remoteAddress.receivedAmount();
+<a class="jxr_linenumber" name="L354" href="#L354">354</a>                             <em class="jxr_comment">// Avoid signalling end-of-data for zero-sized datagrams, otherwise continueReading(...)</em>
+<a class="jxr_linenumber" name="L355" href="#L355">355</a>                             <em class="jxr_comment">// may stop the loop and leave the remaining datagrams unread.</em>
+<a class="jxr_linenumber" name="L356" href="#L356">356</a>                             allocHandle.lastBytesRead(Math.max(1, receivedAmount));
+<a class="jxr_linenumber" name="L357" href="#L357">357</a>                             byteBuf.writerIndex(byteBuf.writerIndex() + receivedAmount);
 <a class="jxr_linenumber" name="L358" href="#L358">358</a> 
-<a class="jxr_linenumber" name="L359" href="#L359">359</a>                         allocHandle.incMessagesRead(1);
-<a class="jxr_linenumber" name="L360" href="#L360">360</a> 
-<a class="jxr_linenumber" name="L361" href="#L361">361</a>                         readPending = false;
-<a class="jxr_linenumber" name="L362" href="#L362">362</a>                         pipeline.fireChannelRead(packet);
+<a class="jxr_linenumber" name="L359" href="#L359">359</a>                             packet = <strong class="jxr_keyword">new</strong> <a name="DomainDatagramPacket" href="../../../../io/netty/channel/unix/DomainDatagramPacket.html#DomainDatagramPacket">DomainDatagramPacket</a>(byteBuf, localAddress, remoteAddress);
+<a class="jxr_linenumber" name="L360" href="#L360">360</a>                         }
+<a class="jxr_linenumber" name="L361" href="#L361">361</a> 
+<a class="jxr_linenumber" name="L362" href="#L362">362</a>                         allocHandle.incMessagesRead(1);
 <a class="jxr_linenumber" name="L363" href="#L363">363</a> 
-<a class="jxr_linenumber" name="L364" href="#L364">364</a>                         byteBuf = <strong class="jxr_keyword">null</strong>;
-<a class="jxr_linenumber" name="L365" href="#L365">365</a> 
-<a class="jxr_linenumber" name="L366" href="#L366">366</a>                         <em class="jxr_comment">// We use the TRUE_SUPPLIER as it is also ok to read less then what we did try to read (as long</em>
-<a class="jxr_linenumber" name="L367" href="#L367">367</a>                         <em class="jxr_comment">// as we read anything).</em>
-<a class="jxr_linenumber" name="L368" href="#L368">368</a>                     } <strong class="jxr_keyword">while</strong> (allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER));
-<a class="jxr_linenumber" name="L369" href="#L369">369</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
-<a class="jxr_linenumber" name="L370" href="#L370">370</a>                     <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L371" href="#L371">371</a>                         byteBuf.release();
-<a class="jxr_linenumber" name="L372" href="#L372">372</a>                     }
-<a class="jxr_linenumber" name="L373" href="#L373">373</a>                     exception = t;
-<a class="jxr_linenumber" name="L374" href="#L374">374</a>                 }
-<a class="jxr_linenumber" name="L375" href="#L375">375</a> 
-<a class="jxr_linenumber" name="L376" href="#L376">376</a>                 allocHandle.readComplete();
-<a class="jxr_linenumber" name="L377" href="#L377">377</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L364" href="#L364">364</a>                         readPending = false;
+<a class="jxr_linenumber" name="L365" href="#L365">365</a>                         pipeline.fireChannelRead(packet);
+<a class="jxr_linenumber" name="L366" href="#L366">366</a> 
+<a class="jxr_linenumber" name="L367" href="#L367">367</a>                         byteBuf = <strong class="jxr_keyword">null</strong>;
+<a class="jxr_linenumber" name="L368" href="#L368">368</a> 
+<a class="jxr_linenumber" name="L369" href="#L369">369</a>                         <em class="jxr_comment">// We use the TRUE_SUPPLIER as it is also ok to read less then what we did try to read (as long</em>
+<a class="jxr_linenumber" name="L370" href="#L370">370</a>                         <em class="jxr_comment">// as we read anything).</em>
+<a class="jxr_linenumber" name="L371" href="#L371">371</a>                     } <strong class="jxr_keyword">while</strong> (allocHandle.continueReading(UncheckedBooleanSupplier.TRUE_SUPPLIER));
+<a class="jxr_linenumber" name="L372" href="#L372">372</a>                 } <strong class="jxr_keyword">catch</strong> (Throwable t) {
+<a class="jxr_linenumber" name="L373" href="#L373">373</a>                     <strong class="jxr_keyword">if</strong> (byteBuf != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L374" href="#L374">374</a>                         byteBuf.release();
+<a class="jxr_linenumber" name="L375" href="#L375">375</a>                     }
+<a class="jxr_linenumber" name="L376" href="#L376">376</a>                     exception = t;
+<a class="jxr_linenumber" name="L377" href="#L377">377</a>                 }
 <a class="jxr_linenumber" name="L378" href="#L378">378</a> 
-<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 <strong class="jxr_keyword">if</strong> (exception != <strong class="jxr_keyword">null</strong>) {
-<a class="jxr_linenumber" name="L380" href="#L380">380</a>                     pipeline.fireExceptionCaught(exception);
-<a class="jxr_linenumber" name="L381" href="#L381">381</a>                 }
-<a class="jxr_linenumber" name="L382" href="#L382">382</a>             } <strong class="jxr_keyword">finally</strong> {
-<a class="jxr_linenumber" name="L383" href="#L383">383</a>                 <strong class="jxr_keyword">if</strong> (shouldStopReading(config)) {
-<a class="jxr_linenumber" name="L384" href="#L384">384</a>                     clearEpollIn();
-<a class="jxr_linenumber" name="L385" href="#L385">385</a>                 }
-<a class="jxr_linenumber" name="L386" href="#L386">386</a>             }
-<a class="jxr_linenumber" name="L387" href="#L387">387</a>         }
-<a class="jxr_linenumber" name="L388" href="#L388">388</a>     }
-<a class="jxr_linenumber" name="L389" href="#L389">389</a> }
+<a class="jxr_linenumber" name="L379" href="#L379">379</a>                 allocHandle.readComplete();
+<a class="jxr_linenumber" name="L380" href="#L380">380</a>                 pipeline.fireChannelReadComplete();
+<a class="jxr_linenumber" name="L381" href="#L381">381</a> 
+<a class="jxr_linenumber" name="L382" href="#L382">382</a>                 <strong class="jxr_keyword">if</strong> (exception != <strong class="jxr_keyword">null</strong>) {
+<a class="jxr_linenumber" name="L383" href="#L383">383</a>                     pipeline.fireExceptionCaught(exception);
+<a class="jxr_linenumber" name="L384" href="#L384">384</a>                 }
+<a class="jxr_linenumber" name="L385" href="#L385">385</a>             } <strong class="jxr_keyword">finally</strong> {
+<a class="jxr_linenumber" name="L386" href="#L386">386</a>                 <strong class="jxr_keyword">if</strong> (shouldStopReading(config)) {
+<a class="jxr_linenumber" name="L387" href="#L387">387</a>                     clearEpollIn();
+<a class="jxr_linenumber" name="L388" href="#L388">388</a>                 }
+<a class="jxr_linenumber" name="L389" href="#L389">389</a>             }
+<a class="jxr_linenumber" name="L390" href="#L390">390</a>         }
+<a class="jxr_linenumber" name="L391" href="#L391">391</a>     }
+<a class="jxr_linenumber" name="L392" href="#L392">392</a> }
 </pre>
 <hr/>
 <div id="footer">© 2008–2026 <a href="https://netty.io/">The Netty Project</a></div>
